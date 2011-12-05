@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>Python - Organism - Tk</name>
+	<comment></comment>
+	<projects>
+		<project>Python - Configuration file parser</project>
+		<project>Python - Logging extension</project>
+		<project>Python - Organism</project>
+		<project>Python - Plural</project>
+		<project>Python - Text history</project>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.python.pydev.PyDevBuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.python.pydev.pythonNature</nature>
+	</natures>
+</projectDescription>

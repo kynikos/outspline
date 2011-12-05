@@ -1,0 +1,6 @@
+* Remove .pyc and .pyo files
+* Update all .info files
+* Update setup.py
+* Update PKGBUILD
+* Put LICENSE in package root
+* [...]

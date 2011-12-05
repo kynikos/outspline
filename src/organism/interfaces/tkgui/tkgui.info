@@ -1,0 +1,7 @@
+author = Dario Giovannetti <dev@dariogiovannetti.com>
+version = 0.1
+description = A Tcl/Tk user interface for Organism.
+website = https://github.com/kynikos/organism/
+component = tk
+component_version = 0.1
+component_release_date = 2011-11-25
