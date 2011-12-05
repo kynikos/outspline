@@ -1,0 +1,8 @@
+author = Dario Giovannetti <dev@dariogiovannetti.com>
+version = 0.1
+description = Lets compare the contents of two items.
+website = https://github.com/kynikos/organism/
+component = main
+component_version = 1.0.0pb1
+component_release_date = 2011-12-04
+dependency_1 = interfaces.wxgui
