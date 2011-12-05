@@ -1,0 +1,576 @@
+### BEST PRACTICES ###
+- Fare in modo che ogni tabella del database sia gestita da una e una sola
+    estensione
+- Non affidarsi a procedure automatiche di manutenzione dei database quando si
+    chiude il database o il programma intero, infatti in caso di crash, non
+    essendo stata avviata la procedura, il database potrebbe rimanere
+    danneggiato o comunque in uno stato imprevisto
+- Assicurarsi che tutti i comandi che possono essere avviati o direttamente
+    dall'utente (attraverso l'interazione con le interfacce e i loro plugin) o
+    automaticamente (per esempio da un timer) siano protetti con i metodi della
+    classe Protection
+
+### WXWIDGETS BUGS ###
+- wx.DatePickerCtrl: Al momento aggiungo un border top di 1 perche' il widget
+    sembra buggato, taglia 1 px sopra e a sinistra
+  Riportare agli sviluppatori!
+- C'e' un bug nel sistema per muovere le tab:
+   * spostare una tab
+   * provare a selezionare la tab con cui si e' scambiata di posto:
+       e' impossibile, bisogna o ricliccare la tab spostata (che
+       effettivamente ha gia' il focus), oppure selezionare prima una
+       eventuale terza tab
+   Risolto momentaneamente con un workaround con EVT_AUINOTEBOOK_END_DRAG
+   Riportare agli sviluppatori
+- Lo scroll button destro per le tab di AUI Notebook non funziona tanto bene
+   Riportare agli sviluppatori
+- Bug in SplitterWindow::SetSashPosition o SplitterWindow::SetSashGravity:
+  * aprire un database con la finestra demassimizzata
+  * chiudere tutti i database
+  * massimizzare la finestra
+  * aprire un database (splittare la splitter window): il sash si sposta troppo
+    a destra
+  Ho risolto temporaneamente settando la posizione del sash dopo aver settato
+    la gravity e mandato il size event
+- http://trac.wxwidgets.org/ticket/9821
+  sollecitare la risoluzione del bug?
+- Prossimamente dovrebbe essere disponibile wx.CANCEL_DEFAULT
+  http://trac.wxwidgets.org/changeset/66819
+
+### ROADMAP ###
+Scope:
+  AUX: coreaux
+  COR: core
+  EXT: extension
+  INT: interface
+  PLG: plugin
+  GEN: generic
+Type:
+  DEF: bug (defect), increases bug-level version number
+  IMP: internal code/docuemntation reorganization/improvement, increases
+       bug-level (or, if huge enhancement, major-level) version number
+  ENH: enhancement (new feature), increases minor-level (or, if huge
+       enhancement, major-level) version number
+
+<-[1.0.0]->
+- COR IMP: Fare dei branch "development" per i components e metterci gli addon
+      in sviluppo 
+    Al momento per sviluppare gli addon bisogna fare un symlink in
+      extensions|interfaces|plugins che porti alla cartella dell'addon
+    Credo che questa cosa andrebbe gestita con i submodules di git, non ancora
+      supportati da EGit
+      https://bugs.eclipse.org/bugs/show_bug.cgi?id=314853
+    Credo anche che debba mettere anche il .conf e l'api degli addon dentro
+      le rispettive cartelle
+- INT ENH: Guardare cosa succede alle icone del frame, della tray icon ecc.
+    aggeggiando con organism.desktop
+- INT ENH: In wxgui.about bisogna mostrare la licenza per ogni addon
+- GEN IMP: Documentare che si puo' importare logger e Event con
+    from core_api import
+    effettivamente pero' e' incoerente, fare una funzione get_logger()?
+- GEN IMP: Avvisare di usare le funzioni dell'API che ritornano direttamente
+      gli oggetti (come quella che ritorna rootw) solo per usarli come parents
+      per widgets
+- GEN IMP: Documentare che a causa del clean history, il numero del gruppo e'
+    costante solo durante la sessione, ma soggetto a cambiamento o
+    cancellazione tra una sessione e l'altra
+- GEN IMP: Documentare che i plugin devono usare solamente le funzioni
+    dell'API, che saranno mantenute ufficialmente per supportare cambiamenti
+    nel codice del core
+- GEN IMP: Documentare che non bisogna mai committare i cambiamenti fatti al
+    database (ci pensa poi save nel core)
+- GEN IMP: Organizzazione plugin (copiare da qualche parte queste regole):
+    components: ...
+    core: moduli principali, dipendono solo da coreaux e/o tra loro
+    coreaux: ...
+    extensions: estensioni del core, ognuna dipendente solo da coreaux e/o core
+                e/o tra loro, possono scrivere il database
+    interfaces: interfacce utente, ognuna dipendente solo da coreaux e/o core
+                e/o modules, non possono scrivere il database
+    plugins: estensioni generiche, possono dipendere da coreaux e/o core e/o
+             modules e/o interfaces e/o tra loro, non possono scrivere il
+             database
+- GEN IMP: Avvisare che bisogna evitare dipendenze circolari/reciproche tra
+    addon
+- GEN IMP: Le best practices in cima vanno spostate nella documentazione
+- GEN IMP: Documentare con docstring con i vari (@...), soprattutto l'API
+    Vedere la documentazione di epydoc
+- GEN IMP: Avvisare che i menu dei plugin vanno modificati, per farli apparire
+      come si vuole
+- GEN IMP: Ricontrollare le scorciatoie da tastiera (accelerators)
+- INT ENH: Bisogna trovare il modo di mostrare la combinazione di tasti degli
+    acceleratori nel menu senza che queste si settino automaticamente come
+    acceleratori funzionanti in tutta la finestra
+    http://trac.wxwidgets.org/ticket/13667
+      Dato che la feature request non verra' implementata, potrei riprovare a
+        settare delle combinazioni di tasti che non creino problemi, e in piu'
+        lasciare quelle comode come Enter o Canc
+- PLG ENH: Scheduler: Avvisare che le regole sono calcolate a cascata
+    nell'ordine di visualizzazione, partendo dall'alto
+- INT IMP: wxgui.about: dal 2012 usare:
+    'copyright': 'Copyright (C) 2011-{} Dario Giovannetti'
+    ''.format(time.strftime('%Y', time.localtime())),
+- INT ENH: Usare un'icona principale originale
+    Al momento sto usando apps/text-editor del tema GTK
+      vedi wxgui.rootw, wxgui.about, wxtrayicon
+    setup.py sarebbe gia' predisposto per usare files/organism.svg
+    Nel codice poi bisognerebbe usare wx.ArtProvider.GetIcon('organism'...)
+    Per farla da me potrei prendere qualche parte dal tema Meliae SVG:
+      actions/48/media-optical-data-new
+      apps/48/accessories-text-editor
+      apps/48/evolution-tasks
+      apps/48/preferences-certificates
+      apps/48/stock_todo
+    Altrimenti chiedere collaborazione a qualche artista interessato
+
+<-[1.x.0]->
+- EXT ENH: Permettere di aggiornare i database quando si aggiornano gli addon
+    Creare dei convertitori per database creati con differenti
+      configurazioni dei plugin
+      Nel dialog di errore per database incompatibili, mostrare quali sono gli
+        addon da attivare/disattivare per poter aprire il database senza
+        aggiornarlo alla nuova configurazione
+    Nel controllo delle dipendenze bisognerebbe verificare anche la
+      compatibilita' tra le versioni degli addon
+- GEN IMP: Penso che la maggior parte delle operazioni in RELEASE si possano
+      automatizzare
+    Bisognerebbe trovare il modo di non duplicare, tra i vari componenti, le
+      funzioni ripetute dei setup.py
+- GEN IMP: Portare le note di questo TODO nel bug tracker
+- AUX ENH: Mostrare informazioni piu' dettagliate con "organism --about"?
+    Ad esempio si potrebbero mostrare le info che ora appaiono in wxgui.about
+- AUX IMP: Includere il modulo logging di Python per intero in maniera da
+    scongiurare la possibilità che un futuro upgrade di Python renda Organism
+    inutilizzabile fino al suo seguente aggiornamento?
+- COR IMP: a causa del fatto che quando pulisco la history devo cancellare le
+     relative occorrenze, devo prima trovare tutti gli id della history da
+     cancellare
+     se non dovessi fare cio', con la seguente query pulirei la history piu'
+       velocemente:
+       history_delete_select = ('DELETE FROM History '
+                                'WHERE H_status IN (1, 3, 5) '
+                                'AND H_group NOT IN '
+                                '(SELECT DISTINCT H_group FROM History '
+                                'WHERE H_status IN (1, 3, 5) '
+                                'ORDER BY H_group DESC LIMIT ?)')
+- INT ENH: Mettere le icone anche ai vari button a giro?
+      Notare che non e' cosi' semplice...
+      http://stackoverflow.com/questions/2583549/how-to-draw-text-in-a-bitmap-using-wxpython
+      Ricordarsi del bottone close dell'about window
+- GEN IMP: Evitare di estendere le classi di wx, in maniera da poter passare
+    le relative istanze tramite le api senza passare anche i metodi specifici
+      di Organism?
+    Evitare di passare direttamente gli oggetti tramite l'api (ad esempio con
+      get_active_database())?
+    Creare nell'api degli oggetti mirror degli oggetti dell'interfaccia?
+    Potrei mettere gli oggetti utili nella classe GUI in maniera che siano
+      reperibili con wx.GetApp()
+      Potrei cosi' documentare quali sono i nomi supportati e sconsigliare
+      un uso diverso da quello documentato
+- COR IMP: core_api: invece di dare direttamente la connessione con
+    get_connection() e get_memory_connection(), creare un piccolo template per
+    fare una query?
+    Eliminare anche give_memory_connection() e give_memory_connection()
+    Il problema e' che peggioro le prestazioni nei cicli, infatti dopo ad ogni
+      ciclo faccio implicitamente get e give
+- INT DEF: About window: al momento, a causa dei wx.TextAttr, i link
+    ipertestuali perdono il colore blu
+- PLG ENH: Calcolare dinamicamente il wrap del testo in
+    plugins.wxalarms._init_widgets() in base a quanto e' larga la finestra?
+- INT ENH: Interfaccia per la gestione delle Preferences
+- COR ENH: Permettere di cambiare il limite della history nelle proprieta' del
+      database
+- INT ENH: Proprietà di un database
+    dal menu File o cliccando col tasto dx sul database
+      oppure in un pannello nascondibile come lo scheduler di un'item
+    chiedere se memorizzare la history (n giorni, o gli ultimi n comandi)
+- PLG ENH: Sviluppare i plugin gia' iniziati
+- INT ENH: Migliorare il dialog che mostra l'uncaught exception
+    Richiedere all'utente di inviare il log o l'output per email
+    Mostrare la versione e altre informazioni
+- GEN ENH: Nella gestione dell'uncaught exception, provare a dare modo di
+    salvare il lavoro corrente in un file a parte
+- INT ENH: Menu bar: Riuscire a mostrare il menu popup del tree anche sugli
+      spazi bianchi?
+    Al momento sarebbe gia' abilitato per mostrare create sibling e paste
+      siblings
+- INT DEF: Al momento Create item e Paste items sono rispettivamente
+    Create sibling e Paste siblings nel menu contestuale del tree
+      Forse sarebbe meglio se cambiassero dinamicamente
+    Cambiare anche dinamicamente tra singolare e plurale nelle voci del menu
+      che hanno questo problema
+- INT DEF: Aprire un database; cliccare sulla tab del notebook corrispondente
+    (senza trascinare): il menu Database si disattiva
+    Molto probabilmente succede perché in menu.update_menus() io richiedo che
+      il focus sia sulla splitter window, e quindi cliccando sulla tab il focus
+      viene considerato esterno
+- PLG ENH: Menu contestuali col tasto destro sulla Tasklist (e altri plugin?)
+- INT ENH: Dopo aver eliminato o tagliato delle item, selezionare quella sotto
+    (o sopra?) la selezione?
+    Dopo aver incollato delle item, selezionarle?
+- PLG ENH: Organizer: Ora search_alarms mi ritorna un dizionario con anche i
+      prossimi start e end
+      Potrei sfruttarlo per attivare notifiche per gli start e gli end, oppure
+        veri e propri alarm in cui l'analogo di Snooze potrebbe essere Delay
+        per gli start e Extend per gli end
+      Questo comportamento dovrebbe essere opzionale
+- PLG ENH: Tasklist: Invece di usare come mint il tempo attuale, dovrei
+      lasciare almeno gli ultimi n minuti passati
+    Se uso un mint diverso dal tempo attuale, non ha piu' senso associare il
+      refresh della tasklist all'alarms_event
+      Forse e' meglio refresharla ogni n minuti con un Timer apposito
+      Altrimenti potrei cercare il valore minimo ottenuto da get_occurrences
+        e programmare il prossimo refresh con quel valore
+    Se il programma e' minimizzato nella tray non bisogna refreshare la
+      tasklist (ma quindi bisogna refresharla quando si ripristina la
+      finestra)
+      Usare un evento della tray icon
+- PLG ENH: Scheduler, insert_rule(): Notare che strftime usa i nomi nella
+      lingua locale
+- PLG ENH: Scheduler: Potrei anche mettere la durata automatica "fino
+      all'inizio del task successivo (evita accavallamenti)"
+      non so quanto sarebbe utile, forse si potrebbe unire con i task senza
+        durata
+- PLG ENH: Organizer, Scheduler: Enable/Disable per ogni regola, con le
+      checkbox accanto ad ognuna
+    in insert_rule() devo valutare se checkare o no la regola, a seconda di
+      come e' settata nel database
+    Scheduler, insert_rule(): Appena ho abilitato l'Enable/Disable delle
+      regole, devo valutare se checkare o no l'item inserita
+    Scheduler, move rule up/down: Appena ho abilitato l'Enable/Disable
+      delle regole, devo valutare se richeckare o no dopo lo spostamento
+- EXT DEF: organizer: ma se faccio search_alarms per un filename/id_ specifico
+    e questo da' un next_alarm uguale a quello gia' presente mi refresha il
+    timer perdendo gli alarm di tutte le altre item?
+    Al momento faccio tutti search_alarms generici per sicurezza
+- EXT IMP: organizer Alarms: Possibili ottimizzazioni per la ricerca degli
+    alarm:
+      * Cercare tutti i ".time()" e valutare se invece posso passare sempre now
+        come argomento tra una funzione e l'altra
+      * quando aggiorno le regole di un'item, prima calcolo le occorrenze solo
+        per quell'item, e se la più vicina è maggiore del next_refresh del
+        timer, allora non refresho il timer; se è uguale al timer aggiungo
+        l'occorrenza al timer; se è minore del timer restarto il timer con solo
+        quell'occorrenza, dato che è impossibile che le altre item si siano
+        modificate
+      * quando rimuovo un'item, non è necessario ricalcolare tutto: se
+        quell'item non era tra i prossimi alarm posso non fare nulla; se invece
+        c'era, la cancello dai prossimi alarm, e solamente nel caso in cui
+        fosse stata l'unico alarm presente, allora dovrei refreshare il timer
+      * mettere le regole in tabelle del database e fare le ricerche con query
+- PLG ENH: Scheduler: Sarebbe molto meglio se gli SpinCtrl dell'ora e minuto
+      mostrassero sempre due cifre, con uno 0 iniziale tra 00 e 09
+      Sarebbe ancora meglio fondere ora e minuto in un unico widget simile ad
+        uno SpinCtrl che permetta di scegliere tra vari valori del tipo
+        "00:00", "00:05", ..., "23:45", "23:50", "23:55" ma anche di inserire
+        un valore con la tastiera?
+        usare SpinButton?
+- PLG ENH: Scheduler: Sarebbe meglio se, editando una regola, apparisse si'
+    l'interfaccia della regola in questione, ma poi cambiando regola dovrebbero
+    venire le interfacce delle altre regole nella loro versione standard,
+    quella che appare quando si crea una nuova regola; al momento invece e'
+    possibile che i parametri della regola attuale influenzino l'interfaccia
+    delle altre regole
+- GEN ENH: Organism, come outliner, potrebbe fungere da editor di database,
+    ad esempio potrebbe aprirli con una struttura tipo:
+    > INFO: nomi delle tabelle e proprietà dei loro campi
+    > tabella1: records...
+    > tabella2: records...
+    > ...
+    oppure:
+    v tabella1: proprietà dei campi
+      > record1: ...
+      > record2: ...
+      > ...
+- COR IMP: databases.save_copy: Controllare che destination non sia gia'
+    aperto!!!
+- COR IMP: unire databases.save_copy con databases.save?
+- COR IMP: Mettere il dizionario delle items dentro le istanze di Database, e
+    come chiavi usare solo l'id (integer)
+    Inserire l'id come int? Attenzione a tutte le possibili conseguenze
+      ad esempio self.get_id() ritornerebbe un intero, cosi' come tutti
+        i self.item e gli items.items[...].item a giro
+    Notare che anche in items.add teoricamente id_ potrebbe essere 0 (intero),
+      ma finche' lo memorizzo come stringa nell'oggetto e' meglio tenere "not"
+      invece che id_ == None, perche' se chiamo add con id_=0, prima entra in
+      "if not item", setta l'item e dopo entra anche in "if not (...)"
+      e risetta filename e id_ come stringhe
+- GEN IMP: Vedere se posso mettere i vari dizionari e le variabili che stanno
+    fuori dalle classi, appunto dentro le classi
+- INT ENH: Dare la possibilità di copiare solo l'item selezionata senza gli
+      eventuali figli
+    * copy items
+    * copy items recursively
+    * cut items recursively
+- PLG ENH: Nella finestra degli alarms, mostrare anche la data dell'evento
+     (self.start)
+- PLG IMP: Tasklist: fondere handle_refresh con handle_alarm_off
+- INT IMP: fondere i moduli databases e tree
+- GEN IMP: forse alcuni dei controlli in wxgui.tree.select() andrebbero portati
+    (anche) in core?
+- COR IMP: in core.items.shift() bisogna controllare che esistano il previous,
+    il next e il parent (non root) rispettivamente per up, down e parent!!!
+    (al momento il controllo e' fatto solo dalla GUI)
+  oltretutto il codice del metodo non e' molto ottimizzato in generale
+- INT IMP: Quando sposto un'item in basso devo aggiungere 1 all'indice di
+    destinazione perche' l'origine la cancello dopo
+    Correggere il problema direttamente in wxgui.tree.move_item() ?
+- INT IMP: wxgui.tree.move_item(): lanciare un'eccezione customizzata invce di
+    ValueError ?
+- COR IMP: Memorizzare nel database un flag ogni volta che si chiude, in
+    maniera che se non viene chiuso correttamente si può capire e avvertire
+    alla successiva riapertura
+- INT ENH: Mettere un asterisco sulla tab se il testo o lo scheduler è
+    modificato magari colorato di rosso per evitare casi ambigui in cui il
+      titolo comincia già con un astetrisco
+    oppure, come in geany, colorare il titolo di rosso
+      colorarlo anche sul tree?!
+- INT ENH: La history potrei metterla in un foldpanel invece che una splitter
+    window
+- INT ENH: History: evitare di refresharla se e' nascosta?
+    Invece di refreshare tutto potrei fare dei cambiamenti piu'
+      selettivi usando ad esempio self.box.Prepend()
+    se invece decido di refreshare sempre tutto allora forse e' piu'
+      veloce usare un TextCtrl multilinea
+- INT ENH: History: mostrare data e ora delle varie operazioni?
+- INT ENH: History: mostrare meglio la differenza tra gli status
+   usare dei colori?
+   oppure mettere una barra orizzontale per delimitare gli eventi
+     salvati (status 2 e 3) e un'altra per delimitare gli eventi
+     attivi (status 1 e 3)
+- INT ENH: History: scrollare automaticamente ad uno dei due delimitatori?
+    (limite di salvataggio e limite di undo attuale)
+- INT ENH: valutare se tenere la staticline tra la history e il sash di
+     divisione col tree
+       se la elimino, togliere anche il pannello e il boxsizer che la legano
+         alla history stessa
+       valutare invece se mettere una staticline anche sotto al pannello del
+       tree
+- EXT ENH: Al momento converto tutte le date delle occorrenze in localtime,
+    pero' potrei permettere di specificare se una data e' da considerare in
+      localtime o UTC
+    il punto e': se vado in giro per il mondo, ci sono cose che voglio
+      fare sempre alla stessa ora locale, ma ci sono anche eventi che
+      accadono alla stessa ora UTC in tutto il mondo, a prescindere dal fuso
+      orario
+- INT ENH: Aprendo un file, se ha l'estensione standard (ad esempio .ogd)
+    inserire solamente il nome senza estensione nella tab del notebook?
+      rendere opzionale?
+- PLG IMP: plugins.wxscheduler.resize_rpanel(): al momento faccio un mucchio di
+      operazioni per adattare le dimensioni del pannello, ma sarebbe piu'
+        elegante se trovassi cos'e' che realmente aggiorna l'altezza del
+        pannello
+      Sarebbe ancor piu' elegante se portassi questo metodo in wxgui.editor
+- PLG ENH: Mettere un piccolo calendario sopra o accanto alla tasklist?
+    eventualmente potrebbe essere messo in un foldpanel
+- PLG ENH: Tasklist: effettivamente sarebbe assai facile permettere il
+      riordinamento delle occorrenze premendo sugli heading delle colonne,
+      infatti get_next_occurrences() usa list.sort(key)
+- PLG ENH: Tasklist: usare wx.LC_SMALL_ICON per mettere le icone
+- PLG ENH: Tasklist: purtroppo ListCtrlAutoWidthMixin espande l'ultima colonna
+      (Alarm), mentre sarebbe meglio espandere Heading
+      trovare un widget migliore?
+- PLG ENH: Tasklist: Permettere di scegliere i due limit maxn e maxt
+      Mostrare i limiti maxn e maxt correnti sopra o sotto la lista?
+- PLG ENH: Tasklist: Se la data e' quella odierna, mostrare solo ora e minuto
+      Potrei usare un formato "pretty time", per indicare "tomorrow",
+        "in 1 hour", "friday" eccetera, ma il sistema di refresh andrebbe
+        complicato un po'
+- PLG IMP: Tasklist: Al momento la classe ListItem praticamente non serve a
+      nulla
+      potrebbe essere sostituita con un dizionario, che tra l'altro sarebbe
+        gia' il return di api.get_next_occurrences()
+- GEN IMP: Implementare meglio le eccezioni
+    ad esempio core.exceptions e coreaux.exceptions
+- COR IMP: core.databases: do_history_row usa un try except per scegliere tra
+    le query che usano il campo testo e quelle che non lo fanno: forse questo
+    problema andrebbe risolto piu' elegantemente?
+- GEN IMP: Se snoozo di n minuti l'allarme in generale non combacia piu' con
+      i minuti esatti
+      Permettere di farlo non appena ho implementato le funzioni
+        primitive con il passaggio della connessione da una funzione
+        all'altra?
+      Controllare bene da tutte le parti che non facessi affidamento
+        sulla separazione a minuti esatti anche per altri motivi
+      Eventualmente per sicurezza si puo' comunque approssimare invece che
+        ogni minuto, ogni 5, 10, 15 secondi...
+      Se implemento lo snooze alle frazioni di minuto, forse e' meglio mostrare
+        anche i secondi nella Tasklist
+- EXT IMP: in extensions.alarms.snooze() sono incoerente, infatti in tutti gli
+    altri casi get_next_history_group e' messo nell'api
+- EXT IMP: in extensions.alarms.snooze() non posso refreshare il timer nel
+    loop, altrimenti fa casino con wx.CallAfter() che gestisce gli alarm
+    nell'interfaccia
+    Risolvere con un'alternativa a CallAfter?
+- EXT IMP: in extensions.alarms.get_next_occurrences() e
+      get_daily_occurrences():
+    Fare l'ordinamento dei risultati direttamente con la query invece che con
+      sort(key)?
+- EXT IMP: in extensions.alarms.rules_to_string():
+    Controllare che non ci siano caratteri pericolosi per una query?
+      infatti viene inserita con {}
+- INT ENH: Permettere l'apertura di piu' file contemporaneamente?
+    bisogna modificare le opzioni del filedialog
+- PLG IMP: Scheduler: Validare i valori inseriti
+      usare i metodi appositi di wxPython
+- PLG IMP: Scheduler: Capire come mai questa riga non funziona:
+        sdate.SetTimeT((start // 86400) * 86400)
+      al momento ho risolto con un algoritmo alternativo
+- PLG IMP: Nella configurazione dello snooze nella finestra degli alarms,
+      validare i valori di spinbox e combobox
+- PLG ENH: Nella configurazione dello snooze nella finestra degli alarms, usare
+      il modulo del plurale per aggiornare la forma singolare/plurale
+        dell'unita' di tempo
+      Attenzione che' i nomi delle choices sono usati anche da
+        get_snooze_time!!!
+- INT ENH: RightNotebook: riprovare aui.AUI_NB_HIDE_ON_SINGLE_TAB?
+- INT ENH: RightNotebook:
+    Evitare che le tab dei plugin siano spostate, o che
+      le tab degli editor siano spostate alla loro sinistra?
+    Al momento permetto di nascondere il pulsante di chiusura sulla tab de
+      plugin: vetare anche l'evento EVT_AUINOTEBOOK_PAGE_CLOSE ?
+- INT IMP: Textarea: gestire gli eventi wxTextUrlEvents per gli URL e
+     wxEVT_CHAR per il tasto TAB
+- INT ENH: Rendere l'interfaccia piu' modulare permettendo gli spostamenti
+   delle tab a piacimento?
+   in questo caso SplitterWindow non avrebbe piu' molto senso...
+   e' possibile salvare le prospettive di AuiNotebook con i suoi metodi
+     SavePerspective() e LoadPerspective()
+   usare addirittura un altro widget invece di AuiNotebook, quello
+     MDI Windows?
+     in questo caso potrei comunque usare AuiNotebook per la finestra che
+     gestisce gli editor delle item
+- INT IMP: Prossimamente dovrebbe essere disponibile wx.CANCEL_DEFAULT
+  usare in msgboxes
+  http://trac.wxwidgets.org/changeset/66819
+- GEN DEF: Testare eventuali memory leaks
+    controllare che ad esempio chiudendo una tab la memoria si liberi davvero
+      al momento cancello direttamente il dizionario, ma bisogna anche
+        rimuovere widget per widget?
+    anche i bindings potrebbero creare riferimenti circolari
+    testare printando qualcosa nei distruttori degli oggetti (__del__())
+- GEN IMP: Riprovare a splittare la gestione della history in un'estensione a
+      se'?
+    Non e' cosi' semplice, ad esempio un grosso problema e' riorganizzare
+      get_next_history_group() e la gestione dei gruppi
+- AUX IMP: Il sistema degli eventi in coreaux.events non e' a prova di
+    riferimenti circolari
+    un esempio si ha tentando di chiudere un editor per la seconda
+      volta: si nota che l'handler del primo editor chiuso non e'
+      stato cancellato perche' effettivamente l'istanza della sua
+      classe e' ancora viva
+    bisogna fare l'unbind esplicitamente settando bind=False
+  Fare la verifica isfunction/ismethod direttamente al binding?
+    lanciare un'eccezione se non e' verificata
+    ci sono altri casi possibili?
+  Invece di eliminare il binding dal dizionario, lanciare un'eccezione?
+    ovviamente poi va catchata
+- GEN IMP: Probabilmente molte delle ricorsioni che faccio a giro potrebbero
+    essere semplificate o addirittura sostituite con dei while(True)
+- INT IMP: Vedere se funziona TAB per ciclare tra i widget con la tastiera
+- INT IMP: Al momento nel tree se vengono aperti due file in percorsi diversi
+    ma con lo stesso nome, appaiono appunto con lo stesso nome
+  questo succede anche nell'editor
+- COR IMP: Fare in modo che gli id per le nuove insert siano creati tappando i
+    buchi degli id cancellati, e non invece creando nuovi id a partire dal più
+    alto esistente?
+- GEN IMP: La configurazione di un plugin dovrebbe poter contenere un'opzione
+    per mostrare un messaggio in cui l'autore autocertifica che il plugin
+      utilizza solamente le API e non chiamate dirette al core di Organism
+    quest'opzione dovrebbe essere documentata in maniera un po' sibillina,
+      non insieme alle altre opzioni del file, in maniera che la veda e la
+      usi soltanto chi ha veramente letto l'avvertenza di non usare chiamate
+      dirette al core
+    quando non è presente l'autocertificazione dovrebbe mostrarsi un dialog
+      box di avvertenza al primo avvio del plugin (con la possibilità di
+      scegliere di non mostrarlo più)
+    bisognerebbe creare un parser per plugin per capire se il plugin usa
+      chiamate dirette al core (con regexp e un dizionario di parole chiave)
+      oppure se usa funzioni delle API che possono essere pericolose
+      in questi casi bisognerebbe avviare un dialog di avvertenza come sopra
+        "Warning, this plugin makes use of API calls that if used in an
+        inattentive or malicious way could damage your data. You are advised
+        to test this plugin in safe mode."
+- PLG ENH: Quando viene attivato un alarm, la finestra degli alarm dovrebbe
+      essere in modalità di richiamo dell'attenzione dell'utente
+    poi, se non è nascosta ma non è in primo piano, va portata in primo piano
+- INT ENH: Rendere possibile trovare l'item nel tree relativa ad una tab
+    ad esempio are in modo che cliccando sulla tab si selezioni l'elemento
+    corrispondente nel tree
+- PLG ENH: Permettere di disabilitare (temporaneamente) l'apparizione
+      automatica della finestra degli allarmi (e anche delle notifiche)
+    fare un'opzione anche nella tray icon
+- PLG ENH: Rendere dinamico il title della finestra degli alarms, magari
+        mostrando il numero di allarmi attivati
+- PLG ENH: Rendere dinamica la tray icon, soprattutto segnalando quando ci sono
+      alarm attivati
+    Rendere dinamico anche il tooltip della tray icon, magari mostrando il
+      numero di allarmi attivati
+- GEN IMP: L'insert_item nel menu principale, quello della tray icon e del menu
+    contestuale del tree sono quasi duplicati: trovare il modo di unificarli?
+- PLG IMP: extensions.organizer.timer: se solo riuscissi ad evitare di eseguire
+    activate_next_alarms() sul thread del timer... Potrei rimettere il
+    controllo del threading alla connessione al database, e probabilmente
+    rimuovere anche la coda per la connessione
+- PLG IMP: Controlla la precisione di Timer, ed eventualmente se si discosta di
+    troppo dall'ora reale, aggiornarlo ogni n minuti anche se non ci sono
+    allarmi
+  Aggiornare il timer ogni n minuti per sicurezza anche se non ci sono
+    allarmi? Garantirebbe di non aver lasciato allarmi non attivati passati
+- EXT ENH: categorie per le item
+- PLG ENH: Se modifico il testo di un'item, aggiornare anche il testo dei suoi
+    alarm attivati
+- PLG ENH: Scheduler: funzione per evitare accavallamenti di eventi o attività?
+- EXT ENH: Backup automatico dei database aperti
+- EXT ENH: Salvataggio automatico ogni n minuti
+    salvare in un file temporaneo
+- PLG ENH: Usare anche le notifiche per gli allarmi
+    provare toaster box tra i wx widgets
+- PLG ENH: Avviso acustico per gli alarm
+- INT ENH: Comando per espandere tutti i discendenti di un'item
+    facendo doppio click sul + di un'item?
+- PLG ENH: Percentuale di completamento accanto ad ogni item con figli nel tree
+    basarsi sul numero di figli che sono completati
+      o se un figlio ha a sua volta altri figli, basarsi a sua volta sulla sua
+        percentuale di completamento
+- GEN DEF: Effettivamente dove uso time.altzone dovrei stare attento che non
+    tutti i fusi orario hanno differenze esattamente divisibili per 3600...
+- GEN IMP: plugins.wxdevelopment: al momento, populate tree rifa tutto il ciclo
+      nell'interfaccia
+    Forse questo lavoro andrebbe fatto piu' elegantemente, probabilmente
+        segnalando un evento per items.Item.insert
+      e' chiaro che dopo ogni items.Item.insert genererebbe quell'evento,
+        quindi bisognerebbe cambiare anche altre cose in altri moduli  
+- INT ENH: Associare delle icone aggiuntive ai menu
+    permettere di cambiarle facilmente, magari con una cartella nella home
+      utente
+    permettere comunque anche di non usare nessuna icona
+- PLG ENH: Diff tra due elementi
+    diff con l'item salvata
+- INT ENH: Fondere i menu Database ed Editor in uno solo (Edit) e mostrare uno
+    o l'altro a seconda del widget selezionato?
+- INT ENH: Pulsanti di salva, chiudi, ecc. per tab, tree, calendar...?
+    metterli in autohide in qualche maniera?
+- INT DEF: Al momento uso le icone del tema GTK: se l'applicazione viene usata
+    senza GTK o addirittura su un altro sistema operativo le icone non appaiono
+    Includere delle icone sostitutive nel pacchetto?
+    Permettere di scegliere se usare le icone GTK o quelle del pacchetto?
+    Avrei gia' predisposto la sequenza self.bundled in wxgui.art.ArtProvider
+- INT ENH: Menubar in autohide?
+- PLG ENH: Calendar: al momento potrei implementarlo senza rappresentare la
+    durata delle item, ma solo il loro punto d'inizio (tra l'altro non sarebbe
+    male anche come modalità produttiva)
+    certo che se comunque riesco a predisporlo per la durata e' meglio
+- PLG ENH: Posizionare nel calendario separatamente gli eventi/attività e le
+    rispettive campanelle degli allarmi in modo che seguano gli snooze e
+    inoltre rendano immediatamente visibili avvisi posti in precedenze anche di
+    svariate ore o giorni
+- EXT ENH: Permettere di creare item "link" ad altre item
+- COR ENH: Dare la possibilità di scegliere se memorizzare il database
+    temporaneo nella RAM oppure in un file in /tmp: il vantaggio di averlo in
+    tmp è che in caso di crash del programma, i dati possono essere recuperati
+- EXT ENH: Compatibilità con icalendar (vedi fonti su wikipedia)
+- INT ENH: Interfaccia per browser?
+    notare che non può essere ospitato su un server facilmente, infatti deve
+        poter notificare gli allarmi sui client...
+    permettere salvataggio e crittazione del database
