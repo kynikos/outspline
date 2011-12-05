@@ -15,8 +15,8 @@ depends=('wxpython'
 optdepends=('organism-organizer: adds personal organizer capabilities'
             'organism-development: development tools for beta testers')
 install="$pkgname.install"
-source=("http://cloud.github.com/downloads/kynikos/organism/$pkgname-$pkgver.tar.bz2")
-md5sums=('5465546afb70e98a2b6040c57df19a0e')
+source=("https://github.com/downloads/kynikos/organism/$pkgname-$pkgver.tar.gz")
+md5sums=('a243d18c2900312634c205278c25239f')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"
