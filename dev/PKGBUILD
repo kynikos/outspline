@@ -10,7 +10,7 @@ license=('GPL3')
 depends=('organism')
 install="$pkgname.install"
 source=("http://cloud.github.com/downloads/kynikos/organism-organizer/$pkgname-$pkgver.tar.bz2")
-md5sums=('f5475a34ee767909286fda990eeb5b07')
+md5sums=('4fe8b426bd6fc2bcb7d3fdd017813067')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"
