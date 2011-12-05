@@ -16,7 +16,7 @@ optdepends=('organism-organizer: adds personal organizer capabilities'
             'organism-development: development tools for beta testers')
 install="$pkgname.install"
 source=("http://cloud.github.com/downloads/kynikos/organism/$pkgname-$pkgver.tar.bz2")
-md5sums=('5d672f7d8325ad63d24c3b516b42a068')
+md5sums=('5465546afb70e98a2b6040c57df19a0e')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"

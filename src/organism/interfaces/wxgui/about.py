@@ -1,6 +1,6 @@
 # coding: utf-8
 
-# Organism - Organism, a simple and extensible outliner.
+# Organism - A simple and extensible outliner.
 # Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.com>
 #
 # This file is part of Organism.

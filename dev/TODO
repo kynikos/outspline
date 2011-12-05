@@ -53,9 +53,9 @@ Type:
        enhancement, major-level) version number
 
 <-[1.0.0]->
-- COR IMP: Fare dei branch "development" per i components e metterci gli addon
-      in sviluppo 
-    Al momento per sviluppare gli addon bisogna fare un symlink in
+- AUX IMP: in coreaux.configuration potrei provare
+    _ROOT_DIR = os.path.dirname(organism.__file__)
+- COR IMP: Al momento per sviluppare gli addon bisogna fare un symlink in
       extensions|interfaces|plugins che porti alla cartella dell'addon
     Credo che questa cosa andrebbe gestita con i submodules di git, non ancora
       supportati da EGit
