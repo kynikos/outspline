@@ -1,0 +1,18 @@
+# Maintainer: Dario Giovannetti <dev at dariogiovannetti dot com>
+
+pkgname='organism-development'
+pkgver='1.0.0pb1'
+pkgrel=1
+pkgdesc="Development component for Organism (PRE-BETA!)."
+arch=('any')
+url="https://github.com/kynikos/organism-development"
+license=('GPL3')
+depends=('organism')
+source=("http://cloud.github.com/downloads/kynikos/organism-development/$pkgname-$pkgver.tar.bz2")
+md5sums=('c39f0549279a3a7e2221ba97a881bd68')
+
+package() {
+    cd "$srcdir/$pkgname-$pkgver"
+    python2 setup.py install --prefix="/usr" --root="$pkgdir" --optimize=1
+    rm $pkgdir/usr/lib/python2.7/site-packages/organism/{,extensions/,plugins/}__init__.py{,c,o}
+}
