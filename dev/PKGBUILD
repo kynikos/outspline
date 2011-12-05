@@ -1,0 +1,19 @@
+# Maintainer: Dario Giovannetti <dev at dariogiovannetti dot com>
+
+pkgname='organism-organizer'
+pkgver='1.0.0pb1'
+pkgrel=1
+pkgdesc="Organizer component for Organism (PRE-BETA!)."
+arch=('any')
+url="https://github.com/kynikos/organism-organizer"
+license=('GPL3')
+depends=('organism')
+install="$pkgname.install"
+source=("http://cloud.github.com/downloads/kynikos/organism-organizer/$pkgname-$pkgver.tar.bz2")
+md5sums=('f5475a34ee767909286fda990eeb5b07')
+
+package() {
+    cd "$srcdir/$pkgname-$pkgver"
+    python2 setup.py install --prefix="/usr" --root="$pkgdir" --optimize=1
+    rm $pkgdir/usr/lib/python2.7/site-packages/organism/{,extensions/,plugins/}__init__.py{,c,o}
+}
