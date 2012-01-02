@@ -95,9 +95,12 @@ Type:
 - GEN IMP: Le best practices in cima vanno spostate nella documentazione
 - GEN IMP: Documentare con docstring con i vari (@...), soprattutto l'API
     Vedere la documentazione di epydoc
+    http://epydoc.sourceforge.net/manual-epytext.html
+    http://epydoc.sourceforge.net/manual-fields.html
 - GEN IMP: Avvisare che i menu dei plugin vanno modificati, per farli apparire
       come si vuole
 - GEN IMP: Ricontrollare le scorciatoie da tastiera (accelerators)
+    Scorciatoie standard: http://en.wikipedia.org/wiki/Table_of_keyboard_shortcuts
 - INT ENH: Bisogna trovare il modo di mostrare la combinazione di tasti degli
     acceleratori nel menu senza che queste si settino automaticamente come
     acceleratori funzionanti in tutta la finestra
@@ -122,6 +125,11 @@ Type:
       apps/48/preferences-certificates
       apps/48/stock_todo
     Altrimenti chiedere collaborazione a qualche artista interessato
+    http://openclipart.org/
+    http://clipartist.net/
+    http://i.istockimg.com/file_thumbview_approve/13532155/2/stock-illustration-13532155-bacteria-flu-virus-bug-cartoon-illustration.jpg
+    http://www.colouringbook.org/art/svg/coloring-book/funny-red-bacteria-october-2011-openclipart-org-commons-wikimedia-org-colouring-book-coloring-book-colouringbook-org-svg-scalable-vector-graphics/
+    http://clipartist.net/svg/bad-bacteria-scalable-vector-graphics-svg-october-2011-openclipart-org-commons-wikimedia-org/
 
 <-[1.x.0]->
 - EXT ENH: Permettere di aggiornare i database quando si aggiornano gli addon
@@ -137,6 +145,8 @@ Type:
     Bisognerebbe trovare il modo di non duplicare, tra i vari componenti, le
       funzioni ripetute dei setup.py
 - GEN IMP: Portare le note di questo TODO nel bug tracker
+- EXT ENH: Crittazione e decrittazione del testo delle item
+    Farlo anche per le regole dello scheduler?
 - AUX ENH: Mostrare informazioni piu' dettagliate con "organism --about"?
     Ad esempio si potrebbero mostrare le info che ora appaiono in wxgui.about
 - AUX IMP: Includere il modulo logging di Python per intero in maniera da
