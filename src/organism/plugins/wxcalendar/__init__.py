@@ -42,6 +42,7 @@ class Calendar(wx.ScrolledWindow):
     
     def __init__(self, parent):
         # Vedere wxWebkit http://wxwebkit.kosoftworks.com/ ***********************
+        # Vedere http://code.google.com/p/wxscheduler/ ***************************
         # Come trattare le occorrenze senza data di fine? (durata nulla) *********
         #     si potrebbe dare una durata fittizia di 1 minuto
         # Come trattare le occorrenze che spannano su piu' giorni? ad esempio ****
