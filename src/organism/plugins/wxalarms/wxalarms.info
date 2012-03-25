@@ -1,4 +1,4 @@
-author = Dario Giovannetti <dev@dariogiovannetti.com>
+author = Dario Giovannetti <dev@dariogiovannetti.net>
 version = 0.1
 description = Shows an alarm window whenever an item occurrence happens, and gives the possibility to snooze or dismiss it.
 website = https://github.com/kynikos/organism/

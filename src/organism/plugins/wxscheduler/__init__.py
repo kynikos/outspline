@@ -1,5 +1,5 @@
 # Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.com>
+# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
