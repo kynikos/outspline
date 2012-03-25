@@ -1,5 +1,5 @@
 # Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.com>
+# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -21,7 +21,7 @@ import errno
 
 import configfile
 
-__author__ = "Dario Giovannetti <dev@dariogiovannetti.com>"
+__author__ = "Dario Giovannetti <dev@dariogiovannetti.net>"
 
 _ROOT_DIR = 'src/organism'
 _CORE_INFO = os.path.join(_ROOT_DIR, 'coreaux', 'core.info')

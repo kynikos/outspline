@@ -1,7 +1,7 @@
 # coding: utf-8
 
 # Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.com>
+# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -40,7 +40,7 @@ _DESCRIPTION = ('Organism is a simple outliner written in Python, whose '
                 'functionality can be widely extended through the '
                 'installation of addons.')
 _COPYRIGHT = ('Copyright © {} Dario Giovannetti'.format(datetime.now().year))
-_CONTACT = 'dev@dariogiovannetti.com'
+_CONTACT = 'dev@dariogiovannetti.net'
 _SIZE = 600
 
 
@@ -208,7 +208,7 @@ class InfoBox(wx.SplitterWindow):
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nAuthor: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        self.textw.AppendText('Dario Giovannetti <dev@dariogiovannetti.com>')
+        self.textw.AppendText('Dario Giovannetti <dev@dariogiovannetti.net>')
         
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nContributors: ')
