@@ -1,5 +1,5 @@
 # Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.com>
+# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
-__author__ = "Dario Giovannetti <dev@dariogiovannetti.com>"
+__author__ = "Dario Giovannetti <dev@dariogiovannetti.net>"
 __status__ = "development"
 __version__ = "1.0.0.a20110710"
 __date__ = "2011-07-10"

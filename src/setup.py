@@ -1,5 +1,5 @@
 # Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.com>
+# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -65,7 +65,7 @@ def compose_metadata():
             'version': '0.1',
             'description': 'Tk component for Organism.',
             'author': 'Dario Giovannetti',
-            'author_email': 'dev@dariogiovannetti.com',
+            'author_email': 'dev@dariogiovannetti.net',
             'url': 'https://github.com/kynikos/organism-tk',
             'license': 'GPLv3'}
     
