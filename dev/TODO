@@ -108,6 +108,11 @@ Type:
       Dato che la feature request non verra' implementata, potrei riprovare a
         settare delle combinazioni di tasti che non creino problemi, e in piu'
         lasciare quelle comode come Enter o Canc
+      In alternativa potrei provare a fare in modo che sì la funzione associata
+        ad una combinazione di tasti sia una sola, ma questa possa capire se è
+        selezionato il tree o un editor ed eseguire la giusta azione
+      Un'altra alternativa sarebbe rifare tutta l'interfaccia in GTK+ 3 e quindi
+        usare GtkAccelLabel
 - PLG ENH: Scheduler: Avvisare che le regole sono calcolate a cascata
     nell'ordine di visualizzazione, partendo dall'alto
 - INT IMP: wxgui.about: dal 2012 usare:
@@ -561,6 +566,8 @@ Type:
     o l'altro a seconda del widget selezionato?
 - INT ENH: Pulsanti di salva, chiudi, ecc. per tab, tree, calendar...?
     metterli in autohide in qualche maniera?
+- INT ENH: Mettere tutta la barra dei comandi in autohide? (stile add-on
+    "Hide Menubar" di Firefox)
 - INT DEF: Al momento uso le icone del tema GTK: se l'applicazione viene usata
     senza GTK o addirittura su un altro sistema operativo le icone non appaiono
     Includere delle icone sostitutive nel pacchetto?
