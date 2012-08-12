@@ -19,6 +19,7 @@
 import sys
 import os.path
 import argparse
+from datetime import datetime
 
 from configuration import (_USER_CONFIG_FILE, info, config)
 
@@ -27,13 +28,14 @@ class ShowVersion(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         print('''Organism {} ({})
 
-Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+Copyright (C) 2011-{} Dario Giovannetti <dev@dariogiovannetti.net>
 This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, you are welcome to redistribute it under the
 conditions of the GNU General Public License version 3 or later.
 See <http://gnu.org/licenses/gpl.html> for details.'''.format(
                                                info['component_version'],
-                                               info['component_release_date']))
+                                               info['component_release_date'],
+                                               datetime.now().year))
         sys.exit()
 
 

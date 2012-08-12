@@ -115,9 +115,6 @@ Type:
         usare GtkAccelLabel
 - PLG ENH: Scheduler: Avvisare che le regole sono calcolate a cascata
     nell'ordine di visualizzazione, partendo dall'alto
-- INT IMP: wxgui.about: dal 2012 usare:
-    'copyright': 'Copyright (C) 2011-{} Dario Giovannetti'
-    ''.format(time.strftime('%Y', time.localtime())),
 - INT ENH: Usare un'icona principale originale
     Al momento sto usando apps/text-editor del tema GTK
       vedi wxgui.rootw, wxgui.about, wxtrayicon

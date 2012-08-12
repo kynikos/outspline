@@ -39,7 +39,7 @@ along with Organism.  If not, see <http://www.gnu.org/licenses/>.'''
 _DESCRIPTION = ('Organism is a simple outliner written in Python, whose '
                 'functionality can be widely extended through the '
                 'installation of addons.')
-_COPYRIGHT = ('Copyright © {} Dario Giovannetti'.format(datetime.now().year))
+_COPYRIGHT = ('Copyright © 2011-{} Dario Giovannetti'.format(datetime.now().year))
 _CONTACT = 'dev@dariogiovannetti.net'
 _SIZE = 600
 
