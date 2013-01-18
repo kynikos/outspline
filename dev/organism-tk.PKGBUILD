@@ -1,8 +1,8 @@
-# Maintainer: Dario Giovannetti <dev at dariogiovannetti dot com>
+# Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='organism-tk'
 pkgver='0.1'
-pkgrel=1
+pkgrel=2
 pkgdesc="Tk component for Organism."
 arch=('any')
 url="https://github.com/kynikos/organism-tk"
