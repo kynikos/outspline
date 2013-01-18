@@ -1,0 +1,9 @@
+### BEST PRACTICES ###
+- Make sure that every database table is managed by one and only one extension
+- Don't rely on automatic database maintenance procedures when the database or
+  the entire program is closed, in fact in case of a crash, since the procedure
+  hasn't been started yet, the database could get damaged or anyway be left in
+  an unpredicted state
+- Make sure that all the commands that can be launched either directly by the
+  user (through interaction with the interfaces and their plugins) or
+  automatically (e.g. by a timer) are protected by the Protection class methods
