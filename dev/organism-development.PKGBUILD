@@ -8,7 +8,7 @@ arch=('any')
 url="https://github.com/kynikos/organism-development"
 license=('GPL3')
 depends=('organism')
-source=("https://github.com/downloads/kynikos/organism-development/$pkgname-$pkgver.tar.gz")
+source=("http://www.dariogiovannetti.net/files/$pkgname-$pkgver.tar.gz")
 md5sums=('3a1efa3de8014fbb020b22ac2c3150d1')
 
 package() {
