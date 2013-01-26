@@ -9,7 +9,7 @@ url="https://github.com/kynikos/organism-tk"
 license=('GPL3')
 depends=('organism')
 install=organism-tk.install
-source=("http://github.com/downloads/kynikos/organism-tk/$pkgname-$pkgver.tar.bz2")
+source=("http://www.dariogiovannetti.net/files/$pkgname-$pkgver.tar.bz2")
 md5sums=('92077b8c68f9543619bca607757e49a0')
 
 package() {
