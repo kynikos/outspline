@@ -1,0 +1,8 @@
+author = Dario Giovannetti <dev@dariogiovannetti.net>
+version = 0.1
+description = Adds the backend for storing schedule information for items.
+website = https://github.com/kynikos/organism/
+component = organizer
+component_version = 1.0.0pb1
+component_release_date = 2011-12-04
+optional_dependency_1 = extensions.copypaste

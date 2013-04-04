@@ -20,9 +20,9 @@
 def main():
     import coreaux
     coreaux.main()
-    
+
     import core
     core.main()
-    
+
     import coreaux.addons
     coreaux.addons.main()
