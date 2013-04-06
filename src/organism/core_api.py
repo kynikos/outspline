@@ -257,6 +257,10 @@ def get_open_databases():
     return tuple(databases.dbs.keys())
 
 
+def is_database_open(filename):
+    return filename in databases.dbs
+
+
 def get_databases_count():
     return len(databases.dbs)
 
