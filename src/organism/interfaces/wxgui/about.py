@@ -44,7 +44,6 @@ class AboutWindow(wx.Frame):
         name = wx.StaticText(self, label='Organism')
         name.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC,
                              wx.FONTWEIGHT_BOLD))
-        name.SetForegroundColour(wx.Colour(red=32, green=32, blue=32))
 
         version = wx.StaticText(self, label='version: {} ({})'.format(
                                 coreaux_api.get_main_component_version(),

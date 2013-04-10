@@ -55,17 +55,17 @@ class Editor():
     fpbar = None
     modstate = None
     accels = None
-    
+
     def __init__(self, filename, id_, item):
         self.filename = filename
         self.id_ = id_
         self.item = item
         self.modstate = False
-        
+
         self.panel = EditorPanel(wx.GetApp().nb_right)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
-        
+
         self.accels = [(wx.wx.ACCEL_CTRL, wx.WXK_RETURN,
                         wx.GetApp().menu.edit.ID_APPLY),
                        (wx.wx.ACCEL_CTRL, wx.WXK_NUMPAD_ENTER,
@@ -78,29 +78,29 @@ class Editor():
                         wx.GetApp().menu.edit.ID_CLOSE),
                        (wx.ACCEL_SHIFT | wx.wx.ACCEL_CTRL, ord('w'),
                         wx.GetApp().menu.edit.ID_CLOSE_ALL)]
-        
+
         self.panel.SetAcceleratorTable(wx.AcceleratorTable(self.accels))
-    
+
     def _post_init(self):
         filename = self.filename
         id_ = self.id_
-        
+
         text = core_api.get_item_text(filename, id_)
         title = self.make_title(text)
-        
+
         self.area = textarea.TextArea(self.filename, self.id_, self.item, text)
         self.pbox.Add(self.area.area, proportion=1, flag=wx.EXPAND | wx.ALL,
                       border=4)
-        
+
         open_textctrl_event.signal(filename=filename, id_=id_, item=self.item,
                                    text=text)
-        
+
         wx.GetApp().nb_right.add_page(self.panel, title, select=True)
-    
+
     @classmethod
     def open(cls, filename, id_):
         item = cls.make_tabid(filename, id_)
-        
+
         global tabs
         if item not in tabs:
             tabs[item] = cls(filename, id_, item)
@@ -108,37 +108,34 @@ class Editor():
             open_editor_event.signal(filename=filename, id_=id_, item=item)
         else:
             wx.GetApp().nb_right.SetSelectionToWindow(tabs[item].panel)
-    
+
     def add_plugin_panel(self, caption):
         if self.fpbar == None:
             separator = wx.StaticLine(self.panel, size=(1, 1),
                                       style=wx.LI_HORIZONTAL)
             self.pbox.Prepend(separator, flag=wx.EXPAND)
-            
+
             self.fpbar = FoldPanelBar(self.panel,
                                       agwStyle=foldpanelbar.FPB_SINGLE_FOLD |
                                       foldpanelbar.FPB_HORIZONTAL)
             self.pbox.Prepend(self.fpbar, flag=wx.EXPAND)
-            
+
             self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED,
                             self.handle_collapsiblepane)
             self.fpbar.Bind(foldpanelbar.EVT_CAPTIONBAR,
                             self.handle_captionbar)
-        
+
         cbstyle = CaptionBarStyle()
-        cbcol = wx.Colour(red=230, green=230, blue=230)
-        cbstyle.SetFirstColour(cbcol)
-        cbstyle.SetSecondColour(cbcol)
-        
+
         return self.fpbar.AddFoldPanel(caption=caption, cbstyle=cbstyle)
-    
+
     def add_plugin_window(self, fpanel, window):
         self.fpbar.AddFoldPanelWindow(fpanel, window)
         self.panel.Layout()
-        
+
     def handle_collapsiblepane(self, event):
         self.panel.Layout()
-        
+
     def handle_captionbar(self, event):
         event.Skip()
         wx.CallAfter(self.resize_fpb)
@@ -147,21 +144,21 @@ class Editor():
         sizeNeeded = self.fpbar.GetPanelsLength(0, 0)[2]
         self.fpbar.SetMinSize((0, sizeNeeded))
         self.panel.Layout()
-    
+
     def collapse_panel(self, fpanel):
         self.fpbar.Collapse(fpanel)
-        
+
     def expand_panel(self, fpanel):
         self.fpbar.Expand(fpanel)
 
     def apply(self):
         group = core_api.get_next_history_group(self.filename)
         description = 'Apply editor'
-        
+
         # Note that apply_editor_event_1 is also bound directly by the textarea
         apply_editor_event_1.signal(filename=self.filename, id_=self.id_,
                                     group=group, description=description)
-        
+
         tree.dbs[self.filename].history.refresh()
         apply_editor_event_2.signal()
 
@@ -177,45 +174,45 @@ class Editor():
             return True
         else:
             return False
-    
+
     def set_modified(self):
         self.modstate = True
-    
+
     def is_modified(self):
         self.modstate = False
-        
+
         # Note that this event is also bound directly by the textarea
         check_modified_state_event.signal(filename=self.filename, id_=self.id_)
-        
+
         return self.modstate
 
     def close(self, ask=True):
         nb = wx.GetApp().nb_right
         item = self.item
-        
+
         if ask and self.is_modified():
             save = msgboxes.close_tab_ask().ShowModal()
             if save == wx.ID_YES:
                 self.apply()
             elif save == wx.ID_CANCEL:
                 return False
-        
+
         # Note that this event is also bound directly by the textarea
         close_editor_event.signal(filename=self.filename, id_=self.id_)
-        
+
         nb.close_page(nb.GetPageIndex(self.panel))
-        
+
         global tabs
         del tabs[item]
-        
+
         return True
-    
+
     def get_filename(self):
         return self.filename
-    
+
     def get_id(self):
         return self.id_
-    
+
     @staticmethod
     def make_title(text):
         max_ = config.get_int('max_editor_tab_length')
@@ -223,11 +220,11 @@ class Editor():
         if len(title) > max_:
             title = title[:max_ - 3] + '...'
         return title
-    
+
     @staticmethod
     def make_tabid(filename, id_):
         return '_'.join((filename, str(id_)))
-    
+
     def add_accelerators(self, accels):
         self.accels.extend(accels)
         self.panel.SetAcceleratorTable(wx.AcceleratorTable(self.accels))

@@ -72,7 +72,6 @@ class AlarmsWindow():
         self.window.SetSizer(box)
 
         self.panel = wx.ScrolledWindow(self.window, style=wx.BORDER_SUNKEN)
-        self.panel.SetBackgroundColour(wx.WHITE)
         self.panel.SetScrollRate(20, 20)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
