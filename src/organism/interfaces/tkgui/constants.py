@@ -30,9 +30,9 @@ _ALARMS_GEOMETRY = '400x128'
 _ALARMS_MIN_SIZE = (400, 128)
 _ALARMS_TITLE = _PROJECT_NAME + ' - Alarms'
 
-_MINUTE_INCREMENT = 1   # Al momento c'è un bug nello Spinbox per cui andando ****
+_MINUTE_INCREMENT = 1   # Al momento c'e' un bug nello Spinbox per cui andando ***
                         # in su incrementa bene, ma andando indietro, una volta***
                         # arrivato allo 0, fa un passo indietro di 1 soltanto. ***
-                        # Per esempio, se l'incremento è 5 e sono a 0, se ********
-                        # clicco in su va a 5, ma se da 0 clicco in giù va a *****
+                        # Per esempio, se l'incremento e' 5 e sono a 0, se *******
+                        # clicco in su va a 5, ma se da 0 clicco in giu' va a ****
                         # 59, non a 55 *******************************************
