@@ -3,7 +3,7 @@
 pkgname='organism-organizer'
 pkgver='1.0.0pb1'
 pkgrel=2
-pkgdesc="Organizer component for Organism (PRE-BETA!)."
+pkgdesc="Organizer component for Organism, adds advanced time management abilities (PRE-BETA!)"
 arch=('any')
 url="https://github.com/kynikos/organism-organizer"
 license=('GPL3')

@@ -3,7 +3,7 @@
 pkgname='organism-development'
 pkgver='1.0.0pb1'
 pkgrel=2
-pkgdesc="Development component for Organism (PRE-BETA!)."
+pkgdesc="Development component for Organism (PRE-BETA!)"
 arch=('any')
 url="https://github.com/kynikos/organism-development"
 license=('GPL3')

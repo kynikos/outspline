@@ -3,7 +3,7 @@
 pkgname='organism'
 pkgver='1.0.0pb1'
 pkgrel=2
-pkgdesc="A simple and extensible outliner written in Python (PRE-BETA!)."
+pkgdesc="A highly modular and extensible outliner for managing your notes (PRE-BETA!)"
 arch=('any')
 url="https://github.com/kynikos/organism"
 license=('GPL3')
