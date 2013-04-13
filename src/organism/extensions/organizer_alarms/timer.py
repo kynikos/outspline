@@ -89,6 +89,20 @@ class Alarms():
         # lets restart_timer, and consequently search_alarms, ignore the
         # excepted alarms at the following search
 
+    def try_delete_one(self, filename, id_, start, end, alarm):
+        if filename in self.alarms and id_ in self.alarms[filename]:
+            for alarmd in self.alarms[filename][id_][:]:
+                if start == alarmd['start'] and end == alarmd['end'] and \
+                                                       alarm == alarmd['alarm']:
+                    self.alarms[filename][id_].remove(alarmd)
+                    if not self.alarms[filename][id_]:
+                        del self.alarms[filename][id_]
+                    if not self.alarms[filename]:
+                        del self.alarms[filename]
+                    # Delete only one occurrence, hence the name try_delete_one
+                    return True
+        return False
+
     def get_dict(self):
         return self.alarms
 
@@ -157,13 +171,25 @@ def get_snoozed_alarms(alarms):
 
         for row in cur:
             itemid = row['A_item']
+            start = row['A_start']
+            end = row['A_end']
             snooze = row['A_snooze']
+
+            # Check whether the snoozed alarm has a duplicate among the alarms
+            # found using the alarm rules, and in that case delete the latter;
+            # the creation of duplicates is possible especially when alarm
+            # searches are performed in rapid succession, for example when
+            # launching organism with multiple databases automatically opened
+            # and many new alarms to be immediately activated
+            # If I gave the possibility to use search_alarms for a specific
+            # filename or id_, this check would probably become unnecessary
+            alarms.try_delete_one(filename, itemid, start, end, row['A_alarm'])
 
             alarmd = {'filename': filename,
                       'id_': itemid,
                       'alarmid': row['A_id'],
-                      'start': row['A_start'],
-                      'end': row['A_end'],
+                      'start': start,
+                      'end': end,
                       'alarm': snooze}
 
             # For safety, also check that there aren't any alarms with snooze
@@ -189,6 +215,7 @@ def get_alarms(mint, maxt, filename, tempoccs):
     core_api.give_connection(filename, conn)
 
     for row in cur:
+        origalarm = row['A_alarm']
         snooze = row['A_snooze']
 
         alarmd = {'filename': filename,
@@ -201,9 +228,12 @@ def get_alarms(mint, maxt, filename, tempoccs):
         # Always add active (but not snoozed) alarms if time interval includes
         # current time
         if snooze == None and mint <= int(_time.time()) <= maxt:
-            tempoccs.update(alarmd, row['A_alarm'], force=True)
+            tempoccs.update(alarmd, origalarm, force=True)
         else:
-            tempoccs.update(alarmd, row['A_alarm'])
+            # Note that the second argument must be origalarm, not snooze, in
+            # fact it's used to *update* the occurrence (if present) using the
+            # new snooze time stored in alarmd
+            tempoccs.update(alarmd, origalarm)
 
 
 def set_last_search(filename, tstamp):

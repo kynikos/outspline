@@ -242,7 +242,7 @@ def get_occurrences(mint, maxt):
                                              filename=filename, id_=id_,
                                              rule=rule, tempoccs=tempoccs)
 
-    # Get alarms after all occurrences, to avoid except rules
+    # Get alarms *after* all occurrences, to avoid except rules
     for filename in core_api.get_open_databases():
         get_alarms_event.signal(mint=mint, maxt=maxt, filename=filename,
                                 tempoccs=tempoccs)
