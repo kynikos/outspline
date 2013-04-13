@@ -58,7 +58,7 @@ class TaskList():
         self.refresh()
         
         organizer_alarms_api.bind_to_alarms(self.handle_alarms)
-        organizer_alarms_api.bind_to_alarm_off(self.handle_alarm_off)
+        organizer_alarms_api.bind_to_alarm_off(self.handle_refresh)
         
         wxgui_api.bind_to_apply_editor_2(self.handle_refresh)
         wxgui_api.bind_to_open_database(self.handle_refresh)
@@ -78,9 +78,6 @@ class TaskList():
 
     def handle_alarms(self, kwargs):
         wx.CallAfter(self.refresh)
-        
-    def handle_alarm_off(self, kwargs):
-        self.refresh()
     
     def handle_refresh(self, kwargs):
         self.refresh()
