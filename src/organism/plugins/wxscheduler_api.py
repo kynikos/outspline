@@ -19,9 +19,14 @@
 import wxscheduler
 
 
-def initialize_rule(filename, id_, description, rule):
+def display_rule(filename, id_, description, rule):
     return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
-                             ].init_rule(description, rule)
+                             ].display_rule(description, rule)
+
+
+def initialize_rule(filename, id_, rule):
+    return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
+                             ].init_rule(rule)
 
 
 def change_rule(filename, id_, sizer):

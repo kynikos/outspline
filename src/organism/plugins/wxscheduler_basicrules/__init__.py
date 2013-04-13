@@ -24,44 +24,47 @@ import except_once
 
 
 def handle_init_rules(kwargs):
-    wxscheduler_api.initialize_rule(kwargs['filename'], kwargs['id_'],
-                                    occur_once._RULE_DESC,
-                                    occur_once._RULE_NAME)
-    
-    wxscheduler_api.initialize_rule(kwargs['filename'], kwargs['id_'],
-                                    occur_every_day._RULE_DESC,
-                                    occur_every_day._RULE_NAME)
-    
-    wxscheduler_api.initialize_rule(kwargs['filename'], kwargs['id_'],
-                                    except_once._RULE_DESC,
-                                    except_once._RULE_NAME)
+    wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
+                                 occur_once._RULE_DESC,
+                                 occur_once._RULE_NAME)
+
+    wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
+                                 occur_every_day._RULE_DESC,
+                                 occur_every_day._RULE_NAME)
+
+    wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
+                                 except_once._RULE_DESC,
+                                 except_once._RULE_NAME)
 
 
 def handle_choose_rule(kwargs):
     if kwargs['rule'] == occur_once._RULE_NAME:
-        occur_once.choose_rule(kwargs)
+        wxscheduler_api.initialize_rule(kwargs['filename'], kwargs['id_'],
+                                        occur_once.Rule(kwargs))
     elif kwargs['rule'] == occur_every_day._RULE_NAME:
-        occur_every_day.choose_rule(kwargs)
+        wxscheduler_api.initialize_rule(kwargs['filename'], kwargs['id_'],
+                                        occur_every_day.Rule(kwargs))
     elif kwargs['rule'] == except_once._RULE_NAME:
-        except_once.choose_rule(kwargs)
+        wxscheduler_api.initialize_rule(kwargs['filename'], kwargs['id_'],
+                                        except_once.Rule(kwargs))
 
 
 def handle_apply_rule(kwargs):
     if kwargs['rule'] == occur_once._RULE_NAME:
-        occur_once.apply_rule(kwargs)
+        kwargs['object_'].apply_rule(kwargs)
     elif kwargs['rule'] == occur_every_day._RULE_NAME:
-        occur_every_day.apply_rule(kwargs)
+        kwargs['object_'].apply_rule(kwargs)
     elif kwargs['rule'] == except_once._RULE_NAME:
-        except_once.apply_rule(kwargs)
+        kwargs['object_'].apply_rule(kwargs)
 
- 
+
 def handle_insert_rule(kwargs):
     if kwargs['rule']['rule'] == occur_once._RULE_NAME:
-        occur_once.insert_rule(kwargs)
+        occur_once.Rule.insert_rule(kwargs)
     elif kwargs['rule']['rule'] == occur_every_day._RULE_NAME:
-        occur_every_day.insert_rule(kwargs)
+        occur_every_day.Rule.insert_rule(kwargs)
     elif kwargs['rule']['rule'] == except_once._RULE_NAME:
-        except_once.insert_rule(kwargs)
+        except_once.Rule.insert_rule(kwargs)
 
 
 def main():

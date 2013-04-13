@@ -43,6 +43,7 @@ class Scheduler():
     origrules = None
     rules = None
     rmaker = None
+    rmaker_ref = None
     mbox = None
     mrules = None
     mmode = None
@@ -81,6 +82,8 @@ class Scheduler():
         wxgui_api.bind_to_check_editor_modified_state(
                                              self.handle_check_editor_modified)
         wxgui_api.bind_to_close_editor(self.handle_close)
+
+        init_rules_list_event.signal(filename=self.filename, id_=self.id_)
 
     def handle_apply(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_ \
@@ -299,9 +302,12 @@ class Scheduler():
         self.rmaker.Bind(wx.EVT_BUTTON, self.cancel_maker, button_cancel)
         self.rmaker.Bind(wx.EVT_BUTTON, self.apply_maker, button_ok)
 
-    def init_rule(self, description, rule):
+    def display_rule(self, description, rule):
         self.choice.Append(description, clientData=rule)
         self.choice.SetSelection(0)
+
+    def init_rule(self, rule):
+        self.rmaker_ref = rule
 
     def choose_rule(self, event):
         choose_rule_event.signal(filename=self.filename, id_=self.id_,
@@ -325,7 +331,8 @@ class Scheduler():
 
         apply_maker_event.signal(filename=self.filename, id_=self.id_,
                                  rule=self.choice.GetClientData(
-                                                   self.choice.GetSelection()))
+                                                    self.choice.GetSelection()),
+                                 object_=self.rmaker_ref)
 
         self.rlist.Show()
         self.resize_rpanel()
@@ -343,8 +350,6 @@ def handle_open_editor(kwargs):
     items[Scheduler.make_itemid(filename, id_)] = Scheduler(filename, id_)
 
     items[Scheduler.make_itemid(filename, id_)].post_init()
-
-    init_rules_list_event.signal(filename=filename, id_=id_)
 
 
 def main():
