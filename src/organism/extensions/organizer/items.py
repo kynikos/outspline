@@ -31,15 +31,15 @@ class TempOccurrences():
         self.mint = mint
         self.maxt = maxt
         self.d = {}
-    
+
     def update(self, occ, origalarm, force=False):
         filename = occ['filename']
         id_ = occ['id_']
-        
+
         oocc = occ.copy()
         oocc['alarm'] = origalarm
         del oocc['alarmid']
-        
+
         if filename in self.d and id_ in self.d[filename] and \
                                                  oocc in self.d[filename][id_]:
             self.d[filename][id_][self.d[filename][id_].index(oocc)] = occ
@@ -56,25 +56,38 @@ class TempOccurrences():
             return self._add(occ)
         else:
             return False
-    
+
     def _add(self, occ):
         filename = occ['filename']
         id_ = occ['id_']
-        
+
         if filename not in self.d:
             self.d[filename] = {}
         if id_ not in self.d[filename]:
             self.d[filename][id_] = []
         self.d[filename][id_].append(occ)
-        
+
         return True
-    
+
     def except_(self, filename, id_, start, end, inclusive):
-        for o in self.d[filename][id_][:]:
-            if start <= o['start'] <= end or \
-                               (inclusive and o['start'] <= start <= o['end']):
-                self.d[filename][id_].remove(o)
-    
+        # If an except rule is put at the start of the rules list for an item,
+        # self.d[filename][id_] wouldn't exist yet; note that if the item is the
+        # first one being processed in the database, even self.d[filename]
+        # wouldn't exist
+        # This way the except rule is of course completely useless, however if
+        # the user has to be warned at all, it must be done in the interface
+        # when he saves the rules list, not here, where the exception has to be
+        # just silenced
+        try:
+            dc = self.d[filename][id_][:]
+        except KeyError:
+            pass
+        else:
+            for o in dc:
+                if start <= o['start'] <= end or \
+                                (inclusive and o['start'] <= start <= o['end']):
+                    self.d[filename][id_].remove(o)
+
     def get_dict(self):
         return self.d
 
@@ -82,12 +95,12 @@ class TempOccurrences():
 def insert_item(filename, id_, group, description='Insert item'):
     query_redo = queries.rules_insert.format(id_)
     query_undo = queries.rules_delete_id.format(id_)
-    
+
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
     cursor.execute(query_redo, ('', ))
     core_api.give_connection(filename, qconn)
-    
+
     core_api.insert_history(filename, group, id_, 'rules_insert', description,
                             query_redo, '', query_undo, '')
 
@@ -99,39 +112,39 @@ def update_item_rules(filename, id_, rules, group,
     else:
         qrules = rules
         rules = string_to_rules(rules)
-    
+
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
     cursor.execute(queries.rules_select_id, (id_, ))
     sel = cursor.fetchone()
-    
+
     if sel:
         unqrules = sel['R_rules']
     else:
         unqrules = ''
-    
+
     query_redo = queries.rules_update_id.format(str(id_))
     query_undo = queries.rules_update_id.format(str(id_))
-    
+
     cursor.execute(query_redo, (qrules, ))
-    
+
     core_api.give_connection(filename, qconn)
-    
+
     core_api.insert_history(filename, group, id_, 'rules_update', description,
                             query_redo, qrules, query_undo, unqrules)
-    
+
     update_item_rules_event.signal(filename=filename, id_=id_)
 
 
 def copy_item_rules(filename, id_):
     record = [id_, ]
-    
+
     conn = core_api.get_connection(filename)
     cur = conn.cursor()
     cur.execute(queries.rules_select_id, (id_, ))
     record.extend(cur.fetchone())
     core_api.give_connection(filename, conn)
-    
+
     mem = core_api.get_memory_connection()
     curm = mem.cursor()
     curm.execute(queries.copyrules_insert, record)
@@ -143,7 +156,7 @@ def paste_item_rules(filename, id_, oldid, group, description):
     curm = mem.cursor()
     curm.execute(queries.copyrules_select_id, (oldid, ))
     core_api.give_memory_connection(mem)
-    
+
     update_item_rules(filename, id_, curm.fetchone()['CR_rules'], group,
                       description)
 
@@ -151,22 +164,22 @@ def paste_item_rules(filename, id_, oldid, group, description):
 def delete_item_rules(filename, id_, group, description='Delete item rules'):
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
-    
+
     cursor.execute(queries.rules_select_id, (id_, ))
     sel = cursor.fetchone()
-    
+
     if sel:
         current_rules = sel['R_rules']
     else:
         current_rules = ''
-    
+
     query_redo = queries.rules_delete_id.format(id_)
     query_undo = queries.rules_insert.format(id_)
-    
+
     cursor.execute(query_redo)
-    
+
     core_api.give_connection(filename, qconn)
-    
+
     return core_api.insert_history(filename, group, id_, 'rules_delete',
                                    description, query_redo, '', query_undo,
                                    current_rules)
@@ -178,7 +191,7 @@ def get_item_rules(filename, id_):
     cursor.execute(queries.rules_select_id, (id_, ))
     row = cursor.fetchone()
     core_api.give_connection(filename, qconn)
-    
+
     if row:
         return string_to_rules(row['R_rules'])
     else:
@@ -194,7 +207,7 @@ def rules_to_string(rules):
                 sub = ':'.join((key, str(rule[key])))
                 string = ''.join((string, sub, ';'))
             string = ''.join((string, '|'))
-    
+
     return string
 
 
@@ -212,7 +225,7 @@ def string_to_rules(string):
                 # by rules_to_string()
                 if spl[0]:
                     rules[i][spl[0]] = spl[1]
-    
+
     # The last element is empty due to how the string is formatted by
     # rules_to_string()
     return rules[:-1]
@@ -220,7 +233,7 @@ def string_to_rules(string):
 
 def get_occurrences(mint, maxt):
     tempoccs = TempOccurrences(mint, maxt)
-    
+
     for filename in core_api.get_open_databases():
         for id_ in core_api.get_items(filename):
             rules = get_item_rules(filename, id_)
@@ -228,22 +241,22 @@ def get_occurrences(mint, maxt):
                 get_occurrences_event.signal(mint=mint, maxt=maxt,
                                              filename=filename, id_=id_,
                                              rule=rule, tempoccs=tempoccs)
-    
+
     # Get alarms after all occurrences, to avoid except rules
     for filename in core_api.get_open_databases():
         get_alarms_event.signal(mint=mint, maxt=maxt, filename=filename,
                                 tempoccs=tempoccs)
-    
+
     d = tempoccs.get_dict()
     tempoccsl = []
     for f in d:
         for i in d[f]:
             for o in d[f][i]:
                 tempoccsl.append(o)
-    
+
     def compare(i):
         return i['start']
-    
+
     tempoccsl.sort(key=compare)
-    
+
     return tempoccsl

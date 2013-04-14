@@ -38,15 +38,15 @@ class Alarms():
     def __init__(self):
         self.alarms = {}
         self.next = None
-    
+
     def add(self, last_search, alarm):
         filename = alarm['filename']
         id_ = alarm['id_']
-        
+
         tl = [alarm['start'], alarm['end'], alarm['alarm']]
         # Sort alarm, start, end (None values are always put first)
         tl.sort()
-        
+
         if self.next:
             if alarm['alarm'] == self.next or alarm['start'] == self.next or \
                                                      alarm['end'] == self.next:
@@ -72,30 +72,29 @@ class Alarms():
                     return True
             else:
                 return False
-    
+
     def except_(self, filename, id_, start, end, inclusive):
-        if self.has_alarms():
-            for alarm in self.alarms[filename][id_][:]:
+        # Test if the item has some rules, for safety, also for coherence with
+        # organizer.items.TempOccurrences.except_
+        try:
+            alarmsc = self.alarms[filename][id_][:]
+        except KeyError:
+            pass
+        else:
+            for alarm in alarmsc:
                 if start <= alarm['start'] <= end or \
                        (inclusive and alarm['start'] <= start <= alarm['end']):
                     self.alarms[filename][id_].remove(alarm)
         # Do not reset self.next to None in case there are no alarms left: this
         # lets restart_timer, and consequently search_alarms, ignore the
         # excepted alarms at the following search
-    
-    def has_alarms(self):
-        for f in self.alarms:
-            for i in self.alarms[f]:
-                for o in self.alarms[f][i]:
-                    return True
-        return False
-    
+
     def get_dict(self):
         return self.alarms
-    
+
     def get_next_alarm(self):
         return self.next
-    
+
     def get_time_span(self):
         minstart = None
         maxend = None
@@ -115,11 +114,11 @@ def search_alarms():
     #def search_alarms(filename=None, id_=None):
     filename = None
     id_ = None
-    
+
     log.debug('Search alarms')
-    
+
     alarms = Alarms()
-    
+
     if filename is None:
         for filename in core_api.get_open_databases():
             last_search = get_last_search(filename)
@@ -132,9 +131,9 @@ def search_alarms():
     else:
         last_search = get_last_search(filename)
         search_item_alarms(last_search, filename, id_, alarms)
-    
+
     oldalarms = get_snoozed_alarms(alarms)
-    
+
     restart_timer(oldalarms, alarms.get_next_alarm(), alarms.get_dict())
 
 
@@ -147,26 +146,26 @@ def search_item_alarms(last_search, filename, id_, alarms):
 
 def get_snoozed_alarms(alarms):
     oldalarms = {}
-    
+
     for filename in core_api.get_open_databases():
         conn = core_api.get_connection(filename)
         cur = conn.cursor()
         cur.execute(queries.alarms_select_alarms)
         core_api.give_connection(filename, conn)
-        
+
         last_search = get_last_search(filename)
-        
+
         for row in cur:
             itemid = row['A_item']
             snooze = row['A_snooze']
-            
+
             alarmd = {'filename': filename,
                       'id_': itemid,
                       'alarmid': row['A_id'],
                       'start': row['A_start'],
                       'end': row['A_end'],
                       'alarm': snooze}
-            
+
             # For safety, also check that there aren't any alarms with snooze
             # <= last_search left (for example this may happen if an alarms is
             # temporarily undone together with its item, and then it's restored
@@ -179,7 +178,7 @@ def get_snoozed_alarms(alarms):
                 if itemid not in oldalarms[filename]:
                     oldalarms[filename][itemid] = []
                 oldalarms[filename][itemid].append(alarmd)
-    
+
     return oldalarms
 
 
@@ -188,17 +187,17 @@ def get_alarms(mint, maxt, filename, tempoccs):
     cur = conn.cursor()
     cur.execute(queries.alarms_select_alarms)
     core_api.give_connection(filename, conn)
-    
+
     for row in cur:
         snooze = row['A_snooze']
-        
+
         alarmd = {'filename': filename,
                   'id_': row['A_item'],
                   'alarmid': row['A_id'],
                   'start': row['A_start'],
                   'end': row['A_end'],
                   'alarm': snooze}
-        
+
         # Always add active (but not snoozed) alarms if time interval includes
         # current time
         if snooze == None and mint <= int(_time.time()) <= maxt:
@@ -219,18 +218,18 @@ def get_last_search(filename):
     cur = conn.cursor()
     cur.execute(queries.alarmsproperties_select_search)
     core_api.give_connection(filename, conn)
-    
+
     return cur.fetchone()['AP_last_search']
 
 
 def restart_timer(oldalarms, next_alarm, alarmsd):
     cancel_timer()
-    
+
     now = int(_time.time())
-    
+
     if oldalarms:
         occurrences.activate_alarms(now, oldalarms, old=True)
-    
+
     if next_alarm != None:
         if next_alarm <= now:
             occurrences.activate_alarms(next_alarm, alarmsd)
@@ -240,7 +239,7 @@ def restart_timer(oldalarms, next_alarm, alarmsd):
             global timer
             timer = Timer(next_loop, activate_alarms, (next_alarm, alarmsd, ))
             timer.start()
-            
+
             log.debug('Timer refresh: {}'.format(next_loop))
 
 
@@ -252,8 +251,8 @@ def cancel_timer(kwargs=None):
 
 def activate_alarms(time, alarmsd):
     core_api.block_databases()
-    
+
     occurrences.activate_alarms(time, alarmsd)
     search_alarms()
-    
+
     core_api.release_databases()
