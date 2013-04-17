@@ -41,19 +41,19 @@ class AutoListView(wx.ListView, ListCtrlAutoWidthMixin):
 
 
 class TaskList():
-    list = None
+    list_ = None
     occs = None
 
     def __init__(self, parent):
-        self.list = AutoListView(parent)
+        self.list_ = AutoListView(parent)
 
         self.occs = {}
 
-        self.list.InsertColumn(0, 'Database', width=80)
-        self.list.InsertColumn(1, 'Title', width=200)
-        self.list.InsertColumn(2, 'Start', width=120)
-        self.list.InsertColumn(3, 'End', width=120)
-        self.list.InsertColumn(4, 'Alarm', width=120)
+        self.list_.InsertColumn(0, 'Database', width=80)
+        self.list_.InsertColumn(1, 'Title', width=200)
+        self.list_.InsertColumn(2, 'Start', width=120)
+        self.list_.InsertColumn(3, 'End', width=120)
+        self.list_.InsertColumn(4, 'Alarm', width=120)
 
         self.refresh()
 
@@ -86,13 +86,18 @@ class TaskList():
         log.debug('Tasklist refresh')
 
         self.occs = {}
-        self.list.DeleteAllItems()
+        self.list_.DeleteAllItems()
 
         if t == None:
             # Always round down to the previous second
             t = int(_time.time()) - 1
 
         occurrences = organizer_api.get_occurrences(mint=t, maxt=t + dt)
+
+        def compare(c):
+            return c['start']
+
+        occurrences.sort(key=compare)
 
         if max:
             occurrences = occurrences[:max]
@@ -109,11 +114,9 @@ class TaskList():
             fname = os.path.basename(filename)
             text = core_api.get_item_text(filename, id_)
             title = ListItem.make_heading(text)
-            startdate = _time.strftime('%Y.%m.%d %H:%M',
-                                       _time.localtime(start))
+            startdate = _time.strftime('%Y.%m.%d %H:%M', _time.localtime(start))
             if isinstance(end, int):
-                enddate = _time.strftime('%Y.%m.%d %H:%M',
-                                         _time.localtime(end))
+                enddate = _time.strftime('%Y.%m.%d %H:%M', _time.localtime(end))
             else:
                 enddate = 'none'
             if isinstance(alarm, int):
@@ -122,11 +125,11 @@ class TaskList():
             else:
                 alarmdate = 'none'
 
-            index = self.list.InsertStringItem(sys.maxint, fname)
-            self.list.SetStringItem(index, 1, title)
-            self.list.SetStringItem(index, 2, startdate)
-            self.list.SetStringItem(index, 3, enddate)
-            self.list.SetStringItem(index, 4, alarmdate)
+            index = self.list_.InsertStringItem(sys.maxint, fname)
+            self.list_.SetStringItem(index, 1, title)
+            self.list_.SetStringItem(index, 2, startdate)
+            self.list_.SetStringItem(index, 3, enddate)
+            self.list_.SetStringItem(index, 4, alarmdate)
 
 
 class ListItem():
@@ -150,4 +153,4 @@ class ListItem():
 
 def main():
     nb = wxgui_api.get_right_nb()
-    wxgui_api.add_plugin_to_right_nb(TaskList(nb).list, 'List', close=False)
+    wxgui_api.add_plugin_to_right_nb(TaskList(nb).list_, 'List', close=False)

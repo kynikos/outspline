@@ -254,9 +254,6 @@ def get_occurrences(mint, maxt):
             for o in d[f][i]:
                 tempoccsl.append(o)
 
-    def compare(i):
-        return i['start']
-
-    tempoccsl.sort(key=compare)
-
+    # Note that the list is practically unsorted: sorting its items is a duty
+    # of the interface
     return tempoccsl
