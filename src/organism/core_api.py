@@ -187,7 +187,7 @@ def get_items(filename):
     itemsl = []
     for i in items.items:
         if items.items[i].get_filename() == filename:
-            itemsl.append(int(items.items[i].get_id()))
+            itemsl.append(items.items[i].get_id())
     return itemsl
 
 
@@ -196,7 +196,7 @@ def get_items_count():
 
 
 def get_item_info(filename, id_):
-    return items.items[items.Item.make_itemid(filename, id_)].get_all()
+    return items.items[items.Item.make_itemid(filename, id_)].get_all_info()
 
 
 def get_item_text(filename, id_):

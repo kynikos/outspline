@@ -195,7 +195,7 @@ class Database(wx.SplitterWindow):
                                                                 id_))
 
         if not data:
-            data = wx.TreeItemData(int(id_))
+            data = wx.TreeItemData(id_)
 
         if id_ == None:
             id_ = data.GetData()

@@ -194,7 +194,7 @@ class DBHistory():
         self.connection.give(qconn)
 
         filename = self.filename
-        item = items.Item.make_itemid(filename, str(itemid))
+        item = items.Item.make_itemid(filename, itemid)
 
         if (action == 'undo' and type_ == 'insert') or (action == 'redo' and
                                                             type_ == 'delete'):

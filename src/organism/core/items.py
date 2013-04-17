@@ -125,8 +125,8 @@ class Item():
             qtext = ''
             unqtext = ''
 
-        query_redo = queries.items_update_id.format(', '.join(set), str(id_))
-        query_undo = queries.items_update_id.format(', '.join(unset), str(id_))
+        query_redo = queries.items_update_id.format(', '.join(set), id_)
+        query_undo = queries.items_update_id.format(', '.join(unset), id_)
 
         if text != None:
             cursor.execute(query_redo, (qtext, ))
@@ -263,14 +263,14 @@ class Item():
 
         return children
 
-    def get_all(self):
+    def get_all_info(self):
         qconn = databases.dbs[self.filename].connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id, (self.id_, ))
         databases.dbs[self.filename].connection.give(qconn)
         row = cursor.fetchone()
         if row:
-            return {'id_': int(self.id_),
+            return {'id_': self.id_,
                     'parent': row['I_parent'],
                     'previous': row['I_previous'],
                     'text': row['I_text']}

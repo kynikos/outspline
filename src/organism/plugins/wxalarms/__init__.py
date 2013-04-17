@@ -189,7 +189,7 @@ class AlarmsWindow():
             alarmst.append((self.alarms[a].get_filename(),
                             self.alarms[a].get_alarmid()))
         organizer_alarms_api.snooze_alarms(alarmst,
-                                                  stime=self.get_snooze_time())
+                                                   stime=self.get_snooze_time())
         # Let the alarm off event close the alarms
 
         core_api.release_databases()
@@ -200,7 +200,7 @@ class AlarmsWindow():
             aitem = self.alarms[a].get_id()
             aid = self.alarms[a].get_alarmid()
             if filename in (afilename, None) and id_ in (aitem, None) and \
-                                                        alarmid in (aid, None):
+                                                         alarmid in (aid, None):
                 self.alarms[a].close()
 
     def handle_close_db(self, kwargs):

@@ -120,8 +120,8 @@ def update_item_rules(filename, id_, rules, group,
     # The query should always return a result, so sel should never be None
     unrules = sel['R_rules']
 
-    query_redo = queries.rules_update_id.format(str(id_))
-    query_undo = queries.rules_update_id.format(str(id_))
+    query_redo = queries.rules_update_id.format(id_)
+    query_undo = queries.rules_update_id.format(id_)
 
     cursor.execute(query_redo, (rules, ))
 
