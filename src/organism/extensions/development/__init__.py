@@ -33,7 +33,7 @@ populate_tree_event = Event()
 def print_db():
     print('databases: {}'.format(core_api.get_databases_count()))
     print('items: {}'.format(core_api.get_items_count()))
-    
+
     for filename in core_api.get_open_databases():
         print('--- {} ---'.format(_os.path.basename(filename)))
         print('--- properties ---')
@@ -68,7 +68,7 @@ def print_db():
             print("id|del_id|item|start|end|alarm|snooze")
             for i in organizer_alarms_api.select_alarms_table(filename):
                 print(tuple(i))
-    
+
     if copypaste_api:
         print('--- copy ---')
         print("id|parent|previous|text")
@@ -90,19 +90,25 @@ def print_db():
 def populate_tree(filename):
     group = core_api.get_next_history_group(filename)
     description = 'Populate tree'
-    
+
     treeitems = []
     i = 0
     while i < 10:
         dbitems = core_api.get_items(filename)
-        itemid = random.choice(dbitems)
-        
+
+        try:
+            itemid = random.choice(dbitems)
+        except IndexError:
+            # No items in the database yet
+            itemid = 0
+
         mode = random.choice(('child', 'sibling'))
-        
+
         if mode == 'sibling' and itemid == 0:
             continue
+
         i += 1
-        
+
         text = ''
         words = ('the quick brown fox jumps over the lazy dog ' * 6
                  ).split()
@@ -112,7 +118,7 @@ def populate_tree(filename):
             text = ''.join((text, random.choice(words),
                             random.choice(seps)))
         text = ''.join((text, random.choice(words))).capitalize()
-        
+
         rules = []
         for n in range(random.randint(0, 3)):
             start = int((random.gauss(time.time(), 15000)) // 60 * 60)
@@ -123,7 +129,7 @@ def populate_tree(filename):
                           'start': start,
                           'end': end,
                           'ralarm': alarm})
-        
+
         if mode == 'child':
             id_ = core_api.append_item(filename, itemid, group, text=text,
                                        description=description)
@@ -131,15 +137,15 @@ def populate_tree(filename):
             id_ = core_api.insert_item_after(filename, itemid, group,
                                              text=text,
                                              description=description)
-        
+
         if organizer_api:
             organizer_api.update_item_rules(filename, id_, rules, group,
                                              description=description)
-        
+
         treeitems.append({'mode': mode,
                           'filename': filename,
                           'baseid': itemid,
                           'id_': id_,
                           'text': text})
-    
+
     populate_tree_event.signal(treeitems=treeitems)

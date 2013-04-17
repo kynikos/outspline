@@ -66,20 +66,20 @@ class Protection():
     #     set the same group
     q = None
     s = None
-    
+
     def __init__(self):
         baton = True
         self.q = queue.Queue()
         self.q.put(baton)
-    
+
     def block(self):
         log.debug('Block databases')
-        
+
         self.s = self.q.get()
-    
+
     def release(self):
         log.debug('Release databases')
-        
+
         self.q.task_done()
         self.q.join()
         self.q.put(self.s)
@@ -96,33 +96,33 @@ class DBQueue(queue.Queue):
 class MemoryDB(DBQueue):
     def __init__(self):
         DBQueue.__init__(self)
-        
+
         # Enable multi-threading, as the database is protected with a queue
         self.put(_sql.connect(':memory:', check_same_thread=False))  # @UndefinedVariable
-        
+
         qmemory = self.get()
         qmemory.row_factory = _sql.Row  # @UndefinedVariable
         self.give(qmemory)
 
     def exit_(self):
         exit_app_event_1.signal()
-        
+
         qmemory = self.get()
         qmemory.close()
         self.task_done()
         self.join()
-        
+
         exit_app_event_2.signal()
 
 
 class Database(history.DBHistory):
     connection = None
     filename = None
-    
+
     def __init__(self, filename):
         self.connection = DBQueue()
         self.filename = filename
-        
+
         conn = self.connection
         # Enable multi-threading, as the database is protected with a queue
         conn.put(_sql.connect(filename, check_same_thread=False))  # @UndefinedVariable
@@ -131,11 +131,10 @@ class Database(history.DBHistory):
         cursor = qconn.cursor()
         dbitems = cursor.execute(queries.items_select_tree)
         conn.give(qconn)
-        
-        items.Item.add(filename, 0)
+
         for item in dbitems:
             items.Item.add(filename, item['I_id'])
-    
+
     @staticmethod
     def create(filename):
         if filename in dbs:
@@ -151,20 +150,20 @@ class Database(history.DBHistory):
                 raise
             else:
                 db.close()
-                
+
                 conn = _sql.connect(filename)  # @UndefinedVariable
                 cursor = conn.cursor()
-                
+
                 cursor.execute(queries.properties_create)
                 cursor.execute(queries.properties_insert_init,
                                (coreaux_api.get_default_history_limit(), ))
-                
+
                 cursor.execute(queries.compatibility_create)
                 cursor.execute(queries.compatibility_insert, ('Core', 'core',
                                              coreaux_api.get_core_version(), ))
-                
+
                 info = coreaux_api.get_addons_info(disabled=False)
-                
+
                 for ext in info('Extensions').get_sections():
                     cursor.execute(queries.compatibility_insert, ('Extension',
                                       ext, info('Extensions')(ext)['version']))
@@ -174,18 +173,18 @@ class Database(history.DBHistory):
                 for plg in info('Plugins').get_sections():
                     cursor.execute(queries.compatibility_insert, ('Plugin',
                                          plg, info('Plugins')(plg)['version']))
-                
+
                 cursor.execute(queries.items_create)
-                
+
                 cursor.execute(queries.history_create)
-                
+
                 conn.commit()
                 conn.close()
-                
+
                 create_database_event.signal(filename=filename)
-                
+
                 return filename
-        
+
     @classmethod
     def open(cls, filename):
         global dbs
@@ -197,15 +196,15 @@ class Database(history.DBHistory):
             raise exceptions.DatabaseNotValidError()
         else:
             dbs[filename] = cls(filename)
-            
+
             # Reset modified state after instantiating the class, since this
             # signals an event whose handlers might require the object to be
             # already created
             dbs[filename].reset_modified_state()
-            
+
             open_database_event.signal(filename=filename)
             return True
-    
+
     @staticmethod
     def check_compatibility(filename):
         try:
@@ -215,9 +214,9 @@ class Database(history.DBHistory):
         except _sql.DatabaseError:
             qconn.close()
             return False
-        
+
         info = coreaux_api.get_addons_info(disabled=False)
-        
+
         for row in cursor:
             if row[1] == 'Core':
                 if row[3] != coreaux_api.get_core_version():
@@ -257,7 +256,7 @@ class Database(history.DBHistory):
                              len(info('Plugins').get_sections()) == 0):
                 qconn.close()
                 return True
-        
+
         qconn.close()
         return False
 
@@ -268,9 +267,9 @@ class Database(history.DBHistory):
         cursor.execute(queries.history_update_status_old)
         qconn.commit()
         self.connection.give(qconn)
-        
+
         self.reset_modified_state()
-    
+
     def save_copy(self, destination):
         # Of course the original file cannot be simply copied, in fact in that
         # case it should be saved first, and that's not what is expected
@@ -279,62 +278,61 @@ class Database(history.DBHistory):
         qconnd = _sql.connect(destination)
         cursor = qconn.cursor()
         cursord = qconnd.cursor()
-        
+
         cursord.execute(queries.properties_delete)
         cursor.execute(queries.properties_select)
         for row in cursor:
             cursord.execute(queries.properties_insert_copy, tuple(row))
-    
+
         cursord.execute(queries.compatibility_delete)
         cursor.execute(queries.compatibility_select)
         for row in cursor:
             cursord.execute(queries.compatibility_insert_copy, tuple(row))
-        
+
         cursor.execute(queries.items_select)
         for row in cursor:
             cursord.execute(queries.items_insert_copy, tuple(row))
-        
+
         cursor.execute(queries.history_select)
         for row in cursor:
             cursord.execute(queries.history_insert_copy, tuple(row))
-        
+
         cursord.execute(queries.history_update_status_new)
         cursord.execute(queries.history_update_status_old)
-        
+
         self.connection.give(qconn)
-        
+
         qconnd.commit()
         qconnd.close()
-        
+
         save_database_copy_event.signal(origin=self.filename,
                                         destination=destination)
-    
+
     def close(self):
         self.remove()
-        
+
         qconn = self.connection.get()
         qconn.close()
         self.connection.task_done()
         self.connection.join()
-        
+
         close_database_event.signal(filename=self.filename)
 
         # Note that if the database has not been closed correctly, the history
         # is not cleaned
         self.clean_history()
-        
+
         return True
-    
+
     def remove(self):
-        remitems = [items.Item.make_itemid(self.filename, 0)]
-        remitems.extend(items.items[remitems[0]].get_descendants())
-        
-        for item in remitems:
-            items.items[item].remove()
-        
+        for id_ in items.items.copy():
+            item = items.items[id_]
+            if item.get_filename() == self.filename:
+                item.remove()
+
         global dbs
         del dbs[self.filename]
-    
+
     def delete_items(self, dids, group, description='Delete items'):
         while dids:
             for id_ in dids:
@@ -343,5 +341,5 @@ class Database(history.DBHistory):
                 if not items.items[item].has_children():
                     items.items[item].delete(group, description=description)
                     del dids[dids.index(id_)]
-        
+
         delete_items_event.signal()

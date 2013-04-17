@@ -63,36 +63,32 @@ def exit_():
 
 def create_child(filename, baseid, text='New item',
                  description='Create child'):
-    base = items.Item.make_itemid(filename, baseid)
     group = databases.dbs[filename].get_next_history_group()
-    return items.Item.insert(mode='child', base=base, group=group, text=text,
-                             description=description)
+    return items.Item.insert(filename=filename, mode='child', baseid=baseid,
+                             group=group, text=text, description=description)
 
 
 def create_sibling(filename, baseid, text='New item',
                    description='Create sibling'):
-    base = items.Item.make_itemid(filename, baseid)
     group = databases.dbs[filename].get_next_history_group()
-    return items.Item.insert(mode='sibling', base=base, group=group, text=text,
-                             description=description)
+    return items.Item.insert(filename=filename, mode='sibling', baseid=baseid,
+                             group=group, text=text, description=description)
 
 
 def append_item(filename, baseid, group=None, text='New item',
                 description='Insert item'):
-    base = items.Item.make_itemid(filename, baseid)
     if group == None:
         group = databases.dbs[filename].get_next_history_group()
-    return items.Item.insert(mode='child', base=base, group=group, text=text,
-                            description=description)
+    return items.Item.insert(filename=filename, mode='child', baseid=baseid,
+                             group=group, text=text, description=description)
 
 
 def insert_item_after(filename, baseid, group=None, text='New item',
                       description='Insert item'):
-    base = items.Item.make_itemid(filename, baseid)
     if group == None:
         group = databases.dbs[filename].get_next_history_group()
-    return items.Item.insert(mode='sibling', base=base, group=group, text=text,
-                            description=description)
+    return items.Item.insert(filename=filename, mode='sibling', baseid=baseid,
+                             group=group, text=text, description=description)
 
 
 def move_item_up(filename, id_, description='Move item up'):
@@ -184,9 +180,7 @@ def set_modified(filename):
 
 
 def get_tree_item(filename, parent, previous):
-    item = items.items[items.Item.make_itemid(filename, parent
-                                              )].get_tree_item(previous)
-    return item
+    return items.Item.get_tree_item(filename, parent, previous)
 
 
 def get_items(filename):
