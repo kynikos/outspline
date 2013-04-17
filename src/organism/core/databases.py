@@ -123,11 +123,6 @@ class Database(history.DBHistory):
         self.connection = DBQueue()
         self.filename = filename
         
-        # The history is cleaned both when closing the database and when
-        # opening, to make sure it's done even in case the database has not
-        # been closed correctly
-        self.clean_history()
-        
         conn = self.connection
         # Enable multi-threading, as the database is protected with a queue
         conn.put(_sql.connect(filename, check_same_thread=False))  # @UndefinedVariable
@@ -277,9 +272,9 @@ class Database(history.DBHistory):
         self.reset_modified_state()
     
     def save_copy(self, destination):
-        # Of course we cannot simply copy the original file, in fact it should
-        # be saved first, and that's not what is expected
-        
+        # Of course the original file cannot be simply copied, in fact in that
+        # case it should be saved first, and that's not what is expected
+
         qconn = self.connection.get()
         qconnd = _sql.connect(destination)
         cursor = qconn.cursor()
@@ -323,10 +318,9 @@ class Database(history.DBHistory):
         self.connection.join()
         
         close_database_event.signal(filename=self.filename)
-        
-        # The history is cleaned both when closing the database and when
-        # opening, to make sure it's done even in case the database has not
-        # been closed correctly
+
+        # Note that if the database has not been closed correctly, the history
+        # is not cleaned
         self.clean_history()
         
         return True
