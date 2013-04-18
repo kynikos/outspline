@@ -78,9 +78,6 @@ class Database(wx.SplitterWindow):
         self.hpanel.Show(False)
         self.Initialize(self.treec)
 
-        if history.is_shown():
-            self.show_history()
-
         self.create()
 
         self.accels = [(wx.ACCEL_SHIFT | wx.ACCEL_CTRL, ord('s'),
@@ -185,8 +182,17 @@ class Database(wx.SplitterWindow):
         nb_left = wx.GetApp().nb_left
         global dbs
         dbs[filename] = cls(filename, nb_left)
+
         nb_left.add_page(dbs[filename], os.path.basename(filename),
                          select=True)
+
+        # The history panel must be shown only *after* adding the page to the
+        # notebook, otherwise *for*some*reason* the databases opened
+        # automatically by the wxsession plugin (those opened manually aren't
+        # affected) will have the sash of the SplitterWindow not correctly
+        # positioned (only if using SetSashGravity)
+        if history.is_shown():
+            dbs[filename].show_history()
 
     def insert_item(self, base, mode, label=None, data=None, id_=None):
         # The empty string is a valid label
@@ -318,7 +324,7 @@ class Database(wx.SplitterWindow):
         self.SetSashGravity(1.0)
 
         # The same workaround for http://trac.wxwidgets.org/ticket/9821
-        # (self.SendSizeEvent()) used in rootw, here sets sash position to
+        # (self.SendSizeEvent()) used in rootw, here would set sash position to
         # min pane size
 
         self.SetSashPosition(-80)
