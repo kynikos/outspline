@@ -32,10 +32,10 @@ populate_tree_event = Event()
 
 def print_db():
     print('databases: {}'.format(core_api.get_databases_count()))
-    print('items: {}'.format(core_api.get_items_count()))
 
     for filename in core_api.get_open_databases():
         print('--- {} ---'.format(_os.path.basename(filename)))
+        print('items: {}'.format(core_api.get_items_count(filename)))
         print('--- properties ---')
         print("id|core_version|max_history")
         for i in core_api.select_properties_table(filename):

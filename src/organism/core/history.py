@@ -194,11 +194,10 @@ class DBHistory():
         self.connection.give(qconn)
 
         filename = self.filename
-        item = items.Item.make_itemid(filename, itemid)
 
         if (action == 'undo' and type_ == 'insert') or (action == 'redo' and
                                                             type_ == 'delete'):
-            items.items[item].remove()
+            self.items[itemid].remove()
 
             history_remove_event.signal(filename=filename, id_=itemid, hid=hid)
         elif type_ in ('insert', 'update', 'delete'):
@@ -216,7 +215,9 @@ class DBHistory():
 
             if (action == 'undo' and type_ == 'delete') or \
                                       (action == 'redo' and type_ == 'insert'):
-                items.Item.add(item=item)
+                self.items[itemid] = items.Item(database=self,
+                                                filename=filename,
+                                                id_=itemid)
 
                 history_insert_event.signal(filename=filename, id_=itemid,
                                             parent=select['I_parent'],

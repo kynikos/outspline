@@ -118,10 +118,12 @@ class MemoryDB(DBQueue):
 class Database(history.DBHistory):
     connection = None
     filename = None
+    items = None
 
     def __init__(self, filename):
         self.connection = DBQueue()
         self.filename = filename
+        self.items = {}
 
         conn = self.connection
         # Enable multi-threading, as the database is protected with a queue
@@ -133,7 +135,9 @@ class Database(history.DBHistory):
         conn.give(qconn)
 
         for item in dbitems:
-            items.Item.add(filename, item['I_id'])
+            self.items[item['I_id']] = items.Item(database=self,
+                                                  filename=filename,
+                                                  id_=item['I_id'])
 
     @staticmethod
     def create(filename):
@@ -325,8 +329,8 @@ class Database(history.DBHistory):
         return True
 
     def remove(self):
-        for id_ in items.items.copy():
-            item = items.items[id_]
+        for id_ in self.items.copy():
+            item = self.items[id_]
             if item.get_filename() == self.filename:
                 item.remove()
 
@@ -336,10 +340,9 @@ class Database(history.DBHistory):
     def delete_items(self, dids, group, description='Delete items'):
         while dids:
             for id_ in dids:
-                item = items.Item.make_itemid(self.filename, id_)
                 # First delete the items without children
-                if not items.items[item].has_children():
-                    items.items[item].delete(group, description=description)
+                if not self.items[id_].has_children():
+                    self.items[id_].delete(group, description=description)
                     del dids[dids.index(id_)]
 
         delete_items_event.signal()

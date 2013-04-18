@@ -93,30 +93,28 @@ def insert_item_after(filename, baseid, group=None, text='New item',
 
 def move_item_up(filename, id_, description='Move item up'):
     group = databases.dbs[filename].get_next_history_group()
-    return items.items[items.Item.make_itemid(filename, id_)
-                      ].shift(mode='up', group=group, description=description)
+    return databases.dbs[filename].items[id_].shift(mode='up', group=group,
+                                                        description=description)
 
 
 def move_item_down(filename, id_, description='Move item down'):
     group = databases.dbs[filename].get_next_history_group()
-    return items.items[items.Item.make_itemid(filename, id_)
-                      ].shift(mode='down', group=group,
-                              description=description)
+    return databases.dbs[filename].items[id_].shift(mode='down', group=group,
+                                                        description=description)
 
 
 def move_item_to_parent(filename, id_, description='Move item to parent'):
     group = databases.dbs[filename].get_next_history_group()
-    return items.items[items.Item.make_itemid(filename, id_)
-                      ].shift(mode='parent', group=group,
-                              description=description)
+    return databases.dbs[filename].items[id_].shift(mode='parent', group=group,
+                                                        description=description)
 
 
 def update_item_text(filename, id_, text, group=None,
                      description='Update item text'):
     if group == None:
         group = databases.dbs[filename].get_next_history_group()
-    return items.items[items.Item.make_itemid(filename, id_)
-                      ].update(group, description=description, text=text)
+    return databases.dbs[filename].items[id_].update(group,
+                                             description=description, text=text)
 
 
 def insert_history(filename, group, id_, type, description, query_redo,
@@ -184,23 +182,19 @@ def get_tree_item(filename, parent, previous):
 
 
 def get_items(filename):
-    itemsl = []
-    for i in items.items:
-        if items.items[i].get_filename() == filename:
-            itemsl.append(items.items[i].get_id())
-    return itemsl
+    return databases.dbs[filename].items.keys()
 
 
-def get_items_count():
-    return len(items.items)
+def get_items_count(filename):
+    return len(databases.dbs[filename].items)
 
 
 def get_item_info(filename, id_):
-    return items.items[items.Item.make_itemid(filename, id_)].get_all_info()
+    return databases.dbs[filename].items[id_].get_all_info()
 
 
 def get_item_text(filename, id_):
-    return items.items[items.Item.make_itemid(filename, id_)].get_text()
+    return databases.dbs[filename].items[id_].get_text()
 
 
 def get_history_descriptions(filename):
