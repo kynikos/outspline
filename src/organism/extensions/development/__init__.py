@@ -23,9 +23,7 @@ import time
 import organism.coreaux_api as coreaux_api
 from organism.coreaux_api import Event
 import organism.core_api as core_api
-copypaste_api = coreaux_api.import_extension_api('copypaste')
 organizer_api = coreaux_api.import_extension_api('organizer')
-organizer_alarms_api = coreaux_api.import_extension_api('organizer_alarms')
 
 populate_tree_event = Event()
 
@@ -36,53 +34,18 @@ def print_db():
     for filename in core_api.get_open_databases():
         print('--- {} ---'.format(_os.path.basename(filename)))
         print('items: {}'.format(core_api.get_items_count(filename)))
-        print('--- properties ---')
-        print("id|core_version|max_history")
-        for i in core_api.select_properties_table(filename):
-            print(tuple(i))
-        print('--- compatibility ---')
-        print("id|type|addon|version")
-        for i in core_api.select_compatibility_table(filename):
-            print(tuple(i))
-        print('--- items ---')
-        print("id|parent|previous|text")
-        for i in core_api.select_items_table(filename):
-            print(tuple(i))
-        print('--- history ---')
-        print("id|group|status|item|type|description|redo|redo_text|undo|"
-              "undo_text")
-        for i in core_api.select_history_table(filename):
-            print(tuple(i))
-        if organizer_api:
-            print('--- rules ---')
-            print("id|rules")
-            for i in organizer_api.select_rules_table(filename):
-                print(tuple(i))
-        if organizer_alarms_api:
-            print('--- alarmsproperties ---')
-            print("id|last_search")
-            for i in organizer_alarms_api.select_alarmsproperties_table(
-                                                                     filename):
-                print(tuple(i))
-            print('--- alarms ---')
-            print("id|del_id|item|start|end|alarm|snooze")
-            for i in organizer_alarms_api.select_alarms_table(filename):
+        for table in core_api.select_all_table_names(filename):
+            print('--- ' + table[0] + ' ---')
+            cur = core_api.select_table(filename, table[0])
+            print('|'.join([field[0] for field in cur.description]))
+            for i in cur:
                 print(tuple(i))
 
-    if copypaste_api:
-        print('--- copy ---')
-        print("id|parent|previous|text")
-        for i in copypaste_api.select_copy_table():
-            print(tuple(i))
-    if organizer_api:
-        print('--- copyrules ---')
-        print("id|rules")
-        for i in organizer_api.select_copyrules_table():
-            print(tuple(i))
-    if organizer_alarms_api:
-        print('--- copyrules ---')
-        print("id|del_id|item|start|end|alarm|snooze")
-        for i in organizer_alarms_api.select_copyalarms_table():
+    for table in core_api.select_all_memory_table_names():
+        print('--- ' + table[0] + ' ---')
+        cur = core_api.select_memory_table(table[0])
+        print('|'.join([field[0] for field in cur.description]))
+        for i in cur:
             print(tuple(i))
     print('======================================')
 

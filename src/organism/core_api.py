@@ -201,34 +201,34 @@ def get_history_descriptions(filename):
     return databases.dbs[filename].get_history_descriptions()
 
 
-def select_properties_table(filename):
+def select_all_memory_table_names():
+    qconn = databases.memory.get()
+    cur = qconn.cursor()
+    cur.execute(queries.master_select_tables)
+    databases.memory.give(qconn)
+    return cur
+
+
+def select_all_table_names(filename):
     qconn = databases.dbs[filename].connection.get()
     cur = qconn.cursor()
-    cur.execute(queries.properties_select)
+    cur.execute(queries.master_select_tables)
     databases.dbs[filename].connection.give(qconn)
     return cur
 
 
-def select_compatibility_table(filename):
-    qconn = databases.dbs[filename].connection.get()
+def select_memory_table(table):
+    qconn = databases.memory.get()
     cur = qconn.cursor()
-    cur.execute(queries.compatibility_select)
-    databases.dbs[filename].connection.give(qconn)
+    cur.execute(queries.master_select_table.format(table))
+    databases.memory.give(qconn)
     return cur
 
 
-def select_items_table(filename):
+def select_table(filename, table):
     qconn = databases.dbs[filename].connection.get()
     cur = qconn.cursor()
-    cur.execute(queries.items_select)
-    databases.dbs[filename].connection.give(qconn)
-    return cur
-
-
-def select_history_table(filename):
-    qconn = databases.dbs[filename].connection.get()
-    cur = qconn.cursor()
-    cur.execute(queries.history_select)
+    cur.execute(queries.master_select_table.format(table))
     databases.dbs[filename].connection.give(qconn)
     return cur
 

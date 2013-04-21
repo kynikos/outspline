@@ -21,22 +21,6 @@ import organism.core_api as core_api
 from organizer import queries, items
 
 
-def select_rules_table(filename):
-    qconn = core_api.get_connection(filename)
-    cur = qconn.cursor()
-    cur.execute(queries.rules_select)
-    core_api.give_connection(filename, qconn)
-    return cur
-
-
-def select_copyrules_table():
-    qmemory = core_api.get_memory_connection()
-    cur = qmemory.cursor()
-    cur.execute(queries.copyrules_select)
-    core_api.give_memory_connection(qmemory)
-    return cur
-
-
 def update_item_rules(filename, id_, rules, group,
                       description='Update item rules'):
     return items.update_item_rules(filename, id_, rules, group,

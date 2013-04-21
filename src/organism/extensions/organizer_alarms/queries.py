@@ -76,8 +76,6 @@ copyalarms_create = ("CREATE TABLE CopyAlarms (CA_id INTEGER, "
                                               "CA_alarm INTEGER, "
                                               "CA_snooze INTEGER)")
 
-copyalarms_select = 'SELECT * FROM CopyAlarms'
-
 copyalarms_select_id = ('SELECT CA_id, CA_start, CA_end, CA_alarm, CA_snooze '
                         'FROM CopyAlarms WHERE CA_item=?')
 

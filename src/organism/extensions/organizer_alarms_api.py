@@ -21,30 +21,6 @@ import organism.core_api as core_api
 from organizer_alarms import queries, timer, occurrences
 
 
-def select_alarmsproperties_table(filename):
-    qconn = core_api.get_connection(filename)
-    cur = qconn.cursor()
-    cur.execute(queries.alarmsproperties_select)
-    core_api.give_connection(filename, qconn)
-    return cur
-
-
-def select_alarms_table(filename):
-    qconn = core_api.get_connection(filename)
-    cur = qconn.cursor()
-    cur.execute(queries.alarms_select)
-    core_api.give_connection(filename, qconn)
-    return cur
-
-
-def select_copyalarms_table():
-    qmemory = core_api.get_memory_connection()
-    cur = qmemory.cursor()
-    cur.execute(queries.copyalarms_select)
-    core_api.give_memory_connection(qmemory)
-    return cur
-
-
 def snooze_alarms(alarmst, stime):
     occurrences.snooze_alarms(alarmst, stime)
 

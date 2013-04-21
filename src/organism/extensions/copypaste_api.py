@@ -30,7 +30,7 @@ def cut_items(filename, citems, description='Cut items'):
 
 def copy_items(filename, citems):
     return copypaste.copy_items(filename, citems)
-    
+
 
 def paste_items_as_children(filename, baseid, description='Paste as children'):
     group = core_api.get_next_history_group(filename)
@@ -46,14 +46,6 @@ def paste_items_as_siblings(filename, baseid, description='Paste as siblings'):
 
 def has_copied_items(filename):
     return copypaste.has_copied_items(filename)
-
-
-def select_copy_table():
-    qmemory = core_api.get_memory_connection()
-    cur = qmemory.cursor()
-    cur.execute(queries.copy_select)
-    core_api.give_memory_connection(qmemory)
-    return cur
 
 
 def bind_to_copy_items(handler, bind=True):
