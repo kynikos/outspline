@@ -10,8 +10,7 @@ license=('GPL3')
 depends=('wxpython'
          'python2-configfile'
          'python2-texthistory'
-         'python2-plural'
-         'python2-loggingext')
+         'python2-plural')
 optdepends=('organism-organizer: adds personal organizer capabilities'
             'organism-development: development tools for beta testers')
 install="$pkgname.install"
