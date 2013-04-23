@@ -165,21 +165,11 @@ class Rule():
         end = kwargs['rule']['end']
         inclusive = kwargs['rule']['inclusive']
 
-        start = int(start)
-        end = int(end)
-
-        if inclusive == 'True':
-            inclusive = True
-        else:
-            inclusive = False
-
         cls.create_rule(filename=kwargs['filename'], id_=kwargs['id_'],
                         start=start, end=end, inclusive=inclusive)
 
     @staticmethod
     def create_rule(filename, id_, start, end, inclusive):
-        start = int(start)
-        end = int(end)
         label = ' '.join(('Except', _time.strftime('from %a %d %b %Y at %H:%M',
                            _time.localtime(start)),
                            _time.strftime('until %a %d %b %Y at %H:%M',

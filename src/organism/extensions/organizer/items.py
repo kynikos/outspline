@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+
 from organism.coreaux_api import Event
 import organism.core_api as core_api
 
@@ -98,7 +100,7 @@ def insert_item(filename, id_, group, description='Insert item'):
 
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
-    cursor.execute(query_redo, ('', ))
+    cursor.execute(query_redo, (rules_to_string([]), ))
     core_api.give_connection(filename, qconn)
 
     core_api.insert_history(filename, group, id_, 'rules_insert', description,
@@ -108,30 +110,25 @@ def insert_item(filename, id_, group, description='Insert item'):
 def update_item_rules(filename, id_, rules, group,
                       description='Update item rules'):
     if isinstance(rules, list):
-        qrules = rules_to_string(rules)
-    else:
-        qrules = rules
-        rules = string_to_rules(rules)
+        rules = rules_to_string(rules)
 
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
     cursor.execute(queries.rules_select_id, (id_, ))
     sel = cursor.fetchone()
 
-    if sel:
-        unqrules = sel['R_rules']
-    else:
-        unqrules = ''
+    # The query should always return a result, so sel should never be None
+    unrules = sel['R_rules']
 
     query_redo = queries.rules_update_id.format(str(id_))
     query_undo = queries.rules_update_id.format(str(id_))
 
-    cursor.execute(query_redo, (qrules, ))
+    cursor.execute(query_redo, (rules, ))
 
     core_api.give_connection(filename, qconn)
 
     core_api.insert_history(filename, group, id_, 'rules_update', description,
-                            query_redo, qrules, query_undo, unqrules)
+                            query_redo, rules, query_undo, unrules)
 
     update_item_rules_event.signal(filename=filename, id_=id_)
 
@@ -168,10 +165,8 @@ def delete_item_rules(filename, id_, group, description='Delete item rules'):
     cursor.execute(queries.rules_select_id, (id_, ))
     sel = cursor.fetchone()
 
-    if sel:
-        current_rules = sel['R_rules']
-    else:
-        current_rules = ''
+    # The query should always return a result, so sel should never be None
+    current_rules = sel['R_rules']
 
     query_redo = queries.rules_delete_id.format(id_)
     query_undo = queries.rules_insert.format(id_)
@@ -192,43 +187,19 @@ def get_item_rules(filename, id_):
     row = cursor.fetchone()
     core_api.give_connection(filename, qconn)
 
-    if row:
-        return string_to_rules(row['R_rules'])
-    else:
-        return {}
+    # The query should always return a result, so row should never be None
+    return string_to_rules(row['R_rules'])
 
 
 def rules_to_string(rules):
-    string = ''
-    # It's possible that rules arrives here as None
-    if rules:
-        for rule in rules:
-            for key in rule:
-                sub = ':'.join((key, str(rule[key])))
-                string = ''.join((string, sub, ';'))
-            string = ''.join((string, '|'))
-
-    return string
+    # rules should always be a list, never equal to None
+    return json.dumps(rules, separators=(',',':'))
 
 
 def string_to_rules(string):
-    # Initialize rules in case string is False
-    rules = []
-    if string:
-        rules = string.split('|')
-        for i, v in enumerate(rules):
-            strule = v.split(';')
-            rules[i] = {}
-            for sub in strule:
-                spl = sub.split(':')
-                # Get rid of the empty string coming from the final ; created
-                # by rules_to_string()
-                if spl[0]:
-                    rules[i][spl[0]] = spl[1]
-
-    # The last element is empty due to how the string is formatted by
-    # rules_to_string()
-    return rules[:-1]
+    # Items without rules should have an empty list anyway (thus manageable by
+    # json.loads)
+    return json.loads(string)
 
 
 def get_occurrences(mint, maxt):

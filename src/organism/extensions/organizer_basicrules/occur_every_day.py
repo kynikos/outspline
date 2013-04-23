@@ -19,27 +19,7 @@
 import time as _time
 
 
-def normalize_rule(reftime, rule):
-    rstart = int(rule['rstart'])
-    rendn = rule['rendn']
-    rendu = rule['rendu']
-    ralarm = rule['ralarm']
-    
-    if rendn == 'None':
-        rendn = None
-    # rendn could have been already None (not a string)
-    elif rendn != None:
-        rendn = int(rendn)
-    
-    if rendu == 'None':
-        rendu = None
-    
-    if ralarm == 'None':
-        ralarm = None
-    # alarm could have been already None (not a string)
-    elif ralarm != None:
-        ralarm = int(ralarm)
-            
+def _compute_rend(rendn, rendu):
     if rendn != None:
         mult = {'minutes': 60,
                 'hours': 3600,
@@ -47,91 +27,79 @@ def normalize_rule(reftime, rule):
                 'weeks': 604800,
                 'months': 2592000,
                 'years': 31536000}
-        
-        rend = rendn * mult[rendu]
+
+        return rendn * mult[rendu]
     else:
-        rend = None
-    
+        return None
+
+
+def _compute_start(reftime, rstart, rend):
     firstday = reftime // 86400 * 86400 + _time.altzone
     rday = reftime % 86400
-    
+
     if rstart < rday:
-        start = firstday + 86400 + rstart
+        startt = firstday + 86400 + rstart
     else:
-        start = firstday + rstart
-    
-    return (start, rend, ralarm)
+        startt = firstday + rstart
 
-
-def search_alarms(last_search, filename, id_, rule, alarms):
-    rule = normalize_rule(last_search, rule)
-    rend = rule[1]
-    ralarm = rule[2]
-    
     if rend != None:
-        # This algorithm must get also occurrences whose end time is the next
-        # alarm
-        start = rule[0] - 86400 * (1 + rend // 86400)
+        # This algorithm must also get occurrences whose end time falls within
+        # the requested range (for get_occurrences) or is the next alarm (for
+        # search_alarms)
+        return startt - 86400 * (1 + rend // 86400)
     else:
-        start = rule[0]
-    
-    while True:
-        if rend != None:
-            end = start + rend
-        else:
-            end = None
-        
-        if ralarm != None:
-            alarm = start - ralarm
-        else:
-            alarm = None
-        
-        alarmd = {'filename': filename,
-                  'id_': id_,
-                  'start': start,
-                  'end': end,
-                  'alarm': alarm}
-        
-        next_alarm = alarms.get_next_alarm()
-        
-        if alarms.add(last_search, alarmd) or (next_alarm and
-                                      (alarm is None and start > next_alarm) or
-                                               (alarm and alarm > next_alarm)):
-            break
-        
-        start += 86400
+        return startt
+
+
+def _compute_end(start, rend):
+    return start + rend if rend != None else None
+
+
+def _compute_alarm(start, ralarm):
+    return start - ralarm if ralarm != None else None
 
 
 def get_occurrences(mint, maxt, filename, id_, rule, tempoccs):
-    rule = normalize_rule(mint, rule)
-    rend = rule[1]
-    ralarm = rule[2]
-    
-    if rend != None:
-        # This algorithm must get also occurrences whose end time falls within
-        # the requested range
-        start = rule[0] - 86400 * (1 + rend // 86400)
-    else:
-        start = rule[0]
-    
+    rend = _compute_rend(rule['rendn'], rule['rendu'])
+    start = _compute_start(mint, rule['rstart'], rend)
+    ralarm = rule['ralarm']
+
     while True:
-        if rend != None:
-            end = start + rend
-        else:
-            end = None
-        
-        if ralarm != None:
-            alarm = start - ralarm
-        else:
-            alarm = None
-        
+        end = _compute_end(start, rend)
+        alarm = _compute_end(start, ralarm)
+
         if (alarm and alarm > maxt) or start > maxt:
             break
-        
+
         tempoccs.add({'filename': filename,
                       'id_': id_,
                       'start': start,
                       'end': end,
                       'alarm': alarm})
-        
+
+        start += 86400
+
+
+def search_alarms(last_search, filename, id_, rule, alarms):
+    rend = _compute_rend(rule['rendn'], rule['rendu'])
+    start = _compute_start(last_search, rule['rstart'], rend)
+    ralarm = rule['ralarm']
+
+    while True:
+        end = _compute_end(start, rend)
+        alarm = _compute_end(start, ralarm)
+
+        alarmd = {'filename': filename,
+                  'id_': id_,
+                  'start': start,
+                  'end': end,
+                  'alarm': alarm}
+
+        next_alarm = alarms.get_next_alarm()
+
+        if alarms.add(last_search, alarmd) or (next_alarm and
+                                       (alarm is None and start > next_alarm) or
+                                                (alarm and alarm > next_alarm)):
+            break
+
         start += 86400

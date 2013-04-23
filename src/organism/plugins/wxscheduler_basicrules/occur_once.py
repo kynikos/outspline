@@ -190,30 +190,16 @@ class Rule():
         end = kwargs['rule']['end']
         ralarm = kwargs['rule']['ralarm']
 
-        start = int(start)
-
-        if end == 'None':
-            end = None
-        else:
-            end = int(end)
-
-        if ralarm == 'None':
-            ralarm = None
-        else:
-            ralarm = int(ralarm)
-
         cls.create_rule(filename=kwargs['filename'], id_=kwargs['id_'],
                         start=start, end=end, ralarm=ralarm)
 
     @staticmethod
     def create_rule(filename, id_, start, end, ralarm):
-        start = int(start)
         label = ' '.join(('Occur once',
                            _time.strftime('from %a %d %b %Y at %H:%M',
                            _time.localtime(start))))
 
         if end != None:
-            end = int(end)
             label += _time.strftime(' until %a %d %b %Y at %H:%M',
                                     _time.localtime(end))
 

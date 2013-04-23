@@ -159,27 +159,11 @@ class Rule():
         rendu = kwargs['rule']['rendu']
         ralarm = kwargs['rule']['ralarm']
 
-        rstart = int(rstart)
-
-        if rendn == 'None':
-            rendn = None
-        else:
-            rendn = int(rendn)
-
-        if rendu == 'None':
-            rendu = None
-
-        if ralarm == 'None':
-            ralarm = None
-        else:
-            ralarm = int(ralarm)
-
         cls.create_rule(filename=kwargs['filename'], id_=kwargs['id_'],
                         rstart=rstart, rendn=rendn, rendu=rendu, ralarm=ralarm)
 
     @staticmethod
     def create_rule(filename, id_, rstart, rendn, rendu, ralarm):
-        rstart = int(rstart)
         label = 'Occur every day at {}:{}'.format(str(rstart // 3600).zfill(2),
                                               str(rstart % 3600 // 60).zfill(2))
 

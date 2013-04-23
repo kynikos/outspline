@@ -17,47 +17,32 @@
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def normalize_rule(rule):
-    start = int(rule['start'])
-    end = rule['end']
-    ralarm = rule['ralarm']
-    
-    if end == 'None':
-        end = None
-    # end could have been already None (not a string)
-    elif end != None:
-        end = int(end)
-    
-    if ralarm == 'None':
-        alarm = None
-    elif ralarm == None:
-        alarm = None
-    elif ralarm != None:
-        alarm = start - int(ralarm)
-    
-    return (start, end, alarm)
-    
-def search_alarms(last_search, filename, id_, rule, alarms):
-    rule = normalize_rule(rule)
-    start = rule[0]
-    end = rule[1]
-    alarm = rule[2]
-    
-    alarms.add(last_search, {'filename': filename,
-                             'id_': id_,
-                             'start': start,
-                             'end': end,
-                             'alarm': alarm})
+def _compute_alarm(start, ralarm):
+    return None if (ralarm == None) else (start - ralarm)
 
 
 def get_occurrences(filename, id_, rule, tempoccs):
-    rule = normalize_rule(rule)
-    start = rule[0]
-    end = rule[1]
-    alarm = rule[2]
-    
+    start = rule['start']
+    end = rule['end']
+    ralarm = rule['ralarm']
+
+    alarm = _compute_alarm(start, ralarm)
+
     tempoccs.add({'filename': filename,
                   'id_': id_,
                   'start': start,
                   'end': end,
                   'alarm': alarm})
+
+def search_alarms(last_search, filename, id_, rule, alarms):
+    start = rule['start']
+    end = rule['end']
+    ralarm = rule['ralarm']
+
+    alarm = _compute_alarm(start, ralarm)
+
+    alarms.add(last_search, {'filename': filename,
+                             'id_': id_,
+                             'start': start,
+                             'end': end,
+                             'alarm': alarm})
