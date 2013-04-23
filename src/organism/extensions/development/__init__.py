@@ -82,17 +82,6 @@ def populate_tree(filename):
                             random.choice(seps)))
         text = ''.join((text, random.choice(words))).capitalize()
 
-        rules = []
-        for n in range(random.randint(0, 3)):
-            start = int((random.gauss(time.time(), 15000)) // 60 * 60)
-            end = random.choice((None,
-                                start + random.randint(1, 360) * 60))
-            alarm = random.choice((None, 0))
-            rules.append({'rule': 'occur_once',
-                          'start': start,
-                          'end': end,
-                          'ralarm': alarm})
-
         if mode == 'child':
             id_ = core_api.append_item(filename, itemid, group, text=text,
                                        description=description)
@@ -102,8 +91,41 @@ def populate_tree(filename):
                                              description=description)
 
         if organizer_api:
+            rules = []
+
+            for n in range(random.randint(0, 8)):
+                start = int((random.gauss(time.time(), 15000)) // 60 * 60)
+                end = random.choice((None, start + random.randint(1, 360) * 60))
+                ralarm = random.choice((None, 0))
+                rstart = random.randint(0, 1440) * 60
+                # Ignore 'days', 'weeks', 'months', 'years'
+                rendu = random.choice(('minutes', 'hours'))
+                if rendu == 'minutes':
+                    rendn = random.randint(1, 360)
+                elif rendu == 'hours':
+                    rendn = random.randint(1, 24)
+                inclusive = random.choice((True, False))
+
+                rule = random.choice((
+                    {'rule': 'occur_once',
+                     'start': start,
+                     'end': end,
+                     'ralarm': ralarm},
+                    {'rule': 'occur_every_day',
+                     'rstart': rstart,
+                     'rendn': rendn,
+                     'rendu': rendu,
+                     'ralarm': ralarm},
+                    {'rule': 'except_once',
+                     'start': start,
+                     'end': end,
+                     'inclusive': inclusive}
+                ))
+
+                rules.append(rule)
+
             organizer_api.update_item_rules(filename, id_, rules, group,
-                                             description=description)
+                                            description=description)
 
         treeitems.append({'mode': mode,
                           'filename': filename,
