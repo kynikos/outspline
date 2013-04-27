@@ -119,20 +119,12 @@ def insert_menu_item(menu, pos, item, id_=wx.ID_ANY, help='', sep='none',
                                         sub, icon)
 
 
-def bind_to_reset_menus(handler, bind=True):
-    return menubar.reset_menus_event.bind(handler, bind)
-
-
-def bind_to_enable_database_menus(handler, bind=True):
-    return menubar.enable_database_menus_event.bind(handler, bind)
+def bind_to_reset_menu_items(handler, bind=True):
+    return menubar.reset_menu_items_event.bind(handler, bind)
 
 
 def bind_to_enable_tree_menus(handler, bind=True):
     return menubar.enable_tree_menus_event.bind(handler, bind)
-
-
-def bind_to_enable_editor_menus(handler, bind=True):
-    return menubar.enable_editor_menus_event.bind(handler, bind)
 
 
 def bind_to_enable_textarea_menus(handler, bind=True):
