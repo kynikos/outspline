@@ -19,8 +19,24 @@
 import development
 
 
-def print_tables():
-    return development.print_db()
+def print_memory_table(table):
+    return development.print_memory_table(table)
+
+
+def print_table(filename, table):
+    return development.print_table(filename, table)
+
+
+def print_all_memory_tables():
+    return development.print_memory_db()
+
+
+def print_all_tables(filename):
+    return development.print_db(filename)
+
+
+def print_all_databases():
+    return development.print_all_db()
 
 
 def populate_tree(treedb):

@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
-import os as _os
 import random
 import time
 
@@ -28,26 +27,41 @@ organizer_api = coreaux_api.import_extension_api('organizer')
 populate_tree_event = Event()
 
 
-def print_db():
-    print('databases: {}'.format(core_api.get_databases_count()))
+def print_memory_table(table):
+    print('====== {} (:memory:) ======'.format(table))
+    cur = core_api.select_memory_table(table)
+    print('|'.join([field[0] for field in cur.description]))
+    for i in cur:
+        print(tuple(i))
+
+
+def print_table(filename, table):
+    print('====== {} ({}) ======'.format(table, filename))
+    cur = core_api.select_table(filename, table)
+    print('|'.join([field[0] for field in cur.description]))
+    for i in cur:
+        print(tuple(i))
+
+
+def print_memory_db():
+    for table in core_api.select_all_memory_table_names():
+        print_memory_table(table[0])
+
+
+def print_db(filename):
+    print('Items in {}: {}'.format(filename, core_api.get_items_count(filename))
+                                                                               )
+    for table in core_api.select_all_table_names(filename):
+        print_table(filename, table[0])
+
+
+def print_all_db():
+    print('Open databases: {}'.format(core_api.get_databases_count()))
 
     for filename in core_api.get_open_databases():
-        print('--- {} ---'.format(_os.path.basename(filename)))
-        print('items: {}'.format(core_api.get_items_count(filename)))
-        for table in core_api.select_all_table_names(filename):
-            print('--- ' + table[0] + ' ---')
-            cur = core_api.select_table(filename, table[0])
-            print('|'.join([field[0] for field in cur.description]))
-            for i in cur:
-                print(tuple(i))
+        print_db(filename)
 
-    for table in core_api.select_all_memory_table_names():
-        print('--- ' + table[0] + ' ---')
-        cur = core_api.select_memory_table(table[0])
-        print('|'.join([field[0] for field in cur.description]))
-        for i in cur:
-            print(tuple(i))
-    print('======================================')
+    print_memory_db()
 
 
 def populate_tree(filename):
