@@ -42,6 +42,8 @@ _ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
 _ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms', wx.ART_OTHER))
 _WRAP = 260
 
+alarmswindow = None
+
 
 class AlarmsWindow():
     config = None
@@ -357,4 +359,5 @@ class Alarm():
 
 
 def main():
-    AlarmsWindow(wxgui_api.get_main_frame())
+    global alarmswindow
+    alarmswindow = AlarmsWindow(wxgui_api.get_main_frame())
