@@ -165,10 +165,6 @@ def select_database_tab_index(index):
     return wx.GetApp().nb_left.select_page(index)
 
 
-def get_open_databases():
-    return [o.get_filename() for o in wx.GetApp().nb_left.get_tabs()]
-
-
 def get_right_nb():
     return wx.GetApp().nb_right
 
