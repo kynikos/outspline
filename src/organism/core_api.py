@@ -233,8 +233,8 @@ def select_table(filename, table):
     return cur
 
 
-def block_databases():
-    return databases.protection.block()
+def block_databases(block=True):
+    return databases.protection.block(block)
 
 
 def release_databases():

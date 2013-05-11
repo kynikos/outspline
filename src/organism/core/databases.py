@@ -72,10 +72,10 @@ class Protection():
         self.q = queue.Queue()
         self.q.put(baton)
 
-    def block(self):
+    def block(self, block=True):
         log.debug('Block databases')
 
-        self.s = self.q.get()
+        self.s = self.q.get(block)
 
     def release(self):
         log.debug('Release databases')
