@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+import organism.interfaces.wxgui_api as wxgui_api
+
 import wxscheduler
 
 
@@ -53,3 +55,16 @@ def bind_to_apply_rule(handler, bind=True):
 
 def bind_to_insert_rule(handler, bind=True):
     return wxscheduler.insert_rule_event.bind(handler, bind)
+
+
+def simulate_expand_rules_panel(filename, id_):
+    fpanel = wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
+                                                                        ].fpanel
+    wxgui_api.expand_panel(filename, id_, fpanel)
+    wxgui_api.resize_foldpanelbar(filename, id_)
+
+def simulate_remove_all_rules(filename, id_):
+    sched = wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)]
+    while sched.rulesl.GetItemCount() > 0:
+        sched.rulesl.Select(0)
+        sched.remove_rule(None)
