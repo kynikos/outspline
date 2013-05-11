@@ -59,6 +59,22 @@ class Notebook(aui.AuiNotebook):
     def select_page(self, index):
         self.SetSelection(index)
 
+    def get_selected_tab_index(self):
+        # Returns -1 if there's no tab
+        return self.GetSelection()
+
+    def get_selected_tab(self):
+        try:
+            return self.GetPage(self.GetSelection())
+        except IndexError:
+            return False
+
+    def get_tabs(self):
+        tabs = []
+        for idx in range(self.GetPageCount()):
+            tabs.append(self.GetPage(idx))
+        return tabs
+
 
 class LeftNotebook(Notebook):
     def __init__(self, parent):
@@ -77,18 +93,6 @@ class LeftNotebook(Notebook):
         page = self.GetPage(event.GetSelection())
         databases.close_database(page.get_filename())
         core_api.release_databases()
-
-    def get_selected_tab(self):
-        try:
-            return self.GetPage(self.GetSelection())
-        except IndexError:
-            return False
-
-    def get_tabs(self):
-        tabs = []
-        for idx in range(self.GetPageCount()):
-            tabs.append(self.GetPage(idx))
-        return tabs
 
 
 class RightNotebook(Notebook):
@@ -110,19 +114,23 @@ class RightNotebook(Notebook):
                 editor.tabs[item].close()
         core_api.release_databases()
 
-    def set_editor_title(self, item, title):
-        self.SetPageText(self.GetPageIndex(editor.tabs[item].panel),
-                         text=title)
-
     def add_plugin(self, window, caption, close=True):
         self.AddPage(window, caption=caption)
         if not close:
             self.SetCloseButton(self.GetPageIndex(window), False)
 
-    def get_selected_tab(self):
-        tab = self.GetPage(self.GetSelection())
+    def set_editor_title(self, item, title):
+        self.SetPageText(self.GetPageIndex(editor.tabs[item].panel),
+                         text=title)
+
+    def get_selected_editor(self):
+        tab = self.get_selected_tab()
         for item in editor.tabs:
             if editor.tabs[item].panel is tab:
-                return(item)
+                return item
         else:
             return False
+
+    def get_open_editors(self):
+        return [self.GetPageIndex(editor.tabs[item].panel)
+                                                        for item in editor.tabs]

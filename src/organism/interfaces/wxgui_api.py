@@ -165,12 +165,40 @@ def select_database_tab_index(index):
     return wx.GetApp().nb_left.select_page(index)
 
 
+def get_selected_database_tab_index():
+    # Returns -1 if there's no tab
+    return wx.GetApp().nb_left.get_selected_tab_index()
+
+
+def get_active_database():
+    return wx.GetApp().nb_left.get_selected_tab()
+
+
 def get_right_nb():
     return wx.GetApp().nb_right
 
 
+def select_editor_tab_index(index):
+    return wx.GetApp().nb_right.select_page(index)
+
+
+def get_selected_editor_tab_index():
+    # Returns -1 if there's no tab
+    return wx.GetApp().nb_right.get_selected_tab_index()
+
+
 def get_active_editor():
-    return wx.GetApp().nb_right.get_selected_tab()
+    item = wx.GetApp().nb_right.get_selected_editor()
+    tab = editor.tabs[item]
+    return (tab.get_filename(), tab.get_id())
+
+
+def get_active_editor_tag():
+    return wx.GetApp().nb_right.get_selected_editor()
+
+
+def get_open_editors_tab_indexes():
+    return wx.GetApp().nb_right.get_open_editors()
 
 
 def add_plugin_to_right_nb(window, caption, close=True):
@@ -201,10 +229,6 @@ def bind_to_exit_application(handler, bind=True):
 
 
 ### TREE ###
-
-def get_active_database():
-    return wx.GetApp().nb_left.get_selected_tab()
-
 
 def get_tree_selections(filename, none=True, many=True, descendants=None):
     return tree.dbs[filename].get_selections(none=none, many=many,

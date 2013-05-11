@@ -759,7 +759,7 @@ class MenuEdit(wx.Menu):
     def update_items(self, focus):
         self.reset_items()
 
-        item = wx.GetApp().nb_right.get_selected_tab()
+        item = wx.GetApp().nb_right.get_selected_editor()
         filename = editor.tabs[item].get_filename()
         id_ = editor.tabs[item].get_id()
 
@@ -796,29 +796,29 @@ class MenuEdit(wx.Menu):
             focus = focus.GetParent()
 
     def select_all_text(self, event):
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wx.GetApp().nb_right.get_selected_editor()
         if tab:
             editor.tabs[tab].area.select_all()
 
     def cut_text(self, event):
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wx.GetApp().nb_right.get_selected_editor()
         if tab:
             editor.tabs[tab].area.cut()
 
     def copy_text(self, event):
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wx.GetApp().nb_right.get_selected_editor()
         if tab:
             editor.tabs[tab].area.copy()
 
     def paste_text(self, event):
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wx.GetApp().nb_right.get_selected_editor()
         if tab:
             editor.tabs[tab].area.paste()
 
     def apply_tab(self, event):
         core_api.block_databases()
 
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wx.GetApp().nb_right.get_selected_editor()
         if tab:
             editor.tabs[tab].apply()
 
@@ -835,7 +835,7 @@ class MenuEdit(wx.Menu):
     def close_tab(self, event):
         core_api.block_databases()
 
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wx.GetApp().nb_right.get_selected_editor()
         if tab:
             editor.tabs[tab].close()
 
