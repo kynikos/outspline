@@ -158,7 +158,7 @@ class MenuFile(wx.Menu):
         self.save = wx.MenuItem(self, self.ID_SAVE, "&Save",
                                 "Save the selected database")
         self.saveas = wx.MenuItem(self, self.ID_SAVE_AS, "Sav&e as...",
-                                "Save the selected database with another name")
+                                 "Save the selected database with another name")
         self.backup = wx.MenuItem(self, self.ID_BACKUP, "Save &backup...",
                                   "Create a backup of the selected database")
         self.saveall = wx.MenuItem(self, self.ID_SAVE_ALL, "Save &all",
@@ -240,16 +240,16 @@ class MenuFile(wx.Menu):
 
             focus = focus.GetParent()
 
-    def new_database(self, event):
+    def new_database(self, event, filename=None):
         core_api.block_databases()
-        filename = databases.create_database()
-        if filename:
-            databases.open_database(filename)
+        fn = databases.create_database(filename=filename)
+        if fn:
+            databases.open_database(fn)
         core_api.release_databases()
 
-    def open_database(self, event):
+    def open_database(self, event, filename=None):
         core_api.block_databases()
-        databases.open_database()
+        databases.open_database(filename)
         core_api.release_databases()
 
     def save_database(self, event):
@@ -343,13 +343,13 @@ class MenuDatabase(wx.Menu):
         self.child = wx.MenuItem(self, self.ID_CHILD, "Create &sub-item",
                                  "Create a child for the selected item")
         self.moveup = wx.MenuItem(self, self.ID_MOVE_UP, "&Move item up",
-                                 "Switch the selected item with the one above")
+                                  "Switch the selected item with the one above")
         self.movedn = wx.MenuItem(self, self.ID_MOVE_DOWN,
                                   "Mo&ve item down",
-                                 "Switch the selected item with the one below")
+                                  "Switch the selected item with the one below")
         self.movept = wx.MenuItem(self, self.ID_MOVE_PARENT,
                                   "M&ove item to parent",
-                           "Move the selected item as a sibling of its parent")
+                            "Move the selected item as a sibling of its parent")
         self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit item",
                                 "Open the selected item in the editor")
         self.delete = wx.MenuItem(self, self.ID_DELETE, "&Delete items",
@@ -461,7 +461,7 @@ class MenuDatabase(wx.Menu):
                 for id_ in read:
                     item = editor.Editor.make_tabid(tab.get_filename(), id_)
                     if item in editor.tabs and\
-                                       not editor.tabs[item].close_if_needed():
+                                        not editor.tabs[item].close_if_needed():
                         break
                 else:
                     core_api.undo_tree(tab.get_filename())
@@ -481,7 +481,7 @@ class MenuDatabase(wx.Menu):
                 for id_ in read:
                     item = editor.Editor.make_tabid(tab.get_filename(), id_)
                     if item in editor.tabs and\
-                                       not editor.tabs[item].close_if_needed():
+                                        not editor.tabs[item].close_if_needed():
                         break
                 else:
                     core_api.redo_tree(tab.get_filename())
@@ -564,7 +564,7 @@ class MenuDatabase(wx.Menu):
                                       description='Move item up')
 
                 newitem = treedb.move_item(item, treedb.get_item_parent(item),
-                                          mode=treedb.get_item_index(item) - 1)
+                                           mode=treedb.get_item_index(item) - 1)
 
                 treedb.select_item(newitem)
 
@@ -590,7 +590,7 @@ class MenuDatabase(wx.Menu):
                 # When moving down, increase the index by 2, because the move
                 # method first copies the item, and only afterwards deletes it
                 newitem = treedb.move_item(item, treedb.get_item_parent(item),
-                                          mode=treedb.get_item_index(item) + 2)
+                                           mode=treedb.get_item_index(item) + 2)
 
                 treedb.select_item(newitem)
 
@@ -614,7 +614,7 @@ class MenuDatabase(wx.Menu):
                                         description='Move item to parent')
 
                 newitem = treedb.move_item(item, treedb.get_item_parent(
-                                                 treedb.get_item_parent(item)))
+                                                  treedb.get_item_parent(item)))
 
                 treedb.select_item(newitem)
 
@@ -632,20 +632,20 @@ class MenuDatabase(wx.Menu):
                 id_ = treedb.get_item_id(selection[0])
                 editor.Editor.open(filename, id_)
 
-    def delete_items(self, event):
+    def delete_items(self, event, no_confirm=False):
         core_api.block_databases()
 
         treedb = wx.GetApp().nb_left.get_selected_tab()
         if treedb:
             selection = treedb.get_selections(none=False, descendants=True)
-            if selection and msgboxes.delete_items_confirm(len(selection)
-                                                     ).ShowModal() == wx.ID_OK:
+            if selection and (no_confirm or msgboxes.delete_items_confirm(
+                                       len(selection)).ShowModal() == wx.ID_OK):
                 filename = treedb.get_filename()
                 for item in selection:
                     id_ = treedb.get_item_id(item)
                     tab = editor.Editor.make_tabid(filename, id_)
                     if tab in editor.tabs and \
-                                        not editor.tabs[tab].close_if_needed():
+                                         not editor.tabs[tab].close_if_needed():
                         core_api.release_databases()
                         return False
 
