@@ -274,12 +274,16 @@ def restart_timer(oldalarms, next_alarm, alarmsd):
 
 
 def cancel_timer(kwargs=None):
-    if timer:
+    # kwargs is passed from the binding to core_api.bind_to_exit_app_1
+    if timer and timer.is_alive():
         log.debug('Timer cancel')
         timer.cancel()
 
 
 def activate_alarms(time, alarmsd):
+    # It's important that the database is blocked on this thread, and not on the
+    # main thread, otherwise the program would hang if the user is performing
+    # an action
     core_api.block_databases()
 
     occurrences.activate_alarms(time, alarmsd)
