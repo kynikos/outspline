@@ -283,17 +283,18 @@ class MenuFile(wx.Menu):
             databases.save_database_backup(treedb.get_filename())
         core_api.release_databases()
 
-    def close_database(self, event):
+    def close_database(self, event, ask=True):
         core_api.block_databases()
         treedb = wx.GetApp().nb_left.get_selected_tab()
         if treedb:
-            databases.close_database(treedb.get_filename())
+            databases.close_database(treedb.get_filename(), ask=ask)
         core_api.release_databases()
 
-    def close_all_databases(self, event, exit_=False):
+    def close_all_databases(self, event, ask=True, exit_=False):
         core_api.block_databases()
         for filename in tuple(tree.dbs.keys()):
-            if databases.close_database(filename, exit_=exit_) == False:
+            if databases.close_database(filename, ask=ask, exit_=exit_
+                                                                     ) == False:
                 core_api.release_databases()
                 return False
         else:
