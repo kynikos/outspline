@@ -206,7 +206,7 @@ def get_occurrences(mint, maxt):
     tempoccs = TempOccurrences(mint, maxt)
 
     for filename in core_api.get_open_databases():
-        for id_ in core_api.get_items(filename):
+        for id_ in core_api.get_items_ids(filename):
             rules = get_item_rules(filename, id_)
             for rule in rules:
                 get_occurrences_event.signal(mint=mint, maxt=maxt,

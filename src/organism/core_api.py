@@ -181,7 +181,7 @@ def get_tree_item(filename, parent, previous):
     return items.Item.get_tree_item(filename, parent, previous)
 
 
-def get_items(filename):
+def get_items_ids(filename):
     return databases.dbs[filename].items.keys()
 
 

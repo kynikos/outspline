@@ -136,11 +136,11 @@ def search_alarms():
     if filename is None:
         for filename in core_api.get_open_databases():
             last_search = get_last_search(filename)
-            for id_ in core_api.get_items(filename):
+            for id_ in core_api.get_items_ids(filename):
                 search_item_alarms(last_search, filename, id_, alarms)
     elif id_ is None:
         last_search = get_last_search(filename)
-        for id_ in core_api.get_items(filename):
+        for id_ in core_api.get_items_ids(filename):
             search_item_alarms(last_search, filename, id_, alarms)
     else:
         last_search = get_last_search(filename)

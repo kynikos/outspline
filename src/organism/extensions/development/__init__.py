@@ -71,7 +71,7 @@ def populate_tree(filename):
     treeitems = []
     i = 0
     while i < 10:
-        dbitems = core_api.get_items(filename)
+        dbitems = core_api.get_items_ids(filename)
 
         try:
             itemid = random.choice(dbitems)
