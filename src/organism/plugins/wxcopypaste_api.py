@@ -25,3 +25,19 @@ def bind_to_cut_items(handler, bind=True):
 
 def bind_to_paste_items(handler, bind=True):
     return wxcopypaste.paste_items_event.bind(handler, bind)
+
+
+def simulate_cut_items():
+    return wxcopypaste.cut_items(None)
+
+
+def simulate_copy_items():
+    return wxcopypaste.copy_items(None)
+
+
+def simulate_paste_items_as_siblings():
+    return wxcopypaste.paste_items_as_siblings(None)
+
+
+def simulate_paste_items_as_children():
+    return wxcopypaste.paste_items_as_children(None)
