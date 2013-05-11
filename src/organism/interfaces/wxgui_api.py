@@ -272,3 +272,19 @@ def bind_to_reset_tree_context_menu(handler, bind=True):
 
 def bind_to_popup_tree_context_menu(handler, bind=True):
     return tree.popup_context_menu_event.bind(handler, bind)
+
+
+def simulate_unselect_all_items(filename):
+    return tree.dbs[filename].unselect_all_items()
+
+
+def simulate_add_items_to_selection(filename, ids):
+    for id_ in ids:
+        item = tree.dbs[filename].find_item(id_)
+        tree.dbs[filename].add_item_to_selection(item)
+
+
+def simulate_remove_items_from_selection(filename, ids):
+    for id_ in ids:
+        item = tree.dbs[filename].find_item(id_)
+        tree.dbs[filename].remove_item_from_selection(item)

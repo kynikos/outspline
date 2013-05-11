@@ -374,7 +374,7 @@ class Database(wx.SplitterWindow):
         while child[0].IsOk():
             children.append(child[0])
             child = self.treec.GetNextChild(treeitem, cookie=child[1])
-        return(children)
+        return children
 
     def get_item_descendants(self, treeitem):
         descendants = []
@@ -398,6 +398,21 @@ class Database(wx.SplitterWindow):
         # However in this case all the items have just been deselected, so no
         # check must be done
         self.treec.SelectItem(treeitem)
+
+    def unselect_all_items(self):
+        self.treec.UnselectAll()
+
+    def add_item_to_selection(self, treeitem):
+        # If the item is already selected, SelectItem would actually deselect
+        # it, see http://trac.wxwidgets.org/ticket/11157
+        if not self.treec.IsSelected(treeitem):
+            self.treec.SelectItem(treeitem)
+
+    def remove_item_from_selection(self, treeitem):
+        # If the item is not selected, UnselectItem may actually select it, see
+        # http://trac.wxwidgets.org/ticket/11157
+        if self.treec.IsSelected(treeitem):
+            self.treec.UnselectItem(treeitem)
 
     @staticmethod
     def make_item_title(text):
