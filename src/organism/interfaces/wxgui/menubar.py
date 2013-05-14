@@ -283,18 +283,19 @@ class MenuFile(wx.Menu):
             databases.save_database_backup(treedb.get_filename())
         core_api.release_databases()
 
-    def close_database(self, event, ask=True):
+    def close_database(self, event, no_confirm=False):
         core_api.block_databases()
         treedb = wx.GetApp().nb_left.get_selected_tab()
         if treedb:
-            databases.close_database(treedb.get_filename(), ask=ask)
+            databases.close_database(treedb.get_filename(),
+                                                          no_confirm=no_confirm)
         core_api.release_databases()
 
-    def close_all_databases(self, event, ask=True, exit_=False):
+    def close_all_databases(self, event, no_confirm=False, exit_=False):
         core_api.block_databases()
         for filename in tuple(tree.dbs.keys()):
-            if databases.close_database(filename, ask=ask, exit_=exit_
-                                                                     ) == False:
+            if databases.close_database(filename, no_confirm=no_confirm,
+                                                          exit_=exit_) == False:
                 core_api.release_databases()
                 return False
         else:
@@ -452,7 +453,7 @@ class MenuDatabase(wx.Menu):
 
             focus = focus.GetParent()
 
-    def undo_tree(self, event):
+    def undo_tree(self, event, no_confirm=False):
         core_api.block_databases()
 
         tab = wx.GetApp().nb_left.get_selected_tab()
@@ -461,8 +462,8 @@ class MenuDatabase(wx.Menu):
             if read:
                 for id_ in read:
                     item = editor.Editor.make_tabid(tab.get_filename(), id_)
-                    if item in editor.tabs and\
-                                        not editor.tabs[item].close_if_needed():
+                    if item in editor.tabs and not editor.tabs[item].close(
+                                      ask='quiet' if no_confirm else 'discard'):
                         break
                 else:
                     core_api.undo_tree(tab.get_filename())
@@ -472,7 +473,7 @@ class MenuDatabase(wx.Menu):
 
         core_api.release_databases()
 
-    def redo_tree(self, event):
+    def redo_tree(self, event, no_confirm=False):
         core_api.block_databases()
 
         tab = wx.GetApp().nb_left.get_selected_tab()
@@ -481,8 +482,8 @@ class MenuDatabase(wx.Menu):
             if read:
                 for id_ in read:
                     item = editor.Editor.make_tabid(tab.get_filename(), id_)
-                    if item in editor.tabs and\
-                                        not editor.tabs[item].close_if_needed():
+                    if item in editor.tabs and not editor.tabs[item].close(
+                                      ask='quiet' if no_confirm else 'discard'):
                         break
                 else:
                     core_api.redo_tree(tab.get_filename())
@@ -645,8 +646,8 @@ class MenuDatabase(wx.Menu):
                 for item in selection:
                     id_ = treedb.get_item_id(item)
                     tab = editor.Editor.make_tabid(filename, id_)
-                    if tab in editor.tabs and \
-                                         not editor.tabs[tab].close_if_needed():
+                    if tab in editor.tabs and not editor.tabs[tab].close(
+                                          'quiet' if no_confirm else 'discard'):
                         core_api.release_databases()
                         return False
 
@@ -833,20 +834,20 @@ class MenuEdit(wx.Menu):
 
         core_api.release_databases()
 
-    def close_tab(self, event):
+    def close_tab(self, event, ask='apply'):
         core_api.block_databases()
 
         tab = wx.GetApp().nb_right.get_selected_editor()
         if tab:
-            editor.tabs[tab].close()
+            editor.tabs[tab].close(ask=ask)
 
         core_api.release_databases()
 
-    def close_all_tabs(self, event):
+    def close_all_tabs(self, event, ask='apply'):
         core_api.block_databases()
 
         for item in tuple(editor.tabs.keys()):
-            editor.tabs[item].close()
+            editor.tabs[item].close(ask=ask)
 
         core_api.release_databases()
 

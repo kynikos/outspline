@@ -41,7 +41,7 @@ mpastesub = None
 cmpastesub = None
 
 
-def cut_items(event):
+def cut_items(event, no_confirm=False):
     core_api.block_databases()
 
     treedb = wxgui_api.get_active_database()
@@ -53,7 +53,8 @@ def cut_items(event):
 
             for item in selection:
                 id_ = treedb.get_item_id(item)
-                if not wxgui_api.close_editor_if_needed(filename, id_):
+                if not wxgui_api.close_editor(filename, id_,
+                                      ask='quiet' if no_confirm else 'discard'):
                     core_api.release_databases()
                     return False
 

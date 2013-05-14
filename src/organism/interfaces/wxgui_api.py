@@ -37,9 +37,9 @@ def get_textctrl(filename, id_):
     return editor.tabs[editor.Editor.make_tabid(filename, id_)].area.area
 
 
-def close_editor_if_needed(filename, id_, warn=True):
+def close_editor(filename, id_, ask='apply'):
     tab = editor.Editor.make_tabid(filename, id_)
-    if tab in editor.tabs and not editor.tabs[tab].close_if_needed():
+    if tab in editor.tabs and not editor.tabs[tab].close(ask=ask):
         return False
     else:
         return True
@@ -119,12 +119,12 @@ def simulate_apply_all_editors():
     return wx.GetApp().menu.edit.apply_all_tabs(None)
 
 
-def simulate_close_editor():
-    return wx.GetApp().menu.edit.close_tab(None)
+def simulate_close_editor(ask='apply'):
+    return wx.GetApp().menu.edit.close_tab(None, ask=ask)
 
 
-def simulate_close_all_editors():
-    return wx.GetApp().menu.edit.close_all_tabs(None)
+def simulate_close_all_editors(ask='apply'):
+    return wx.GetApp().menu.edit.close_all_tabs(None, ask=ask)
 
 
 ### MENUBAR ###
@@ -200,20 +200,21 @@ def simulate_save_all_databases():
     return wx.GetApp().menu.file.save_all_databases(None)
 
 
-def simulate_close_database(ask=True):
-    return wx.GetApp().menu.file.close_database(None, ask=ask)
+def simulate_close_database(no_confirm=False):
+    return wx.GetApp().menu.file.close_database(None, no_confirm=no_confirm)
 
 
-def simulate_close_all_databases(ask=True):
-    return wx.GetApp().menu.file.close_all_databases(None, ask=ask)
+def simulate_close_all_databases(no_confirm=False):
+    return wx.GetApp().menu.file.close_all_databases(None,
+                                                          no_confirm=no_confirm)
 
 
-def simulate_undo_tree():
-    return wx.GetApp().menu.database.undo_tree(None)
+def simulate_undo_tree(no_confirm=False):
+    return wx.GetApp().menu.database.undo_tree(None, no_confirm=no_confirm)
 
 
-def simulate_redo_tree():
-    return wx.GetApp().menu.database.redo_tree(None)
+def simulate_redo_tree(no_confirm=False):
+    return wx.GetApp().menu.database.redo_tree(None, no_confirm=no_confirm)
 
 
 def simulate_create_sibling():
@@ -241,7 +242,7 @@ def simulate_edit_item():
 
 
 def simulate_delete_items(no_confirm=False):
-    return wx.GetApp().menu.database.delete_items(None, no_confirm)
+    return wx.GetApp().menu.database.delete_items(None, no_confirm=no_confirm)
 
 
 ### NOTEBOOKS ###

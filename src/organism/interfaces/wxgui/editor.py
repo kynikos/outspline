@@ -162,19 +162,6 @@ class Editor():
         tree.dbs[self.filename].history.refresh()
         apply_editor_event_2.signal()
 
-    def close_if_needed(self, warn=True):
-        nb = wx.GetApp().nb_right
-        tabid = nb.GetPageIndex(self.panel)
-        nb.SetSelection(tabid)
-        if warn and msgboxes.close_tab_without_saving().ShowModal() == \
-                                                                      wx.ID_OK:
-            self.close(ask=False)
-            return True
-        elif not warn and self.close():
-            return True
-        else:
-            return False
-
     def set_modified(self):
         self.modstate = True
 
@@ -186,16 +173,29 @@ class Editor():
 
         return self.modstate
 
-    def close(self, ask=True):
+    def close(self, ask='apply'):
         nb = wx.GetApp().nb_right
+        tabid = nb.GetPageIndex(self.panel)
+        nb.SetSelection(tabid)
         item = self.item
 
-        if ask and self.is_modified():
-            save = msgboxes.close_tab_ask().ShowModal()
-            if save == wx.ID_YES:
-                self.apply()
-            elif save == wx.ID_CANCEL:
-                return False
+        if ask != 'quiet' and self.is_modified():
+            if ask == 'discard':
+                if msgboxes.close_tab_without_saving().ShowModal() != wx.ID_OK:
+                # Note that this if can't be merged with the one above, i.e.:
+                #   if ask == 'discard' and msgboxes.close_tab_without_saving...
+                # in fact if msgboxes...ShowModal() returned something different
+                # from wx.ID_OK, the else clause below would be entered
+                    return False
+            else:
+                # This is the condition that actually matches ask == 'apply',
+                # but it must also be the fallback for any other value (hence
+                # 'apply' is just a dummy value)
+                save = msgboxes.close_tab_ask().ShowModal()
+                if save == wx.ID_YES:
+                    self.apply()
+                elif save == wx.ID_CANCEL:
+                    return False
 
         # Note that this event is also bound directly by the textarea
         close_editor_event.signal(filename=self.filename, id_=self.id_)
