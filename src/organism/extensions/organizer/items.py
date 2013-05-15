@@ -104,7 +104,7 @@ def insert_item(filename, id_, group, description='Insert item'):
     core_api.give_connection(filename, qconn)
 
     core_api.insert_history(filename, group, id_, 'rules_insert', description,
-                            query_redo, '', query_undo, '')
+                            query_redo, rules_to_string([]), query_undo, None)
 
 
 def update_item_rules(filename, id_, rules, group,
@@ -176,7 +176,7 @@ def delete_item_rules(filename, id_, group, description='Delete item rules'):
     core_api.give_connection(filename, qconn)
 
     return core_api.insert_history(filename, group, id_, 'rules_delete',
-                                   description, query_redo, '', query_undo,
+                                   description, query_redo, None, query_undo,
                                    current_rules)
 
 
