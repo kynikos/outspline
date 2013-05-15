@@ -341,7 +341,7 @@ class Item():
     def get_last_base_item_id(filename):
         qconn =  databases.dbs[filename].connection.get()
         cursor = qconn.cursor()
-        cursor.execute(queries.items_select_id_children, (None, ))
+        cursor.execute(queries.items_select_id_children, (0, ))
         databases.dbs[filename].connection.give(qconn)
 
         ids = set()

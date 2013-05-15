@@ -514,7 +514,7 @@ class MenuDatabase(wx.Menu):
                 item = treedb.insert_item(base, 'after', id_=id_)
             else:
                 base = treedb.get_root()
-                baseid = treedb.get_item_id(base)
+                baseid = None
 
                 id_ = core_api.create_child(filename=filename, baseid=baseid,
                                             text='New item',
