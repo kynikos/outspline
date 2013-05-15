@@ -557,21 +557,22 @@ class MenuDatabase(wx.Menu):
         treedb = wx.GetApp().nb_left.get_selected_tab()
         if treedb:
             selection = treedb.get_selections(none=False, many=False)
-            if selection and treedb.get_item_previous(selection[0]).IsOk():
+            if selection:
                 item = selection[0]
 
                 filename = treedb.get_filename()
                 id_ = treedb.get_item_id(item)
-                core_api.move_item_up(filename, id_,
-                                      description='Move item up')
 
-                newitem = treedb.move_item(item, treedb.get_item_parent(item),
+                if core_api.move_item_up(filename, id_,
+                                                    description='Move item up'):
+                    newitem = treedb.move_item(item,
+                                                   treedb.get_item_parent(item),
                                            mode=treedb.get_item_index(item) - 1)
 
-                treedb.select_item(newitem)
+                    treedb.select_item(newitem)
 
-                treedb.history.refresh()
-                move_item_event.signal()
+                    treedb.history.refresh()
+                    move_item_event.signal()
 
         core_api.release_databases()
 
@@ -581,23 +582,24 @@ class MenuDatabase(wx.Menu):
         treedb = wx.GetApp().nb_left.get_selected_tab()
         if treedb:
             selection = treedb.get_selections(none=False, many=False)
-            if selection and treedb.get_item_next(selection[0]).IsOk():
+            if selection:
                 item = selection[0]
 
                 filename = treedb.get_filename()
                 id_ = treedb.get_item_id(item)
-                core_api.move_item_down(filename, id_,
-                                        description='Move item down')
 
-                # When moving down, increase the index by 2, because the move
-                # method first copies the item, and only afterwards deletes it
-                newitem = treedb.move_item(item, treedb.get_item_parent(item),
+                if core_api.move_item_down(filename, id_,
+                                                  description='Move item down'):
+                    # When moving down, increase the index by 2, because the move
+                    # method first copies the item, and only afterwards deletes it
+                    newitem = treedb.move_item(item,
+                                                   treedb.get_item_parent(item),
                                            mode=treedb.get_item_index(item) + 2)
 
-                treedb.select_item(newitem)
+                    treedb.select_item(newitem)
 
-                treedb.history.refresh()
-                move_item_event.signal()
+                    treedb.history.refresh()
+                    move_item_event.signal()
 
         core_api.release_databases()
 
@@ -607,21 +609,20 @@ class MenuDatabase(wx.Menu):
         treedb = wx.GetApp().nb_left.get_selected_tab()
         if treedb:
             selection = treedb.get_selections(none=False, many=False)
-            if selection and not treedb.is_database_root(selection[0]):
+            if selection:
                 item = selection[0]
                 filename = treedb.get_filename()
                 id_ = treedb.get_item_id(item)
 
-                core_api.move_item_to_parent(filename, id_,
-                                        description='Move item to parent')
-
-                newitem = treedb.move_item(item, treedb.get_item_parent(
+                if core_api.move_item_to_parent(filename, id_,
+                                             description='Move item to parent'):
+                    newitem = treedb.move_item(item, treedb.get_item_parent(
                                                   treedb.get_item_parent(item)))
 
-                treedb.select_item(newitem)
+                    treedb.select_item(newitem)
 
-                treedb.history.refresh()
-                move_item_event.signal()
+                    treedb.history.refresh()
+                    move_item_event.signal()
 
         core_api.release_databases()
 

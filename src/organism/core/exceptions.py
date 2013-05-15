@@ -33,3 +33,7 @@ class DatabaseNotAccessibleError(OrganismError):
 
 class DatabaseNotValidError(OrganismError):
     pass
+
+
+class CannotMoveItemError(OrganismError):
+    pass

@@ -20,6 +20,7 @@ from organism.coreaux_api import Event
 
 import databases
 import queries
+import exceptions
 
 item_insert_event = Event()
 item_delete_event = Event()
@@ -163,44 +164,63 @@ class Item():
         del self.database.items[self.id_]
 
     def shift(self, mode, group, description='Shift item'):
-        # Keep all items[id_].get_{next,previous,...} _before_ updates!
         items = self.database.items
         filename = self.filename
         id_ = self.id_
         if mode == 'up':
             prev = self.get_previous()
-            previd = prev.get_id()
-            prev2 = prev.get_previous()
-            prev2id = prev2.get_id() if prev2 else 0
-            next_ = self.get_next()
-            self.update(group, previous=prev2id, description=description)
-            prev.update(group, previous=id_, description=description)
-            if next_:
-                next_.update(group, previous=previd, description=description)
+            if prev:
+                previd = prev.get_id()
+                prev2 = prev.get_previous()
+                prev2id = prev2.get_id() if prev2 else 0
+                next_ = self.get_next()
+                # Keep all items[id_].get_{next,previous,...} _before_ updates!
+                self.update(group, previous=prev2id, description=description)
+                prev.update(group, previous=id_, description=description)
+                if next_:
+                    next_.update(group, previous=previd,
+                                                        description=description)
+            else:
+                raise exceptions.CannotMoveItemError()
         elif mode == 'down':
             next_ = self.get_next()
-            parent = self.get_parent()
-            prev = self.get_previous()
-            previd = prev.get_id() if prev else 0
-            next2 = next_.get_next()
-            nextid = next_.get_id()
-            self.update(group, previous=nextid, description=description)
-            next_.update(group, previous=previd, description=description)
-            if next2:
-                next2.update(group, previous=id_, description=description)
-        elif mode == 'parent':
-            parent = self.get_parent().get_parent()
-            parentid = parent.get_id()
-            lastchild = parent.get_children()[-1]
-            lastchildid = lastchild.get_id()
-            next_ = self.get_next()
             if next_:
+                nextid = next_.get_id()
                 prev = self.get_previous()
                 previd = prev.get_id() if prev else 0
-            self.update(group, parent=parentid, previous=lastchildid,
-                        description=description)
-            if next_:
+                next2 = next_.get_next()
+                # Keep all items[id_].get_{next,previous,...} _before_ updates!
+                self.update(group, previous=nextid, description=description)
                 next_.update(group, previous=previd, description=description)
+                if next2:
+                    next2.update(group, previous=id_, description=description)
+            else:
+                raise exceptions.CannotMoveItemError()
+        elif mode == 'parent':
+            parent = self.get_parent()
+            if parent:
+                parent2 = parent.get_parent()
+                if parent2:
+                    parent2id = parent2.get_id()
+                    lastchild = parent2.get_children()[-1]
+                    lastchildid = lastchild.get_id()
+                else:
+                    parent2id = 0
+                    lastchildid = self.get_last_base_item_id(filename)
+                next_ = self.get_next()
+                if next_:
+                    prev = self.get_previous()
+                    previd = prev.get_id() if prev else 0
+                # Keep all items[id_].get_{next,previous,...} _before_ updates!
+                self.update(group, parent=parent2id, previous=lastchildid,
+                            description=description)
+                if next_:
+                    next_.update(group, previous=previd,
+                                                        description=description)
+            else:
+                raise exceptions.CannotMoveItemError()
+
+        return True
 
     def get_filename(self):
         return self.filename
