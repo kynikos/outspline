@@ -31,21 +31,21 @@ ACTIONS = (
     1 * [simulator_actions.open_database] +
     1 * [simulator_actions.save_database] +
     1 * [simulator_actions.close_database] +
-    1 * [simulator_actions.undo_database_history] +
-    1 * [simulator_actions.redo_database_history] +
-    8 * [simulator_actions.create_item] +
-    1 * [simulator_actions.cut_items] +
-    1 * [simulator_actions.copy_items] +
-    1 * [simulator_actions.paste_items] +
-    1 * [simulator_actions.move_item] +
-    4 * [simulator_actions.edit_item] +
-    1 * [simulator_actions.delete_items] +
-    4 * [simulator_actions.edit_editor_text] +
-    4 * [simulator_actions.edit_editor_rules] +
-    4 * [simulator_actions.apply_editor] +
-    4 * [simulator_actions.close_editor] +
-    1 * [simulator_actions.snooze_alarms] +
-    1 * [simulator_actions.dismiss_alarms]
+    4 * [simulator_actions.undo_database_history] +
+    4 * [simulator_actions.redo_database_history] +
+    18 * [simulator_actions.create_item] +
+    4 * [simulator_actions.cut_items] +
+    4 * [simulator_actions.copy_items] +
+    4 * [simulator_actions.paste_items] +
+    4 * [simulator_actions.move_item] +
+    12 * [simulator_actions.edit_item] +
+    4 * [simulator_actions.delete_items] +
+    6 * [simulator_actions.edit_editor_text] +
+    6 * [simulator_actions.edit_editor_rules] +
+    12 * [simulator_actions.apply_editor] +
+    8 * [simulator_actions.close_editor] +
+    8 * [simulator_actions.snooze_alarms] +
+    8 * [simulator_actions.dismiss_alarms]
 )
 
 # [1] Do not instantiate timer with a dummy wx.CallAfter call, in fact it's

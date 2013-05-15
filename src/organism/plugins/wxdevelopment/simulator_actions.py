@@ -375,7 +375,7 @@ def edit_editor_rules():
         rules = []
 
         for n in range(random.randint(0, 8)):
-            start = int((random.gauss(time.time(), 15000)) // 60 * 60)
+            start = int((random.gauss(time.time(), 1000)) // 60 * 60)
             end = random.choice((None, start + random.randint(1, 360) * 60))
             ralarm = random.choice((None, 0))
             rstart = random.randint(0, 1440) * 60
