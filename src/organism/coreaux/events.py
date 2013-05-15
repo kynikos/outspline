@@ -21,26 +21,26 @@ import inspect
 
 class Event():
     handlers = None
-    
+
     def __init__(self):
-        self.handlers = {}
-    
+        self.handlers = set()
+
     def bind(self, handler, bind=True):
         if bind:
-            # Use a dictionary to avoid duplicating bindings when closing and
-            # reopening a database
-            self.handlers[handler] = None
-        elif handler in self.handlers:
-            del self.handlers[handler]
-    
+            # Use a set to avoid duplicating bindings when closing and reopening
+            # a database
+            self.handlers.add(handler)
+        else:
+            self.handlers.discard(handler)
+
     def signal(self, **kwargs):
-        for handler in tuple(self.handlers.copy()):
+        for handler in self.handlers.copy():
             if inspect.isfunction(handler):
                 handler(kwargs)
-            # The object that bound the method could not exist any longer
+            # The object that bound the method may not exist any more
             elif inspect.ismethod(handler) and handler.__self__:
                 handler(kwargs)
             else:
-                del self.handlers[handler]
+                self.handlers.discard(handler)
 
 uncaught_exception_event = Event()
