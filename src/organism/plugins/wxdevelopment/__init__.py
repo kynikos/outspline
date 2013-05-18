@@ -24,6 +24,7 @@ import organism.extensions.development_api as development_api
 import organism.interfaces.wxgui_api as wxgui_api
 
 import simulator
+import tests
 
 
 class MenuDev(wx.Menu):
@@ -164,3 +165,4 @@ class MenuDev(wx.Menu):
 def main():
     MenuDev()
     core_api.bind_to_exit_app_1(simulator.stop)
+    tests.main()
