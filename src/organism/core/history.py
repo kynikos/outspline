@@ -178,7 +178,7 @@ class DBHistory():
             status = read['status']
             for row in history:
                 self.do_history_row(action, row[3], row[4], row['H_id'],
-                                                  row['H_type'], row['H_item'])
+                                                   row['H_type'], row['H_item'])
                 self.update_history_id(row['H_id'], status)
             history_event.signal()
 
@@ -189,14 +189,14 @@ class DBHistory():
         # don't accept a query binding
         try:
             cursor.execute(query)
-        except _sql.ProgrammingError:  # @UndefinedVariable
+        except _sql.ProgrammingError:
             cursor.execute(query, (text, ))
         self.connection.give(qconn)
 
         filename = self.filename
 
         if (action == 'undo' and type_ == 'insert') or (action == 'redo' and
-                                                            type_ == 'delete'):
+                                                             type_ == 'delete'):
             self.items[itemid].remove()
 
             history_remove_event.signal(filename=filename, id_=itemid, hid=hid)
@@ -214,7 +214,7 @@ class DBHistory():
                                             text=select['I_text'])
 
             if (action == 'undo' and type_ == 'delete') or \
-                                      (action == 'redo' and type_ == 'insert'):
+                                       (action == 'redo' and type_ == 'insert'):
                 self.items[itemid] = items.Item(database=self,
                                                 filename=filename,
                                                 id_=itemid)

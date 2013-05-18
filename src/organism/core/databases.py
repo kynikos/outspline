@@ -98,10 +98,10 @@ class MemoryDB(DBQueue):
         DBQueue.__init__(self)
 
         # Enable multi-threading, as the database is protected with a queue
-        self.put(_sql.connect(':memory:', check_same_thread=False))  # @UndefinedVariable
+        self.put(_sql.connect(':memory:', check_same_thread=False))
 
         qmemory = self.get()
-        qmemory.row_factory = _sql.Row  # @UndefinedVariable
+        qmemory.row_factory = _sql.Row
         self.give(qmemory)
 
     def exit_(self):
@@ -127,9 +127,9 @@ class Database(history.DBHistory):
 
         conn = self.connection
         # Enable multi-threading, as the database is protected with a queue
-        conn.put(_sql.connect(filename, check_same_thread=False))  # @UndefinedVariable
+        conn.put(_sql.connect(filename, check_same_thread=False))
         qconn = conn.get()
-        qconn.row_factory = _sql.Row  # @UndefinedVariable
+        qconn.row_factory = _sql.Row
         cursor = qconn.cursor()
         dbitems = cursor.execute(queries.items_select_tree)
         conn.give(qconn)
@@ -155,7 +155,7 @@ class Database(history.DBHistory):
             else:
                 db.close()
 
-                conn = _sql.connect(filename)  # @UndefinedVariable
+                conn = _sql.connect(filename)
                 cursor = conn.cursor()
 
                 cursor.execute(queries.properties_create)
@@ -164,19 +164,19 @@ class Database(history.DBHistory):
 
                 cursor.execute(queries.compatibility_create)
                 cursor.execute(queries.compatibility_insert, ('Core', 'core',
-                                             coreaux_api.get_core_version(), ))
+                                              coreaux_api.get_core_version(), ))
 
                 info = coreaux_api.get_addons_info(disabled=False)
 
                 for ext in info('Extensions').get_sections():
                     cursor.execute(queries.compatibility_insert, ('Extension',
-                                      ext, info('Extensions')(ext)['version']))
+                                       ext, info('Extensions')(ext)['version']))
                 for ui in info('Interfaces').get_sections():
                     cursor.execute(queries.compatibility_insert, ('Interface',
-                                        ui, info('Interfaces')(ui)['version']))
+                                         ui, info('Interfaces')(ui)['version']))
                 for plg in info('Plugins').get_sections():
                     cursor.execute(queries.compatibility_insert, ('Plugin',
-                                         plg, info('Plugins')(plg)['version']))
+                                          plg, info('Plugins')(plg)['version']))
 
                 cursor.execute(queries.items_create)
 
@@ -253,11 +253,11 @@ class Database(history.DBHistory):
                 break
         else:
             if ('Extensions' not in info.get_sections() or
-                             len(info('Extensions').get_sections()) == 0) and (
-                             'Interfaces' not in info.get_sections() or
-                             len(info('Interfaces').get_sections()) == 0) and (
-                             'Plugins' not in info.get_sections() or
-                             len(info('Plugins').get_sections()) == 0):
+                              len(info('Extensions').get_sections()) == 0) and (
+                              'Interfaces' not in info.get_sections() or
+                              len(info('Interfaces').get_sections()) == 0) and (
+                              'Plugins' not in info.get_sections() or
+                              len(info('Plugins').get_sections()) == 0):
                 qconn.close()
                 return True
 

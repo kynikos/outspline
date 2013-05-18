@@ -27,11 +27,11 @@ def handle_uncaught_exception(type, value, traceback):
     # This method is better than wrapping core.main() and coreaux.addons.main()
     # in a try except, in fact this way also exceptions from the interface's
     # main loop are caught
-    logger.log.critical('Uncaught exception', exc_info=(type, value,  # @UndefinedVariable
+    logger.log.critical('Uncaught exception', exc_info=(type, value,
                                                         traceback))
-    
+
     uncaught_exception_event.signal(exc_info=(type, value, traceback))
-    
+
     # Force exit, since sys.exit() may just hang the application waiting for
     # the process to respond
     os._exit(1)
@@ -39,13 +39,13 @@ def handle_uncaught_exception(type, value, traceback):
 
 def main():
     configuration.load_default_config()
-    
+
     import cliargparse
     cliargs = cliargparse.parse_cli_args()
-    
+
     configuration.load_user_config(cliargs)
 
     import logger
     logger.set_logger(cliargs)
-    
+
     sys.excepthook = handle_uncaught_exception
