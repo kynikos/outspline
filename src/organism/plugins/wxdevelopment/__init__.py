@@ -66,8 +66,7 @@ class MenuDev(wx.Menu):
         self.PrependMenu(self.ID_PRINT, "Print &databases", self.printtb)
 
         self.all_ = self.printtb.Append(wx.NewId(), 'All databases')
-        wxgui_api.bind_to_menu(lambda event:
-                               development_api.print_all_databases(), self.all_)
+        wxgui_api.bind_to_menu(self.print_all_databases, self.all_)
 
         self.printtb.AppendSeparator()
 
@@ -85,7 +84,7 @@ class MenuDev(wx.Menu):
 
             self.databases[filename]['all_'] = self.databases[filename][
                                         'menu'].Append(wx.NewId(), 'All tables')
-            wxgui_api.bind_to_menu(self.print_all_tables(filename),
+            wxgui_api.bind_to_menu(self.print_all_tables_loop(filename),
                                    self.databases[filename]['all_'])
 
             self.databases[filename]['menu'].AppendSeparator()
@@ -94,8 +93,8 @@ class MenuDev(wx.Menu):
                 self.databases[filename]['tables'][table[0]] = \
                                         self.databases[filename]['menu'].Append(
                                                            wx.NewId(), table[0])
-                wxgui_api.bind_to_menu(self.print_table(filename, table[0]),
-                                   self.databases[filename]['tables'][table[0]])
+                wxgui_api.bind_to_menu(self.print_table_loop(filename,
+                        table[0]), self.databases[filename]['tables'][table[0]])
 
         if self.databases:
             self.printtb.AppendSeparator()
@@ -110,26 +109,50 @@ class MenuDev(wx.Menu):
 
         self.memory['all_'] = self.memory['menu'].Append(wx.NewId(),
                                                                    'All tables')
-        wxgui_api.bind_to_menu(lambda event:
-                               development_api.print_all_memory_tables(),
-                               self.memory['all_'])
+        wxgui_api.bind_to_menu(self.print_all_memory_tables,
+                                                            self.memory['all_'])
 
         self.memory['menu'].AppendSeparator()
 
         for table in core_api.select_all_memory_table_names():
             self.memory['tables'][table[0]] = self.memory['menu'].Append(
                                                            wx.NewId(), table[0])
-            wxgui_api.bind_to_menu(self.print_memory_table(table[0]),
+            wxgui_api.bind_to_menu(self.print_memory_table_loop(table[0]),
                                    self.memory['tables'][table[0]])
 
+    def print_all_databases(self, event):
+        core_api.block_databases()
+        development_api.print_all_databases()
+        core_api.release_databases()
+
+    def print_all_memory_tables(self, event):
+        core_api.block_databases()
+        development_api.print_all_memory_tables()
+        core_api.release_databases()
+
+    def print_memory_table_loop(self, table):
+        return lambda event: self.print_memory_table(table)
+
+    def print_table_loop(self, filename, table):
+        return lambda event: self.print_table(filename, table)
+
+    def print_all_tables_loop(self, filename):
+        return lambda event: self.print_all_tables(filename)
+
     def print_memory_table(self, table):
-        return lambda event: development_api.print_memory_table(table)
+        core_api.block_databases()
+        development_api.print_memory_table(table)
+        core_api.release_databases()
 
     def print_table(self, filename, table):
-        return lambda event: development_api.print_table(filename, table)
+        core_api.block_databases()
+        development_api.print_table(filename, table)
+        core_api.release_databases()
 
     def print_all_tables(self, filename):
-        return lambda event: development_api.print_all_tables(filename)
+        core_api.block_databases()
+        development_api.print_all_tables(filename)
+        core_api.release_databases()
 
     def handle_populate_tree(self, kwargs):
         items = kwargs['treeitems']
@@ -142,12 +165,14 @@ class MenuDev(wx.Menu):
                                             item['id_'], item['text'])
 
     def populate_tree(self, event):
+        core_api.block_databases()
         db = wxgui_api.get_active_database()
         if db:
             filename = db.get_filename()
             if filename:
                 development_api.populate_tree(filename)
                 wxgui_api.refresh_history(filename)
+        core_api.release_databases()
 
     def reset_simulator_item(self):
         if simulator.is_active():
