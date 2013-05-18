@@ -26,28 +26,6 @@ from organism.coreaux_api import log
 
 import simulator_actions
 
-ACTIONS = (
-    1 * [simulator_actions.create_database] +
-    1 * [simulator_actions.open_database] +
-    1 * [simulator_actions.save_database] +
-    1 * [simulator_actions.close_database] +
-    4 * [simulator_actions.undo_database_history] +
-    4 * [simulator_actions.redo_database_history] +
-    18 * [simulator_actions.create_item] +
-    4 * [simulator_actions.cut_items] +
-    4 * [simulator_actions.copy_items] +
-    4 * [simulator_actions.paste_items] +
-    4 * [simulator_actions.move_item] +
-    12 * [simulator_actions.edit_item] +
-    4 * [simulator_actions.delete_items] +
-    6 * [simulator_actions.edit_editor_text] +
-    6 * [simulator_actions.edit_editor_rules] +
-    12 * [simulator_actions.apply_editor] +
-    8 * [simulator_actions.close_editor] +
-    8 * [simulator_actions.snooze_alarms] +
-    8 * [simulator_actions.dismiss_alarms]
-)
-
 # [1] Do not instantiate timer with a dummy wx.CallAfter call, in fact it's
 # necessary to distinguish when the simulator is active or not, since there is a
 # very short time interval, between each action is called and the next timer is
@@ -112,7 +90,7 @@ def _do_action():
         log.debug('Databases are locked')
         _restart()
     else:
-        if random.choice(ACTIONS)() == False:
+        if random.choice(simulator_actions.ACTIONS)() == False:
             # core_api.release_databases must be called by the action even in
             # case it returns False, see also comment [2]
             _do_action()

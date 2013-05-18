@@ -20,9 +20,11 @@ import wxalarms
 
 
 def get_active_alarms():
-    return [(wxalarms.alarmswindow.alarms[a].get_filename(),
-                                  wxalarms.alarmswindow.alarms[a].get_alarmid())
-                                          for a in wxalarms.alarmswindow.alarms]
+    return [{
+        'filename': wxalarms.alarmswindow.alarms[a].get_filename(),
+        'id': wxalarms.alarmswindow.alarms[a].get_id(),
+        'alarmid': wxalarms.alarmswindow.alarms[a].get_alarmid(),
+    } for a in wxalarms.alarmswindow.alarms]
 
 
 def simulate_set_snooze_time(number, unit):

@@ -50,7 +50,6 @@ class MenuDev(wx.Menu):
         wxgui_api.bind_to_menu(self.populate_tree, self.populate)
         wxgui_api.bind_to_menu(self.toggle_simulator, self.simulator)
 
-        core_api.bind_to_exit_app_1(simulator.stop)
         development_api.bind_to_populate_tree(self.handle_populate_tree)
         wxgui_api.bind_to_reset_menu_items(self.handle_reset_menu_items)
 
@@ -164,3 +163,4 @@ class MenuDev(wx.Menu):
 
 def main():
     MenuDev()
+    core_api.bind_to_exit_app_1(simulator.stop)

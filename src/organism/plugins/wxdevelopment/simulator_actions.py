@@ -472,28 +472,34 @@ def close_editor():
 
 
 def snooze_alarms():
-    alarms = wxalarms_api.get_active_alarms()
-    if wxalarms_api and alarms:
-        # Ignore 'days', 'weeks', 'months', 'years'
-        unit = random.choice(('minutes', 'hours'))
-        if unit == 'minutes':
-            number = random.randint(1, 360)
-        elif unit == 'hours':
-            number = random.randint(1, 24)
+    if wxalarms_api:
+        alarms = wxalarms_api.get_active_alarms()
+        if alarms:
+            # Ignore 'days', 'weeks', 'months', 'years'
+            unit = random.choice(('minutes', 'hours'))
+            if unit == 'minutes':
+                number = random.randint(1, 360)
+            elif unit == 'hours':
+                number = random.randint(1, 24)
 
-        wxalarms_api.simulate_set_snooze_time(number, unit)
+            wxalarms_api.simulate_set_snooze_time(number, unit)
 
-        if random.randint(0, 11) > 0:
-            filename, alarmid = random.choice(alarms)
-            log.debug('Simulate snooze alarm')
-            # Databases are blocked in simulator._do_action
-            core_api.release_databases()
-            wxalarms_api.simulate_snooze_alarm(filename, alarmid)
+            if random.randint(0, 11) > 0:
+                alarm = random.choice(alarms)
+                log.debug('Simulate snooze alarm')
+                # Databases are blocked in simulator._do_action
+                core_api.release_databases()
+                wxalarms_api.simulate_snooze_alarm(alarm['filename'],
+                                                                   alarm['alarmid'])
+            else:
+                log.debug('Simulate snooze all alarms')
+                # Databases are blocked in simulator._do_action
+                core_api.release_databases()
+                wxalarms_api.simulate_snooze_all_alarms()
         else:
-            log.debug('Simulate snooze all alarms')
             # Databases are blocked in simulator._do_action
             core_api.release_databases()
-            wxalarms_api.simulate_snooze_all_alarms()
+            return False
     else:
         # Databases are blocked in simulator._do_action
         core_api.release_databases()
@@ -501,20 +507,48 @@ def snooze_alarms():
 
 
 def dismiss_alarms():
-    alarms = wxalarms_api.get_active_alarms()
-    if wxalarms_api and alarms:
-        if random.randint(0, 11) > 0:
-            filename, alarmid = random.choice(alarms)
-            log.debug('Simulate dismiss alarm')
-            # Databases are blocked in simulator._do_action
-            core_api.release_databases()
-            wxalarms_api.simulate_dismiss_alarm(filename, alarmid)
+    if wxalarms_api:
+        alarms = wxalarms_api.get_active_alarms()
+        if alarms:
+            if random.randint(0, 11) > 0:
+                alarm = random.choice(alarms)
+                log.debug('Simulate dismiss alarm')
+                # Databases are blocked in simulator._do_action
+                core_api.release_databases()
+                wxalarms_api.simulate_dismiss_alarm(alarm['filename'],
+                                                                   alarm['alarmid'])
+            else:
+                log.debug('Simulate dismiss all alarms')
+                # Databases are blocked in simulator._do_action
+                core_api.release_databases()
+                wxalarms_api.simulate_dismiss_all_alarms()
         else:
-            log.debug('Simulate dismiss all alarms')
             # Databases are blocked in simulator._do_action
             core_api.release_databases()
-            wxalarms_api.simulate_dismiss_all_alarms()
+            return False
     else:
         # Databases are blocked in simulator._do_action
         core_api.release_databases()
         return False
+
+ACTIONS = (
+    1 * [create_database] +
+    1 * [open_database] +
+    1 * [save_database] +
+    1 * [close_database] +
+    4 * [undo_database_history] +
+    4 * [redo_database_history] +
+    18 * [create_item] +
+    4 * [cut_items] +
+    4 * [copy_items] +
+    4 * [paste_items] +
+    4 * [move_item] +
+    12 * [edit_item] +
+    4 * [delete_items] +
+    6 * [edit_editor_text] +
+    6 * [edit_editor_rules] +
+    12 * [apply_editor] +
+    8 * [close_editor] +
+    8 * [snooze_alarms] +
+    8 * [dismiss_alarms]
+)
