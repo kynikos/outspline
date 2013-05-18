@@ -271,6 +271,12 @@ def restart_timer(oldalarms, next_alarm, alarmsd):
             timer.start()
 
             log.debug('Timer refresh: {}'.format(next_loop))
+    else:
+        # If no alarm is found, execute activate_alarms, which will in turn
+        # execute set_last_search, so that if a rule is created with an alarm
+        # time between the last search and now, the alarm won't be activated
+        occurrences.activate_alarms(now, alarmsd)
+
 
 
 def cancel_timer(kwargs=None):
