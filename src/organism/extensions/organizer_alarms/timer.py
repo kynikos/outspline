@@ -31,80 +31,78 @@ search_alarms_event = Event()
 timer = None
 
 
-class Alarms():
-    # Note that here "alarm" can also mean one of "alarm", "start", or "end" if
-    # it's the next "reminder": this is because originally this function did
-    # get only "alarm"s indeed...
+class NextOccurrences():
     def __init__(self):
-        self.alarms = {}
+        self.occs = {}
         self.next = None
 
-    def add(self, last_search, alarm):
-        filename = alarm['filename']
-        id_ = alarm['id_']
+    def add(self, last_search, occ):
+        filename = occ['filename']
+        id_ = occ['id_']
 
-        tl = [alarm['start'], alarm['end'], alarm['alarm']]
-        # Sort alarm, start, end (None values are always put first)
+        if self.next and self.next in (occ['alarm'], occ['start'], occ['end']):
+            try:
+                self.occs[filename][id_]
+            except KeyError:
+                try:
+                    self.occs[filename]
+                except KeyError:
+                    self.occs[filename] = {}
+                self.occs[filename][id_] = []
+            self.occs[filename][id_].append(occ)
+            return True
+        else:
+            return self._update_next(last_search, occ)
+
+    def _update_next(self, last_search, occ):
+        tl = [occ['start'], occ['end'], occ['alarm']]
+        # When sorting, None values are put first
         tl.sort()
 
-        if self.next:
-            if alarm['alarm'] == self.next or alarm['start'] == self.next or \
-                                                     alarm['end'] == self.next:
-                if filename not in self.alarms:
-                    self.alarms[filename] = {}
-                if id_ not in self.alarms[filename]:
-                    self.alarms[filename][id_] = []
-                self.alarms[filename][id_].append(alarm)
+        for t in tl:
+            # Note that "last_search < t" is always False if t is None
+            if last_search < t and (not self.next or t < self.next):
+                self.next = t
+                self.occs = {occ['filename']: {occ['id_']: [occ]}}
                 return True
-            else:
-                for t in tl:
-                    if last_search < t < self.next:
-                        self.next = t
-                        self.alarms = {filename: {id_: [alarm]}}
-                        return True
-                else:
-                    return False
         else:
-            for t in tl:
-                if last_search < t:
-                    self.next = t
-                    self.alarms = {filename: {id_: [alarm]}}
-                    return True
-            else:
-                return False
+            return False
 
     def except_(self, filename, id_, start, end, inclusive):
         # Test if the item has some rules, for safety, also for coherence with
         # organizer.items.TempOccurrences.except_
         try:
-            alarmsc = self.alarms[filename][id_][:]
+            occsc = self.occs[filename][id_][:]
         except KeyError:
             pass
         else:
-            for alarm in alarmsc:
-                if start <= alarm['start'] <= end or \
-                       (inclusive and alarm['start'] <= start <= alarm['end']):
-                    self.alarms[filename][id_].remove(alarm)
-        # Do not reset self.next to None in case there are no alarms left: this
-        # lets restart_timer, and consequently search_alarms, ignore the
+            for occ in occsc:
+                if start <= occ['start'] <= end or (inclusive and
+                                           occ['start'] <= start <= occ['end']):
+                    self.occs[filename][id_].remove(occ)
+        # Do not reset self.next to None in case there are no occurrences left:
+        # this lets restart_timer, and consequently search_alarms, ignore the
         # excepted alarms at the following search
 
     def try_delete_one(self, filename, id_, start, end, alarm):
-        if filename in self.alarms and id_ in self.alarms[filename]:
-            for alarmd in self.alarms[filename][id_][:]:
-                if start == alarmd['start'] and end == alarmd['end'] and \
-                                                       alarm == alarmd['alarm']:
-                    self.alarms[filename][id_].remove(alarmd)
-                    if not self.alarms[filename][id_]:
-                        del self.alarms[filename][id_]
-                    if not self.alarms[filename]:
-                        del self.alarms[filename]
+        try:
+            occsc = self.occs[filename][id_][:]
+        except KeyError:
+            return False
+        else:
+            for occd in occsc:
+                if (start, end, alarm) == (occd['start'], occd['end'],
+                                                                 occd['alarm']):
+                    self.occs[filename][id_].remove(occd)
+                    if not self.occs[filename][id_]:
+                        del self.occs[filename][id_]
+                    if not self.occs[filename]:
+                        del self.occs[filename]
                     # Delete only one occurrence, hence the name try_delete_one
                     return True
-        return False
 
     def get_dict(self):
-        return self.alarms
+        return self.occs
 
     def get_next_alarm(self):
         return self.next
@@ -112,14 +110,14 @@ class Alarms():
     def get_time_span(self):
         minstart = None
         maxend = None
-        for filename in self.alarms:
-            for id_ in self.alarms[filename]:
-                for alarm in self.alarms[filename][id_]:
+        for filename in self.occs:
+            for id_ in self.occs[filename]:
+                for occ in self.occs[filename][id_]:
                     # This assumes that start <= end
-                    if minstart is None or alarm['start'] < minstart:
-                        minstart = alarm['start']
-                    if maxend is None or alarm['end'] > maxend:
-                        maxend = alarm['end']
+                    if minstart is None or occ['start'] < minstart:
+                        minstart = occ['start']
+                    if maxend is None or occ['end'] > maxend:
+                        maxend = occ['end']
         return (minstart, maxend)
 
 
@@ -131,7 +129,7 @@ def search_alarms():
 
     log.debug('Search alarms')
 
-    alarms = Alarms()
+    alarms = NextOccurrences()
 
     if filename is None:
         for filename in core_api.get_open_databases():
