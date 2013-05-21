@@ -29,7 +29,7 @@ def handle_search_alarms(kwargs):
     id_ = kwargs['id_']
     rule = kwargs['rule']
     alarms = kwargs['alarms']
-    
+
     if rule['rule'] == 'occur_once':
         occur_once.search_alarms(last_search, filename, id_, rule, alarms)
     elif rule['rule'] == 'occur_every_day':
@@ -44,15 +44,14 @@ def handle_get_occurrences(kwargs):
     filename = kwargs['filename']
     id_ = kwargs['id_']
     rule = kwargs['rule']
-    tempoccs = kwargs['tempoccs']
-    
+    occs = kwargs['occs']
+
     if rule['rule'] == 'occur_once':
-        occur_once.get_occurrences(filename, id_, rule, tempoccs)
+        occur_once.get_occurrences(filename, id_, rule, occs)
     elif rule['rule'] == 'occur_every_day':
-        occur_every_day.get_occurrences(mint, maxt, filename, id_, rule,
-                                        tempoccs)
+        occur_every_day.get_occurrences(mint, maxt, filename, id_, rule, occs)
     elif rule['rule'] == 'except_once':
-        except_once.get_occurrences(mint, maxt, filename, id_, rule, tempoccs)
+        except_once.get_occurrences(mint, maxt, filename, id_, rule, occs)
 
 
 def main():

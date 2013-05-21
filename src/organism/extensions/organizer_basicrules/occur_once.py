@@ -21,18 +21,18 @@ def _compute_alarm(start, ralarm):
     return None if (ralarm == None) else (start - ralarm)
 
 
-def get_occurrences(filename, id_, rule, tempoccs):
+def get_occurrences(filename, id_, rule, occs):
     start = rule['start']
     end = rule['end']
     ralarm = rule['ralarm']
 
     alarm = _compute_alarm(start, ralarm)
 
-    tempoccs.add({'filename': filename,
-                  'id_': id_,
-                  'start': start,
-                  'end': end,
-                  'alarm': alarm})
+    occs.add({'filename': filename,
+              'id_': id_,
+              'start': start,
+              'end': end,
+              'alarm': alarm})
 
 def search_alarms(last_search, filename, id_, rule, alarms):
     start = rule['start']

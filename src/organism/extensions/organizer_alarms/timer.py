@@ -70,7 +70,7 @@ class NextOccurrences():
 
     def except_(self, filename, id_, start, end, inclusive):
         # Test if the item has some rules, for safety, also for coherence with
-        # organizer.items.TempOccurrences.except_
+        # organizer.items.OccurrencesRange.except_
         try:
             occsc = self.occs[filename][id_][:]
         except KeyError:
@@ -206,7 +206,7 @@ def get_snoozed_alarms(alarms):
     return oldalarms
 
 
-def get_alarms(mint, maxt, filename, tempoccs):
+def get_alarms(mint, maxt, filename, occs):
     conn = core_api.get_connection(filename)
     cur = conn.cursor()
     cur.execute(queries.alarms_select_alarms)
@@ -226,12 +226,12 @@ def get_alarms(mint, maxt, filename, tempoccs):
         # Always add active (but not snoozed) alarms if time interval includes
         # current time
         if snooze == None and mint <= int(_time.time()) <= maxt:
-            tempoccs.update(alarmd, origalarm, force=True)
+            occs.update(alarmd, origalarm, force=True)
         else:
             # Note that the second argument must be origalarm, not snooze, in
             # fact it's used to *update* the occurrence (if present) using the
             # new snooze time stored in alarmd
-            tempoccs.update(alarmd, origalarm)
+            occs.update(alarmd, origalarm)
 
 
 def set_last_search(filename, tstamp):

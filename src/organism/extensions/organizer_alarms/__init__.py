@@ -154,9 +154,9 @@ def handle_get_alarms(kwargs):
     mint = kwargs['mint']
     maxt = kwargs['maxt']
     filename = kwargs['filename']
-    tempoccs = kwargs['tempoccs']
-    
-    timer.get_alarms(mint, maxt, filename, tempoccs)
+    occs = kwargs['occs']
+
+    timer.get_alarms(mint, maxt, filename, occs)
 
 
 def main():

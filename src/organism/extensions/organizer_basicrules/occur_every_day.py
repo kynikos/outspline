@@ -59,7 +59,7 @@ def _compute_alarm(start, ralarm):
     return start - ralarm if ralarm != None else None
 
 
-def get_occurrences(mint, maxt, filename, id_, rule, tempoccs):
+def get_occurrences(mint, maxt, filename, id_, rule, occs):
     rend = _compute_rend(rule['rendn'], rule['rendu'])
     start = _compute_start(mint, rule['rstart'], rend)
     ralarm = rule['ralarm']
@@ -71,11 +71,11 @@ def get_occurrences(mint, maxt, filename, id_, rule, tempoccs):
         if (alarm and alarm > maxt) or start > maxt:
             break
 
-        tempoccs.add({'filename': filename,
-                      'id_': id_,
-                      'start': start,
-                      'end': end,
-                      'alarm': alarm})
+        occs.add({'filename': filename,
+                  'id_': id_,
+                  'start': start,
+                  'end': end,
+                  'alarm': alarm})
 
         start += 86400
 

@@ -28,7 +28,7 @@ get_occurrences_event = Event()
 get_alarms_event = Event()
 
 
-class TempOccurrences():
+class OccurrencesRange():
     def __init__(self, mint, maxt):
         self.mint = mint
         self.maxt = maxt
@@ -42,34 +42,37 @@ class TempOccurrences():
         oocc['alarm'] = origalarm
         del oocc['alarmid']
 
-        if filename in self.d and id_ in self.d[filename] and \
-                                                 oocc in self.d[filename][id_]:
-            self.d[filename][id_][self.d[filename][id_].index(oocc)] = occ
-            return True
-        elif force:
-            return self._add(occ)
+        try:
+            self.d[filename][id_]
+        except KeyError:
+            return self.add(occ, force)
         else:
-            return self.add(occ)
+            try:
+                i = self.d[filename][id_].index(oocc)
+            except ValueError:
+                return self.add(occ, force)
+            else:
+                self.d[filename][id_][i] = occ
+                return True
 
-    def add(self, occ):
-        if self.mint <= occ['start'] <= self.maxt or \
-                  (occ['end'] and occ['start'] <= self.mint <= occ['end']) or \
-                  (occ['alarm'] and self.mint <= occ['alarm'] <= self.maxt):
-            return self._add(occ)
+    def add(self, occ, force=False):
+        if force or (self.mint <= occ['start'] <= self.maxt or
+                     (occ['end'] and occ['start'] <= self.mint <= occ['end']) or
+                     (occ['alarm'] and self.mint <= occ['alarm'] <= self.maxt)):
+            filename = occ['filename']
+            id_ = occ['id_']
+            try:
+                self.d[filename][id_]
+            except KeyError:
+                try:
+                    self.d[filename]
+                except KeyError:
+                    self.d[filename] = {}
+                self.d[filename][id_] = []
+            self.d[filename][id_].append(occ)
+            return True
         else:
             return False
-
-    def _add(self, occ):
-        filename = occ['filename']
-        id_ = occ['id_']
-
-        if filename not in self.d:
-            self.d[filename] = {}
-        if id_ not in self.d[filename]:
-            self.d[filename][id_] = []
-        self.d[filename][id_].append(occ)
-
-        return True
 
     def except_(self, filename, id_, start, end, inclusive):
         # If an except rule is put at the start of the rules list for an item,
@@ -92,6 +95,14 @@ class TempOccurrences():
 
     def get_dict(self):
         return self.d
+
+    def get_list(self):
+        occsl = []
+        for f in self.d:
+            for i in self.d[f]:
+                for o in self.d[f][i]:
+                    occsl.append(o)
+        return occsl
 
 
 def insert_item(filename, id_, group, description='Insert item'):
@@ -203,7 +214,7 @@ def string_to_rules(string):
 
 
 def get_occurrences(mint, maxt):
-    tempoccs = TempOccurrences(mint, maxt)
+    occs = OccurrencesRange(mint, maxt)
 
     for filename in core_api.get_open_databases():
         for id_ in core_api.get_items_ids(filename):
@@ -211,20 +222,13 @@ def get_occurrences(mint, maxt):
             for rule in rules:
                 get_occurrences_event.signal(mint=mint, maxt=maxt,
                                              filename=filename, id_=id_,
-                                             rule=rule, tempoccs=tempoccs)
+                                             rule=rule, occs=occs)
 
-    # Get alarms *after* all occurrences, to avoid except rules
+    # Get active alarms *after* all occurrences, to avoid except rules
     for filename in core_api.get_open_databases():
         get_alarms_event.signal(mint=mint, maxt=maxt, filename=filename,
-                                tempoccs=tempoccs)
-
-    d = tempoccs.get_dict()
-    tempoccsl = []
-    for f in d:
-        for i in d[f]:
-            for o in d[f][i]:
-                tempoccsl.append(o)
+                                occs=occs)
 
     # Note that the list is practically unsorted: sorting its items is a duty
     # of the interface
-    return tempoccsl
+    return occs.get_list()
