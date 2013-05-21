@@ -82,7 +82,7 @@ class NextOccurrences():
                     self.occs[filename][id_].remove(occ)
         # Do not reset self.next to None in case there are no occurrences left:
         # this lets restart_timer, and consequently search_occurrences, ignore
-        # the excepted alarms at the following search
+        # the excepted occurrences at the following search
 
     def try_delete_one(self, filename, id_, start, end, alarm):
         try:
@@ -172,31 +172,31 @@ def get_last_search(filename):
     return cur.fetchone()['AP_last_search']
 
 
-def restart_timer(oldalarms, next_occurrence, alarmsd):
+def restart_timer(oldoccs, next_occurrence, occsd):
     cancel_timer()
 
     now = int(_time.time())
 
-    if oldalarms:
-        alarmsmod.activate_alarms(now, oldalarms, old=True)
+    if oldoccs:
+        alarmsmod.activate_alarms(now, oldoccs, old=True)
 
     if next_occurrence != None:
         if next_occurrence <= now:
-            alarmsmod.activate_alarms(next_occurrence, alarmsd)
+            alarmsmod.activate_alarms(next_occurrence, occsd)
             search_occurrences()
         else:
             next_loop = next_occurrence - now
             global timer
-            timer = Timer(next_loop, activate_alarms, (next_occurrence, alarmsd,
-                                                                              ))
+            timer = Timer(next_loop, activate_occurrences, (next_occurrence,
+                                                                       occsd, ))
             timer.start()
 
             log.debug('Timer refresh: {}'.format(next_loop))
     else:
-        # If no alarm is found, execute activate_alarms, which will in turn
+        # If no occurrence is found, execute activate_alarms, which will in turn  # MENTIONS activate_alarms ******************
         # execute set_last_search, so that if a rule is created with an alarm
         # time between the last search and now, the alarm won't be activated
-        alarmsmod.activate_alarms(now, alarmsd)
+        alarmsmod.activate_alarms(now, occsd)
 
 
 def cancel_timer(kwargs=None):
@@ -206,13 +206,13 @@ def cancel_timer(kwargs=None):
         timer.cancel()
 
 
-def activate_alarms(time, alarmsd):
+def activate_occurrences(time, occsd):
     # It's important that the database is blocked on this thread, and not on the
     # main thread, otherwise the program would hang if the user is performing
     # an action
     core_api.block_databases()
 
-    alarmsmod.activate_alarms(time, alarmsd)
+    alarmsmod.activate_alarms(time, occsd)
     search_occurrences()
 
     core_api.release_databases()
