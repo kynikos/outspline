@@ -26,7 +26,7 @@ copypaste_api = coreaux_api.import_extension_api('copypaste')
 
 import queries
 import timer
-import occurrences
+import alarmsmod
 
 
 def create_copy_table():
@@ -53,36 +53,36 @@ def handle_open_database(kwargs):
 
 
 def handle_close_database(kwargs):
-    del occurrences.changes[kwargs['filename']]
-    del occurrences.dismiss_state[kwargs['filename']]
+    del alarmsmod.changes[kwargs['filename']]
+    del alarmsmod.dismiss_state[kwargs['filename']]
     timer.search_alarms()
 
 
 def handle_check_pending_changes(kwargs):
     filename = kwargs['filename']
-    
+
     conn = core_api.get_connection(filename)
     cur = conn.cursor()
     # Do not track changes to last_search in AlarmsProperties
-    change_state = occurrences.changes[filename] != \
-                            [row for row in cur.execute(queries.alarms_select)]
+    change_state = alarmsmod.changes[filename] != \
+                             [row for row in cur.execute(queries.alarms_select)]
     core_api.give_connection(filename, conn)
-    
-    if change_state or occurrences.dismiss_state[filename]:
+
+    if change_state or alarmsmod.dismiss_state[filename]:
         core_api.set_modified(filename)
 
 
 def handle_reset_modified_state(kwargs):
     filename = kwargs['filename']
-    
+
     conn = core_api.get_connection(filename)
     cur = conn.cursor()
     # Do not track changes to last_search in AlarmsProperties
-    occurrences.changes[filename] = [row for row in cur.execute(
-                                                        queries.alarms_select)]
+    alarmsmod.changes[filename] = [row for row in cur.execute(
+                                                         queries.alarms_select)]
     core_api.give_connection(filename, conn)
-    
-    occurrences.dismiss_state[filename] = False
+
+    alarmsmod.dismiss_state[filename] = False
 
 
 def handle_save_database_copy(kwargs):
@@ -90,17 +90,17 @@ def handle_save_database_copy(kwargs):
     qconnd = sqlite3.connect(kwargs['destination'])
     cur = qconn.cursor()
     curd = qconnd.cursor()
-    
+
     cur.execute(queries.alarmsproperties_select)
     for row in cur:
         curd.execute(queries.alarmsproperties_update_copy, tuple(row))
-    
+
     cur.execute(queries.alarms_select)
     for row in cur:
         curd.execute(queries.alarms_insert_copy, tuple(row))
-        
+
     core_api.give_connection(kwargs['origin'], qconn)
-    
+
     qconnd.commit()
     qconnd.close()
 
@@ -115,35 +115,35 @@ def handle_copy_items(kwargs):
 def handle_copy_item(kwargs):
     filename = kwargs['filename']
     id_ = kwargs['id_']
-    
-    occurrences.copy_alarms(filename, id_)
+
+    alarmsmod.copy_alarms(filename, id_)
 
 
 def handle_paste_item(kwargs):
-    occurrences.paste_alarms(kwargs['filename'], kwargs['id_'],
+    alarmsmod.paste_alarms(kwargs['filename'], kwargs['id_'],
                              kwargs['oldid'])
-    
+
     timer.search_alarms()
 
 
 def handle_delete_item(kwargs):
-    occurrences.delete_alarms(kwargs['filename'], kwargs['id_'], kwargs['hid'])
+    alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'], kwargs['hid'])
 
 
 def handle_history_insert(kwargs):
-    occurrences.undelete_alarms(kwargs['filename'], kwargs['id_'], kwargs['hid'])
+    alarmsmod.undelete_alarms(kwargs['filename'], kwargs['id_'], kwargs['hid'])
 
 
 def handle_history_remove(kwargs):
-    occurrences.delete_alarms(kwargs['filename'], kwargs['id_'], kwargs['hid'])
+    alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'], kwargs['hid'])
 
 
 def handle_history_clean_groups(kwargs):
-    occurrences.clean_deleted_alarms(kwargs['filename'])
+    alarmsmod.clean_deleted_alarms(kwargs['filename'])
 
 
 def handle_history_clean(kwargs):
-    occurrences.clean_old_history_alarms(kwargs['filename'], kwargs['hids'])
+    alarmsmod.clean_old_history_alarms(kwargs['filename'], kwargs['hids'])
 
 
 def handle_search_alarms(kwargs):
@@ -161,7 +161,7 @@ def handle_get_alarms(kwargs):
 
 def main():
     create_copy_table()
-    
+
     core_api.bind_to_create_database(handle_create_database)
     core_api.bind_to_open_database(handle_open_database)
     core_api.bind_to_check_pending_changes(handle_check_pending_changes)
@@ -176,10 +176,10 @@ def main():
     core_api.bind_to_history_clean_groups(handle_history_clean_groups)
     core_api.bind_to_history_clean(handle_history_clean)
     core_api.bind_to_exit_app_1(timer.cancel_timer)
-    
+
     organizer_api.bind_to_update_item_rules(handle_search_alarms)
     organizer_api.bind_to_get_alarms(handle_get_alarms)
-    
+
     if copypaste_api:
         copypaste_api.bind_to_copy_items(handle_copy_items)
         copypaste_api.bind_to_copy_item(handle_copy_item)

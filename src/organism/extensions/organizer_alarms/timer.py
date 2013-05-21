@@ -23,7 +23,7 @@ from organism.coreaux_api import log, Event
 import organism.core_api as core_api
 import organism.extensions.organizer_api as organizer_api
 
-import occurrences
+import alarmsmod
 import queries
 
 search_alarms_event = Event()
@@ -256,11 +256,11 @@ def restart_timer(oldalarms, next_alarm, alarmsd):
     now = int(_time.time())
 
     if oldalarms:
-        occurrences.activate_alarms(now, oldalarms, old=True)
+        alarmsmod.activate_alarms(now, oldalarms, old=True)
 
     if next_alarm != None:
         if next_alarm <= now:
-            occurrences.activate_alarms(next_alarm, alarmsd)
+            alarmsmod.activate_alarms(next_alarm, alarmsd)
             search_alarms()
         else:
             next_loop = next_alarm - now
@@ -273,7 +273,7 @@ def restart_timer(oldalarms, next_alarm, alarmsd):
         # If no alarm is found, execute activate_alarms, which will in turn
         # execute set_last_search, so that if a rule is created with an alarm
         # time between the last search and now, the alarm won't be activated
-        occurrences.activate_alarms(now, alarmsd)
+        alarmsmod.activate_alarms(now, alarmsd)
 
 
 
@@ -290,7 +290,7 @@ def activate_alarms(time, alarmsd):
     # an action
     core_api.block_databases()
 
-    occurrences.activate_alarms(time, alarmsd)
+    alarmsmod.activate_alarms(time, alarmsd)
     search_alarms()
 
     core_api.release_databases()
