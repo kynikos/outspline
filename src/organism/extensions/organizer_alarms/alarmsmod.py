@@ -21,6 +21,7 @@ import sqlite3
 
 from organism.coreaux_api import Event
 import organism.core_api as core_api
+from organism.extensions.organizer_timer.timer import set_last_search, get_last_search  # TEMP import ************************
 
 import queries
 import timer
@@ -42,7 +43,7 @@ def get_snoozed_alarms(alarms):
         cur.execute(queries.alarms_select_alarms)
         core_api.give_connection(filename, conn)
 
-        last_search = timer.get_last_search(filename)
+        last_search = get_last_search(filename)
 
         for row in cur:
             itemid = row['A_item']
@@ -113,8 +114,8 @@ def get_alarms(mint, maxt, filename, occs):
 
 def activate_alarms(time, alarmsd, old=False):
     # Do not use only alarmsd to get filenames, but use all open filenames
-    # regardless whether they are in alarmsd or not (see set_last_search()
-    # further down)
+    # regardless whether they are in alarmsd or not (see comment further down on
+    # the set_last_search() call)
     for filename in core_api.get_open_databases():
         if filename in alarmsd:
             for id_ in alarmsd[filename]:
@@ -144,7 +145,7 @@ def activate_alarms(time, alarmsd, old=False):
         # Reset last_search in every open database, even if alarmsd is empty:
         # this will let the next search_alarms ignore the alarms excepted in
         # the previous search
-        timer.set_last_search(filename, time)
+        set_last_search(filename, time)
 
     alarms_event.signal()
 

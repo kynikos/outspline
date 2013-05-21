@@ -15,3 +15,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+
+alarmsproperties_select_search = ('SELECT AP_last_search '
+                                  'FROM AlarmsProperties LIMIT 1')
+
+alarmsproperties_update = 'UPDATE AlarmsProperties SET AP_last_search=?'

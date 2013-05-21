@@ -22,7 +22,7 @@ import time as _time
 from organism.coreaux_api import log, Event
 import organism.core_api as core_api
 import organism.extensions.organizer_api as organizer_api
-from organism.extensions.organizer_timer.timer import NextOccurrences  # TEMP import ************************
+from organism.extensions.organizer_timer.timer import NextOccurrences, set_last_search, get_last_search  # TEMP import ************************
 
 import alarmsmod
 import queries
@@ -65,22 +65,6 @@ def search_item_alarms(last_search, filename, id_, alarms):
     for rule in rules:
         search_alarms_event.signal(last_search=last_search, filename=filename,
                                    id_=id_, rule=rule, alarms=alarms)
-
-
-def set_last_search(filename, tstamp):
-    conn = core_api.get_connection(filename)
-    cur = conn.cursor()
-    cur.execute(queries.alarmsproperties_update, (tstamp, ))
-    core_api.give_connection(filename, conn)
-
-
-def get_last_search(filename):
-    conn = core_api.get_connection(filename)
-    cur = conn.cursor()
-    cur.execute(queries.alarmsproperties_select_search)
-    core_api.give_connection(filename, conn)
-
-    return cur.fetchone()['AP_last_search']
 
 
 def restart_timer(oldalarms, next_alarm, alarmsd):

@@ -16,6 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+import organism.core_api as core_api
+
+import queries
+
 
 class NextOccurrences():
     def __init__(self):
@@ -105,3 +109,19 @@ class NextOccurrences():
                     if maxend is None or occ['end'] > maxend:
                         maxend = occ['end']
         return (minstart, maxend)
+
+
+def set_last_search(filename, tstamp):
+    conn = core_api.get_connection(filename)
+    cur = conn.cursor()
+    cur.execute(queries.alarmsproperties_update, (tstamp, ))
+    core_api.give_connection(filename, conn)
+
+
+def get_last_search(filename):
+    conn = core_api.get_connection(filename)
+    cur = conn.cursor()
+    cur.execute(queries.alarmsproperties_select_search)
+    core_api.give_connection(filename, conn)
+
+    return cur.fetchone()['AP_last_search']
