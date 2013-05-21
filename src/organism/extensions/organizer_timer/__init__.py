@@ -15,3 +15,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+
+import organism.core_api as core_api
+
+import timer
+
+
+def main():
+    core_api.bind_to_exit_app_1(timer.cancel_timer)

@@ -21,7 +21,6 @@ import sqlite3
 
 from organism.coreaux_api import Event
 import organism.core_api as core_api
-import organism.extensions.organizer_timer as organizer_timer  # TEMP import ************************
 
 import queries
 import timer
@@ -36,6 +35,7 @@ dismiss_state = {}
 
 def get_snoozed_alarms(alarms):
     oldalarms = {}
+    import organism.extensions.organizer_timer as organizer_timer  # TEMP import ************************
 
     for filename in core_api.get_open_databases():
         conn = core_api.get_connection(filename)
@@ -113,6 +113,7 @@ def get_alarms(mint, maxt, filename, occs):
 
 
 def activate_alarms(time, alarmsd, old=False):
+    import organism.extensions.organizer_timer as organizer_timer  # TEMP import ************************
     # Do not use only alarmsd to get filenames, but use all open filenames
     # regardless whether they are in alarmsd or not (see comment further down on
     # the set_last_search() call)
@@ -164,6 +165,7 @@ def snooze_alarms(alarmst, stime):
 
     # Do not refresh the timer inside the for loop, otherwise it messes up with
     # the wx.CallAfter() that manages the activated alarms in the interface
+    import organism.extensions.organizer_timer as organizer_timer  # TEMP import ************************
     organizer_timer.timer.search_alarms()
 
 

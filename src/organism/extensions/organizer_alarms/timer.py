@@ -16,18 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
-from organism.coreaux_api import log
 import organism.core_api as core_api
-import organism.extensions.organizer_timer as organizer_timer  # TEMP import *************************
 
 import alarmsmod
-
-
-def cancel_timer(kwargs=None):
-    # kwargs is passed from the binding to core_api.bind_to_exit_app_1
-    if organizer_timer.timer.timer and organizer_timer.timer.timer.is_alive():
-        log.debug('Timer cancel')
-        organizer_timer.timer.timer.cancel()
 
 
 def activate_alarms(time, alarmsd):
@@ -37,6 +28,7 @@ def activate_alarms(time, alarmsd):
     core_api.block_databases()
 
     alarmsmod.activate_alarms(time, alarmsd)
-    organizer_timer.timer.search_alarms()
+    from organism.extensions.organizer_timer.timer import search_alarms  # TEMP import *************************
+    search_alarms()
 
     core_api.release_databases()

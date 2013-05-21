@@ -176,7 +176,6 @@ def main():
     core_api.bind_to_history_remove(handle_history_remove)
     core_api.bind_to_history_clean_groups(handle_history_clean_groups)
     core_api.bind_to_history_clean(handle_history_clean)
-    core_api.bind_to_exit_app_1(timer.cancel_timer)
 
     organizer_api.bind_to_update_item_rules(handle_search_alarms)
     organizer_api.bind_to_get_alarms(handle_get_alarms)

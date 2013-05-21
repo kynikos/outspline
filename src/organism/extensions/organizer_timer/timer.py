@@ -22,7 +22,7 @@ import time as _time
 from organism.coreaux_api import log, Event
 import organism.core_api as core_api
 import organism.extensions.organizer_api as organizer_api
-from organism.extensions.organizer_alarms.timer import cancel_timer, activate_alarms  # TEMP import *************************
+from organism.extensions.organizer_alarms.timer import activate_alarms  # TEMP import *************************
 from organism.extensions.organizer_alarms import alarmsmod  # TEMP import *************************
 
 import queries
@@ -197,3 +197,10 @@ def restart_timer(oldalarms, next_alarm, alarmsd):
         # execute set_last_search, so that if a rule is created with an alarm
         # time between the last search and now, the alarm won't be activated
         alarmsmod.activate_alarms(now, alarmsd)
+
+
+def cancel_timer(kwargs=None):
+    # kwargs is passed from the binding to core_api.bind_to_exit_app_1
+    if timer and timer.is_alive():
+        log.debug('Timer cancel')
+        timer.cancel()
