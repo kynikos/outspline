@@ -135,25 +135,25 @@ def search_occurrences():
         for filename in core_api.get_open_databases():
             last_search = get_last_search(filename)
             for id_ in core_api.get_items_ids(filename):
-                search_item_alarms(last_search, filename, id_, occs)
+                search_item_occurrences(last_search, filename, id_, occs)
     elif id_ is None:
         last_search = get_last_search(filename)
         for id_ in core_api.get_items_ids(filename):
-            search_item_alarms(last_search, filename, id_, occs)
+            search_item_occurrences(last_search, filename, id_, occs)
     else:
         last_search = get_last_search(filename)
-        search_item_alarms(last_search, filename, id_, occs)
+        search_item_occurrences(last_search, filename, id_, occs)
 
     oldoccs = alarmsmod.get_snoozed_alarms(occs)
 
     restart_timer(oldoccs, occs.get_next_alarm(), occs.get_dict())
 
 
-def search_item_alarms(last_search, filename, id_, alarms):
+def search_item_occurrences(last_search, filename, id_, occs):
     rules = organizer_api.get_item_rules(filename, id_)
     for rule in rules:
         search_occurrences_event.signal(last_search=last_search,
-                           filename=filename, id_=id_, rule=rule, alarms=alarms)
+                               filename=filename, id_=id_, rule=rule, occs=occs)
 
 
 def set_last_search(filename, tstamp):

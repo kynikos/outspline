@@ -28,14 +28,14 @@ def handle_search_occurrences(kwargs):
     filename = kwargs['filename']
     id_ = kwargs['id_']
     rule = kwargs['rule']
-    alarms = kwargs['alarms']
+    occs = kwargs['occs']
 
     if rule['rule'] == 'occur_once':
-        occur_once.search_alarms(last_search, filename, id_, rule, alarms)
+        occur_once.search_alarms(last_search, filename, id_, rule, occs)
     elif rule['rule'] == 'occur_every_day':
-        occur_every_day.search_alarms(last_search, filename, id_, rule, alarms)
+        occur_every_day.search_alarms(last_search, filename, id_, rule, occs)
     elif rule['rule'] == 'except_once':
-        except_once.search_alarms(filename, id_, rule, alarms)
+        except_once.search_alarms(filename, id_, rule, occs)
 
 
 def handle_get_occurrences(kwargs):
