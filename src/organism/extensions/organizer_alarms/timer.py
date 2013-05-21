@@ -55,7 +55,7 @@ def search_alarms():
         last_search = get_last_search(filename)
         search_item_alarms(last_search, filename, id_, alarms)
 
-    oldalarms = get_snoozed_alarms(alarms)
+    oldalarms = alarmsmod.get_snoozed_alarms(alarms)
 
     restart_timer(oldalarms, alarms.get_next_alarm(), alarms.get_dict())
 
@@ -65,56 +65,6 @@ def search_item_alarms(last_search, filename, id_, alarms):
     for rule in rules:
         search_alarms_event.signal(last_search=last_search, filename=filename,
                                    id_=id_, rule=rule, alarms=alarms)
-
-
-def get_snoozed_alarms(alarms):
-    oldalarms = {}
-
-    for filename in core_api.get_open_databases():
-        conn = core_api.get_connection(filename)
-        cur = conn.cursor()
-        cur.execute(queries.alarms_select_alarms)
-        core_api.give_connection(filename, conn)
-
-        last_search = get_last_search(filename)
-
-        for row in cur:
-            itemid = row['A_item']
-            start = row['A_start']
-            end = row['A_end']
-            snooze = row['A_snooze']
-
-            # Check whether the snoozed alarm has a duplicate among the alarms
-            # found using the alarm rules, and in that case delete the latter;
-            # the creation of duplicates is possible especially when alarm
-            # searches are performed in rapid succession, for example when
-            # launching organism with multiple databases automatically opened
-            # and many new alarms to be immediately activated
-            # If I gave the possibility to use search_alarms for a specific
-            # filename or id_, this check would probably become unnecessary
-            alarms.try_delete_one(filename, itemid, start, end, row['A_alarm'])
-
-            alarmd = {'filename': filename,
-                      'id_': itemid,
-                      'alarmid': row['A_id'],
-                      'start': start,
-                      'end': end,
-                      'alarm': snooze}
-
-            # For safety, also check that there aren't any alarms with snooze
-            # <= last_search left (for example this may happen if an alarms is
-            # temporarily undone together with its item, and then it's restored
-            # with a redo)
-            if snooze and snooze > last_search:
-                alarms.add(last_search, alarmd)
-            else:
-                if filename not in oldalarms:
-                    oldalarms[filename] = {}
-                if itemid not in oldalarms[filename]:
-                    oldalarms[filename][itemid] = []
-                oldalarms[filename][itemid].append(alarmd)
-
-    return oldalarms
 
 
 def get_alarms(mint, maxt, filename, occs):
