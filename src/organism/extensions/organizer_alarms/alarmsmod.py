@@ -21,7 +21,7 @@ import sqlite3
 
 from organism.coreaux_api import Event
 import organism.core_api as core_api
-from organism.extensions.organizer_timer.timer import set_last_search, get_last_search  # TEMP import ************************
+import organism.extensions.organizer_timer as organizer_timer  # TEMP import ************************
 
 import queries
 import timer
@@ -43,7 +43,7 @@ def get_snoozed_alarms(alarms):
         cur.execute(queries.alarms_select_alarms)
         core_api.give_connection(filename, conn)
 
-        last_search = get_last_search(filename)
+        last_search = organizer_timer.timer.get_last_search(filename)
 
         for row in cur:
             itemid = row['A_item']
@@ -57,7 +57,7 @@ def get_snoozed_alarms(alarms):
             # searches are performed in rapid succession, for example when
             # launching organism with multiple databases automatically opened
             # and many new alarms to be immediately activated
-            # If I gave the possibility to use search_alarms for a specific
+            # If I gave the possibility to use search_alarms for a specific  # MENTIONING search_alarms *********************************************************************************
             # filename or id_, this check would probably become unnecessary
             alarms.try_delete_one(filename, itemid, start, end, row['A_alarm'])
 
@@ -143,9 +143,9 @@ def activate_alarms(time, alarmsd, old=False):
                                            alarm=alarm['alarm'])
 
         # Reset last_search in every open database, even if alarmsd is empty:
-        # this will let the next search_alarms ignore the alarms excepted in
+        # this will let the next search_alarms ignore the alarms excepted in  # MENTIONING search_alarms *********************************************************************************
         # the previous search
-        set_last_search(filename, time)
+        organizer_timer.timer.set_last_search(filename, time)
 
     alarms_event.signal()
 
@@ -164,7 +164,7 @@ def snooze_alarms(alarmst, stime):
 
     # Do not refresh the timer inside the for loop, otherwise it messes up with
     # the wx.CallAfter() that manages the activated alarms in the interface
-    timer.search_alarms()
+    organizer_timer.timer.search_alarms()
 
 
 def dismiss_alarms(alarmst):

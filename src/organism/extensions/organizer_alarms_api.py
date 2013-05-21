@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
-import organism.core_api as core_api
-
-from organizer_alarms import queries, timer, alarmsmod
+from organizer_alarms import queries, alarmsmod
 
 
 def snooze_alarms(alarmst, stime):
@@ -27,10 +25,6 @@ def snooze_alarms(alarmst, stime):
 
 def dismiss_alarms(alarmst):
     alarmsmod.dismiss_alarms(alarmst)
-
-
-def bind_to_search_alarms(handler, bind=True):
-    return timer.search_alarms_event.bind(handler, bind)
 
 
 def bind_to_alarm(handler, bind=True):

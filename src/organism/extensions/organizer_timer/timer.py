@@ -16,9 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+from organism.coreaux_api import log, Event
 import organism.core_api as core_api
+import organism.extensions.organizer_api as organizer_api
+from organism.extensions.organizer_alarms.timer import restart_timer  # TEMP import *************************
+from organism.extensions.organizer_alarms import alarmsmod  # TEMP import *************************
 
 import queries
+
+search_alarms_event = Event()
 
 
 class NextOccurrences():
@@ -109,6 +115,41 @@ class NextOccurrences():
                     if maxend is None or occ['end'] > maxend:
                         maxend = occ['end']
         return (minstart, maxend)
+
+
+def search_alarms():
+    # Currently this function should always be called without arguments
+    #def search_alarms(filename=None, id_=None):
+    filename = None
+    id_ = None
+
+    log.debug('Search alarms')
+
+    alarms = NextOccurrences()
+
+    if filename is None:
+        for filename in core_api.get_open_databases():
+            last_search = get_last_search(filename)
+            for id_ in core_api.get_items_ids(filename):
+                search_item_alarms(last_search, filename, id_, alarms)
+    elif id_ is None:
+        last_search = get_last_search(filename)
+        for id_ in core_api.get_items_ids(filename):
+            search_item_alarms(last_search, filename, id_, alarms)
+    else:
+        last_search = get_last_search(filename)
+        search_item_alarms(last_search, filename, id_, alarms)
+
+    oldalarms = alarmsmod.get_snoozed_alarms(alarms)
+
+    restart_timer(oldalarms, alarms.get_next_alarm(), alarms.get_dict())
+
+
+def search_item_alarms(last_search, filename, id_, alarms):
+    rules = organizer_api.get_item_rules(filename, id_)
+    for rule in rules:
+        search_alarms_event.signal(last_search=last_search, filename=filename,
+                                   id_=id_, rule=rule, alarms=alarms)
 
 
 def set_last_search(filename, tstamp):

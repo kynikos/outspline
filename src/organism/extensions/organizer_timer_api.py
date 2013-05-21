@@ -15,3 +15,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+
+from organizer_timer import timer
+
+
+def bind_to_search_alarms(handler, bind=True):
+    return timer.search_alarms_event.bind(handler, bind)

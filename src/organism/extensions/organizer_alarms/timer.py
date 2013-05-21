@@ -19,52 +19,13 @@
 from threading import Timer
 import time as _time
 
-from organism.coreaux_api import log, Event
+from organism.coreaux_api import log
 import organism.core_api as core_api
-import organism.extensions.organizer_api as organizer_api
-from organism.extensions.organizer_timer.timer import NextOccurrences, set_last_search, get_last_search  # TEMP import ************************
+import organism.extensions.organizer_timer as organizer_timer  # TEMP import *************************
 
 import alarmsmod
-import queries
-
-search_alarms_event = Event()
 
 timer = None
-
-
-def search_alarms():
-    # Currently this function should always be called without arguments
-    #def search_alarms(filename=None, id_=None):
-    filename = None
-    id_ = None
-
-    log.debug('Search alarms')
-
-    alarms = NextOccurrences()
-
-    if filename is None:
-        for filename in core_api.get_open_databases():
-            last_search = get_last_search(filename)
-            for id_ in core_api.get_items_ids(filename):
-                search_item_alarms(last_search, filename, id_, alarms)
-    elif id_ is None:
-        last_search = get_last_search(filename)
-        for id_ in core_api.get_items_ids(filename):
-            search_item_alarms(last_search, filename, id_, alarms)
-    else:
-        last_search = get_last_search(filename)
-        search_item_alarms(last_search, filename, id_, alarms)
-
-    oldalarms = alarmsmod.get_snoozed_alarms(alarms)
-
-    restart_timer(oldalarms, alarms.get_next_alarm(), alarms.get_dict())
-
-
-def search_item_alarms(last_search, filename, id_, alarms):
-    rules = organizer_api.get_item_rules(filename, id_)
-    for rule in rules:
-        search_alarms_event.signal(last_search=last_search, filename=filename,
-                                   id_=id_, rule=rule, alarms=alarms)
 
 
 def restart_timer(oldalarms, next_alarm, alarmsd):
@@ -78,7 +39,7 @@ def restart_timer(oldalarms, next_alarm, alarmsd):
     if next_alarm != None:
         if next_alarm <= now:
             alarmsmod.activate_alarms(next_alarm, alarmsd)
-            search_alarms()
+            organizer_timer.timer.search_alarms()
         else:
             next_loop = next_alarm - now
             global timer
@@ -108,6 +69,6 @@ def activate_alarms(time, alarmsd):
     core_api.block_databases()
 
     alarmsmod.activate_alarms(time, alarmsd)
-    search_alarms()
+    organizer_timer.timer.search_alarms()
 
     core_api.release_databases()

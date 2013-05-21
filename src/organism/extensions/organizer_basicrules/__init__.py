@@ -18,7 +18,7 @@
 
 import organism.core_api as core_api
 import organism.extensions.organizer_api as organizer_api
-import organism.extensions.organizer_alarms_api as organizer_alarms_api
+import organism.extensions.organizer_timer_api as organizer_timer_api
 
 import occur_once, occur_every_day, except_once
 
@@ -56,4 +56,4 @@ def handle_get_occurrences(kwargs):
 
 def main():
     organizer_api.bind_to_get_occurrences(handle_get_occurrences)
-    organizer_alarms_api.bind_to_search_alarms(handle_search_alarms)
+    organizer_timer_api.bind_to_search_alarms(handle_search_alarms)
