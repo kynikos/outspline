@@ -83,6 +83,34 @@ def get_snoozed_alarms(alarms):
     return oldalarms
 
 
+def get_alarms(mint, maxt, filename, occs):
+    conn = core_api.get_connection(filename)
+    cur = conn.cursor()
+    cur.execute(queries.alarms_select_alarms)
+    core_api.give_connection(filename, conn)
+
+    for row in cur:
+        origalarm = row['A_alarm']
+        snooze = row['A_snooze']
+
+        alarmd = {'filename': filename,
+                  'id_': row['A_item'],
+                  'alarmid': row['A_id'],
+                  'start': row['A_start'],
+                  'end': row['A_end'],
+                  'alarm': snooze}
+
+        # Always add active (but not snoozed) alarms if time interval includes
+        # current time
+        if snooze == None and mint <= int(_time.time()) <= maxt:
+            occs.update(alarmd, origalarm, force=True)
+        else:
+            # Note that the second argument must be origalarm, not snooze, in
+            # fact it's used to *update* the occurrence (if present) using the
+            # new snooze time stored in alarmd
+            occs.update(alarmd, origalarm)
+
+
 def activate_alarms(time, alarmsd, old=False):
     # Do not use only alarmsd to get filenames, but use all open filenames
     # regardless whether they are in alarmsd or not (see set_last_search()

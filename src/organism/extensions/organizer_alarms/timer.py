@@ -67,34 +67,6 @@ def search_item_alarms(last_search, filename, id_, alarms):
                                    id_=id_, rule=rule, alarms=alarms)
 
 
-def get_alarms(mint, maxt, filename, occs):
-    conn = core_api.get_connection(filename)
-    cur = conn.cursor()
-    cur.execute(queries.alarms_select_alarms)
-    core_api.give_connection(filename, conn)
-
-    for row in cur:
-        origalarm = row['A_alarm']
-        snooze = row['A_snooze']
-
-        alarmd = {'filename': filename,
-                  'id_': row['A_item'],
-                  'alarmid': row['A_id'],
-                  'start': row['A_start'],
-                  'end': row['A_end'],
-                  'alarm': snooze}
-
-        # Always add active (but not snoozed) alarms if time interval includes
-        # current time
-        if snooze == None and mint <= int(_time.time()) <= maxt:
-            occs.update(alarmd, origalarm, force=True)
-        else:
-            # Note that the second argument must be origalarm, not snooze, in
-            # fact it's used to *update* the occurrence (if present) using the
-            # new snooze time stored in alarmd
-            occs.update(alarmd, origalarm)
-
-
 def set_last_search(filename, tstamp):
     conn = core_api.get_connection(filename)
     cur = conn.cursor()

@@ -156,7 +156,7 @@ def handle_get_alarms(kwargs):
     filename = kwargs['filename']
     occs = kwargs['occs']
 
-    timer.get_alarms(mint, maxt, filename, occs)
+    alarmsmod.get_alarms(mint, maxt, filename, occs)
 
 
 def main():
