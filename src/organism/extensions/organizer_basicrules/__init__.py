@@ -31,11 +31,12 @@ def handle_search_occurrences(kwargs):
     occs = kwargs['occs']
 
     if rule['rule'] == 'occur_once':
-        occur_once.search_alarms(last_search, filename, id_, rule, occs)
+        occur_once.search_occurrences(last_search, filename, id_, rule, occs)
     elif rule['rule'] == 'occur_every_day':
-        occur_every_day.search_alarms(last_search, filename, id_, rule, occs)
+        occur_every_day.search_occurrences(last_search, filename, id_, rule,
+                                                                           occs)
     elif rule['rule'] == 'except_once':
-        except_once.search_alarms(filename, id_, rule, occs)
+        except_once.search_occurrences(filename, id_, rule, occs)
 
 
 def handle_get_occurrences(kwargs):

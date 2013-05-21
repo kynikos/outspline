@@ -26,14 +26,14 @@ def get_occurrences(mint, maxt, filename, id_, rule, occs):
         occs.except_(filename, id_, start, end, inclusive)
 
 
-def search_alarms(filename, id_, rule, alarms):
+def search_occurrences(filename, id_, rule, occs):
     start = rule['start']
     end = rule['end']
     inclusive = rule['inclusive']
 
-    limits = alarms.get_time_span()
+    limits = occs.get_time_span()
     minstart = limits[0]
     maxend = limits[1]
 
     if start <= maxend and end >= minstart:
-        alarms.except_(filename, id_, start, end, inclusive)
+        occs.except_(filename, id_, start, end, inclusive)

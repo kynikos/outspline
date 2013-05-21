@@ -44,8 +44,8 @@ def _compute_start(reftime, rstart, rend):
 
     if rend != None:
         # This algorithm must also get occurrences whose end time falls within
-        # the requested range (for get_occurrences) or is the next alarm (for
-        # search_alarms)
+        # the requested range (for get_occurrences) or is the next occurrence
+        # (for search_occurrences)
         return startt - 86400 * (1 + rend // 86400)
     else:
         return startt
@@ -80,7 +80,7 @@ def get_occurrences(mint, maxt, filename, id_, rule, occs):
         start += 86400
 
 
-def search_alarms(last_search, filename, id_, rule, alarms):
+def search_occurrences(last_search, filename, id_, rule, occs):
     rend = _compute_rend(rule['rendn'], rule['rendu'])
     start = _compute_start(last_search, rule['rstart'], rend)
     ralarm = rule['ralarm']
@@ -89,15 +89,15 @@ def search_alarms(last_search, filename, id_, rule, alarms):
         end = _compute_end(start, rend)
         alarm = _compute_end(start, ralarm)
 
-        alarmd = {'filename': filename,
+        occd = {'filename': filename,
                   'id_': id_,
                   'start': start,
                   'end': end,
                   'alarm': alarm}
 
-        next_occ = alarms.get_next_occurrence_time()
+        next_occ = occs.get_next_occurrence_time()
 
-        if alarms.add(last_search, alarmd) or (next_occ and
+        if occs.add(last_search, occd) or (next_occ and
                                          (alarm is None and start > next_occ) or
                                                   (alarm and alarm > next_occ)):
             break
