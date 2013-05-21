@@ -23,7 +23,7 @@ import organism.coreaux_api as coreaux_api
 import organism.core_api as core_api
 import organism.extensions.organizer_api as organizer_api
 copypaste_api = coreaux_api.import_extension_api('copypaste')
-from organism.extensions.organizer_timer.timer import search_alarms  # TEMP import *************************
+from organism.extensions.organizer_timer.timer import search_occurrences  # TEMP import *************************
 
 import queries
 import alarmsmod
@@ -49,13 +49,13 @@ def handle_create_database(kwargs):
 
 
 def handle_open_database(kwargs):
-    search_alarms()
+    search_occurrences()
 
 
 def handle_close_database(kwargs):
     del alarmsmod.changes[kwargs['filename']]
     del alarmsmod.dismiss_state[kwargs['filename']]
-    search_alarms()
+    search_occurrences()
 
 
 def handle_check_pending_changes(kwargs):
@@ -123,7 +123,7 @@ def handle_paste_item(kwargs):
     alarmsmod.paste_alarms(kwargs['filename'], kwargs['id_'],
                              kwargs['oldid'])
 
-    search_alarms()
+    search_occurrences()
 
 
 def handle_delete_item(kwargs):
@@ -147,7 +147,7 @@ def handle_history_clean(kwargs):
 
 
 def handle_search_alarms(kwargs):
-    search_alarms()
+    search_occurrences()
 
 
 def handle_get_alarms(kwargs):

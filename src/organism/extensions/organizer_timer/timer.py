@@ -81,8 +81,8 @@ class NextOccurrences():
                                            occ['start'] <= start <= occ['end']):
                     self.occs[filename][id_].remove(occ)
         # Do not reset self.next to None in case there are no occurrences left:
-        # this lets restart_timer, and consequently search_alarms, ignore the
-        # excepted alarms at the following search
+        # this lets restart_timer, and consequently search_occurrences, ignore
+        # the excepted alarms at the following search
 
     def try_delete_one(self, filename, id_, start, end, alarm):
         try:
@@ -121,9 +121,9 @@ class NextOccurrences():
         return (minstart, maxend)
 
 
-def search_alarms():
+def search_occurrences():
     # Currently this function should always be called without arguments
-    #def search_alarms(filename=None, id_=None):
+    #def search_occurrences(filename=None, id_=None):
     filename = None
     id_ = None
 
@@ -183,7 +183,7 @@ def restart_timer(oldalarms, next_alarm, alarmsd):
     if next_alarm != None:
         if next_alarm <= now:
             alarmsmod.activate_alarms(next_alarm, alarmsd)
-            search_alarms()
+            search_occurrences()
         else:
             next_loop = next_alarm - now
             global timer
@@ -212,6 +212,6 @@ def activate_alarms(time, alarmsd):
     core_api.block_databases()
 
     alarmsmod.activate_alarms(time, alarmsd)
-    search_alarms()
+    search_occurrences()
 
     core_api.release_databases()

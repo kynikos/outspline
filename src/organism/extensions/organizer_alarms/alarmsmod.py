@@ -56,7 +56,7 @@ def get_snoozed_alarms(alarms):
             # searches are performed in rapid succession, for example when
             # launching organism with multiple databases automatically opened
             # and many new alarms to be immediately activated
-            # If I gave the possibility to use search_alarms for a specific  # MENTIONING search_alarms *********************************************************************************
+            # If I gave the possibility to use search_occurrences for a specific  # MENTIONING search_occurrences *********************************************************************************
             # filename or id_, this check would probably become unnecessary
             alarms.try_delete_one(filename, itemid, start, end, row['A_alarm'])
 
@@ -143,8 +143,8 @@ def activate_alarms(time, alarmsd, old=False):
                                            alarm=alarm['alarm'])
 
         # Reset last_search in every open database, even if alarmsd is empty:
-        # this will let the next search_alarms ignore the alarms excepted in  # MENTIONING search_alarms *********************************************************************************
-        # the previous search
+        # this will let the next search_occurrences ignore the alarms excepted  # MENTIONING search_occurrences *********************************************************************************
+        # in the previous search
         organizer_timer.timer.set_last_search(filename, time)
 
     alarms_event.signal()
@@ -165,7 +165,7 @@ def snooze_alarms(alarmst, stime):
     # Do not refresh the timer inside the for loop, otherwise it messes up with
     # the wx.CallAfter() that manages the activated alarms in the interface
     import organism.extensions.organizer_timer as organizer_timer  # TEMP import ************************
-    organizer_timer.timer.search_alarms()
+    organizer_timer.timer.search_occurrences()
 
 
 def dismiss_alarms(alarmst):
