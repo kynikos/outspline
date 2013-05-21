@@ -26,7 +26,7 @@ from organism.extensions.organizer_alarms import alarmsmod  # TEMP import ******
 
 import queries
 
-search_alarms_event = Event()
+search_occurrences_event = Event()
 
 timer = None
 
@@ -152,7 +152,7 @@ def search_occurrences():
 def search_item_alarms(last_search, filename, id_, alarms):
     rules = organizer_api.get_item_rules(filename, id_)
     for rule in rules:
-        search_alarms_event.signal(last_search=last_search, filename=filename,
+        search_occurrences_event.signal(last_search=last_search, filename=filename,
                                    id_=id_, rule=rule, alarms=alarms)
 
 

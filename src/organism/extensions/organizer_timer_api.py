@@ -19,5 +19,5 @@
 from organizer_timer import timer
 
 
-def bind_to_search_alarms(handler, bind=True):
-    return timer.search_alarms_event.bind(handler, bind)
+def bind_to_search_occurrences(handler, bind=True):
+    return timer.search_occurrences_event.bind(handler, bind)
