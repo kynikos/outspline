@@ -23,7 +23,6 @@ from organism.coreaux_api import Event
 import organism.core_api as core_api
 
 import queries
-import timer
 
 alarm_event = Event()
 alarms_event = Event()

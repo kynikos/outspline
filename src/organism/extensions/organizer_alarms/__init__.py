@@ -26,7 +26,6 @@ copypaste_api = coreaux_api.import_extension_api('copypaste')
 from organism.extensions.organizer_timer.timer import search_alarms  # TEMP import *************************
 
 import queries
-import timer
 import alarmsmod
 
 

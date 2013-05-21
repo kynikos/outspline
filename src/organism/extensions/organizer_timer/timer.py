@@ -22,7 +22,6 @@ import time as _time
 from organism.coreaux_api import log, Event
 import organism.core_api as core_api
 import organism.extensions.organizer_api as organizer_api
-from organism.extensions.organizer_alarms.timer import activate_alarms  # TEMP import *************************
 from organism.extensions.organizer_alarms import alarmsmod  # TEMP import *************************
 
 import queries
@@ -204,3 +203,15 @@ def cancel_timer(kwargs=None):
     if timer and timer.is_alive():
         log.debug('Timer cancel')
         timer.cancel()
+
+
+def activate_alarms(time, alarmsd):
+    # It's important that the database is blocked on this thread, and not on the
+    # main thread, otherwise the program would hang if the user is performing
+    # an action
+    core_api.block_databases()
+
+    alarmsmod.activate_alarms(time, alarmsd)
+    search_alarms()
+
+    core_api.release_databases()
