@@ -104,7 +104,7 @@ class NextOccurrences():
     def get_dict(self):
         return self.occs
 
-    def get_next_alarm(self):
+    def get_next_occurrence_time(self):
         return self.next
 
     def get_time_span(self):
@@ -146,7 +146,7 @@ def search_occurrences():
 
     oldoccs = alarmsmod.get_snoozed_alarms(occs)
 
-    restart_timer(oldoccs, occs.get_next_alarm(), occs.get_dict())
+    restart_timer(oldoccs, occs.get_next_occurrence_time(), occs.get_dict())
 
 
 def search_item_occurrences(last_search, filename, id_, occs):
@@ -172,7 +172,7 @@ def get_last_search(filename):
     return cur.fetchone()['AP_last_search']
 
 
-def restart_timer(oldalarms, next_alarm, alarmsd):
+def restart_timer(oldalarms, next_occurrence, alarmsd):
     cancel_timer()
 
     now = int(_time.time())
@@ -180,14 +180,15 @@ def restart_timer(oldalarms, next_alarm, alarmsd):
     if oldalarms:
         alarmsmod.activate_alarms(now, oldalarms, old=True)
 
-    if next_alarm != None:
-        if next_alarm <= now:
-            alarmsmod.activate_alarms(next_alarm, alarmsd)
+    if next_occurrence != None:
+        if next_occurrence <= now:
+            alarmsmod.activate_alarms(next_occurrence, alarmsd)
             search_occurrences()
         else:
-            next_loop = next_alarm - now
+            next_loop = next_occurrence - now
             global timer
-            timer = Timer(next_loop, activate_alarms, (next_alarm, alarmsd, ))
+            timer = Timer(next_loop, activate_alarms, (next_occurrence, alarmsd,
+                                                                              ))
             timer.start()
 
             log.debug('Timer refresh: {}'.format(next_loop))

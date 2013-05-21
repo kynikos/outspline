@@ -95,11 +95,11 @@ def search_alarms(last_search, filename, id_, rule, alarms):
                   'end': end,
                   'alarm': alarm}
 
-        next_alarm = alarms.get_next_alarm()
+        next_occ = alarms.get_next_occurrence_time()
 
-        if alarms.add(last_search, alarmd) or (next_alarm and
-                                       (alarm is None and start > next_alarm) or
-                                                (alarm and alarm > next_alarm)):
+        if alarms.add(last_search, alarmd) or (next_occ and
+                                         (alarm is None and start > next_occ) or
+                                                  (alarm and alarm > next_occ)):
             break
 
         start += 86400
