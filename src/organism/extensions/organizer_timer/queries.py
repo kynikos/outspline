@@ -20,10 +20,15 @@ alarmsproperties_create = ('CREATE TABLE AlarmsProperties '
                            '(AP_id INTEGER PRIMARY KEY, '
                             'AP_last_search INTEGER)')
 
-alarmsproperties_insert = ('INSERT INTO AlarmsProperties (AP_id, '
-                           'AP_last_search) VALUES (NULL, ?)')
+alarmsproperties_select = 'SELECT * FROM AlarmsProperties'
 
 alarmsproperties_select_search = ('SELECT AP_last_search '
                                   'FROM AlarmsProperties LIMIT 1')
 
+alarmsproperties_insert = ('INSERT INTO AlarmsProperties (AP_id, '
+                           'AP_last_search) VALUES (NULL, ?)')
+
 alarmsproperties_update = 'UPDATE AlarmsProperties SET AP_last_search=?'
+
+alarmsproperties_update_copy = ('UPDATE AlarmsProperties SET AP_id=?, '
+                                'AP_last_search=?')

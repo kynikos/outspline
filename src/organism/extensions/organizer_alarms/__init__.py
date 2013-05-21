@@ -82,10 +82,6 @@ def handle_save_database_copy(kwargs):
     cur = qconn.cursor()
     curd = qconnd.cursor()
 
-    cur.execute(queries.alarmsproperties_select)
-    for row in cur:
-        curd.execute(queries.alarmsproperties_update_copy, tuple(row))
-
     cur.execute(queries.alarms_select)
     for row in cur:
         curd.execute(queries.alarms_insert_copy, tuple(row))

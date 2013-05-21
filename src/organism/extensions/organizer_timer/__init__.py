@@ -38,6 +38,22 @@ def handle_create_database(kwargs):
     conn.close()
 
 
+def handle_save_database_copy(kwargs):
+    qconn = core_api.get_connection(kwargs['origin'])
+    qconnd = sqlite3.connect(kwargs['destination'])
+    cur = qconn.cursor()
+    curd = qconnd.cursor()
+
+    cur.execute(queries.alarmsproperties_select)
+    for row in cur:
+        curd.execute(queries.alarmsproperties_update_copy, tuple(row))
+
+    core_api.give_connection(kwargs['origin'], qconn)
+
+    qconnd.commit()
+    qconnd.close()
+
+
 def handle_search_occurrences(kwargs):
     timer.search_occurrences()
 
@@ -46,6 +62,7 @@ def main():
     core_api.bind_to_create_database(handle_create_database)
     core_api.bind_to_open_database(handle_search_occurrences)
     core_api.bind_to_close_database(handle_search_occurrences)
+    core_api.bind_to_save_database_copy(handle_save_database_copy)
     core_api.bind_to_delete_items(handle_search_occurrences)
     core_api.bind_to_history(handle_search_occurrences)
     core_api.bind_to_exit_app_1(timer.cancel_timer)
