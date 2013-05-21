@@ -16,15 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+from threading import Timer
+import time as _time
+
 from organism.coreaux_api import log, Event
 import organism.core_api as core_api
 import organism.extensions.organizer_api as organizer_api
-from organism.extensions.organizer_alarms.timer import restart_timer  # TEMP import *************************
+from organism.extensions.organizer_alarms.timer import cancel_timer, activate_alarms  # TEMP import *************************
 from organism.extensions.organizer_alarms import alarmsmod  # TEMP import *************************
 
 import queries
 
 search_alarms_event = Event()
+
+timer = None
 
 
 class NextOccurrences():
@@ -166,3 +171,29 @@ def get_last_search(filename):
     core_api.give_connection(filename, conn)
 
     return cur.fetchone()['AP_last_search']
+
+
+def restart_timer(oldalarms, next_alarm, alarmsd):
+    cancel_timer()
+
+    now = int(_time.time())
+
+    if oldalarms:
+        alarmsmod.activate_alarms(now, oldalarms, old=True)
+
+    if next_alarm != None:
+        if next_alarm <= now:
+            alarmsmod.activate_alarms(next_alarm, alarmsd)
+            search_alarms()
+        else:
+            next_loop = next_alarm - now
+            global timer
+            timer = Timer(next_loop, activate_alarms, (next_alarm, alarmsd, ))
+            timer.start()
+
+            log.debug('Timer refresh: {}'.format(next_loop))
+    else:
+        # If no alarm is found, execute activate_alarms, which will in turn
+        # execute set_last_search, so that if a rule is created with an alarm
+        # time between the last search and now, the alarm won't be activated
+        alarmsmod.activate_alarms(now, alarmsd)

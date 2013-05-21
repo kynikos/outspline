@@ -16,50 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
-from threading import Timer
-import time as _time
-
 from organism.coreaux_api import log
 import organism.core_api as core_api
 import organism.extensions.organizer_timer as organizer_timer  # TEMP import *************************
 
 import alarmsmod
 
-timer = None
-
-
-def restart_timer(oldalarms, next_alarm, alarmsd):
-    cancel_timer()
-
-    now = int(_time.time())
-
-    if oldalarms:
-        alarmsmod.activate_alarms(now, oldalarms, old=True)
-
-    if next_alarm != None:
-        if next_alarm <= now:
-            alarmsmod.activate_alarms(next_alarm, alarmsd)
-            organizer_timer.timer.search_alarms()
-        else:
-            next_loop = next_alarm - now
-            global timer
-            timer = Timer(next_loop, activate_alarms, (next_alarm, alarmsd, ))
-            timer.start()
-
-            log.debug('Timer refresh: {}'.format(next_loop))
-    else:
-        # If no alarm is found, execute activate_alarms, which will in turn
-        # execute set_last_search, so that if a rule is created with an alarm
-        # time between the last search and now, the alarm won't be activated
-        alarmsmod.activate_alarms(now, alarmsd)
-
-
 
 def cancel_timer(kwargs=None):
     # kwargs is passed from the binding to core_api.bind_to_exit_app_1
-    if timer and timer.is_alive():
+    if organizer_timer.timer.timer and organizer_timer.timer.timer.is_alive():
         log.debug('Timer cancel')
-        timer.cancel()
+        organizer_timer.timer.timer.cancel()
 
 
 def activate_alarms(time, alarmsd):
