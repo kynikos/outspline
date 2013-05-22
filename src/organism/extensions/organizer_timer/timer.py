@@ -195,9 +195,10 @@ def restart_timer(occs):
 
             log.debug('Timer refresh: {}'.format(next_loop))
     else:
-        # If no occurrence is found, execute activate_alarms, which will in turn  # MENTIONS activate_alarms ******************
-        # execute set_last_search, so that if a rule is created with an alarm
-        # time between the last search and now, the alarm won't be activated
+        # If no occurrence is found, execute activate_occurrences, which will in
+        # turn execute set_last_search, so that if a rule is created with an
+        # alarm time between the last search and now, the alarm won't be
+        # activated
         activate_occurrences(now, occsd, loop=False)
 
 
