@@ -32,7 +32,7 @@ changes = {}
 dismiss_state = {}
 
 
-def get_snoozed_alarms(alarms):
+def get_snoozed_alarms(occs):
     oldalarms = {}
     import organism.extensions.organizer_timer as organizer_timer  # TEMP import ************************
 
@@ -58,7 +58,7 @@ def get_snoozed_alarms(alarms):
             # and many new alarms to be immediately activated
             # If I gave the possibility to use search_occurrences for a specific  # MENTIONING search_occurrences *********************************************************************************
             # filename or id_, this check would probably become unnecessary
-            alarms.try_delete_one(filename, itemid, start, end, row['A_alarm'])
+            occs.try_delete_one(filename, itemid, start, end, row['A_alarm'])
 
             alarmd = {'filename': filename,
                       'id_': itemid,
@@ -72,7 +72,7 @@ def get_snoozed_alarms(alarms):
             # temporarily undone together with its item, and then it's restored
             # with a redo)
             if snooze and snooze > last_search:
-                alarms.add(last_search, alarmd)
+                occs.add(last_search, alarmd)
             else:
                 try:
                     oldalarms[filename][itemid]
@@ -166,8 +166,9 @@ def snooze_alarms(alarmst, stime):
             # the tasklist can be correctly updated
             alarm_off_event.signal(filename=filename, alarmid=alarmid)
 
-    # Do not refresh the timer inside the for loop, otherwise it messes up with
-    # the wx.CallAfter() that manages the activated alarms in the interface
+    # Do not search occurrences (thus restarting the timer) inside the for loop,
+    # otherwise it messes up with the wx.CallAfter() that manages the activated
+    # alarms in the interface
     import organism.extensions.organizer_timer as organizer_timer  # TEMP import ************************
     organizer_timer.timer.search_occurrences()
 
