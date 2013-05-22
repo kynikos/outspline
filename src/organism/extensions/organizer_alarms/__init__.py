@@ -23,7 +23,6 @@ import organism.coreaux_api as coreaux_api
 import organism.core_api as core_api
 import organism.extensions.organizer_api as organizer_api
 copypaste_api = coreaux_api.import_extension_api('copypaste')
-from organism.extensions.organizer_timer.timer import search_occurrences  # TEMP import *************************
 
 import queries
 import alarmsmod
@@ -48,14 +47,9 @@ def handle_create_database(kwargs):
     conn.close()
 
 
-def handle_open_database(kwargs):
-    search_occurrences()
-
-
 def handle_close_database(kwargs):
     del alarmsmod.changes[kwargs['filename']]
     del alarmsmod.dismiss_state[kwargs['filename']]
-    search_occurrences()
 
 
 def handle_check_pending_changes(kwargs):
@@ -123,8 +117,6 @@ def handle_paste_item(kwargs):
     alarmsmod.paste_alarms(kwargs['filename'], kwargs['id_'],
                              kwargs['oldid'])
 
-    search_occurrences()
-
 
 def handle_delete_item(kwargs):
     alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'], kwargs['hid'])
@@ -146,10 +138,6 @@ def handle_history_clean(kwargs):
     alarmsmod.clean_old_history_alarms(kwargs['filename'], kwargs['hids'])
 
 
-def handle_search_alarms(kwargs):
-    search_occurrences()
-
-
 def handle_get_alarms(kwargs):
     mint = kwargs['mint']
     maxt = kwargs['maxt']
@@ -163,20 +151,16 @@ def main():
     create_copy_table()
 
     core_api.bind_to_create_database(handle_create_database)
-    core_api.bind_to_open_database(handle_open_database)
     core_api.bind_to_check_pending_changes(handle_check_pending_changes)
     core_api.bind_to_reset_modified_state(handle_reset_modified_state)
     core_api.bind_to_close_database(handle_close_database)
     core_api.bind_to_save_database_copy(handle_save_database_copy)
     core_api.bind_to_delete_item(handle_delete_item)
-    core_api.bind_to_delete_items(handle_search_alarms)
-    core_api.bind_to_history(handle_search_alarms)
     core_api.bind_to_history_insert(handle_history_insert)
     core_api.bind_to_history_remove(handle_history_remove)
     core_api.bind_to_history_clean_groups(handle_history_clean_groups)
     core_api.bind_to_history_clean(handle_history_clean)
 
-    organizer_api.bind_to_update_item_rules(handle_search_alarms)
     organizer_api.bind_to_get_alarms(handle_get_alarms)
 
     if copypaste_api:

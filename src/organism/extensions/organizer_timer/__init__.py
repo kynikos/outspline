@@ -16,10 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+import organism.coreaux_api as coreaux_api
 import organism.core_api as core_api
+import organism.extensions.organizer_api as organizer_api
+copypaste_api = coreaux_api.import_extension_api('copypaste')
 
 import timer
 
 
+def handle_search_occurrences(kwargs):
+    timer.search_occurrences()
+
+
 def main():
+    core_api.bind_to_open_database(handle_search_occurrences)
+    core_api.bind_to_close_database(handle_search_occurrences)
+    core_api.bind_to_delete_items(handle_search_occurrences)
+    core_api.bind_to_history(handle_search_occurrences)
     core_api.bind_to_exit_app_1(timer.cancel_timer)
+
+    organizer_api.bind_to_update_item_rules(handle_search_occurrences)
+
+    if copypaste_api:
+        copypaste_api.bind_to_items_pasted(handle_search_occurrences)

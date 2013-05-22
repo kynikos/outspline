@@ -58,3 +58,7 @@ def bind_to_copy_item(handler, bind=True):
 
 def bind_to_paste_item(handler, bind=True):
     return copypaste.item_paste_event.bind(handler, bind)
+
+
+def bind_to_items_pasted(handler, bind=True):
+    return copypaste.items_pasted_event.bind(handler, bind)
