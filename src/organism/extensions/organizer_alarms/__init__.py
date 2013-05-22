@@ -35,8 +35,8 @@ def create_copy_table():
 
 
 def handle_create_database(kwargs):
-    # Cannot use core_api.get_connection() here because the database isn't
-    # open yet
+    # Cannot use core_api.get_connection() here because the database isn't open
+    # yet
     conn = sqlite3.connect(kwargs['filename'])
     cur = conn.cursor()
     cur.execute(queries.alarms_create)
@@ -54,9 +54,8 @@ def handle_check_pending_changes(kwargs):
 
     conn = core_api.get_connection(filename)
     cur = conn.cursor()
-    # Do not track changes to last_search in AlarmsProperties
-    change_state = alarmsmod.changes[filename] != \
-                             [row for row in cur.execute(queries.alarms_select)]
+    change_state = alarmsmod.changes[filename] != [row for row in cur.execute(
+                                                         queries.alarms_select)]
     core_api.give_connection(filename, conn)
 
     if change_state or alarmsmod.dismiss_state[filename]:
@@ -68,7 +67,6 @@ def handle_reset_modified_state(kwargs):
 
     conn = core_api.get_connection(filename)
     cur = conn.cursor()
-    # Do not track changes to last_search in AlarmsProperties
     alarmsmod.changes[filename] = [row for row in cur.execute(
                                                          queries.alarms_select)]
     core_api.give_connection(filename, conn)
@@ -107,8 +105,7 @@ def handle_copy_item(kwargs):
 
 
 def handle_paste_item(kwargs):
-    alarmsmod.paste_alarms(kwargs['filename'], kwargs['id_'],
-                             kwargs['oldid'])
+    alarmsmod.paste_alarms(kwargs['filename'], kwargs['id_'], kwargs['oldid'])
 
 
 def handle_delete_item(kwargs):
