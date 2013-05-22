@@ -21,6 +21,7 @@ import sqlite3
 
 from organism.coreaux_api import Event
 import organism.core_api as core_api
+import organism.extensions.organizer_timer_api as organizer_timer_api
 
 import queries
 
@@ -34,7 +35,6 @@ dismiss_state = {}
 
 def get_snoozed_alarms(occs):
     oldalarms = {}
-    import organism.extensions.organizer_timer as organizer_timer  # TEMP import ************************
 
     for filename in core_api.get_open_databases():
         conn = core_api.get_connection(filename)
@@ -42,7 +42,9 @@ def get_snoozed_alarms(occs):
         cur.execute(queries.alarms_select_alarms)
         core_api.give_connection(filename, conn)
 
-        last_search = organizer_timer.timer.get_last_search(filename)
+        # I can't pass last_search easily through restart_timer_event because
+        # it's a value that in general depends on the specific database
+        last_search = organizer_timer_api.get_last_search(filename)
 
         for row in cur:
             itemid = row['A_item']
