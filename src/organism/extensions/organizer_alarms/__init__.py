@@ -21,6 +21,7 @@ import sqlite3
 import organism.coreaux_api as coreaux_api
 import organism.core_api as core_api
 import organism.extensions.organizer_api as organizer_api
+import organism.extensions.organizer_timer_api as organizer_timer_api
 copypaste_api = coreaux_api.import_extension_api('copypaste')
 
 import queries
@@ -137,6 +138,13 @@ def handle_get_alarms(kwargs):
     alarmsmod.get_alarms(mint, maxt, filename, occs)
 
 
+def handle_restart_timer(kwargs):
+    time = kwargs['time']
+    occs = kwargs['occs']
+
+    alarmsmod.get_snoozed_alarms(time, occs)
+
+
 def main():
     create_copy_table()
 
@@ -152,6 +160,8 @@ def main():
     core_api.bind_to_history_clean(handle_history_clean)
 
     organizer_api.bind_to_get_alarms(handle_get_alarms)
+
+    organizer_timer_api.bind_to_restart_timer(handle_restart_timer)
 
     if copypaste_api:
         copypaste_api.bind_to_copy_items(handle_copy_items)

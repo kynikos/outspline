@@ -27,6 +27,7 @@ from organism.extensions.organizer_alarms import alarmsmod  # TEMP import ******
 import queries
 
 search_occurrences_event = Event()
+restart_timer_event = Event()
 
 timer = None
 
@@ -144,9 +145,7 @@ def search_occurrences():
         last_search = get_last_search(filename)
         search_item_occurrences(last_search, filename, id_, occs)
 
-    oldoccs = alarmsmod.get_snoozed_alarms(occs)
-
-    restart_timer(oldoccs, occs.get_next_occurrence_time(), occs.get_dict())
+    restart_timer(occs)
 
 
 def search_item_occurrences(last_search, filename, id_, occs):
@@ -172,13 +171,17 @@ def get_last_search(filename):
     return cur.fetchone()['TP_last_search']
 
 
-def restart_timer(oldoccs, next_occurrence, occsd):
+def restart_timer(occs):
     cancel_timer()
 
     now = int(_time.time())
 
-    if oldoccs:
-        alarmsmod.activate_alarms(now, oldoccs, old=True)
+    restart_timer_event.signal(time=now, occs=occs)
+
+    # Note that these two parameters must be retrieved *after*
+    # restart_timer_event is signalled
+    next_occurrence = occs.get_next_occurrence_time()
+    occsd = occs.get_dict()
 
     if next_occurrence != None:
         if next_occurrence <= now:

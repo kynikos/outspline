@@ -33,7 +33,7 @@ changes = {}
 dismiss_state = {}
 
 
-def get_snoozed_alarms(occs):
+def get_snoozed_alarms(time, occs):
     oldalarms = {}
 
     for filename in core_api.get_open_databases():
@@ -87,7 +87,8 @@ def get_snoozed_alarms(occs):
                     oldalarms[filename][itemid] = []
                 oldalarms[filename][itemid].append(alarmd)
 
-    return oldalarms
+    if oldalarms:
+        activate_alarms(time=time, alarmsd=oldalarms, old=True)
 
 
 def get_alarms(mint, maxt, filename, occs):
