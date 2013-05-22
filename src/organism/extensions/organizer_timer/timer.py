@@ -191,8 +191,8 @@ def restart_timer(occs):
         else:
             next_loop = next_occurrence - now
             global timer
-            timer = Timer(next_loop, activate_occurrences, (next_occurrence,
-                                                                       occsd, ))
+            timer = Timer(next_loop, activate_occurrences_block,
+                                                       (next_occurrence, occsd))
             timer.start()
 
             log.debug('Timer refresh: {}'.format(next_loop))
@@ -210,13 +210,15 @@ def cancel_timer(kwargs=None):
         timer.cancel()
 
 
-def activate_occurrences(time, occsd):
+def activate_occurrences_block(time, occsd):
     # It's important that the database is blocked on this thread, and not on the
     # main thread, otherwise the program would hang if the user is performing
     # an action
     core_api.block_databases()
+    activate_occurrences(time, occsd)
+    core_api.release_databases()
 
+
+def activate_occurrences(time, occsd):
     activate_occurrences_event.signal(time=time, occsd=occsd)
     search_occurrences()
-
-    core_api.release_databases()
