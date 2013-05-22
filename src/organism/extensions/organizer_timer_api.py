@@ -35,3 +35,8 @@ def bind_to_search_occurrences(handler, bind=True):
 def bind_to_restart_timer(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
     return timer.restart_timer_event.bind(handler, bind)
+
+
+def bind_to_activate_occurrences(handler, bind=True):
+    # Warning, this function is executed on a separate thread!!!
+    return timer.activate_occurrences_event.bind(handler, bind)

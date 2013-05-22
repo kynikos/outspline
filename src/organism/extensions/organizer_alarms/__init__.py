@@ -145,6 +145,13 @@ def handle_restart_timer(kwargs):
     alarmsmod.get_snoozed_alarms(time, occs)
 
 
+def handle_activate_occurrences(kwargs):
+    time = kwargs['time']
+    occsd = kwargs['occsd']
+
+    alarmsmod.activate_alarms(time, occsd)
+
+
 def main():
     create_copy_table()
 
@@ -162,6 +169,8 @@ def main():
     organizer_api.bind_to_get_alarms(handle_get_alarms)
 
     organizer_timer_api.bind_to_restart_timer(handle_restart_timer)
+    organizer_timer_api.bind_to_activate_occurrences(
+                                                    handle_activate_occurrences)
 
     if copypaste_api:
         copypaste_api.bind_to_copy_items(handle_copy_items)

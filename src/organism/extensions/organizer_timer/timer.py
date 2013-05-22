@@ -22,12 +22,12 @@ import time as _time
 from organism.coreaux_api import log, Event
 import organism.core_api as core_api
 import organism.extensions.organizer_api as organizer_api
-from organism.extensions.organizer_alarms import alarmsmod  # TEMP import *************************
 
 import queries
 
 search_occurrences_event = Event()
 restart_timer_event = Event()
+activate_occurrences_event = Event()
 
 timer = None
 
@@ -172,6 +172,7 @@ def get_last_search(filename):
 
 
 def restart_timer(occs):
+    from organism.extensions.organizer_alarms import alarmsmod  # TEMP import *************************
     cancel_timer()
 
     now = int(_time.time())
@@ -215,7 +216,7 @@ def activate_occurrences(time, occsd):
     # an action
     core_api.block_databases()
 
-    alarmsmod.activate_alarms(time, occsd)
+    activate_occurrences_event.signal(time=time, occsd=occsd)
     search_occurrences()
 
     core_api.release_databases()
