@@ -186,8 +186,7 @@ def restart_timer(occs):
 
     if next_occurrence != None:
         if next_occurrence <= now:
-            alarmsmod.activate_alarms(next_occurrence, occsd)
-            search_occurrences()
+            activate_occurrences(next_occurrence, occsd)
         else:
             next_loop = next_occurrence - now
             global timer
