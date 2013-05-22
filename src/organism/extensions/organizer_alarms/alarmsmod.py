@@ -58,8 +58,9 @@ def get_snoozed_alarms(occs):
             # searches are performed in rapid succession, for example when
             # launching organism with multiple databases automatically opened
             # and many new alarms to be immediately activated
-            # If I gave the possibility to use search_occurrences for a specific  # MENTIONING search_occurrences *********************************************************************************
-            # filename or id_, this check would probably become unnecessary
+            # If I gave the possibility to use
+            # organizer_timer.timer.search_occurrences for a specific filename
+            # or id_, this check would probably become unnecessary
             occs.try_delete_one(filename, itemid, start, end, row['A_alarm'])
 
             alarmd = {'filename': filename,
@@ -121,7 +122,7 @@ def activate_alarms(time, alarmsd, old=False):
     import organism.extensions.organizer_timer as organizer_timer  # TEMP import ************************
     # Do not use only alarmsd to get filenames, but use all open filenames
     # regardless whether they are in alarmsd or not (see comment further down on
-    # the set_last_search() call)
+    # the set_last_search() call)  # MENTIONS set_last_search *******************************************
     for filename in core_api.get_open_databases():
         if filename in alarmsd:
             for id_ in alarmsd[filename]:
@@ -148,9 +149,9 @@ def activate_alarms(time, alarmsd, old=False):
                                            end=alarm['end'],
                                            alarm=alarm['alarm'])
 
-        # Reset last_search in every open database, even if alarmsd is empty:
-        # this will let the next search_occurrences ignore the alarms excepted  # MENTIONING search_occurrences *********************************************************************************
-        # in the previous search
+        # Reset last search time in every open database, even if alarmsd is
+        # empty: this will let the next organizer_timer.timer.search_occurrences
+        # ignore the alarms excepted in the previous search
         organizer_timer.timer.set_last_search(filename, time)
 
     alarms_event.signal()
