@@ -172,7 +172,6 @@ def get_last_search(filename):
 
 
 def restart_timer(occs):
-    from organism.extensions.organizer_alarms import alarmsmod  # TEMP import *************************
     cancel_timer()
 
     now = int(_time.time())
@@ -199,7 +198,7 @@ def restart_timer(occs):
         # If no occurrence is found, execute activate_alarms, which will in turn  # MENTIONS activate_alarms ******************
         # execute set_last_search, so that if a rule is created with an alarm
         # time between the last search and now, the alarm won't be activated
-        alarmsmod.activate_alarms(now, occsd)
+        activate_occurrences(now, occsd, loop=False)
 
 
 def cancel_timer(kwargs=None):
@@ -218,6 +217,8 @@ def activate_occurrences_block(time, occsd):
     core_api.release_databases()
 
 
-def activate_occurrences(time, occsd):
+def activate_occurrences(time, occsd, loop=True):
     activate_occurrences_event.signal(time=time, occsd=occsd)
-    search_occurrences()
+
+    if loop:
+        search_occurrences()
