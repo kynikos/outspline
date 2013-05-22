@@ -88,7 +88,7 @@ def get_snoozed_alarms(time, occs):
                 oldalarms[filename][itemid].append(alarmd)
 
     if oldalarms:
-        activate_alarms(time=time, alarmsd=oldalarms, old=True)
+        activate_alarms(time=time, occsd=oldalarms, old=True)
 
 
 def get_alarms(mint, maxt, filename, occs):
@@ -119,15 +119,15 @@ def get_alarms(mint, maxt, filename, occs):
             occs.update(alarmd, origalarm)
 
 
-def activate_alarms(time, alarmsd, old=False):
+def activate_alarms(time, occsd, old=False):
     import organism.extensions.organizer_timer as organizer_timer  # TEMP import ************************
-    # Do not use only alarmsd to get filenames, but use all open filenames
-    # regardless whether they are in alarmsd or not (see comment further down on
+    # Do not use only occsd to get filenames, but use all open filenames
+    # regardless whether they are in occsd or not (see comment further down on
     # the set_last_search() call)  # MENTIONS set_last_search *******************************************
     for filename in core_api.get_open_databases():
-        if filename in alarmsd:
-            for id_ in alarmsd[filename]:
-                for alarm in alarmsd[filename][id_]:
+        if filename in occsd:
+            for id_ in occsd[filename]:
+                for alarm in occsd[filename][id_]:
                     # alarm may have start or end == time
                     if alarm['alarm'] == time or old:
                         if 'alarmid' not in alarm:
@@ -150,7 +150,7 @@ def activate_alarms(time, alarmsd, old=False):
                                            end=alarm['end'],
                                            alarm=alarm['alarm'])
 
-        # Reset last search time in every open database, even if alarmsd is
+        # Reset last search time in every open database, even if occsd is
         # empty: this will let the next organizer_timer.timer.search_occurrences
         # ignore the alarms excepted in the previous search
         organizer_timer.timer.set_last_search(filename, time)
