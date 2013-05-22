@@ -159,17 +159,17 @@ def search_item_occurrences(last_search, filename, id_, occs):
 def set_last_search(filename, tstamp):
     conn = core_api.get_connection(filename)
     cur = conn.cursor()
-    cur.execute(queries.alarmsproperties_update, (tstamp, ))
+    cur.execute(queries.timerproperties_update, (tstamp, ))
     core_api.give_connection(filename, conn)
 
 
 def get_last_search(filename):
     conn = core_api.get_connection(filename)
     cur = conn.cursor()
-    cur.execute(queries.alarmsproperties_select_search)
+    cur.execute(queries.timerproperties_select_search)
     core_api.give_connection(filename, conn)
 
-    return cur.fetchone()['AP_last_search']
+    return cur.fetchone()['TP_last_search']
 
 
 def restart_timer(oldoccs, next_occurrence, occsd):

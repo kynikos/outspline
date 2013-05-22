@@ -16,19 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
-alarmsproperties_create = ('CREATE TABLE AlarmsProperties '
-                           '(AP_id INTEGER PRIMARY KEY, '
-                            'AP_last_search INTEGER)')
+timerproperties_create = ('CREATE TABLE TimerProperties '
+                          '(TP_id INTEGER PRIMARY KEY, '
+                           'TP_last_search INTEGER)')
 
-alarmsproperties_select = 'SELECT * FROM AlarmsProperties'
+timerproperties_select = 'SELECT * FROM TimerProperties'
 
-alarmsproperties_select_search = ('SELECT AP_last_search '
-                                  'FROM AlarmsProperties LIMIT 1')
+timerproperties_select_search = ('SELECT TP_last_search '
+                                 'FROM TimerProperties LIMIT 1')
 
-alarmsproperties_insert = ('INSERT INTO AlarmsProperties (AP_id, '
-                           'AP_last_search) VALUES (NULL, ?)')
+timerproperties_insert = ('INSERT INTO TimerProperties (TP_id, '
+                          'TP_last_search) VALUES (NULL, ?)')
 
-alarmsproperties_update = 'UPDATE AlarmsProperties SET AP_last_search=?'
+timerproperties_update = 'UPDATE TimerProperties SET TP_last_search=?'
 
-alarmsproperties_update_copy = ('UPDATE AlarmsProperties SET AP_id=?, '
-                                'AP_last_search=?')
+timerproperties_update_copy = ('UPDATE TimerProperties SET TP_id=?, '
+                               'TP_last_search=?')

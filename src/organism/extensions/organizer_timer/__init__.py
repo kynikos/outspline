@@ -18,6 +18,7 @@
 
 import sqlite3
 import time as _time
+
 import organism.coreaux_api as coreaux_api
 import organism.core_api as core_api
 import organism.extensions.organizer_api as organizer_api
@@ -32,8 +33,8 @@ def handle_create_database(kwargs):
     # open yet
     conn = sqlite3.connect(kwargs['filename'])
     cur = conn.cursor()
-    cur.execute(queries.alarmsproperties_create)
-    cur.execute(queries.alarmsproperties_insert, (int(_time.time()), ))
+    cur.execute(queries.timerproperties_create)
+    cur.execute(queries.timerproperties_insert, (int(_time.time()), ))
     conn.commit()
     conn.close()
 
@@ -44,9 +45,9 @@ def handle_save_database_copy(kwargs):
     cur = qconn.cursor()
     curd = qconnd.cursor()
 
-    cur.execute(queries.alarmsproperties_select)
+    cur.execute(queries.timerproperties_select)
     for row in cur:
-        curd.execute(queries.alarmsproperties_update_copy, tuple(row))
+        curd.execute(queries.timerproperties_update_copy, tuple(row))
 
     core_api.give_connection(kwargs['origin'], qconn)
 
