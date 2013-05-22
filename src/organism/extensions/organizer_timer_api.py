@@ -23,5 +23,9 @@ def get_last_search(filename):
     return timer.get_last_search(filename)
 
 
+def search_occurrences():
+    return timer.search_occurrences()
+
+
 def bind_to_search_occurrences(handler, bind=True):
     return timer.search_occurrences_event.bind(handler, bind)

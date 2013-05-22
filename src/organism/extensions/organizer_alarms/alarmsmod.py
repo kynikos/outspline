@@ -172,8 +172,7 @@ def snooze_alarms(alarmst, stime):
     # Do not search occurrences (thus restarting the timer) inside the for loop,
     # otherwise it messes up with the wx.CallAfter() that manages the activated
     # alarms in the interface
-    import organism.extensions.organizer_timer as organizer_timer  # TEMP import ************************
-    organizer_timer.timer.search_occurrences()
+    organizer_timer_api.search_occurrences()
 
 
 def dismiss_alarms(alarmst):
