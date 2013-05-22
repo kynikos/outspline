@@ -16,6 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+alarmsproperties_create = ('CREATE TABLE AlarmsProperties '
+                           '(AP_id INTEGER PRIMARY KEY, '
+                            'AP_last_search INTEGER)')
+
+alarmsproperties_insert = ('INSERT INTO AlarmsProperties (AP_id, '
+                           'AP_last_search) VALUES (NULL, ?)')
+
 alarmsproperties_select_search = ('SELECT AP_last_search '
                                   'FROM AlarmsProperties LIMIT 1')
 

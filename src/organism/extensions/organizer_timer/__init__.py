@@ -16,12 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+import sqlite3
+import time as _time
 import organism.coreaux_api as coreaux_api
 import organism.core_api as core_api
 import organism.extensions.organizer_api as organizer_api
 copypaste_api = coreaux_api.import_extension_api('copypaste')
 
+import queries
 import timer
+
+
+def handle_create_database(kwargs):
+    # Cannot use core_api.get_connection() here because the database isn't
+    # open yet
+    conn = sqlite3.connect(kwargs['filename'])
+    cur = conn.cursor()
+    cur.execute(queries.alarmsproperties_create)
+    cur.execute(queries.alarmsproperties_insert, (int(_time.time()), ))
+    conn.commit()
+    conn.close()
 
 
 def handle_search_occurrences(kwargs):
@@ -29,6 +43,7 @@ def handle_search_occurrences(kwargs):
 
 
 def main():
+    core_api.bind_to_create_database(handle_create_database)
     core_api.bind_to_open_database(handle_search_occurrences)
     core_api.bind_to_close_database(handle_search_occurrences)
     core_api.bind_to_delete_items(handle_search_occurrences)

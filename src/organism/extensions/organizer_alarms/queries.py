@@ -16,14 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
-alarmsproperties_create = ('CREATE TABLE AlarmsProperties '
-                           '(AP_id INTEGER PRIMARY KEY, '
-                            'AP_last_search INTEGER)')
-
 alarmsproperties_select = 'SELECT * FROM AlarmsProperties'
-
-alarmsproperties_insert = ('INSERT INTO AlarmsProperties (AP_id, '
-                           'AP_last_search) VALUES (NULL, ?)')
 
 alarmsproperties_update_copy = ('UPDATE AlarmsProperties SET AP_id=?, '
                                 'AP_last_search=?')

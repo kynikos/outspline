@@ -17,7 +17,6 @@
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
 import sqlite3
-import time as _time
 
 import organism.coreaux_api as coreaux_api
 import organism.core_api as core_api
@@ -40,8 +39,6 @@ def handle_create_database(kwargs):
     # open yet
     conn = sqlite3.connect(kwargs['filename'])
     cur = conn.cursor()
-    cur.execute(queries.alarmsproperties_create)
-    cur.execute(queries.alarmsproperties_insert, (int(_time.time()), ))
     cur.execute(queries.alarms_create)
     conn.commit()
     conn.close()
