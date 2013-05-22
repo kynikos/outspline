@@ -68,15 +68,19 @@ def get_snoozed_alarms(alarms):
                       'alarm': snooze}
 
             # For safety, also check that there aren't any alarms with snooze
-            # <= last_search left (for example this may happen if an alarms is
+            # <= last_search left (for example this may happen if an alarm is
             # temporarily undone together with its item, and then it's restored
             # with a redo)
             if snooze and snooze > last_search:
                 alarms.add(last_search, alarmd)
             else:
-                if filename not in oldalarms:
-                    oldalarms[filename] = {}
-                if itemid not in oldalarms[filename]:
+                try:
+                    oldalarms[filename][itemid]
+                except KeyError:
+                    try:
+                        oldalarms[filename]
+                    except KeyError:
+                        oldalarms[filename] = {}
                     oldalarms[filename][itemid] = []
                 oldalarms[filename][itemid].append(alarmd)
 
