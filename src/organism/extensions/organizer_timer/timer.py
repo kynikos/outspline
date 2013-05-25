@@ -26,7 +26,7 @@ import organism.extensions.organizer_api as organizer_api
 import queries
 
 search_next_item_occurrences_event = Event()
-restart_timer_event = Event()
+search_next_occurrences_event = Event()
 activate_occurrences_event = Event()
 
 timer = None
@@ -137,15 +137,21 @@ def search_next_occurrences():
             last_search = get_last_search(filename)
             for id_ in core_api.get_items_ids(filename):
                 search_next_item_occurrences(last_search, filename, id_, occs)
+            search_next_occurrences_event.signal(base_time=last_search,
+                                                   filename=filename, occs=occs)
     elif id_ is None:
         last_search = get_last_search(filename)
         for id_ in core_api.get_items_ids(filename):
             search_next_item_occurrences(last_search, filename, id_, occs)
+        search_next_occurrences_event.signal(base_time=last_search,
+                                                   filename=filename, occs=occs)
     else:
         last_search = get_last_search(filename)
         search_next_item_occurrences(last_search, filename, id_, occs)
+        search_next_occurrences_event.signal(base_time=last_search,
+                                                   filename=filename, occs=occs)
 
-    restart_timer(occs)
+    restart_timer(occs.get_next_occurrence_time(), occs.get_dict())
 
 
 def search_next_item_occurrences(base_time, filename, id_, occs):
@@ -192,17 +198,10 @@ def set_last_search_all_safe(tstamp):
         core_api.give_connection(filename, conn)
 
 
-def restart_timer(occs):
+def restart_timer(next_occurrence, occsd):
     cancel_timer()
 
     now = int(_time.time())
-
-    restart_timer_event.signal(time=now, occs=occs)
-
-    # Note that these two parameters must be retrieved *after*
-    # restart_timer_event is signalled
-    next_occurrence = occs.get_next_occurrence_time()
-    occsd = occs.get_dict()
 
     if next_occurrence != None:
         if next_occurrence <= now:

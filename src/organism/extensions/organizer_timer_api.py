@@ -32,9 +32,9 @@ def bind_to_search_next_item_occurrences(handler, bind=True):
     return timer.search_next_item_occurrences_event.bind(handler, bind)
 
 
-def bind_to_restart_timer(handler, bind=True):
+def bind_to_search_next_occurrences(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
-    return timer.restart_timer_event.bind(handler, bind)
+    return timer.search_next_occurrences_event.bind(handler, bind)
 
 
 def bind_to_activate_occurrences(handler, bind=True):

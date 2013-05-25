@@ -33,62 +33,90 @@ changes = {}
 dismiss_state = {}
 
 
-def get_snoozed_alarms(time, occs):
-    oldalarms = {}
+def get_snoozed_alarms(last_search, filename, occs):
+    conn = core_api.get_connection(filename)
+    cur = conn.cursor()
+    cur.execute(queries.alarms_select_alarms)
+    core_api.give_connection(filename, conn)
 
-    for filename in core_api.get_open_databases():
-        conn = core_api.get_connection(filename)
-        cur = conn.cursor()
-        cur.execute(queries.alarms_select_alarms)
-        core_api.give_connection(filename, conn)
+    signal_old_alarms = False
 
-        # I can't pass last_search easily through restart_timer_event because
-        # it's a value that in general depends on the specific database
-        last_search = organizer_timer_api.get_last_search(filename)
+    for row in cur:
+        itemid = row['A_item']
+        start = row['A_start']
+        end = row['A_end']
+        snooze = row['A_snooze']
 
-        for row in cur:
-            itemid = row['A_item']
-            start = row['A_start']
-            end = row['A_end']
-            snooze = row['A_snooze']
+        # Check whether the snoozed alarm has a duplicate among the alarms found
+        # using the alarm rules, and in that case delete the latter; the
+        # creation of duplicates is possible especially when alarm searches are
+        # performed in rapid succession, for example when launching organism
+        # with multiple databases automatically opened and many new alarms to be
+        # immediately activated
+        # If I gave the possibility to use
+        # organizer_timer.timer.search_next_occurrences for a specific filename
+        # or id_, this check would probably become unnecessary
+        occs.try_delete_one(filename, itemid, start, end, row['A_alarm'])
 
-            # Check whether the snoozed alarm has a duplicate among the alarms
-            # found using the alarm rules, and in that case delete the latter;
-            # the creation of duplicates is possible especially when alarm
-            # searches are performed in rapid succession, for example when
-            # launching organism with multiple databases automatically opened
-            # and many new alarms to be immediately activated
-            # If I gave the possibility to use
-            # organizer_timer.timer.search_next_occurrences for a specific
-            # filename or id_, this check would probably become unnecessary
-            occs.try_delete_one(filename, itemid, start, end, row['A_alarm'])
+        alarmd = {'filename': filename,
+                  'id_': itemid,
+                  'alarmid': row['A_id'],
+                  'start': start,
+                  'end': end,
+                  'alarm': snooze}
 
-            alarmd = {'filename': filename,
-                      'id_': itemid,
-                      'alarmid': row['A_id'],
-                      'start': start,
-                      'end': end,
-                      'alarm': snooze}
+        # For safety, also check that there aren't any alarms with snooze <=
+        # last_search left (for example this may happen if an alarm is
+        # temporarily undone together with its item, and then it's restored with
+        # a redo)
+        # Note that whatever the value of last_search is, it doesn't really have
+        # the possibility to prevent the activation of a snoozed alarm, be it
+        # immediately or later (last_search can't be set on a future time)
+        if snooze and snooze > last_search:
+            occs.add(last_search, alarmd)
+        else:
+            # I have to bypass activate_alarms, in fact there I check if
+            # occ['alarm'] == time, but old alarms in general don't satisfy that
+            # condition
+            activate_alarm(alarmd)
+            signal_old_alarms = True
 
-            # For safety, also check that there aren't any alarms with snooze
-            # <= last_search left (for example this may happen if an alarm is
-            # temporarily undone together with its item, and then it's restored
-            # with a redo)
-            if snooze and snooze > last_search:
-                occs.add(last_search, alarmd)
-            else:
-                try:
-                    oldalarms[filename][itemid]
-                except KeyError:
-                    try:
-                        oldalarms[filename]
-                    except KeyError:
-                        oldalarms[filename] = {}
-                    oldalarms[filename][itemid] = []
-                oldalarms[filename][itemid].append(alarmd)
+    if signal_old_alarms:
+        alarms_event.signal()
 
-    if oldalarms:
-        activate_alarms(time=time, occsd=oldalarms, old=True)
+
+def activate_alarms(time, occsd):
+    for filename in occsd:
+        for id_ in occsd[filename]:
+            for occ in occsd[filename][id_]:
+                # occ may have start or end == time
+                if occ['alarm'] == time:
+                    activate_alarm(occ)
+
+    alarms_event.signal()
+
+
+def activate_alarm(alarm):
+    if 'alarmid' not in alarm:
+        alarmid = insert_alarm(filename=alarm['filename'],
+                               id_=alarm['id_'],
+                               start=alarm['start'],
+                               end=alarm['end'],
+                               origalarm=alarm['alarm'],
+                               snooze=None)
+    else:
+        alarmid = alarm['alarmid']
+        if alarm['alarm'] != None:
+            update_alarm(filename=alarm['filename'],
+                         alarmid=alarmid,
+                         newalarm=None)
+
+    alarm_event.signal(filename=alarm['filename'],
+                       id_=alarm['id_'],
+                       alarmid=alarmid,
+                       start=alarm['start'],
+                       end=alarm['end'],
+                       alarm=alarm['alarm'])
 
 
 def get_alarms(mint, maxt, filename, occs):
@@ -117,35 +145,6 @@ def get_alarms(mint, maxt, filename, occs):
             # fact it's used to *update* the occurrence (if present) using the
             # new snooze time stored in alarmd
             occs.update(alarmd, origalarm)
-
-
-def activate_alarms(time, occsd, old=False):
-    for filename in occsd:
-        for id_ in occsd[filename]:
-            for alarm in occsd[filename][id_]:
-                # alarm may have start or end == time
-                if alarm['alarm'] == time or old:
-                    if 'alarmid' not in alarm:
-                        alarmid = insert_alarm(filename=alarm['filename'],
-                                               id_=alarm['id_'],
-                                               start=alarm['start'],
-                                               end=alarm['end'],
-                                               origalarm=alarm['alarm'],
-                                               snooze=None)
-                    else:
-                        alarmid = alarm['alarmid']
-                        if alarm['alarm'] != None:
-                            update_alarm(filename=alarm['filename'],
-                                         alarmid=alarmid, newalarm=None)
-
-                    alarm_event.signal(filename=alarm['filename'],
-                                       id_=alarm['id_'],
-                                       alarmid=alarmid,
-                                       start=alarm['start'],
-                                       end=alarm['end'],
-                                       alarm=alarm['alarm'])
-
-    alarms_event.signal()
 
 
 def snooze_alarms(alarmst, stime):

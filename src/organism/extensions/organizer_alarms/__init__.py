@@ -138,11 +138,12 @@ def handle_get_alarms(kwargs):
     alarmsmod.get_alarms(mint, maxt, filename, occs)
 
 
-def handle_restart_timer(kwargs):
-    time = kwargs['time']
+def handle_search_next_occurrences(kwargs):
+    last_search = kwargs['base_time']
+    filename = kwargs['filename']
     occs = kwargs['occs']
 
-    alarmsmod.get_snoozed_alarms(time, occs)
+    alarmsmod.get_snoozed_alarms(last_search, filename, occs)
 
 
 def handle_activate_occurrences(kwargs):
@@ -168,7 +169,8 @@ def main():
 
     organizer_api.bind_to_get_alarms(handle_get_alarms)
 
-    organizer_timer_api.bind_to_restart_timer(handle_restart_timer)
+    organizer_timer_api.bind_to_search_next_occurrences(
+                                                 handle_search_next_occurrences)
     organizer_timer_api.bind_to_activate_occurrences(
                                                     handle_activate_occurrences)
 
