@@ -39,8 +39,6 @@ def get_snoozed_alarms(last_search, filename, occs):
     cur.execute(queries.alarms_select_alarms)
     core_api.give_connection(filename, conn)
 
-    signal_old_alarms = False
-
     for row in cur:
         itemid = row['A_item']
         start = row['A_start']
@@ -79,10 +77,6 @@ def get_snoozed_alarms(last_search, filename, occs):
             # occ['alarm'] == time, but old alarms in general don't satisfy that
             # condition
             activate_alarm(alarmd)
-            signal_old_alarms = True
-
-    if signal_old_alarms:
-        alarms_event.signal()
 
 
 def activate_alarms(time, occsd):
