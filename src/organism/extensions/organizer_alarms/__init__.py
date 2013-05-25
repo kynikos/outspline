@@ -138,7 +138,7 @@ def handle_get_alarms(kwargs):
     alarmsmod.get_alarms(mint, maxt, filename, occs)
 
 
-def handle_search_next_occurrences(kwargs):
+def handle_get_next_occurrences(kwargs):
     last_search = kwargs['base_time']
     filename = kwargs['filename']
     occs = kwargs['occs']
@@ -169,8 +169,8 @@ def main():
 
     organizer_api.bind_to_get_alarms(handle_get_alarms)
 
-    organizer_timer_api.bind_to_search_next_occurrences(
-                                                 handle_search_next_occurrences)
+    organizer_timer_api.bind_to_get_next_occurrences(
+                                                    handle_get_next_occurrences)
     organizer_timer_api.bind_to_activate_occurrences(
                                                     handle_activate_occurrences)
 
