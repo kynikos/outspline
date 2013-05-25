@@ -59,8 +59,8 @@ def get_snoozed_alarms(time, occs):
             # launching organism with multiple databases automatically opened
             # and many new alarms to be immediately activated
             # If I gave the possibility to use
-            # organizer_timer.timer.search_occurrences for a specific filename
-            # or id_, this check would probably become unnecessary
+            # organizer_timer.timer.search_next_occurrences for a specific
+            # filename or id_, this check would probably become unnecessary
             occs.try_delete_one(filename, itemid, start, end, row['A_alarm'])
 
             alarmd = {'filename': filename,
@@ -151,8 +151,9 @@ def activate_alarms(time, occsd, old=False):
                                            alarm=alarm['alarm'])
 
         # Reset last search time in every open database, even if occsd is
-        # empty: this will let the next organizer_timer.timer.search_occurrences
-        # ignore the alarms excepted in the previous search
+        # empty: this will let the next
+        # organizer_timer.timer.search_next_occurrences ignore the alarms
+        # excepted in the previous search
         organizer_timer.timer.set_last_search(filename, time)
 
     alarms_event.signal()
@@ -173,7 +174,7 @@ def snooze_alarms(alarmst, stime):
     # Do not search occurrences (thus restarting the timer) inside the for loop,
     # otherwise it messes up with the wx.CallAfter() that manages the activated
     # alarms in the interface
-    organizer_timer_api.search_occurrences()
+    organizer_timer_api.search_next_occurrences()
 
 
 def dismiss_alarms(alarmst):

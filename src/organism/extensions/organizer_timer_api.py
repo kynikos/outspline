@@ -23,13 +23,13 @@ def get_last_search(filename):
     return timer.get_last_search(filename)
 
 
-def search_occurrences():
-    return timer.search_occurrences()
+def search_next_occurrences():
+    return timer.search_next_occurrences()
 
 
-def bind_to_search_occurrences(handler, bind=True):
+def bind_to_search_next_item_occurrences(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
-    return timer.search_occurrences_event.bind(handler, bind)
+    return timer.search_next_item_occurrences_event.bind(handler, bind)
 
 
 def bind_to_restart_timer(handler, bind=True):

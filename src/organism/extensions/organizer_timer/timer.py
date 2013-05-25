@@ -25,7 +25,7 @@ import organism.extensions.organizer_api as organizer_api
 
 import queries
 
-search_occurrences_event = Event()
+search_next_item_occurrences_event = Event()
 restart_timer_event = Event()
 activate_occurrences_event = Event()
 
@@ -82,8 +82,8 @@ class NextOccurrences():
                                            occ['start'] <= start <= occ['end']):
                     self.occs[filename][id_].remove(occ)
         # Do not reset self.next to None in case there are no occurrences left:
-        # this lets restart_timer, and consequently search_occurrences, ignore
-        # the excepted occurrences at the following search
+        # this lets restart_timer, and consequently search_next_occurrences,
+        # ignore the excepted occurrences at the following search
 
     def try_delete_one(self, filename, id_, start, end, alarm):
         try:
@@ -122,13 +122,13 @@ class NextOccurrences():
         return (minstart, maxend)
 
 
-def search_occurrences():
+def search_next_occurrences():
     # Currently this function should always be called without arguments
-    #def search_occurrences(filename=None, id_=None):
+    #def search_next_occurrences(filename=None, id_=None):
     filename = None
     id_ = None
 
-    log.debug('Search occurrences')
+    log.debug('Search next occurrences')
 
     occs = NextOccurrences()
 
@@ -136,22 +136,22 @@ def search_occurrences():
         for filename in core_api.get_open_databases():
             last_search = get_last_search(filename)
             for id_ in core_api.get_items_ids(filename):
-                search_item_occurrences(last_search, filename, id_, occs)
+                search_next_item_occurrences(last_search, filename, id_, occs)
     elif id_ is None:
         last_search = get_last_search(filename)
         for id_ in core_api.get_items_ids(filename):
-            search_item_occurrences(last_search, filename, id_, occs)
+            search_next_item_occurrences(last_search, filename, id_, occs)
     else:
         last_search = get_last_search(filename)
-        search_item_occurrences(last_search, filename, id_, occs)
+        search_next_item_occurrences(last_search, filename, id_, occs)
 
     restart_timer(occs)
 
 
-def search_item_occurrences(last_search, filename, id_, occs):
+def search_next_item_occurrences(last_search, filename, id_, occs):
     rules = organizer_api.get_item_rules(filename, id_)
     for rule in rules:
-        search_occurrences_event.signal(last_search=last_search,
+        search_next_item_occurrences_event.signal(last_search=last_search,
                                filename=filename, id_=id_, rule=rule, occs=occs)
 
 
@@ -193,7 +193,7 @@ def restart_timer(occs):
                                                        (next_occurrence, occsd))
             timer.start()
 
-            log.debug('Timer refresh: {}'.format(next_loop))
+            log.debug('Timer restart: {}'.format(next_loop))
     else:
         # If no occurrence is found, execute activate_occurrences, which will in
         # turn execute set_last_search, so that if a rule is created with an
@@ -222,4 +222,4 @@ def activate_occurrences(time, occsd, loop=True):
     activate_occurrences_event.signal(time=time, occsd=occsd)
 
     if loop:
-        search_occurrences()
+        search_next_occurrences()

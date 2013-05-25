@@ -34,7 +34,7 @@ def get_occurrences(filename, id_, rule, occs):
               'end': end,
               'alarm': alarm})
 
-def search_occurrences(last_search, filename, id_, rule, occs):
+def search_next_item_occurrences(last_search, filename, id_, rule, occs):
     start = rule['start']
     end = rule['end']
     ralarm = rule['ralarm']

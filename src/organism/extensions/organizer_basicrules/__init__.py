@@ -23,7 +23,7 @@ import organism.extensions.organizer_timer_api as organizer_timer_api
 import occur_once, occur_every_day, except_once
 
 
-def handle_search_occurrences(kwargs):
+def handle_search_next_item_occurrences(kwargs):
     last_search = kwargs['last_search']
     filename = kwargs['filename']
     id_ = kwargs['id_']
@@ -31,12 +31,13 @@ def handle_search_occurrences(kwargs):
     occs = kwargs['occs']
 
     if rule['rule'] == 'occur_once':
-        occur_once.search_occurrences(last_search, filename, id_, rule, occs)
+        occur_once.search_next_item_occurrences(last_search, filename, id_,
+                                                                     rule, occs)
     elif rule['rule'] == 'occur_every_day':
-        occur_every_day.search_occurrences(last_search, filename, id_, rule,
-                                                                           occs)
+        occur_every_day.search_next_item_occurrences(last_search, filename, id_,
+                                                                     rule, occs)
     elif rule['rule'] == 'except_once':
-        except_once.search_occurrences(filename, id_, rule, occs)
+        except_once.search_next_item_occurrences(filename, id_, rule, occs)
 
 
 def handle_get_occurrences(kwargs):
@@ -57,4 +58,5 @@ def handle_get_occurrences(kwargs):
 
 def main():
     organizer_api.bind_to_get_occurrences(handle_get_occurrences)
-    organizer_timer_api.bind_to_search_occurrences(handle_search_occurrences)
+    organizer_timer_api.bind_to_search_next_item_occurrences(
+                                            handle_search_next_item_occurrences)
