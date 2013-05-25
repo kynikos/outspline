@@ -70,10 +70,14 @@ def get_snoozed_alarms(last_search, filename, occs):
         if snooze and snooze > last_search:
             occs.add(last_search, alarmd)
         else:
-            # I have to bypass activate_alarms, in fact there I check if
-            # occ['alarm'] == time, but old alarms in general don't satisfy that
-            # condition
-            activate_alarm(alarmd)
+            occs.add_old(alarmd)
+
+
+def activate_old_alarms(occsd):
+    for filename in occsd:
+        for id_ in occsd[filename]:
+            for occ in occsd[filename][id_]:
+                activate_alarm(occ)
 
 
 def activate_alarms(time, occsd):

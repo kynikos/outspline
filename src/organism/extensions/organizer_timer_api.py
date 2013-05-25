@@ -19,12 +19,8 @@
 from organizer_timer import timer
 
 
-def get_last_search(filename):
-    return timer.get_last_search(filename)
-
-
-def get_next_occurrences(filename=None):
-    return timer.get_next_occurrences(filename=filename)
+def get_next_occurrences(base_times):
+    return timer.get_next_occurrences(base_times)
 
 
 def search_next_occurrences():
@@ -39,6 +35,11 @@ def bind_to_get_next_item_occurrences(handler, bind=True):
 def bind_to_get_next_occurrences(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
     return timer.get_next_occurrences_event.bind(handler, bind)
+
+
+def bind_to_activate_old_occurrences(handler, bind=True):
+    # Warning, this function is executed on a separate thread!!!
+    return timer.activate_old_occurrences_event.bind(handler, bind)
 
 
 def bind_to_activate_occurrences(handler, bind=True):

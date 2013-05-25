@@ -27,6 +27,7 @@ import queries
 
 get_next_item_occurrences_event = Event()
 get_next_occurrences_event = Event()
+activate_old_occurrences_event = Event()
 activate_occurrences_event = Event()
 
 timer = None
@@ -35,6 +36,7 @@ timer = None
 class NextOccurrences():
     def __init__(self):
         self.occs = {}
+        self.oldoccs = {}
         self.next = None
 
     def add(self, base_time, occ):
@@ -54,6 +56,20 @@ class NextOccurrences():
             return True
         else:
             return self._update_next(base_time, occ)
+
+    def add_old(self, occ):
+        filename = occ['filename']
+        id_ = occ['id_']
+
+        try:
+            self.oldoccs[filename][id_]
+        except KeyError:
+            try:
+                self.oldoccs[filename]
+            except KeyError:
+                self.oldoccs[filename] = {}
+            self.oldoccs[filename][id_] = []
+        self.oldoccs[filename][id_].append(occ)
 
     def _update_next(self, base_time, occ):
         tl = [occ['alarm'], occ['start'], occ['end']]
@@ -106,6 +122,9 @@ class NextOccurrences():
     def get_dict(self):
         return self.occs
 
+    def get_old_dict(self):
+        return self.oldoccs
+
     def get_next_occurrence_time(self):
         return self.next
 
@@ -123,40 +142,40 @@ class NextOccurrences():
         return (minstart, maxend)
 
 
-def get_next_occurrences(filename=None):
+def get_next_occurrences(base_times):
     occs = NextOccurrences()
 
-    if not filename:
-        for filename in core_api.get_open_databases():
-            last_search = get_last_search(filename)
-            for id_ in core_api.get_items_ids(filename):
-                get_next_item_occurrences(last_search, filename, id_, occs)
-            get_next_occurrences_event.signal(base_time=last_search,
-                                                   filename=filename, occs=occs)
-    else:
-        last_search = get_last_search(filename)
+    for filename in core_api.get_open_databases():
+        try:
+            base_time = base_times[filename]
+        except TypeError:
+            base_time = base_times
+
         for id_ in core_api.get_items_ids(filename):
-            get_next_item_occurrences(last_search, filename, id_, occs)
-        get_next_occurrences_event.signal(base_time=last_search,
+            rules = organizer_api.get_item_rules(filename, id_)
+
+            for rule in rules:
+                get_next_item_occurrences_event.signal(base_time=base_time,
+                               filename=filename, id_=id_, rule=rule, occs=occs)
+
+        get_next_occurrences_event.signal(base_time=base_time,
                                                    filename=filename, occs=occs)
 
     return occs
 
 
-def get_next_item_occurrences(base_time, filename, id_, occs):
-    rules = organizer_api.get_item_rules(filename, id_)
-    for rule in rules:
-        get_next_item_occurrences_event.signal(base_time=base_time,
-                               filename=filename, id_=id_, rule=rule, occs=occs)
+def get_last_search_all():
+    ls = {}
 
+    for filename in core_api.get_open_databases():
+        conn = core_api.get_connection(filename)
+        cur = conn.cursor()
+        cur.execute(queries.timerproperties_select_search)
+        core_api.give_connection(filename, conn)
 
-def get_last_search(filename):
-    conn = core_api.get_connection(filename)
-    cur = conn.cursor()
-    cur.execute(queries.timerproperties_select_search)
-    core_api.give_connection(filename, conn)
+        ls[filename] = cur.fetchone()['TP_last_search']
 
-    return cur.fetchone()['TP_last_search']
+    return ls
 
 
 def set_last_search_all(tstamp):
@@ -192,13 +211,16 @@ def search_next_occurrences(kwargs=None):
 
     log.debug('Search next occurrences')
 
-    occs = get_next_occurrences()
+    occs = get_next_occurrences(get_last_search_all())
     next_occurrence = occs.get_next_occurrence_time()
     occsd = occs.get_dict()
+    oldoccsd = occs.get_old_dict()
 
     cancel_search_next_occurrences()
 
     now = int(_time.time())
+
+    activate_old_occurrences_event.signal(oldoccsd=oldoccsd)
 
     if next_occurrence != None:
         if next_occurrence <= now:

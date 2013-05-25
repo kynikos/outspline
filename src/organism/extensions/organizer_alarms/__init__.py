@@ -146,6 +146,12 @@ def handle_get_next_occurrences(kwargs):
     alarmsmod.get_snoozed_alarms(last_search, filename, occs)
 
 
+def handle_activate_old_occurrences(kwargs):
+    occsd = kwargs['oldoccsd']
+
+    alarmsmod.activate_old_alarms(occsd)
+
+
 def handle_activate_occurrences(kwargs):
     time = kwargs['time']
     occsd = kwargs['occsd']
@@ -171,6 +177,8 @@ def main():
 
     organizer_timer_api.bind_to_get_next_occurrences(
                                                     handle_get_next_occurrences)
+    organizer_timer_api.bind_to_activate_old_occurrences(
+                                                handle_activate_old_occurrences)
     organizer_timer_api.bind_to_activate_occurrences(
                                                     handle_activate_occurrences)
 
