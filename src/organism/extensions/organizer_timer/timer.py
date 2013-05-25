@@ -155,13 +155,6 @@ def search_next_item_occurrences(base_time, filename, id_, occs):
                                filename=filename, id_=id_, rule=rule, occs=occs)
 
 
-def set_last_search(filename, tstamp):
-    conn = core_api.get_connection(filename)
-    cur = conn.cursor()
-    cur.execute(queries.timerproperties_update, (tstamp, ))
-    core_api.give_connection(filename, conn)
-
-
 def get_last_search(filename):
     conn = core_api.get_connection(filename)
     cur = conn.cursor()
@@ -169,6 +162,34 @@ def get_last_search(filename):
     core_api.give_connection(filename, conn)
 
     return cur.fetchone()['TP_last_search']
+
+
+def set_last_search_all(tstamp):
+    for filename in core_api.get_open_databases():
+        conn = core_api.get_connection(filename)
+        cur = conn.cursor()
+        cur.execute(queries.timerproperties_update, (tstamp, ))
+        core_api.give_connection(filename, conn)
+
+
+def set_last_search_all_safe(tstamp):
+    for filename in core_api.get_open_databases():
+        conn = core_api.get_connection(filename)
+        cur = conn.cursor()
+
+        cur.execute(queries.timerproperties_select_search)
+        last_search = cur.fetchone()['TP_last_search']
+
+        # It's possible that the database has last_search > tstamp, for example
+        # when a database has just been opened while others were already open:
+        # it would have a lower last_search than the other databases, and when
+        # the next occurrences are searched, all the databases' last_search
+        # values would be updated to the lower value, thus possibly reactivating
+        # old alarms
+        if tstamp > last_search:
+            cur.execute(queries.timerproperties_update, (tstamp, ))
+
+        core_api.give_connection(filename, conn)
 
 
 def restart_timer(occs):
@@ -185,8 +206,14 @@ def restart_timer(occs):
 
     if next_occurrence != None:
         if next_occurrence <= now:
+            set_last_search_all_safe(next_occurrence)
             activate_occurrences(next_occurrence, occsd)
         else:
+            # Reset last search time in every open database, so that if a rule
+            # is created with an alarm time between the last search and now, the
+            # alarm won't be activated
+            set_last_search_all(now)
+
             next_loop = next_occurrence - now
             global timer
             timer = Timer(next_loop, activate_occurrences_block,
@@ -195,11 +222,13 @@ def restart_timer(occs):
 
             log.debug('Timer restart: {}'.format(next_loop))
     else:
-        # If no occurrence is found, execute activate_occurrences, which will in
-        # turn execute set_last_search, so that if a rule is created with an
-        # alarm time between the last search and now, the alarm won't be
-        # activated
-        activate_occurrences(now, occsd, loop=False)
+        # Even if no occurrence is found, reset last search time in every open
+        # database, so that:
+        # 1) this will let the next search_next_occurrences ignore the
+        # occurrences excepted in the previous search
+        # 2) if a rule is created with an alarm time between the last search and
+        # now, the alarm won't be activated
+        set_last_search_all(now)
 
 
 def cancel_timer(kwargs=None):
@@ -218,8 +247,6 @@ def activate_occurrences_block(time, occsd):
     core_api.release_databases()
 
 
-def activate_occurrences(time, occsd, loop=True):
+def activate_occurrences(time, occsd):
     activate_occurrences_event.signal(time=time, occsd=occsd)
-
-    if loop:
-        search_next_occurrences()
+    search_next_occurrences()

@@ -120,41 +120,30 @@ def get_alarms(mint, maxt, filename, occs):
 
 
 def activate_alarms(time, occsd, old=False):
-    import organism.extensions.organizer_timer as organizer_timer  # TEMP import ************************
-    # Do not use only occsd to get filenames, but use all open filenames
-    # regardless whether they are in occsd or not (see comment further down on
-    # the set_last_search() call)  # MENTIONS set_last_search *******************************************
-    for filename in core_api.get_open_databases():
-        if filename in occsd:
-            for id_ in occsd[filename]:
-                for alarm in occsd[filename][id_]:
-                    # alarm may have start or end == time
-                    if alarm['alarm'] == time or old:
-                        if 'alarmid' not in alarm:
-                            alarmid = insert_alarm(filename=alarm['filename'],
-                                                   id_=alarm['id_'],
-                                                   start=alarm['start'],
-                                                   end=alarm['end'],
-                                                   origalarm=alarm['alarm'],
-                                                   snooze=None)
-                        else:
-                            alarmid = alarm['alarmid']
-                            if alarm['alarm'] != None:
-                                update_alarm(filename=alarm['filename'],
-                                             alarmid=alarmid, newalarm=None)
+    for filename in occsd:
+        for id_ in occsd[filename]:
+            for alarm in occsd[filename][id_]:
+                # alarm may have start or end == time
+                if alarm['alarm'] == time or old:
+                    if 'alarmid' not in alarm:
+                        alarmid = insert_alarm(filename=alarm['filename'],
+                                               id_=alarm['id_'],
+                                               start=alarm['start'],
+                                               end=alarm['end'],
+                                               origalarm=alarm['alarm'],
+                                               snooze=None)
+                    else:
+                        alarmid = alarm['alarmid']
+                        if alarm['alarm'] != None:
+                            update_alarm(filename=alarm['filename'],
+                                         alarmid=alarmid, newalarm=None)
 
-                        alarm_event.signal(filename=alarm['filename'],
-                                           id_=alarm['id_'],
-                                           alarmid=alarmid,
-                                           start=alarm['start'],
-                                           end=alarm['end'],
-                                           alarm=alarm['alarm'])
-
-        # Reset last search time in every open database, even if occsd is
-        # empty: this will let the next
-        # organizer_timer.timer.search_next_occurrences ignore the alarms
-        # excepted in the previous search
-        organizer_timer.timer.set_last_search(filename, time)
+                    alarm_event.signal(filename=alarm['filename'],
+                                       id_=alarm['id_'],
+                                       alarmid=alarmid,
+                                       start=alarm['start'],
+                                       end=alarm['end'],
+                                       alarm=alarm['alarm'])
 
     alarms_event.signal()
 
