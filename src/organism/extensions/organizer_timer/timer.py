@@ -56,7 +56,7 @@ class NextOccurrences():
             return self._update_next(base_time, occ)
 
     def _update_next(self, base_time, occ):
-        tl = [occ['start'], occ['end'], occ['alarm']]
+        tl = [occ['alarm'], occ['start'], occ['end']]
         # When sorting, None values are put first
         tl.sort()
 
