@@ -45,7 +45,7 @@ def _compute_start(reftime, rstart, rend):
     if rend != None:
         # This algorithm must also get occurrences whose end time falls within
         # the requested range (for get_occurrences_range) or is the next
-        # occurrence (for search_next_item_occurrences)
+        # occurrence (for get_next_item_occurrences)
         return startt - 86400 * (1 + rend // 86400)
     else:
         return startt
@@ -80,7 +80,7 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
         start += 86400
 
 
-def search_next_item_occurrences(base_time, filename, id_, rule, occs):
+def get_next_item_occurrences(base_time, filename, id_, rule, occs):
     rend = _compute_rend(rule['rendn'], rule['rendu'])
     start = _compute_start(base_time, rule['rstart'], rend)
     ralarm = rule['ralarm']

@@ -25,7 +25,7 @@ import organism.extensions.organizer_api as organizer_api
 
 import queries
 
-search_next_item_occurrences_event = Event()
+get_next_item_occurrences_event = Event()
 get_next_occurrences_event = Event()
 activate_occurrences_event = Event()
 
@@ -81,9 +81,9 @@ class NextOccurrences():
                 if start <= occ['start'] <= end or (inclusive and
                                            occ['start'] <= start <= occ['end']):
                     self.occs[filename][id_].remove(occ)
-        # Do not reset self.next to None in case there are no occurrences left:
-        # this lets search_next_occurrences, and consequently
-        # get_next_occurrences, ignore the excepted occurrences at the following
+        # Do not try to update self.next (even in case there are no occurrences
+        # left): this lets search_next_occurrences reset the last search time to
+        # this value, thus ignoring the excepted occurrences at the following
         # search
 
     def try_delete_one(self, filename, id_, start, end, alarm):
@@ -123,42 +123,30 @@ class NextOccurrences():
         return (minstart, maxend)
 
 
-def get_next_occurrences():
-    # Currently this function should always be called without arguments
-    #def get_next_occurrences(filename=None, id_=None):
-    filename = None
-    id_ = None
-
-    log.debug('Search next occurrences')
-
+def get_next_occurrences(filename=None):
     occs = NextOccurrences()
 
-    if filename is None:
+    if not filename:
         for filename in core_api.get_open_databases():
             last_search = get_last_search(filename)
             for id_ in core_api.get_items_ids(filename):
-                search_next_item_occurrences(last_search, filename, id_, occs)
+                get_next_item_occurrences(last_search, filename, id_, occs)
             get_next_occurrences_event.signal(base_time=last_search,
-                                                   filename=filename, occs=occs)
-    elif id_ is None:
-        last_search = get_last_search(filename)
-        for id_ in core_api.get_items_ids(filename):
-            search_next_item_occurrences(last_search, filename, id_, occs)
-        get_next_occurrences_event.signal(base_time=last_search,
                                                    filename=filename, occs=occs)
     else:
         last_search = get_last_search(filename)
-        search_next_item_occurrences(last_search, filename, id_, occs)
+        for id_ in core_api.get_items_ids(filename):
+            get_next_item_occurrences(last_search, filename, id_, occs)
         get_next_occurrences_event.signal(base_time=last_search,
                                                    filename=filename, occs=occs)
 
-    search_next_occurrences(occs.get_next_occurrence_time(), occs.get_dict())
+    return occs
 
 
-def search_next_item_occurrences(base_time, filename, id_, occs):
+def get_next_item_occurrences(base_time, filename, id_, occs):
     rules = organizer_api.get_item_rules(filename, id_)
     for rule in rules:
-        search_next_item_occurrences_event.signal(base_time=base_time,
+        get_next_item_occurrences_event.signal(base_time=base_time,
                                filename=filename, id_=id_, rule=rule, occs=occs)
 
 
@@ -199,8 +187,16 @@ def set_last_search_all_safe(tstamp):
         core_api.give_connection(filename, conn)
 
 
-def search_next_occurrences(next_occurrence, occsd):
-    cancel_timer()
+def search_next_occurrences(kwargs=None):
+    # kwargs is passed from the bindings in __init__
+
+    log.debug('Search next occurrences')
+
+    occs = get_next_occurrences()
+    next_occurrence = occs.get_next_occurrence_time()
+    occsd = occs.get_dict()
+
+    cancel_search_next_occurrences()
 
     now = int(_time.time())
 
@@ -220,21 +216,21 @@ def search_next_occurrences(next_occurrence, occsd):
                                                        (next_occurrence, occsd))
             timer.start()
 
-            log.debug('Timer restart: {}'.format(next_loop))
+            log.debug('Next occurrence in {} seconds'.format(next_loop))
     else:
         # Even if no occurrence is found, reset last search time in every open
         # database, so that:
-        # 1) this will let the next get_next_occurrences ignore the
-        # occurrences excepted in the previous search
+        # 1) this will let the next get_next_occurrences ignore the occurrences
+        # excepted in the previous search
         # 2) if a rule is created with an alarm time between the last search and
         # now, the alarm won't be activated
         set_last_search_all(now)
 
 
-def cancel_timer(kwargs=None):
+def cancel_search_next_occurrences(kwargs=None):
     # kwargs is passed from the binding to core_api.bind_to_exit_app_1
     if timer and timer.is_alive():
-        log.debug('Timer cancel')
+        log.debug('Cancel timer')
         timer.cancel()
 
 
@@ -249,4 +245,4 @@ def activate_occurrences_block(time, occsd):
 
 def activate_occurrences(time, occsd):
     activate_occurrences_event.signal(time=time, occsd=occsd)
-    get_next_occurrences()
+    search_next_occurrences()

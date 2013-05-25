@@ -55,20 +55,16 @@ def handle_save_database_copy(kwargs):
     qconnd.close()
 
 
-def get_next_occurrences(kwargs):
-    timer.get_next_occurrences()
-
-
 def main():
     core_api.bind_to_create_database(handle_create_database)
-    core_api.bind_to_open_database(get_next_occurrences)
-    core_api.bind_to_close_database(get_next_occurrences)
+    core_api.bind_to_open_database(timer.search_next_occurrences)
+    core_api.bind_to_close_database(timer.search_next_occurrences)
     core_api.bind_to_save_database_copy(handle_save_database_copy)
-    core_api.bind_to_delete_items(get_next_occurrences)
-    core_api.bind_to_history(get_next_occurrences)
-    core_api.bind_to_exit_app_1(timer.cancel_timer)
+    core_api.bind_to_delete_items(timer.search_next_occurrences)
+    core_api.bind_to_history(timer.search_next_occurrences)
+    core_api.bind_to_exit_app_1(timer.cancel_search_next_occurrences)
 
-    organizer_api.bind_to_update_item_rules(get_next_occurrences)
+    organizer_api.bind_to_update_item_rules(timer.search_next_occurrences)
 
     if copypaste_api:
-        copypaste_api.bind_to_items_pasted(get_next_occurrences)
+        copypaste_api.bind_to_items_pasted(timer.search_next_occurrences)
