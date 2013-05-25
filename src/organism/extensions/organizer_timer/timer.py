@@ -82,8 +82,9 @@ class NextOccurrences():
                                            occ['start'] <= start <= occ['end']):
                     self.occs[filename][id_].remove(occ)
         # Do not reset self.next to None in case there are no occurrences left:
-        # this lets restart_timer, and consequently get_next_occurrences, ignore
-        # the excepted occurrences at the following search
+        # this lets search_next_occurrences, and consequently
+        # get_next_occurrences, ignore the excepted occurrences at the following
+        # search
 
     def try_delete_one(self, filename, id_, start, end, alarm):
         try:
@@ -151,7 +152,7 @@ def get_next_occurrences():
         get_next_occurrences_event.signal(base_time=last_search,
                                                    filename=filename, occs=occs)
 
-    restart_timer(occs.get_next_occurrence_time(), occs.get_dict())
+    search_next_occurrences(occs.get_next_occurrence_time(), occs.get_dict())
 
 
 def search_next_item_occurrences(base_time, filename, id_, occs):
@@ -198,7 +199,7 @@ def set_last_search_all_safe(tstamp):
         core_api.give_connection(filename, conn)
 
 
-def restart_timer(next_occurrence, occsd):
+def search_next_occurrences(next_occurrence, occsd):
     cancel_timer()
 
     now = int(_time.time())
