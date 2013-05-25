@@ -37,7 +37,7 @@ class NextOccurrences():
         self.occs = {}
         self.next = None
 
-    def add(self, last_search, occ):
+    def add(self, base_time, occ):
         filename = occ['filename']
         id_ = occ['id_']
 
@@ -53,16 +53,16 @@ class NextOccurrences():
             self.occs[filename][id_].append(occ)
             return True
         else:
-            return self._update_next(last_search, occ)
+            return self._update_next(base_time, occ)
 
-    def _update_next(self, last_search, occ):
+    def _update_next(self, base_time, occ):
         tl = [occ['start'], occ['end'], occ['alarm']]
         # When sorting, None values are put first
         tl.sort()
 
         for t in tl:
-            # Note that "last_search < t" is always False if t is None
-            if last_search < t and (not self.next or t < self.next):
+            # Note that "base_time < t" is always False if t is None
+            if base_time < t and (not self.next or t < self.next):
                 self.next = t
                 self.occs = {occ['filename']: {occ['id_']: [occ]}}
                 return True
@@ -148,10 +148,10 @@ def search_next_occurrences():
     restart_timer(occs)
 
 
-def search_next_item_occurrences(last_search, filename, id_, occs):
+def search_next_item_occurrences(base_time, filename, id_, occs):
     rules = organizer_api.get_item_rules(filename, id_)
     for rule in rules:
-        search_next_item_occurrences_event.signal(last_search=last_search,
+        search_next_item_occurrences_event.signal(base_time=base_time,
                                filename=filename, id_=id_, rule=rule, occs=occs)
 
 

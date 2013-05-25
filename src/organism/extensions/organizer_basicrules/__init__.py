@@ -24,17 +24,17 @@ import occur_once, occur_every_day, except_once
 
 
 def handle_search_next_item_occurrences(kwargs):
-    last_search = kwargs['last_search']
+    base_time = kwargs['base_time']
     filename = kwargs['filename']
     id_ = kwargs['id_']
     rule = kwargs['rule']
     occs = kwargs['occs']
 
     if rule['rule'] == 'occur_once':
-        occur_once.search_next_item_occurrences(last_search, filename, id_,
-                                                                     rule, occs)
+        occur_once.search_next_item_occurrences(base_time, filename, id_, rule,
+                                                                           occs)
     elif rule['rule'] == 'occur_every_day':
-        occur_every_day.search_next_item_occurrences(last_search, filename, id_,
+        occur_every_day.search_next_item_occurrences(base_time, filename, id_,
                                                                      rule, occs)
     elif rule['rule'] == 'except_once':
         except_once.search_next_item_occurrences(filename, id_, rule, occs)
