@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
-from organizer_alarms import queries, alarmsmod
+from organizer_alarms import alarmsmod
 
 
 def snooze_alarms(alarmst, stime):

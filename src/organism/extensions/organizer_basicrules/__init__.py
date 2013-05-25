@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
-import organism.core_api as core_api
 import organism.extensions.organizer_api as organizer_api
 import organism.extensions.organizer_timer_api as organizer_timer_api
 
