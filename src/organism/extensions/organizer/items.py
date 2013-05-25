@@ -221,13 +221,11 @@ def get_occurrences_range(mint, maxt):
             rules = get_item_rules(filename, id_)
             for rule in rules:
                 get_occurrences_range_event.signal(mint=mint, maxt=maxt,
-                                             filename=filename, id_=id_,
-                                             rule=rule, occs=occs)
+                               filename=filename, id_=id_, rule=rule, occs=occs)
 
-    # Get active alarms *after* all occurrences, to avoid except rules
-    for filename in core_api.get_open_databases():
+        # Get active alarms *after* all occurrences, to avoid except rules
         get_alarms_event.signal(mint=mint, maxt=maxt, filename=filename,
-                                occs=occs)
+                                                                      occs=occs)
 
     # Note that the list is practically unsorted: sorting its items is a duty
     # of the interface
