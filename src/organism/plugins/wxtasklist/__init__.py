@@ -92,7 +92,7 @@ class TaskList():
             # Always round down to the previous second
             t = int(_time.time()) - 1
 
-        occurrences = organizer_api.get_occurrences(mint=t, maxt=t + dt)
+        occurrences = organizer_api.get_occurrences_range(mint=t, maxt=t + dt)
 
         def compare(c):
             return c['start']

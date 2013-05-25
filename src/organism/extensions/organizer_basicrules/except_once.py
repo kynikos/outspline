@@ -17,7 +17,7 @@
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def get_occurrences(mint, maxt, filename, id_, rule, occs):
+def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
     start = rule['start']
     end = rule['end']
     inclusive = rule['inclusive']

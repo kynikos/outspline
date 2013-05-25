@@ -31,16 +31,18 @@ def get_item_rules(filename, id_):
     return items.get_item_rules(filename, id_)
 
 
-def get_occurrences(mint, maxt):
-    return items.get_occurrences(mint, maxt)
+def get_occurrences_range(mint, maxt):
+    # Note that the list is practically unsorted: sorting its items is a duty
+    # of the interface
+    return items.get_occurrences_range(mint, maxt)
 
 
 def bind_to_update_item_rules(handler, bind=True):
     return items.update_item_rules_event.bind(handler, bind)
 
 
-def bind_to_get_occurrences(handler, bind=True):
-    return items.get_occurrences_event.bind(handler, bind)
+def bind_to_get_occurrences_range(handler, bind=True):
+    return items.get_occurrences_range_event.bind(handler, bind)
 
 
 def bind_to_get_alarms(handler, bind=True):

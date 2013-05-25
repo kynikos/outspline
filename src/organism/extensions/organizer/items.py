@@ -24,7 +24,7 @@ import organism.core_api as core_api
 import queries
 
 update_item_rules_event = Event()
-get_occurrences_event = Event()
+get_occurrences_range_event = Event()
 get_alarms_event = Event()
 
 
@@ -213,14 +213,14 @@ def string_to_rules(string):
     return json.loads(string)
 
 
-def get_occurrences(mint, maxt):
+def get_occurrences_range(mint, maxt):
     occs = OccurrencesRange(mint, maxt)
 
     for filename in core_api.get_open_databases():
         for id_ in core_api.get_items_ids(filename):
             rules = get_item_rules(filename, id_)
             for rule in rules:
-                get_occurrences_event.signal(mint=mint, maxt=maxt,
+                get_occurrences_range_event.signal(mint=mint, maxt=maxt,
                                              filename=filename, id_=id_,
                                              rule=rule, occs=occs)
 

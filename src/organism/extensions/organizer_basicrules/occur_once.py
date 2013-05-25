@@ -21,7 +21,7 @@ def _compute_alarm(start, ralarm):
     return None if (ralarm == None) else (start - ralarm)
 
 
-def get_occurrences(filename, id_, rule, occs):
+def get_occurrences_range(filename, id_, rule, occs):
     start = rule['start']
     end = rule['end']
     ralarm = rule['ralarm']

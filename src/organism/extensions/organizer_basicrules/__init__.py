@@ -39,7 +39,7 @@ def handle_search_next_item_occurrences(kwargs):
         except_once.search_next_item_occurrences(filename, id_, rule, occs)
 
 
-def handle_get_occurrences(kwargs):
+def handle_get_occurrences_range(kwargs):
     mint = kwargs['mint']
     maxt = kwargs['maxt']
     filename = kwargs['filename']
@@ -48,14 +48,15 @@ def handle_get_occurrences(kwargs):
     occs = kwargs['occs']
 
     if rule['rule'] == 'occur_once':
-        occur_once.get_occurrences(filename, id_, rule, occs)
+        occur_once.get_occurrences_range(filename, id_, rule, occs)
     elif rule['rule'] == 'occur_every_day':
-        occur_every_day.get_occurrences(mint, maxt, filename, id_, rule, occs)
+        occur_every_day.get_occurrences_range(mint, maxt, filename, id_, rule,
+                                                                           occs)
     elif rule['rule'] == 'except_once':
-        except_once.get_occurrences(mint, maxt, filename, id_, rule, occs)
+        except_once.get_occurrences_range(mint, maxt, filename, id_, rule, occs)
 
 
 def main():
-    organizer_api.bind_to_get_occurrences(handle_get_occurrences)
+    organizer_api.bind_to_get_occurrences_range(handle_get_occurrences_range)
     organizer_timer_api.bind_to_search_next_item_occurrences(
                                             handle_search_next_item_occurrences)
