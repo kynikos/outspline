@@ -27,6 +27,7 @@ from organism.coreaux_api import log
 import organism.core_api as core_api
 import organism.interfaces.wxgui_api as wxgui_api
 import organism.extensions.organizer_api as organizer_api
+import organism.extensions.organizer_timer_api as organizer_timer_api
 import organism.extensions.organizer_alarms_api as organizer_alarms_api
 development_api = coreaux_api.import_extension_api('development')
 wxcopypaste_api = coreaux_api.import_plugin_api('wxcopypaste')
@@ -43,6 +44,7 @@ class AutoListView(wx.ListView, ListCtrlAutoWidthMixin):
 class TaskList():
     list_ = None
     occs = None
+    timer = None
 
     def __init__(self, parent):
         self.list_ = AutoListView(parent)
@@ -55,81 +57,135 @@ class TaskList():
         self.list_.InsertColumn(3, 'End', width=120)
         self.list_.InsertColumn(4, 'Alarm', width=120)
 
-        self.refresh()
+        self.timer = wx.CallLater(0, self.restart)
 
         organizer_alarms_api.bind_to_alarms(self.handle_alarms)
-        organizer_alarms_api.bind_to_alarm_off(self.handle_refresh)
+        organizer_alarms_api.bind_to_alarm_off(self.restart)
 
-        wxgui_api.bind_to_apply_editor_2(self.handle_refresh)
-        wxgui_api.bind_to_open_database(self.handle_refresh)
-        wxgui_api.bind_to_save_database_as(self.handle_refresh)
-        wxgui_api.bind_to_close_database(self.handle_refresh)
-        wxgui_api.bind_to_undo_tree(self.handle_refresh)
-        wxgui_api.bind_to_redo_tree(self.handle_refresh)
-        wxgui_api.bind_to_move_item(self.handle_refresh)
-        wxgui_api.bind_to_delete_items(self.handle_refresh)
+        wxgui_api.bind_to_apply_editor_2(self.restart)
+        wxgui_api.bind_to_open_database(self.restart)
+        wxgui_api.bind_to_save_database_as(self.restart)
+        wxgui_api.bind_to_close_database(self.restart)
+        wxgui_api.bind_to_undo_tree(self.restart)
+        wxgui_api.bind_to_redo_tree(self.restart)
+        wxgui_api.bind_to_move_item(self.restart)
+        wxgui_api.bind_to_delete_items(self.restart)
 
         if development_api:
-            development_api.bind_to_populate_tree(self.handle_refresh)
+            development_api.bind_to_populate_tree(self.restart)
 
         if wxcopypaste_api:
-            wxcopypaste_api.bind_to_cut_items(self.handle_refresh)
-            wxcopypaste_api.bind_to_paste_items(self.handle_refresh)
+            wxcopypaste_api.bind_to_cut_items(self.restart)
+            wxcopypaste_api.bind_to_paste_items(self.restart)
 
     def handle_alarms(self, kwargs):
-        wx.CallAfter(self.refresh)
+        wx.CallAfter(self.restart)
 
-    def handle_refresh(self, kwargs):
-        self.refresh()
+    def restart(self, kwargs=None):
+        self.timer.Stop()
+        delays = self.refresh()
+        try:
+            delay = min(delays)
+        except ValueError:
+            # delays could be empty
+            pass
+        else:
+            log.debug('Next tasklist refresh in {} seconds'.format(delay))
+            self.timer.Restart(delay * 1000)
 
-    def refresh(self, t=None, dt=86400, max=50):
-        log.debug('Tasklist refresh')
+    def refresh(self, mint=None, dt=86400, max_=60):
+        log.debug('Refresh tasklist')
 
         self.occs = {}
         self.list_.DeleteAllItems()
 
-        if t == None:
-            # Always round down to the previous second
-            t = int(_time.time()) - 1
+        if not mint:
+            now = int(_time.time())
+            # Round down to the previous minute, so as to include also the
+            # occurrences that fall in the current minute, in fact now is
+            # calculated after the exact minute has already stricken
+            mint = now - 60
+            maxt = now + dt
+        else:
+            maxt = mint + dt
 
-        occurrences = organizer_api.get_occurrences_range(mint=t, maxt=t + dt)
+        occsobj = organizer_api.get_occurrences_range(mint=mint, maxt=maxt)
+        occurrences = occsobj.get_list()
+        next_completion = occsobj.get_next_completion_time()
+
+        nextoccs = organizer_timer_api.get_next_occurrences(maxt)
+        next_occurrence = nextoccs.get_next_occurrence_time()
 
         def compare(c):
             return c['start']
 
         occurrences.sort(key=compare)
 
-        if max:
-            occurrences = occurrences[:max]
+        if max_:
+            occurrences = occurrences[:max_]
 
         for i, o in enumerate(occurrences):
-            filename = o['filename']
-            id_ = o['id_']
-            start = o['start']
-            end = o['end']
-            alarm = o['alarm']
+            self.insert_occurrence(i, o)
 
-            self.occs[i] = ListItem(filename, id_, start, end, alarm)
+        delays = []
 
-            fname = os.path.basename(filename)
-            text = core_api.get_item_text(filename, id_)
-            title = ListItem.make_heading(text)
-            startdate = _time.strftime('%Y.%m.%d %H:%M', _time.localtime(start))
-            if isinstance(end, int):
-                enddate = _time.strftime('%Y.%m.%d %H:%M', _time.localtime(end))
-            else:
-                enddate = 'none'
-            if isinstance(alarm, int):
-                alarmdate = _time.strftime('%Y.%m.%d %H:%M',
-                                           _time.localtime(alarm))
-            else:
-                alarmdate = 'none'
+        try:
+            # At completion time, because of the approximation, next_completion
+            # and mint are the same, thus giving a difference of 0: this would
+            # refresh the tasklist repeatedly until the following second
+            # strikes, so adding 1 here will make the previous cycle refresh the
+            # tasklist 1 second after completion time, thus giving the expected
+            # behaviour. Note that using max(((next_completion - mint), 1))
+            # would give a worse behaviour, in fact the tasklist would always be
+            # refreshed twice, the first time after 1 second, and the second
+            # time after the correct delay
+            d1 = next_completion - mint + 1
+        except TypeError:
+            # next_completion could be None
+            pass
+        else:
+            delays.append(d1)
 
-            index = self.list_.InsertStringItem(sys.maxint, fname)
-            self.list_.SetStringItem(index, 1, title)
-            self.list_.SetStringItem(index, 2, startdate)
-            self.list_.SetStringItem(index, 3, enddate)
-            self.list_.SetStringItem(index, 4, alarmdate)
+        try:
+            # Note that, unlike before, next_occurrence is always greater than
+            # maxt, so this difference will never be 0
+            d2 = next_occurrence - maxt
+        except TypeError:
+            # next_occurrence could be None
+            pass
+        else:
+            delays.append(d2)
+
+        return delays
+
+    def insert_occurrence(self, i, occ):
+        filename = occ['filename']
+        id_ = occ['id_']
+        start = occ['start']
+        end = occ['end']
+        alarm = occ['alarm']
+
+        self.occs[i] = ListItem(filename, id_, start, end, alarm)
+
+        fname = os.path.basename(filename)
+        text = core_api.get_item_text(filename, id_)
+        title = ListItem.make_heading(text)
+        startdate = _time.strftime('%Y.%m.%d %H:%M', _time.localtime(start))
+        if isinstance(end, int):
+            enddate = _time.strftime('%Y.%m.%d %H:%M', _time.localtime(end))
+        else:
+            enddate = 'none'
+        if isinstance(alarm, int):
+            alarmdate = _time.strftime('%Y.%m.%d %H:%M',
+                                       _time.localtime(alarm))
+        else:
+            alarmdate = 'none'
+
+        index = self.list_.InsertStringItem(sys.maxint, fname)
+        self.list_.SetStringItem(index, 1, title)
+        self.list_.SetStringItem(index, 2, startdate)
+        self.list_.SetStringItem(index, 3, enddate)
+        self.list_.SetStringItem(index, 4, alarmdate)
 
 
 class ListItem():

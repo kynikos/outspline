@@ -104,6 +104,16 @@ class OccurrencesRange():
                     occsl.append(o)
         return occsl
 
+    def get_next_completion_time(self):
+        ctime = None
+        for f in self.d:
+            for i in self.d[f]:
+                for o in self.d[f][i]:
+                    t = max((o['end'], o['start'], o['alarm']))
+                    if t and (not ctime or t < ctime):
+                        ctime = t
+        return ctime
+
 
 def insert_item(filename, id_, group, description='Insert item'):
     query_redo = queries.rules_insert.format(id_)
@@ -229,4 +239,4 @@ def get_occurrences_range(mint, maxt):
 
     # Note that the list is practically unsorted: sorting its items is a duty
     # of the interface
-    return occs.get_list()
+    return occs
