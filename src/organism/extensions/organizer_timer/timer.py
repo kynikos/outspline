@@ -40,36 +40,28 @@ class NextOccurrences():
         self.next = None
 
     def add(self, base_time, occ):
-        filename = occ['filename']
-        id_ = occ['id_']
-
         if self.next and self.next in (occ['alarm'], occ['start'], occ['end']):
-            try:
-                self.occs[filename][id_]
-            except KeyError:
-                try:
-                    self.occs[filename]
-                except KeyError:
-                    self.occs[filename] = {}
-                self.occs[filename][id_] = []
-            self.occs[filename][id_].append(occ)
+            self._add(self.occs, occ)
             return True
         else:
             return self._update_next(base_time, occ)
 
     def add_old(self, occ):
+        self._add(self.oldoccs, occ)
+
+    def _add(self, occsd, occ):
         filename = occ['filename']
         id_ = occ['id_']
 
         try:
-            self.oldoccs[filename][id_]
+            occsd[filename][id_]
         except KeyError:
             try:
-                self.oldoccs[filename]
+                occsd[filename]
             except KeyError:
-                self.oldoccs[filename] = {}
-            self.oldoccs[filename][id_] = []
-        self.oldoccs[filename][id_].append(occ)
+                occsd[filename] = {}
+            occsd[filename][id_] = []
+        occsd[filename][id_].append(occ)
 
     def _update_next(self, base_time, occ):
         tl = [occ['alarm'], occ['start'], occ['end']]
@@ -129,6 +121,7 @@ class NextOccurrences():
         return self.next
 
     def get_time_span(self):
+        # Note that this method ignores self.oldoccs _deliberately_
         minstart = None
         maxend = None
         for filename in self.occs:
