@@ -96,9 +96,6 @@ class TaskList():
     def refresh(self, mint=None, dt=86400, max_=60):
         log.debug('Refresh tasklist')
 
-        self.occs = {}
-        self.list_.DeleteAllItems()
-
         if not mint:
             now = int(_time.time())
             # Round down to the previous minute, so as to include also the
@@ -111,10 +108,11 @@ class TaskList():
 
         occsobj = organizer_api.get_occurrences_range(mint=mint, maxt=maxt)
         occurrences = occsobj.get_list()
-        next_completion = occsobj.get_next_completion_time()
 
-        nextoccs = organizer_timer_api.get_next_occurrences(maxt)
-        next_occurrence = nextoccs.get_next_occurrence_time()
+        # Always add active (but not snoozed) alarms if time interval includes
+        # current time
+        if mint <= now <= maxt:
+            occurrences.extend(occsobj.get_active_list())
 
         def compare(c):
             return c['start']
@@ -124,8 +122,18 @@ class TaskList():
         if max_:
             occurrences = occurrences[:max_]
 
+        self.occs = {}
+        self.list_.DeleteAllItems()
+
         for i, o in enumerate(occurrences):
             self.insert_occurrence(i, o)
+
+        next_completion = occsobj.get_next_completion_time()
+        nextoccs = organizer_timer_api.get_next_occurrences(maxt)
+        # Note that next_occurrence could even be a time of an occurrence that's
+        # already displayed in the list (e.g. if an occurrence has a start time
+        # within the queried range but an end time later than the maximum end)
+        next_occurrence = nextoccs.get_next_occurrence_time()
 
         delays = []
 

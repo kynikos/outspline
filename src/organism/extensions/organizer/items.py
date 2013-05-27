@@ -33,8 +33,29 @@ class OccurrencesRange():
         self.mint = mint
         self.maxt = maxt
         self.d = {}
+        self.actd = {}
 
-    def update(self, occ, origalarm, force=False):
+    def update(self, occ, origalarm):
+        return self._update(self.d, self.add, self._replace, occ, origalarm)
+
+    def move_active(self, occ, origalarm):
+        return self._update(self.actd, self.add_active, self._move, occ, origalarm)
+
+    def add(self, occ):
+        # This method must accept the same arguments as self.add_active
+        if self.mint <= occ['start'] <= self.maxt or \
+                   (occ['end'] and occ['start'] <= self.mint <= occ['end']) or \
+                      (occ['alarm'] and self.mint <= occ['alarm'] <= self.maxt):
+            self._add(self.d, occ)
+            return True
+        else:
+            return False
+
+    def add_active(self, occ):
+        # This method must accept the same arguments as self.add
+        return self._add(self.actd, occ)
+
+    def _update(self, occsd, add, action, occ, origalarm):
         filename = occ['filename']
         id_ = occ['id_']
 
@@ -43,36 +64,42 @@ class OccurrencesRange():
         del oocc['alarmid']
 
         try:
-            self.d[filename][id_]
+            occsd[filename][id_]
         except KeyError:
-            return self.add(occ, force)
+            return add(occ)
         else:
             try:
-                i = self.d[filename][id_].index(oocc)
+                i = occsd[filename][id_].index(oocc)
             except ValueError:
-                return self.add(occ, force)
+                return add(occ)
             else:
-                self.d[filename][id_][i] = occ
+                action(occsd[filename][id_], i, occ)
                 return True
 
-    def add(self, occ, force=False):
-        if force or (self.mint <= occ['start'] <= self.maxt or
-                     (occ['end'] and occ['start'] <= self.mint <= occ['end']) or
-                     (occ['alarm'] and self.mint <= occ['alarm'] <= self.maxt)):
-            filename = occ['filename']
-            id_ = occ['id_']
+    def _add(self, occsd, occ):
+        filename = occ['filename']
+        id_ = occ['id_']
+
+        try:
+            occsd[filename][id_]
+        except KeyError:
             try:
-                self.d[filename][id_]
+                occsd[filename]
             except KeyError:
-                try:
-                    self.d[filename]
-                except KeyError:
-                    self.d[filename] = {}
-                self.d[filename][id_] = []
-            self.d[filename][id_].append(occ)
-            return True
-        else:
-            return False
+                occsd[filename] = {}
+
+            occsd[filename][id_] = []
+
+        occsd[filename][id_].append(occ)
+
+    def _replace(self, ioccs, i, occ):
+        # This method must accept the same arguments as self._move
+        ioccs[i] = occ
+
+    def _move(self, ioccs, i, occ):
+        # This method must accept the same arguments as self._replace
+        del ioccs[i]
+        self.add_active(occ)
 
     def except_(self, filename, id_, start, end, inclusive):
         # If an except rule is put at the start of the rules list for an item,
@@ -96,6 +123,9 @@ class OccurrencesRange():
     def get_dict(self):
         return self.d
 
+    def get_active_dict(self):
+        return self.actd
+
     def get_list(self):
         occsl = []
         for f in self.d:
@@ -104,7 +134,16 @@ class OccurrencesRange():
                     occsl.append(o)
         return occsl
 
+    def get_active_list(self):
+        occsl = []
+        for f in self.actd:
+            for i in self.actd[f]:
+                for o in self.actd[f][i]:
+                    occsl.append(o)
+        return occsl
+
     def get_next_completion_time(self):
+        # Note that this method ignores self.actd _deliberately_
         ctime = None
         for f in self.d:
             for i in self.d[f]:

@@ -131,15 +131,17 @@ def get_alarms(mint, maxt, filename, occs):
                   'end': row['A_end'],
                   'alarm': snooze}
 
-        # Always add active (but not snoozed) alarms if time interval includes
-        # current time
-        if snooze == None and mint <= int(_time.time()) <= maxt:
-            occs.update(alarmd, origalarm, force=True)
-        else:
-            # Note that the second argument must be origalarm, not snooze, in
-            # fact it's used to *update* the occurrence (if present) using the
-            # new snooze time stored in alarmd
-            occs.update(alarmd, origalarm)
+        # If the alarm is not added to occs, add it to the active dictionary if
+        # it's active (but not snoozed)
+        # Note that if the alarm is active but its time values are included
+        # between mint and maxt, the alarm is added to the main dictionary, not
+        # the active one
+        # Also note that the second argument must be origalarm, not snooze, in
+        # fact it's used to *update* the occurrence (if present) using the new
+        # snooze time stored in alarmd
+        if not occs.update(alarmd, origalarm) and snooze == None:
+            occs.move_active(alarmd, origalarm)
+
 
 
 def snooze_alarms(alarmst, stime):
