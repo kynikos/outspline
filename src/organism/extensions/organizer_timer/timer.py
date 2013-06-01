@@ -151,16 +151,14 @@ class NextOccurrences():
         return (minstart, maxend)
 
 
-def get_next_occurrences(base_times):
+def get_next_occurrences(base_time=None, base_times=None):
     occs = NextOccurrences()
 
     search_start = (_time.time(), _time.clock())
 
     for filename in core_api.get_open_databases():
-        try:
+        if not base_time:
             base_time = base_times[filename]
-        except TypeError:
-            base_time = base_times
 
         for id_ in core_api.get_items_ids(filename):
             rules = organizer_api.get_item_rules(filename, id_)
@@ -225,7 +223,7 @@ def search_next_occurrences(kwargs=None):
 
     log.debug('Search next occurrences')
 
-    occs = get_next_occurrences(get_last_search_all())
+    occs = get_next_occurrences(base_times=get_last_search_all())
     next_occurrence = occs.get_next_occurrence_time()
     occsd = occs.get_dict()
     oldoccsd = occs.get_old_dict()

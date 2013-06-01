@@ -19,8 +19,9 @@
 from organizer_timer import timer
 
 
-def get_next_occurrences(base_times):
-    return timer.get_next_occurrences(base_times)
+def get_next_occurrences(base_time=None, base_times=None):
+    return timer.get_next_occurrences(base_time=base_time,
+                                                          base_times=base_times)
 
 
 def search_next_occurrences():

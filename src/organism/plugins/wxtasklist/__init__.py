@@ -129,7 +129,7 @@ class TaskList():
             self.insert_occurrence(i, o)
 
         next_completion = occsobj.get_next_completion_time()
-        nextoccs = organizer_timer_api.get_next_occurrences(maxt)
+        nextoccs = organizer_timer_api.get_next_occurrences(base_time=maxt)
         # Note that next_occurrence could even be a time of an occurrence that's
         # already displayed in the list (e.g. if an occurrence has a start time
         # within the queried range but an end time later than the maximum end)
