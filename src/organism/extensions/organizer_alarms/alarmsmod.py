@@ -68,7 +68,7 @@ def get_snoozed_alarms(last_search, filename, occs):
         # the possibility to prevent the activation of a snoozed alarm, be it
         # immediately or later (last_search can't be set on a future time)
         if snooze and snooze > last_search:
-            occs.add(last_search, alarmd)
+            occs.add_safe(last_search, alarmd)
         else:
             occs.add_old(alarmd)
 

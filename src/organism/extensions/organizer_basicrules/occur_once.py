@@ -28,11 +28,13 @@ def get_occurrences_range(filename, id_, rule, occs):
 
     alarm = _compute_alarm(start, ralarm)
 
-    occs.add({'filename': filename,
-              'id_': id_,
-              'start': start,
-              'end': end,
-              'alarm': alarm})
+    # The rule is checked in wxscheduler_basicrules.occur_once, no need to use
+    # occs.add
+    occs.add_safe({'filename': filename,
+                   'id_': id_,
+                   'start': start,
+                   'end': end,
+                   'alarm': alarm})
 
 def get_next_item_occurrences(base_time, filename, id_, rule, occs):
     start = rule['start']
@@ -41,8 +43,10 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
 
     alarm = _compute_alarm(start, ralarm)
 
-    occs.add(base_time, {'filename': filename,
-                             'id_': id_,
-                             'start': start,
-                             'end': end,
-                             'alarm': alarm})
+    # The rule is checked in wxscheduler_basicrules.occur_once, no need to use
+    # occs.add
+    occs.add_safe(base_time, {'filename': filename,
+                         'id_': id_,
+                         'start': start,
+                         'end': end,
+                         'alarm': alarm})

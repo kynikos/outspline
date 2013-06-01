@@ -71,11 +71,13 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
         if (alarm and alarm > maxt) or start > maxt:
             break
 
-        occs.add({'filename': filename,
-                  'id_': id_,
-                  'start': start,
-                  'end': end,
-                  'alarm': alarm})
+        # The rule is checked in wxscheduler_basicrules.occur_every_day, no need
+        # to use occs.add
+        occs.add_safe({'filename': filename,
+                       'id_': id_,
+                       'start': start,
+                       'end': end,
+                       'alarm': alarm})
 
         start += 86400
 
@@ -90,14 +92,16 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
         alarm = _compute_end(start, ralarm)
 
         occd = {'filename': filename,
-                  'id_': id_,
-                  'start': start,
-                  'end': end,
-                  'alarm': alarm}
+                'id_': id_,
+                'start': start,
+                'end': end,
+                'alarm': alarm}
 
         next_occ = occs.get_next_occurrence_time()
 
-        if occs.add(base_time, occd) or (next_occ and
+        # The rule is checked in wxscheduler_basicrules.occur_every_day, no need
+        # to use occs.add
+        if occs.add_safe(base_time, occd) or (next_occ and
                                          (alarm is None and start > next_occ) or
                                                   (alarm and alarm > next_occ)):
             break

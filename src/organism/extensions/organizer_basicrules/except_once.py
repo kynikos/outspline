@@ -23,7 +23,9 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
     inclusive = rule['inclusive']
 
     if start <= maxt and end >= mint:
-        occs.except_(filename, id_, start, end, inclusive)
+        # The rule is checked in wxscheduler_basicrules.except_once, no need to
+        # use occs.except_
+        occs.except_safe(filename, id_, start, end, inclusive)
 
 
 def get_next_item_occurrences(filename, id_, rule, occs):
@@ -36,4 +38,6 @@ def get_next_item_occurrences(filename, id_, rule, occs):
     maxend = limits[1]
 
     if start <= maxend and end >= minstart:
-        occs.except_(filename, id_, start, end, inclusive)
+        # The rule is checked in wxscheduler_basicrules.except_once, no need to
+        # use occs.except_
+        occs.except_safe(filename, id_, start, end, inclusive)

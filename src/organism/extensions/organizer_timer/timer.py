@@ -40,6 +40,14 @@ class NextOccurrences():
         self.next = None
 
     def add(self, base_time, occ):
+        # Make sure this occurrence is compliant with the requirements defined
+        # in organizer_api.update_item_rules
+        if occ['start'] and (not occ['old'] or occ['old'] > occ['start']):
+            return self.add_safe(base_time, occ)
+        else:
+            raise BadOccurrenceError()
+
+    def add_safe(self, base_time, occ):
         if self.next and self.next in (occ['alarm'], occ['start'], occ['end']):
             self._add(self.occs, occ)
             return True
@@ -78,8 +86,16 @@ class NextOccurrences():
             return False
 
     def except_(self, filename, id_, start, end, inclusive):
+        # Make sure this call is compliant with the requirements defined in
+        # organizer_api.update_item_rules
+        if start and start < end:
+            self.except_safe(filename, id_, start, end, inclusive)
+        else:
+            raise BadExceptRuleError()
+
+    def except_safe(self, filename, id_, start, end, inclusive):
         # Test if the item has some rules, for safety, also for coherence with
-        # organizer.items.OccurrencesRange.except_
+        # organizer.items.OccurrencesRange.except_safe
         try:
             occsc = self.occs[filename][id_][:]
         except KeyError:

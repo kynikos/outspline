@@ -23,6 +23,7 @@ from organism.coreaux_api import log, Event
 import organism.core_api as core_api
 
 import queries
+from exceptions import BadOccurrenceError, BadExceptRuleError
 
 update_item_rules_event = Event()
 get_occurrences_range_event = Event()
@@ -37,12 +38,22 @@ class OccurrencesRange():
         self.actd = {}
 
     def update(self, occ, origalarm):
-        return self._update(self.d, self.add, self._replace, occ, origalarm)
+        return self._update(self.d, self.add_safe, self._replace, occ,
+                                                                      origalarm)
 
     def move_active(self, occ, origalarm):
-        return self._update(self.actd, self.add_active, self._move, occ, origalarm)
+        return self._update(self.actd, self.add_active, self._move, occ,
+                                                                      origalarm)
 
     def add(self, occ):
+        # Make sure this occurrence is compliant with the requirements defined
+        # in organizer_api.update_item_rules
+        if occ['start'] and (not occ['old'] or occ['old'] > occ['start']):
+            return self.add_safe(occ)
+        else:
+            raise BadOccurrenceError()
+
+    def add_safe(self, occ):
         # This method must accept the same arguments as self.add_active
         if self.mint <= occ['start'] <= self.maxt or \
                    (occ['end'] and occ['start'] <= self.mint <= occ['end']) or \
@@ -103,6 +114,14 @@ class OccurrencesRange():
         self.add_active(occ)
 
     def except_(self, filename, id_, start, end, inclusive):
+        # Make sure this call is compliant with the requirements defined in
+        # organizer_api.update_item_rules
+        if start and start < end:
+            self.except_safe(filename, id_, start, end, inclusive)
+        else:
+            raise BadExceptRuleError()
+
+    def except_safe(self, filename, id_, start, end, inclusive):
         # If an except rule is put at the start of the rules list for an item,
         # self.d[filename][id_] wouldn't exist yet; note that if the item is the
         # first one being processed in the database, even self.d[filename]
