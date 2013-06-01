@@ -17,8 +17,9 @@
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+import time as _time
 
-from organism.coreaux_api import Event
+from organism.coreaux_api import log, Event
 import organism.core_api as core_api
 
 import queries
@@ -265,6 +266,8 @@ def string_to_rules(string):
 def get_occurrences_range(mint, maxt):
     occs = OccurrencesRange(mint, maxt)
 
+    search_start = (_time.time(), _time.clock())
+
     for filename in core_api.get_open_databases():
         for id_ in core_api.get_items_ids(filename):
             rules = get_item_rules(filename, id_)
@@ -275,6 +278,9 @@ def get_occurrences_range(mint, maxt):
         # Get active alarms *after* all occurrences, to avoid except rules
         get_alarms_event.signal(mint=mint, maxt=maxt, filename=filename,
                                                                       occs=occs)
+
+    log.debug('Occurrences range found in {} (time) / {} (clock) s'.format(
+               _time.time() - search_start[0], _time.clock() - search_start[1]))
 
     # Note that the list is practically unsorted: sorting its items is a duty
     # of the interface

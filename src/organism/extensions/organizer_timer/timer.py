@@ -138,6 +138,8 @@ class NextOccurrences():
 def get_next_occurrences(base_times):
     occs = NextOccurrences()
 
+    search_start = (_time.time(), _time.clock())
+
     for filename in core_api.get_open_databases():
         try:
             base_time = base_times[filename]
@@ -153,6 +155,9 @@ def get_next_occurrences(base_times):
 
         get_next_occurrences_event.signal(base_time=base_time,
                                                    filename=filename, occs=occs)
+
+    log.debug('Next occurrences found in {} (time) / {} (clock) s'.format(
+               _time.time() - search_start[0], _time.clock() - search_start[1]))
 
     return occs
 
