@@ -44,6 +44,8 @@ class AutoListView(wx.ListView, ListCtrlAutoWidthMixin):
 class TaskList():
     list_ = None
     occs = None
+    DELAY = None
+    delay = None
     timer = None
 
     def __init__(self, parent):
@@ -57,10 +59,15 @@ class TaskList():
         self.list_.InsertColumn(3, 'End', width=120)
         self.list_.InsertColumn(4, 'Alarm', width=120)
 
+        self.DELAY = coreaux_api.get_plugin_configuration('wxtasklist'
+                                                      ).get_int('refresh_delay')
+
+        # Initialize self.delay with a dummy function (int())
+        self.delay = wx.CallLater(self.DELAY, int())
         self.timer = wx.CallLater(0, self.restart)
 
-        organizer_alarms_api.bind_to_alarms(self.handle_alarms)
-        organizer_alarms_api.bind_to_alarm_off(self.restart)
+        organizer_alarms_api.bind_to_alarms(self.delay_restart)
+        organizer_alarms_api.bind_to_alarm_off(self.delay_restart)
 
         wxgui_api.bind_to_apply_editor_2(self.restart)
         wxgui_api.bind_to_open_database(self.restart)
@@ -78,8 +85,12 @@ class TaskList():
             wxcopypaste_api.bind_to_cut_items(self.restart)
             wxcopypaste_api.bind_to_paste_items(self.restart)
 
-    def handle_alarms(self, kwargs):
-        wx.CallAfter(self.restart)
+    def delay_restart(self, kwargs=None):
+        # Instead of self.restart, bind _this_ function to events that can be
+        # signalled many times in a loop, so that self.restart is executed only
+        # once after the last signal
+        self.delay.Stop()
+        self.delay = wx.CallLater(self.DELAY, self.restart)
 
     def restart(self, kwargs=None):
         self.timer.Stop()
