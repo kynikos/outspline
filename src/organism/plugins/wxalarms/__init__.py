@@ -19,6 +19,7 @@
 import os as _os
 import wx
 
+from organism.coreaux_api import log
 import organism.coreaux_api as coreaux_api
 import organism.core_api as core_api
 import organism.extensions.organizer_alarms_api as organizer_alarms_api
@@ -284,6 +285,8 @@ class Alarm():
         self.end = end
         self.alarm = alarm
 
+        log.debug('Appending alarm id: {}'.format(self.alarmid))
+
         self._init_widgets(self.panel)
 
         awindow.pbox.Add(self.panel, flag=wx.EXPAND)
@@ -340,6 +343,8 @@ class Alarm():
         wxgui_api.open_editor(self.filename, self.id_)
 
     def close(self):
+        log.debug('Destroying alarm id: {}'.format(self.alarmid))
+
         self.panel.Destroy()
         self.awindow.window.Layout()
         del self.awindow.alarms[self.awindow.make_alarmid(self.filename,
