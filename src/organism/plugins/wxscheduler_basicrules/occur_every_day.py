@@ -34,7 +34,6 @@ class Rule():
         # Create rule interface
 
         self.mwidgets = {}
-        mwidgets = self.mwidgets
 
         mpanel = wx.Panel(parent)
 
@@ -44,42 +43,43 @@ class Rule():
         slabel = wx.StaticText(mpanel, label='At:')
         pgrid.Add(slabel, (0, 1), flag=wx.ALIGN_CENTER_VERTICAL)
 
-        mwidgets['start_hour'] = wx.SpinCtrl(mpanel, min=0, max=23,
+        self.mwidgets['start_hour'] = wx.SpinCtrl(mpanel, min=0, max=23,
                                            size=(40, 21),
                                            style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        pgrid.Add(mwidgets['start_hour'], (0, 2),
+        pgrid.Add(self.mwidgets['start_hour'], (0, 2),
                   flag=wx.ALIGN_CENTER_VERTICAL)
 
         slabel = wx.StaticText(mpanel, label=':')
         pgrid.Add(slabel, (0, 3), flag=wx.ALIGN_CENTER_VERTICAL)
 
-        mwidgets['start_minute'] = wx.SpinCtrl(mpanel, min=0, max=59,
+        self.mwidgets['start_minute'] = wx.SpinCtrl(mpanel, min=0, max=59,
                                            size=(40, 21),
                                            style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        pgrid.Add(mwidgets['start_minute'], (0, 4),
+        pgrid.Add(self.mwidgets['start_minute'], (0, 4),
                   flag=wx.ALIGN_CENTER_VERTICAL)
 
-        mwidgets['end_chbox'] = wx.CheckBox(mpanel)
-        pgrid.Add(mwidgets['end_chbox'], (1, 0))
+        self.mwidgets['end_chbox'] = wx.CheckBox(mpanel)
+        pgrid.Add(self.mwidgets['end_chbox'], (1, 0))
 
         slabel = wx.StaticText(mpanel, label='For:')
         pgrid.Add(slabel, (1, 1), flag=wx.ALIGN_CENTER_VERTICAL)
 
-        mwidgets['end_number'] = wx.SpinCtrl(mpanel, min=1, max=99,
+        self.mwidgets['end_number'] = wx.SpinCtrl(mpanel, min=1, max=99,
                                              size=(40, 21),
                                              style=wx.SP_ARROW_KEYS)
-        pgrid.Add(mwidgets['end_number'], (1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+        pgrid.Add(self.mwidgets['end_number'], (1, 2),
+                                                  flag=wx.ALIGN_CENTER_VERTICAL)
 
-        mwidgets['end_unit'] = wx.ComboBox(mpanel, value='minutes',
+        self.mwidgets['end_unit'] = wx.ComboBox(mpanel, value='minutes',
                                            size=(100, 21),
                                            choices=('minutes', 'hours', 'days',
                                                     'weeks', 'months', 'years'),
                                            style=wx.CB_READONLY)
-        pgrid.Add(mwidgets['end_unit'], (1, 3), span=(1, 2),
+        pgrid.Add(self.mwidgets['end_unit'], (1, 3), span=(1, 2),
                   flag=wx.ALIGN_CENTER_VERTICAL)
 
-        mwidgets['alarm_chbox'] = wx.CheckBox(mpanel)
-        pgrid.Add(mwidgets['alarm_chbox'], (2, 0))
+        self.mwidgets['alarm_chbox'] = wx.CheckBox(mpanel)
+        pgrid.Add(self.mwidgets['alarm_chbox'], (2, 0))
 
         slabel = wx.StaticText(mpanel, label='Alarm')
         pgrid.Add(slabel, (2, 1), span=(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
@@ -96,30 +96,31 @@ class Rule():
         if rstart == None:
             rstart = int(_time.strftime('%H', _time.localtime())) * 3600 + 3600
 
-        mwidgets['start_hour'].SetValue(rstart // 3600)
-        mwidgets['start_minute'].SetValue(rstart % 3600 // 60)
+        self.mwidgets['start_hour'].SetValue(rstart // 3600)
+        self.mwidgets['start_minute'].SetValue(rstart % 3600 // 60)
 
         if rendn == None:
-            mwidgets['end_chbox'].SetValue(False)
+            self.mwidgets['end_chbox'].SetValue(False)
             rendn = 1
             rendu = 'hours'
 
-            mwidgets['end_number'].Disable()
-            mwidgets['end_unit'].Disable()
+            self.mwidgets['end_number'].Disable()
+            self.mwidgets['end_unit'].Disable()
         else:
-            mwidgets['end_chbox'].SetValue(True)
+            self.mwidgets['end_chbox'].SetValue(True)
 
-        mwidgets['end_number'].SetValue(rendn)
-        mwidgets['end_unit'].SetValue(rendu)
+        self.mwidgets['end_number'].SetValue(rendn)
+        self.mwidgets['end_unit'].SetValue(rendu)
 
         if ralarm == None:
-            mwidgets['alarm_chbox'].SetValue(False)
+            self.mwidgets['alarm_chbox'].SetValue(False)
         else:
-            mwidgets['alarm_chbox'].SetValue(True)
+            self.mwidgets['alarm_chbox'].SetValue(True)
 
         wxscheduler_api.change_rule(kwargs['filename'], kwargs['id_'], mpanel)
 
-        mpanel.Bind(wx.EVT_CHECKBOX, self.handle_end_checkbox, mwidgets['end_chbox'])
+        mpanel.Bind(wx.EVT_CHECKBOX, self.handle_end_checkbox,
+                                                     self.mwidgets['end_chbox'])
 
 
     def handle_end_checkbox(self, event):

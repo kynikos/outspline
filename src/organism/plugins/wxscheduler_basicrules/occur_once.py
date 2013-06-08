@@ -36,7 +36,6 @@ class Rule():
         # Create rule interface
 
         self.mwidgets = {}
-        mwidgets = self.mwidgets
 
         mpanel = wx.Panel(parent)
 
@@ -46,55 +45,55 @@ class Rule():
         slabel = wx.StaticText(mpanel, label='On:')
         pgrid.Add(slabel, (0, 1), flag=wx.ALIGN_CENTER_VERTICAL)
 
-        mwidgets['start_date'] = wx.DatePickerCtrl(mpanel, size=(-1, 21))
+        self.mwidgets['start_date'] = wx.DatePickerCtrl(mpanel, size=(-1, 21))
         # Add a 1px top border because DatePickerCtrl cuts 1px at top and left
-        pgrid.Add(mwidgets['start_date'], (0, 2),
+        pgrid.Add(self.mwidgets['start_date'], (0, 2),
                   flag=wx.ALIGN_CENTER_VERTICAL | wx.TOP, border=1)
 
-        mwidgets['start_hour'] = wx.SpinCtrl(mpanel, min=0, max=23,
+        self.mwidgets['start_hour'] = wx.SpinCtrl(mpanel, min=0, max=23,
                                            size=(40, 21),
                                            style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        pgrid.Add(mwidgets['start_hour'], (0, 3),
+        pgrid.Add(self.mwidgets['start_hour'], (0, 3),
                   flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT,
                   border=12)
 
         slabel = wx.StaticText(mpanel, label=':')
         pgrid.Add(slabel, (0, 4), flag=wx.ALIGN_CENTER_VERTICAL)
 
-        mwidgets['start_minute'] = wx.SpinCtrl(mpanel, min=0, max=59,
+        self.mwidgets['start_minute'] = wx.SpinCtrl(mpanel, min=0, max=59,
                                            size=(40, 21),
                                            style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        pgrid.Add(mwidgets['start_minute'], (0, 5),
+        pgrid.Add(self.mwidgets['start_minute'], (0, 5),
                   flag=wx.ALIGN_CENTER_VERTICAL)
 
-        mwidgets['end_chbox'] = wx.CheckBox(mpanel)
-        pgrid.Add(mwidgets['end_chbox'], (1, 0))
+        self.mwidgets['end_chbox'] = wx.CheckBox(mpanel)
+        pgrid.Add(self.mwidgets['end_chbox'], (1, 0))
 
         slabel = wx.StaticText(mpanel, label='Until:')
         pgrid.Add(slabel, (1, 1), flag=wx.ALIGN_CENTER_VERTICAL)
 
-        mwidgets['end_date'] = wx.DatePickerCtrl(mpanel, size=(-1, 21))
+        self.mwidgets['end_date'] = wx.DatePickerCtrl(mpanel, size=(-1, 21))
         # Add a 1px top border because DatePickerCtrl cuts 1px at top and left
-        pgrid.Add(mwidgets['end_date'], (1, 2),
+        pgrid.Add(self.mwidgets['end_date'], (1, 2),
                   flag=wx.ALIGN_CENTER_VERTICAL | wx.TOP, border=1)
 
-        mwidgets['end_hour'] = wx.SpinCtrl(mpanel, min=0, max=23,
+        self.mwidgets['end_hour'] = wx.SpinCtrl(mpanel, min=0, max=23,
                                            size=(40, 21),
                                            style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        pgrid.Add(mwidgets['end_hour'], (1, 3), flag=wx.ALIGN_CENTER_VERTICAL |
-                  wx.ALIGN_RIGHT)
+        pgrid.Add(self.mwidgets['end_hour'], (1, 3),
+                                 flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
 
         slabel = wx.StaticText(mpanel, label=':')
         pgrid.Add(slabel, (1, 4), flag=wx.ALIGN_CENTER_VERTICAL)
 
-        mwidgets['end_minute'] = wx.SpinCtrl(mpanel, min=0, max=59,
+        self.mwidgets['end_minute'] = wx.SpinCtrl(mpanel, min=0, max=59,
                                            size=(40, 21),
                                            style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        pgrid.Add(mwidgets['end_minute'], (1, 5),
+        pgrid.Add(self.mwidgets['end_minute'], (1, 5),
                   flag=wx.ALIGN_CENTER_VERTICAL)
 
-        mwidgets['alarm_chbox'] = wx.CheckBox(mpanel)
-        pgrid.Add(mwidgets['alarm_chbox'], (2, 0))
+        self.mwidgets['alarm_chbox'] = wx.CheckBox(mpanel)
+        pgrid.Add(self.mwidgets['alarm_chbox'], (2, 0))
 
         slabel = wx.StaticText(mpanel, label='Alarm')
         pgrid.Add(slabel, (2, 1), span=(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
@@ -117,19 +116,19 @@ class Rule():
         shour = int(_time.strftime('%H', _time.localtime(start)))
         smin = int(_time.strftime('%M', _time.localtime(start)))
 
-        mwidgets['start_date'].SetValue(sdate)
-        mwidgets['start_hour'].SetValue(shour)
-        mwidgets['start_minute'].SetValue(smin)
+        self.mwidgets['start_date'].SetValue(sdate)
+        self.mwidgets['start_hour'].SetValue(shour)
+        self.mwidgets['start_minute'].SetValue(smin)
 
         if end == None:
-            mwidgets['end_chbox'].SetValue(False)
+            self.mwidgets['end_chbox'].SetValue(False)
             end = start + 3600
 
-            mwidgets['end_date'].Disable()
-            mwidgets['end_hour'].Disable()
-            mwidgets['end_minute'].Disable()
+            self.mwidgets['end_date'].Disable()
+            self.mwidgets['end_hour'].Disable()
+            self.mwidgets['end_minute'].Disable()
         else:
-            mwidgets['end_chbox'].SetValue(True)
+            self.mwidgets['end_chbox'].SetValue(True)
 
         edate = wx.DateTime()
         edate.Set(year=int(_time.strftime('%Y', _time.localtime(end))),
@@ -138,19 +137,19 @@ class Rule():
         ehour = int(_time.strftime('%H', _time.localtime(end)))
         emin = int(_time.strftime('%M', _time.localtime(end)))
 
-        mwidgets['end_date'].SetValue(edate)
-        mwidgets['end_hour'].SetValue(ehour)
-        mwidgets['end_minute'].SetValue(emin)
+        self.mwidgets['end_date'].SetValue(edate)
+        self.mwidgets['end_hour'].SetValue(ehour)
+        self.mwidgets['end_minute'].SetValue(emin)
 
         if ralarm == None:
-            mwidgets['alarm_chbox'].SetValue(False)
+            self.mwidgets['alarm_chbox'].SetValue(False)
         else:
-            mwidgets['alarm_chbox'].SetValue(True)
+            self.mwidgets['alarm_chbox'].SetValue(True)
 
         wxscheduler_api.change_rule(kwargs['filename'], kwargs['id_'], mpanel)
 
         mpanel.Bind(wx.EVT_CHECKBOX, self.handle_end_checkbox,
-                    mwidgets['end_chbox'])
+                    self.mwidgets['end_chbox'])
 
     def handle_end_checkbox(self, event):
         if event.IsChecked():
