@@ -110,7 +110,8 @@ def populate_tree(filename):
 
             for n in range(random.randint(0, 8)):
                 start = int((random.gauss(time.time(), 15000)) // 60 * 60)
-                end = random.choice((None, start + random.randint(1, 360) * 60))
+                end1 = start + random.randint(1, 360) * 60
+                end2 = random.choice((None, end1))
                 ralarm = random.choice((None, 0))
                 rstart = random.randint(0, 1440) * 60
                 # Ignore 'days', 'weeks', 'months', 'years'
@@ -122,11 +123,11 @@ def populate_tree(filename):
                 inclusive = random.choice((True, False))
 
                 rule = random.choice((
-                    organizer_basicrules_api.make_occur_once_rule(start, end,
+                    organizer_basicrules_api.make_occur_once_rule(start, end2,
                                                                         ralarm),
                     organizer_basicrules_api.make_occur_every_day_rule(rstart,
                                                           rendn, rendu, ralarm),
-                    organizer_basicrules_api.make_except_once_rule(start, end,
+                    organizer_basicrules_api.make_except_once_rule(start, end1,
                                                                       inclusive)
                 ))
 

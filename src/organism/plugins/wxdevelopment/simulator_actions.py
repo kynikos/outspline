@@ -376,7 +376,8 @@ def edit_editor_rules():
 
         for n in range(random.randint(0, 8)):
             start = int((random.gauss(time.time(), 1000)) // 60 * 60)
-            end = random.choice((None, start + random.randint(1, 360) * 60))
+            end1 = start + random.randint(1, 360) * 60
+            end2 = random.choice((None, end1))
             ralarm = random.choice((None, 0))
             rstart = random.randint(0, 1440) * 60
             # Ignore 'days', 'weeks', 'months', 'years'
@@ -390,7 +391,7 @@ def edit_editor_rules():
             rule = random.choice((
                 {'rule': 'occur_once',
                  'start': start,
-                 'end': end,
+                 'end': end2,
                  'ralarm': ralarm},
                 {'rule': 'occur_every_day',
                  'rstart': rstart,
@@ -399,7 +400,7 @@ def edit_editor_rules():
                  'ralarm': ralarm},
                 {'rule': 'except_once',
                  'start': start,
-                 'end': end,
+                 'end': end1,
                  'inclusive': inclusive}
             ))
 
