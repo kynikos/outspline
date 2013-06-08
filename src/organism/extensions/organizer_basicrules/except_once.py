@@ -16,6 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+_RULE_NAME = 'except_once'
+
+
+def make_rule(start, end, inclusive):
+    return {'rule': _RULE_NAME,
+            'start': start,
+            'end': end,
+            'inclusive': inclusive}
+
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
     start = rule['start']

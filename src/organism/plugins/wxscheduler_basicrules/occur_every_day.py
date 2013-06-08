@@ -19,9 +19,9 @@
 import time as _time
 import wx
 
+import organism.extensions.organizer_basicrules_api as organizer_basicrules_api
 import organism.plugins.wxscheduler_api as wxscheduler_api
 
-_RULE_NAME = 'occur_every_day'
 _RULE_DESC = 'Occur every day at <time> for <time>'
 
 
@@ -164,7 +164,8 @@ class Rule():
         # There's no need for controls to make sure this rule can only produce
         # occurrences compliant with the requirements defined in
         # organizer_api.update_item_rules
-        ruled = self.make_rule(rstart, rendn, rendu, ralarm)
+        ruled = organizer_basicrules_api.make_occur_every_day_rule(rstart,
+                                                           rendn, rendu, ralarm)
         label = self.make_label(rstart, rendn, rendu, ralarm)
         wxscheduler_api.apply_rule(kwargs['filename'], kwargs['id_'], ruled,
                                                                           label)
@@ -176,7 +177,8 @@ class Rule():
         rendu = kwargs['rule']['rendu']
         ralarm = kwargs['rule']['ralarm']
 
-        ruled = cls.make_rule(rstart, rendn, rendu, ralarm)
+        ruled = organizer_basicrules_api.make_occur_every_day_rule(rstart,
+                                                           rendn, rendu, ralarm)
         label = cls.make_label(rstart, rendn, rendu, ralarm)
         wxscheduler_api.insert_rule(kwargs['filename'], kwargs['id_'], ruled,
                                                                           label)
@@ -193,11 +195,3 @@ class Rule():
             label += ', alarm enabled'
 
         return label
-
-    @staticmethod
-    def make_rule(rstart, rendn, rendu, ralarm):
-        return {'rule': _RULE_NAME,
-                'rstart': rstart,
-                'rendn': rendn,
-                'rendu': rendu,
-                'ralarm': ralarm}

@@ -18,6 +18,8 @@
 
 import time as _time
 
+_RULE_NAME = 'occur_every_day'
+
 
 def _compute_rend(rendn, rendu):
     if rendn != None:
@@ -57,6 +59,14 @@ def _compute_end(start, rend):
 
 def _compute_alarm(start, ralarm):
     return start - ralarm if ralarm != None else None
+
+
+def make_rule(rstart, rendn, rendu, ralarm):
+    return {'rule': _RULE_NAME,
+            'rstart': rstart,
+            'rendn': rendn,
+            'rendu': rendu,
+            'ralarm': ralarm}
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):

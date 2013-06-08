@@ -29,13 +29,13 @@ def handle_get_next_item_occurrences(kwargs):
     rule = kwargs['rule']
     occs = kwargs['occs']
 
-    if rule['rule'] == 'occur_once':
+    if rule['rule'] == occur_once._RULE_NAME:
         occur_once.get_next_item_occurrences(base_time, filename, id_, rule,
                                                                            occs)
-    elif rule['rule'] == 'occur_every_day':
+    elif rule['rule'] == occur_every_day._RULE_NAME:
         occur_every_day.get_next_item_occurrences(base_time, filename, id_,
                                                                      rule, occs)
-    elif rule['rule'] == 'except_once':
+    elif rule['rule'] == except_once._RULE_NAME:
         except_once.get_next_item_occurrences(filename, id_, rule, occs)
 
 
@@ -47,12 +47,12 @@ def handle_get_occurrences_range(kwargs):
     rule = kwargs['rule']
     occs = kwargs['occs']
 
-    if rule['rule'] == 'occur_once':
+    if rule['rule'] == occur_once._RULE_NAME:
         occur_once.get_occurrences_range(filename, id_, rule, occs)
-    elif rule['rule'] == 'occur_every_day':
+    elif rule['rule'] == occur_every_day._RULE_NAME:
         occur_every_day.get_occurrences_range(mint, maxt, filename, id_, rule,
                                                                            occs)
-    elif rule['rule'] == 'except_once':
+    elif rule['rule'] == except_once._RULE_NAME:
         except_once.get_occurrences_range(mint, maxt, filename, id_, rule, occs)
 
 

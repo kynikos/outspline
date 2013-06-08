@@ -16,9 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+_RULE_NAME = 'occur_once'
+
 
 def _compute_alarm(start, ralarm):
     return None if (ralarm == None) else (start - ralarm)
+
+
+def make_rule(start, end, ralarm):
+    return {'rule': _RULE_NAME,
+            'start': start,
+            'end': end,
+            'ralarm': ralarm}
 
 
 def get_occurrences_range(filename, id_, rule, occs):

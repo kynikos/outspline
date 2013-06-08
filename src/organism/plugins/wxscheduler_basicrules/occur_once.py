@@ -19,11 +19,11 @@
 import time as _time
 import wx
 
+import organism.extensions.organizer_basicrules_api as organizer_basicrules_api
 import organism.plugins.wxscheduler_api as wxscheduler_api
 
 import msgboxes
 
-_RULE_NAME = 'occur_once'
 _RULE_DESC = 'Occur once on <date> until <date>'
 
 
@@ -198,7 +198,8 @@ class Rule():
         # Make sure this rule can only produce occurrences compliant with the
         # requirements defined in organizer_api.update_item_rules
         if end is None or end > start:
-            ruled = self.make_rule(start, end, ralarm)
+            ruled = organizer_basicrules_api.make_occur_once_rule(start, end,
+                                                                         ralarm)
             label = self.make_label(start, end, ralarm)
             wxscheduler_api.apply_rule(kwargs['filename'], kwargs['id_'], ruled,
                                                                           label)
@@ -211,7 +212,8 @@ class Rule():
         end = kwargs['rule']['end']
         ralarm = kwargs['rule']['ralarm']
 
-        ruled = cls.make_rule(start, end, ralarm)
+        ruled = organizer_basicrules_api.make_occur_once_rule(start, end,
+                                                                         ralarm)
         label = cls.make_label(start, end, ralarm)
         wxscheduler_api.insert_rule(kwargs['filename'], kwargs['id_'], ruled,
                                                                           label)
@@ -230,10 +232,3 @@ class Rule():
             label += ', alarm enabled'
 
         return label
-
-    @staticmethod
-    def make_rule(start, end, ralarm):
-        return {'rule': _RULE_NAME,
-                'start': start,
-                'end': end,
-                'ralarm': ralarm}

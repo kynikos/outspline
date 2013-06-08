@@ -19,11 +19,11 @@
 import time as _time
 import wx
 
+import organism.extensions.organizer_basicrules_api as organizer_basicrules_api
 import organism.plugins.wxscheduler_api as wxscheduler_api
 
 import msgboxes
 
-_RULE_NAME = 'except_once'
 _RULE_DESC = 'Except from <date> until <date>'
 
 
@@ -166,7 +166,8 @@ class Rule():
         # Make sure this rule can only produce occurrences compliant with the
         # requirements defined in organizer_api.update_item_rules
         if end > start:
-            ruled = self.make_rule(start, end, inclusive)
+            ruled = organizer_basicrules_api.make_except_once_rule(start, end,
+                                                                      inclusive)
             label = self.make_label(start, end, inclusive)
             wxscheduler_api.apply_rule(kwargs['filename'], kwargs['id_'], ruled,
                                                                           label)
@@ -179,7 +180,8 @@ class Rule():
         end = kwargs['rule']['end']
         inclusive = kwargs['rule']['inclusive']
 
-        ruled = cls.make_rule(start, end, inclusive)
+        ruled = organizer_basicrules_api.make_except_once_rule(start, end,
+                                                                      inclusive)
         label = cls.make_label(start, end, inclusive)
         wxscheduler_api.insert_rule(kwargs['filename'], kwargs['id_'], ruled,
                                                                           label)
@@ -195,10 +197,3 @@ class Rule():
             label += ', inclusive'
 
         return label
-
-    @staticmethod
-    def make_rule(start, end, inclusive):
-        return {'rule': _RULE_NAME,
-                'start': start,
-                'end': end,
-                'inclusive': inclusive}
