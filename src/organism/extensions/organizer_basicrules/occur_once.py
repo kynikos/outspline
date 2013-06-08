@@ -28,7 +28,7 @@ def _compute_alarm(start, ralarm):
 def make_rule(start, end, ralarm):
     # Make sure this rule can only produce occurrences compliant with the
     # requirements defined in organizer_api.update_item_rules
-    if end is None or end > start:
+    if start and (end is None or end > start):
         return {'rule': _RULE_NAME,
                 'start': start,
                 'end': end,

@@ -165,8 +165,9 @@ class Rule():
             ruled = organizer_basicrules_api.make_occur_every_day_rule(rstart,
                                                            rendn, rendu, ralarm)
         except organizer_basicrules_api.BadRuleError:
-            # At the moment this will never happen because the rule doesn't need
-            # to be checked in organizer_basicrules.occur_every_day.make_rule
+            # At the moment this warning's message is not relevant since the
+            # exception will never be raised because the rule is created safely
+            # with this interface
             msgboxes.warn_bad_rule().ShowModal()
         else:
             label = self.make_label(rstart, rendn, rendu, ralarm)

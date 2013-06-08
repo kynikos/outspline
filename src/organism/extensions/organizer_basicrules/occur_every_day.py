@@ -64,14 +64,16 @@ def _compute_alarm(start, ralarm):
 
 
 def make_rule(rstart, rendn, rendu, ralarm):
-    # There's no need for controls to make sure this rule can only produce
-    # occurrences compliant with the requirements defined in
-    # organizer_api.update_item_rules
-    return {'rule': _RULE_NAME,
-            'rstart': rstart,
-            'rendn': rendn,
-            'rendu': rendu,
-            'ralarm': ralarm}
+    # Make sure this rule can only produce occurrences compliant with the
+    # requirements defined in organizer_api.update_item_rules
+    if rstart:
+        return {'rule': _RULE_NAME,
+                'rstart': rstart,
+                'rendn': rendn,
+                'rendu': rendu,
+                'ralarm': ralarm}
+    else:
+        raise BadRuleError()
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
