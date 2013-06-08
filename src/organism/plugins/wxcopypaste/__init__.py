@@ -25,7 +25,6 @@ import organism.interfaces.wxgui_api as wxgui_api
 import organism.extensions.copypaste_api as copypaste_api
 
 cut_items_event = Event()
-paste_items_event = Event()
 
 ID_CUT = None
 mcut = None
@@ -121,7 +120,6 @@ def paste_items_as_siblings(event):
                 treedb.create(base=treeroot)
 
         treedb.history.refresh()
-        paste_items_event.signal()
 
     core_api.release_databases()
 
@@ -144,7 +142,6 @@ def paste_items_as_children(event):
                 treedb.create(base=treeroot)
 
             treedb.history.refresh()
-            paste_items_event.signal()
 
     core_api.release_databases()
 

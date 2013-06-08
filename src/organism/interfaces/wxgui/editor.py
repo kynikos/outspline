@@ -29,8 +29,7 @@ import textarea
 import tree
 
 open_editor_event = Event()
-apply_editor_event_1 = Event()
-apply_editor_event_2 = Event()
+apply_editor_event = Event()
 check_modified_state_event = Event()
 close_editor_event = Event()
 open_textctrl_event = Event()
@@ -155,12 +154,11 @@ class Editor():
         group = core_api.get_next_history_group(self.filename)
         description = 'Apply editor'
 
-        # Note that apply_editor_event_1 is also bound directly by the textarea
-        apply_editor_event_1.signal(filename=self.filename, id_=self.id_,
+        # Note that apply_editor_event is also bound directly by the textarea
+        apply_editor_event.signal(filename=self.filename, id_=self.id_,
                                     group=group, description=description)
 
         tree.dbs[self.filename].history.refresh()
-        apply_editor_event_2.signal()
 
     def set_modified(self):
         self.modstate = True

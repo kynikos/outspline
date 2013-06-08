@@ -29,7 +29,6 @@ import msgboxes
 import tree
 
 open_database_event = Event()
-save_database_as_event = Event()
 close_database_event = Event()
 
 
@@ -101,8 +100,6 @@ def save_database_as(origin):
             core_api.save_database_copy(origin, destination)
             close_database(origin, no_confirm=True)
             open_database(destination)
-
-            save_database_as_event.signal()
 
 
 def save_database_backup(origin):

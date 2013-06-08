@@ -26,7 +26,6 @@ import organism.extensions.organizer_timer_api as organizer_timer_api
 import queries
 
 alarm_event = Event()
-alarms_event = Event()
 alarm_off_event = Event()
 
 changes = {}
@@ -81,8 +80,6 @@ def activate_alarms_range(filename, mint, maxt, occsd):
             if mint < occ['alarm'] <= maxt:
                 activate_alarm(occ)
 
-    alarms_event.signal()
-
 
 def activate_old_alarms(occsd):
     for filename in occsd:
@@ -98,8 +95,6 @@ def activate_alarms(time, occsd):
                 # occ may have start or end == time
                 if occ['alarm'] == time:
                     activate_alarm(occ)
-
-    alarms_event.signal()
 
 
 def activate_alarm(alarm):

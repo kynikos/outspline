@@ -32,10 +32,5 @@ def bind_to_alarm(handler, bind=True):
     return alarmsmod.alarm_event.bind(handler, bind)
 
 
-def bind_to_alarms(handler, bind=True):
-    # Warning, this function is executed on a separate thread!!!
-    return alarmsmod.alarms_event.bind(handler, bind)
-
-
 def bind_to_alarm_off(handler, bind=True):
     return alarmsmod.alarm_off_event.bind(handler, bind)

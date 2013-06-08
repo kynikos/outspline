@@ -82,12 +82,8 @@ def bind_to_open_editor(handler, bind=True):
     return editor.open_editor_event.bind(handler, bind)
 
 
-def bind_to_apply_editor_1(handler, bind=True):
-    return editor.apply_editor_event_1.bind(handler, bind)
-
-
-def bind_to_apply_editor_2(handler, bind=True):
-    return editor.apply_editor_event_2.bind(handler, bind)
+def bind_to_apply_editor(handler, bind=True):
+    return editor.apply_editor_event.bind(handler, bind)
 
 
 def bind_to_check_editor_modified_state(handler, bind=True):
@@ -160,10 +156,6 @@ def bind_to_open_database(handler, bind=True):
     return databases.open_database_event.bind(handler, bind)
 
 
-def bind_to_save_database_as(handler, bind=True):
-    return databases.save_database_as_event.bind(handler, bind)
-
-
 def bind_to_close_database(handler, bind=True):
     return databases.close_database_event.bind(handler, bind)
 
@@ -174,10 +166,6 @@ def bind_to_undo_tree(handler, bind=True):
 
 def bind_to_redo_tree(handler, bind=True):
     return menubar.redo_tree_event.bind(handler, bind)
-
-
-def bind_to_move_item(handler, bind=True):
-    return menubar.move_item_event.bind(handler, bind)
 
 
 def bind_to_delete_items(handler, bind=True):

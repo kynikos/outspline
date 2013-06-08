@@ -78,7 +78,7 @@ class Scheduler():
             wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel)
             wxgui_api.resize_foldpanelbar(self.filename, self.id_)
 
-        wxgui_api.bind_to_apply_editor_1(self.handle_apply)
+        wxgui_api.bind_to_apply_editor(self.handle_apply)
         wxgui_api.bind_to_check_editor_modified_state(
                                              self.handle_check_editor_modified)
         wxgui_api.bind_to_close_editor(self.handle_close)
@@ -103,7 +103,7 @@ class Scheduler():
             # It's necessary to explicitly unbind the handlers, otherwise this
             # object will never be garbage-collected due to circular
             # references, and the automatic unbinding won't work
-            wxgui_api.bind_to_apply_editor_1(self.handle_apply, False)
+            wxgui_api.bind_to_apply_editor(self.handle_apply, False)
             wxgui_api.bind_to_check_editor_modified_state(
                                       self.handle_check_editor_modified, False)
             wxgui_api.bind_to_close_editor(self.handle_close, False)
