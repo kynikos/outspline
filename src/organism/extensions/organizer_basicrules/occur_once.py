@@ -32,35 +32,24 @@ def make_rule(start, end, ralarm):
         return {'rule': _RULE_NAME,
                 'start': start,
                 'end': end,
-                'ralarm': ralarm}
+                'ralarm': ralarm,
+                'alarm': _compute_alarm(start, ralarm)}
     else:
         raise BadRuleError()
 
 
 def get_occurrences_range(filename, id_, rule, occs):
-    start = rule['start']
-    end = rule['end']
-    ralarm = rule['ralarm']
-
-    alarm = _compute_alarm(start, ralarm)
-
     # The rule is checked in make_rule, no need to use occs.add
     occs.add_safe({'filename': filename,
                    'id_': id_,
-                   'start': start,
-                   'end': end,
-                   'alarm': alarm})
+                   'start': rule['start'],
+                   'end': rule['end'],
+                   'alarm': rule['alarm']})
 
 def get_next_item_occurrences(base_time, filename, id_, rule, occs):
-    start = rule['start']
-    end = rule['end']
-    ralarm = rule['ralarm']
-
-    alarm = _compute_alarm(start, ralarm)
-
     # The rule is checked in make_rule, no need to use occs.add
     occs.add_safe(base_time, {'filename': filename,
-                         'id_': id_,
-                         'start': start,
-                         'end': end,
-                         'alarm': alarm})
+                              'id_': id_,
+                              'start': rule['start'],
+                              'end': rule['end'],
+                              'alarm': rule['alarm']})

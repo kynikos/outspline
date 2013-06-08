@@ -71,13 +71,14 @@ def make_rule(rstart, rendn, rendu, ralarm):
                 'rstart': rstart,
                 'rendn': rendn,
                 'rendu': rendu,
+                'rend': _compute_rend(rendn, rendu),
                 'ralarm': ralarm}
     else:
         raise BadRuleError()
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
-    rend = _compute_rend(rule['rendn'], rule['rendu'])
+    rend = rule['rend']
     start = _compute_start(mint, rule['rstart'], rend)
     ralarm = rule['ralarm']
 
@@ -99,7 +100,7 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
 
 
 def get_next_item_occurrences(base_time, filename, id_, rule, occs):
-    rend = _compute_rend(rule['rendn'], rule['rendu'])
+    rend = rule['rend']
     start = _compute_start(base_time, rule['rstart'], rend)
     ralarm = rule['ralarm']
 

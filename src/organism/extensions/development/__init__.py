@@ -23,6 +23,7 @@ import organism.coreaux_api as coreaux_api
 from organism.coreaux_api import Event
 import organism.core_api as core_api
 organizer_api = coreaux_api.import_extension_api('organizer')
+organizer_basicrules_api = coreaux_api.import_extension_api('organizer_basicrules')
 
 populate_tree_event = Event()
 
@@ -104,7 +105,7 @@ def populate_tree(filename):
                                              text=text,
                                              description=description)
 
-        if organizer_api:
+        if organizer_api and organizer_basicrules_api:
             rules = []
 
             for n in range(random.randint(0, 8)):
@@ -121,19 +122,12 @@ def populate_tree(filename):
                 inclusive = random.choice((True, False))
 
                 rule = random.choice((
-                    {'rule': 'occur_once',
-                     'start': start,
-                     'end': end,
-                     'ralarm': ralarm},
-                    {'rule': 'occur_every_day',
-                     'rstart': rstart,
-                     'rendn': rendn,
-                     'rendu': rendu,
-                     'ralarm': ralarm},
-                    {'rule': 'except_once',
-                     'start': start,
-                     'end': end,
-                     'inclusive': inclusive}
+                    organizer_basicrules_api.make_occur_once_rule(start, end,
+                                                                        ralarm),
+                    organizer_basicrules_api.make_occur_every_day_rule(rstart,
+                                                          rendn, rendu, ralarm),
+                    organizer_basicrules_api.make_except_once_rule(start, end,
+                                                                      inclusive)
                 ))
 
                 rules.append(rule)
