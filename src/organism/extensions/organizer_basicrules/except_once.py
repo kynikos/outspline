@@ -16,14 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+from exceptions import BadRuleError
+
 _RULE_NAME = 'except_once'
 
 
 def make_rule(start, end, inclusive):
-    return {'rule': _RULE_NAME,
-            'start': start,
-            'end': end,
-            'inclusive': inclusive}
+    # Make sure this rule can only produce occurrences compliant with the
+    # requirements defined in organizer_api.update_item_rules
+    if end > start:
+        return {'rule': _RULE_NAME,
+                'start': start,
+                'end': end,
+                'inclusive': inclusive}
+    else:
+        raise BadRuleError
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
@@ -32,8 +39,7 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
     inclusive = rule['inclusive']
 
     if start <= maxt and end >= mint:
-        # The rule is checked in wxscheduler_basicrules.except_once, no need to
-        # use occs.except_
+        # The rule is checked in make_rule, no need to use occs.except_
         occs.except_safe(filename, id_, start, end, inclusive)
 
 
@@ -47,6 +53,5 @@ def get_next_item_occurrences(filename, id_, rule, occs):
     maxend = limits[1]
 
     if start <= maxend and end >= minstart:
-        # The rule is checked in wxscheduler_basicrules.except_once, no need to
-        # use occs.except_
+        # The rule is checked in make_rule, no need to use occs.except_
         occs.except_safe(filename, id_, start, end, inclusive)

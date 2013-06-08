@@ -163,16 +163,15 @@ class Rule():
 
         inclusive = self.mwidgets['inclusive_chbox'].GetValue()
 
-        # Make sure this rule can only produce occurrences compliant with the
-        # requirements defined in organizer_api.update_item_rules
-        if end > start:
+        try:
             ruled = organizer_basicrules_api.make_except_once_rule(start, end,
                                                                       inclusive)
+        except organizer_basicrules_api.BadRuleError:
+            msgboxes.warn_bad_rule().ShowModal()
+        else:
             label = self.make_label(start, end, inclusive)
             wxscheduler_api.apply_rule(kwargs['filename'], kwargs['id_'], ruled,
                                                                           label)
-        else:
-            msgboxes.warn_bad_rule().ShowModal()
 
     @classmethod
     def insert_rule(cls, kwargs):

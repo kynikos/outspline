@@ -195,16 +195,15 @@ class Rule():
         else:
             ralarm = None
 
-        # Make sure this rule can only produce occurrences compliant with the
-        # requirements defined in organizer_api.update_item_rules
-        if end is None or end > start:
+        try:
             ruled = organizer_basicrules_api.make_occur_once_rule(start, end,
                                                                          ralarm)
+        except organizer_basicrules_api.BadRuleError:
+            msgboxes.warn_bad_rule().ShowModal()
+        else:
             label = self.make_label(start, end, ralarm)
             wxscheduler_api.apply_rule(kwargs['filename'], kwargs['id_'], ruled,
                                                                           label)
-        else:
-            msgboxes.warn_bad_rule().ShowModal()
 
     @classmethod
     def insert_rule(cls, kwargs):

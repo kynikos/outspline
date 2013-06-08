@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+from exceptions import BadRuleError
+
 _RULE_NAME = 'occur_once'
 
 
@@ -24,10 +26,15 @@ def _compute_alarm(start, ralarm):
 
 
 def make_rule(start, end, ralarm):
-    return {'rule': _RULE_NAME,
-            'start': start,
-            'end': end,
-            'ralarm': ralarm}
+    # Make sure this rule can only produce occurrences compliant with the
+    # requirements defined in organizer_api.update_item_rules
+    if end is None or end > start:
+        return {'rule': _RULE_NAME,
+                'start': start,
+                'end': end,
+                'ralarm': ralarm}
+    else:
+        raise BadRuleError()
 
 
 def get_occurrences_range(filename, id_, rule, occs):
@@ -37,8 +44,7 @@ def get_occurrences_range(filename, id_, rule, occs):
 
     alarm = _compute_alarm(start, ralarm)
 
-    # The rule is checked in wxscheduler_basicrules.occur_once, no need to use
-    # occs.add
+    # The rule is checked in make_rule, no need to use occs.add
     occs.add_safe({'filename': filename,
                    'id_': id_,
                    'start': start,
@@ -52,8 +58,7 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
 
     alarm = _compute_alarm(start, ralarm)
 
-    # The rule is checked in wxscheduler_basicrules.occur_once, no need to use
-    # occs.add
+    # The rule is checked in make_rule, no need to use occs.add
     occs.add_safe(base_time, {'filename': filename,
                          'id_': id_,
                          'start': start,

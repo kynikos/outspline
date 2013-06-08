@@ -16,17 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
-from organizer_basicrules import except_once, occur_every_day, occur_once
-from organizer_basicrules.exceptions import BadRuleError
+from organism.coreaux_api import OrganismError
 
 
-def make_except_once_rule(start, end, inclusive):
-    return except_once.make_rule(start, end, inclusive)
-
-
-def make_occur_every_day_rule(rstart, rendn, rendu, ralarm):
-    return occur_every_day.make_rule(rstart, rendn, rendu, ralarm)
-
-
-def make_occur_once_rule(start, end, ralarm):
-    return occur_once.make_rule(start, end, ralarm)
+class BadRuleError(OrganismError):
+    pass

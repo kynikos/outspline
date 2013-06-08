@@ -18,6 +18,8 @@
 
 import time as _time
 
+from exceptions import BadRuleError
+
 _RULE_NAME = 'occur_every_day'
 
 
@@ -62,6 +64,9 @@ def _compute_alarm(start, ralarm):
 
 
 def make_rule(rstart, rendn, rendu, ralarm):
+    # There's no need for controls to make sure this rule can only produce
+    # occurrences compliant with the requirements defined in
+    # organizer_api.update_item_rules
     return {'rule': _RULE_NAME,
             'rstart': rstart,
             'rendn': rendn,
@@ -81,8 +86,7 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
         if (alarm and alarm > maxt) or start > maxt:
             break
 
-        # The rule is checked in wxscheduler_basicrules.occur_every_day, no need
-        # to use occs.add
+        # The rule is checked in make_rule, no need to use occs.add
         occs.add_safe({'filename': filename,
                        'id_': id_,
                        'start': start,
@@ -109,8 +113,7 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
 
         next_occ = occs.get_next_occurrence_time()
 
-        # The rule is checked in wxscheduler_basicrules.occur_every_day, no need
-        # to use occs.add
+        # The rule is checked in make_rule, no need to use occs.add
         if occs.add_safe(base_time, occd) or (next_occ and
                                          (alarm is None and start > next_occ) or
                                                   (alarm and alarm > next_occ)):

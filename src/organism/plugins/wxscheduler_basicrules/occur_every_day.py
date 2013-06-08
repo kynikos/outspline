@@ -161,13 +161,16 @@ class Rule():
         else:
             ralarm = None
 
-        # There's no need for controls to make sure this rule can only produce
-        # occurrences compliant with the requirements defined in
-        # organizer_api.update_item_rules
-        ruled = organizer_basicrules_api.make_occur_every_day_rule(rstart,
+        try:
+            ruled = organizer_basicrules_api.make_occur_every_day_rule(rstart,
                                                            rendn, rendu, ralarm)
-        label = self.make_label(rstart, rendn, rendu, ralarm)
-        wxscheduler_api.apply_rule(kwargs['filename'], kwargs['id_'], ruled,
+        except organizer_basicrules_api.BadRuleError:
+            # At the moment this will never happen because the rule doesn't need
+            # to be checked in organizer_basicrules.occur_every_day.make_rule
+            msgboxes.warn_bad_rule().ShowModal()
+        else:
+            label = self.make_label(rstart, rendn, rendu, ralarm)
+            wxscheduler_api.apply_rule(kwargs['filename'], kwargs['id_'], ruled,
                                                                           label)
 
     @classmethod
