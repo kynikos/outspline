@@ -24,7 +24,7 @@ import organism.plugins.wxscheduler_api as wxscheduler_api
 import msgboxes
 
 _RULE_NAME = 'except_once'
-_RULE_DESC = 'Except from date until date'
+_RULE_DESC = 'Except from <date> until <date>'
 
 
 class Rule():

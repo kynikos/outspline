@@ -24,7 +24,7 @@ import organism.plugins.wxscheduler_api as wxscheduler_api
 import msgboxes
 
 _RULE_NAME = 'occur_once'
-_RULE_DESC = 'Occur once from date until date'
+_RULE_DESC = 'Occur once on <date> until <date>'
 
 
 class Rule():
@@ -43,7 +43,7 @@ class Rule():
         pgrid = wx.GridBagSizer(4, 4)
         mpanel.SetSizer(pgrid)
 
-        slabel = wx.StaticText(mpanel, label='From:')
+        slabel = wx.StaticText(mpanel, label='On:')
         pgrid.Add(slabel, (0, 1), flag=wx.ALIGN_CENTER_VERTICAL)
 
         mwidgets['start_date'] = wx.DatePickerCtrl(mpanel, size=(-1, 21))
@@ -207,7 +207,7 @@ class Rule():
     @staticmethod
     def make_label(start, end, ralarm):
         label = ' '.join(('Occur once',
-                           _time.strftime('from %a %d %b %Y at %H:%M',
+                           _time.strftime('on %a %d %b %Y at %H:%M',
                            _time.localtime(start))))
 
         if end != None:

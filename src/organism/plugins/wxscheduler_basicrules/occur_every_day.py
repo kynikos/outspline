@@ -22,7 +22,7 @@ import wx
 import organism.plugins.wxscheduler_api as wxscheduler_api
 
 _RULE_NAME = 'occur_every_day'
-_RULE_DESC = 'Occur every day at time for time'
+_RULE_DESC = 'Occur every day at <time> for <time>'
 
 
 class Rule():
