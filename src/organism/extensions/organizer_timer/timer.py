@@ -27,6 +27,7 @@ import queries
 
 get_next_item_occurrences_event = Event()
 get_next_occurrences_event = Event()
+search_next_occurrences_event = Event()
 activate_occurrences_range_event = Event()
 activate_old_occurrences_event = Event()
 activate_occurrences_event = Event()
@@ -297,6 +298,8 @@ def search_next_occurrences(kwargs=None):
         # 2) if a rule is created with an alarm time between the last search and
         # now, the alarm won't be activated
         set_last_search_all(now)
+
+    search_next_occurrences_event.signal()
 
 
 def cancel_search_next_occurrences(kwargs=None):

@@ -66,24 +66,8 @@ class TaskList():
         self.delay = wx.CallLater(self.DELAY, int())
         self.timer = wx.CallLater(0, self.restart)
 
-        organizer_alarms_api.bind_to_alarms(self.delay_restart)
+        organizer_timer_api.bind_to_search_next_occurrences(self.delay_restart)
         organizer_alarms_api.bind_to_alarm_off(self.delay_restart)
-
-        wxgui_api.bind_to_apply_editor_2(self.restart)
-        wxgui_api.bind_to_open_database(self.restart)
-        wxgui_api.bind_to_save_database_as(self.restart)
-        wxgui_api.bind_to_close_database(self.restart)
-        wxgui_api.bind_to_undo_tree(self.restart)
-        wxgui_api.bind_to_redo_tree(self.restart)
-        wxgui_api.bind_to_move_item(self.restart)
-        wxgui_api.bind_to_delete_items(self.restart)
-
-        if development_api:
-            development_api.bind_to_populate_tree(self.restart)
-
-        if wxcopypaste_api:
-            wxcopypaste_api.bind_to_cut_items(self.restart)
-            wxcopypaste_api.bind_to_paste_items(self.restart)
 
     def delay_restart(self, kwargs=None):
         # Instead of self.restart, bind _this_ function to events that can be
