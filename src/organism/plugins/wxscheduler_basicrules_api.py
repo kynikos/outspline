@@ -20,16 +20,41 @@ import wxscheduler_basicrules
 
 
 def simulate_create_except_once_rule(filename, id_, start, end, inclusive):
-    wxscheduler_basicrules.except_once.Rule.create_rule(filename, id_, start,
-                                                        end, inclusive)
+    kwargs = {
+        'filename': filename,
+        'id_': id_,
+        'rule': {
+            'start': start,
+            'end': end,
+            'inclusive': inclusive,
+        }
+    }
+    wxscheduler_basicrules.except_once.Rule.insert_rule(kwargs)
 
 
 def simulate_create_occur_every_day_rule(filename, id_, rstart, rendn, rendu,
                                                                         ralarm):
-    wxscheduler_basicrules.occur_every_day.Rule.create_rule(filename, id_,
-                                                   rstart, rendn, rendu, ralarm)
+    kwargs = {
+        'filename': filename,
+        'id_': id_,
+        'rule': {
+            'rstart': rstart,
+            'rendn': rendn,
+            'rendu': rendu,
+            'ralarm': ralarm,
+        }
+    }
+    wxscheduler_basicrules.occur_every_day.Rule.insert_rule(kwargs)
 
 
 def simulate_create_occur_once_rule(filename, id_, start, end, ralarm):
-    wxscheduler_basicrules.occur_once.Rule.create_rule(filename, id_, start,
-                                                       end, ralarm)
+    kwargs = {
+        'filename': filename,
+        'id_': id_,
+        'rule': {
+            'start': start,
+            'end': end,
+            'ralarm': ralarm,
+        }
+    }
+    wxscheduler_basicrules.occur_once.Rule.insert_rule(kwargs)

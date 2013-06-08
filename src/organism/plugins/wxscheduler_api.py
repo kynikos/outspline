@@ -41,6 +41,11 @@ def insert_rule(filename, id_, ruled, label):
                              ].insert_rule(ruled, label)
 
 
+def apply_rule(filename, id_, ruled, label):
+    return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
+                             ].apply_maker(ruled, label)
+
+
 def bind_to_init_rules_list(handler, bind=True):
     return wxscheduler.init_rules_list_event.bind(handler, bind)
 
@@ -50,7 +55,7 @@ def bind_to_choose_rule(handler, bind=True):
 
 
 def bind_to_apply_rule(handler, bind=True):
-    return wxscheduler.apply_maker_event.bind(handler, bind)
+    return wxscheduler.check_maker_event.bind(handler, bind)
 
 
 def bind_to_insert_rule(handler, bind=True):

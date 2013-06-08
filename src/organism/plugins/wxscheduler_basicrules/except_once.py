@@ -21,6 +21,8 @@ import wx
 
 import organism.plugins.wxscheduler_api as wxscheduler_api
 
+import msgboxes
+
 _RULE_NAME = 'except_once'
 _RULE_DESC = 'Except from date until date'
 
@@ -156,8 +158,15 @@ class Rule():
 
         inclusive = self.mwidgets['inclusive_chbox'].GetValue()
 
-        self.create_rule(filename=kwargs['filename'], id_=kwargs['id_'],
-                         start=start, end=end, inclusive=inclusive)
+        # Make sure this rule can only produce occurrences compliant with the
+        # requirements defined in organizer_api.update_item_rules
+        if end > start:
+            ruled = self.make_rule(start, end, inclusive)
+            label = self.make_label(start, end, inclusive)
+            wxscheduler_api.apply_rule(kwargs['filename'], kwargs['id_'], ruled,
+                                                                          label)
+        else:
+            msgboxes.warn_bad_rule().ShowModal()
 
     @classmethod
     def insert_rule(cls, kwargs):
@@ -165,11 +174,13 @@ class Rule():
         end = kwargs['rule']['end']
         inclusive = kwargs['rule']['inclusive']
 
-        cls.create_rule(filename=kwargs['filename'], id_=kwargs['id_'],
-                        start=start, end=end, inclusive=inclusive)
+        ruled = cls.make_rule(start, end, inclusive)
+        label = cls.make_label(start, end, inclusive)
+        wxscheduler_api.insert_rule(kwargs['filename'], kwargs['id_'], ruled,
+                                                                          label)
 
     @staticmethod
-    def create_rule(filename, id_, start, end, inclusive):
+    def make_label(start, end, inclusive):
         label = ' '.join(('Except', _time.strftime('from %a %d %b %Y at %H:%M',
                            _time.localtime(start)),
                            _time.strftime('until %a %d %b %Y at %H:%M',
@@ -178,9 +189,11 @@ class Rule():
         if inclusive:
             label += ', inclusive'
 
-        ruled = {'rule': _RULE_NAME,
-                 'start': start,
-                 'end': end,
-                 'inclusive': inclusive}
+        return label
 
-        wxscheduler_api.insert_rule(filename, id_, ruled, label)
+    @staticmethod
+    def make_rule(start, end, inclusive):
+        return {'rule': _RULE_NAME,
+                'start': start,
+                'end': end,
+                'inclusive': inclusive}

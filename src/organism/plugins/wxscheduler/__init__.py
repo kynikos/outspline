@@ -27,7 +27,7 @@ import organism.interfaces.wxgui_api as wxgui_api
 init_rules_list_event = Event()
 insert_rule_event = Event()
 choose_rule_event = Event()
-apply_maker_event = Event()
+check_maker_event = Event()
 
 items = {}
 
@@ -300,7 +300,7 @@ class Scheduler():
 
         self.rmaker.Bind(wx.EVT_CHOICE, self.choose_rule, self.choice)
         self.rmaker.Bind(wx.EVT_BUTTON, self.cancel_maker, button_cancel)
-        self.rmaker.Bind(wx.EVT_BUTTON, self.apply_maker, button_ok)
+        self.rmaker.Bind(wx.EVT_BUTTON, self.check_maker, button_ok)
 
     def display_rule(self, description, rule):
         self.choice.Append(description, clientData=rule)
@@ -326,14 +326,15 @@ class Scheduler():
         self.rlist.Show()
         self.resize_rpanel()
 
-    def apply_maker(self, event):
-        self.rmaker.Show(False)
-
-        apply_maker_event.signal(filename=self.filename, id_=self.id_,
+    def check_maker(self, event):
+        check_maker_event.signal(filename=self.filename, id_=self.id_,
                                  rule=self.choice.GetClientData(
                                                     self.choice.GetSelection()),
                                  object_=self.rmaker_ref)
 
+    def apply_maker(self, ruled, label):
+        self.rmaker.Show(False)
+        self.insert_rule(ruled, label)
         self.rlist.Show()
         self.resize_rpanel()
 

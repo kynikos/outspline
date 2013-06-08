@@ -21,6 +21,8 @@ import wx
 
 import organism.plugins.wxscheduler_api as wxscheduler_api
 
+import msgboxes
+
 _RULE_NAME = 'occur_once'
 _RULE_DESC = 'Occur once from date until date'
 
@@ -181,8 +183,15 @@ class Rule():
         else:
             ralarm = None
 
-        self.create_rule(filename=kwargs['filename'], id_=kwargs['id_'],
-                         start=start, end=end, ralarm=ralarm)
+        # Make sure this rule can only produce occurrences compliant with the
+        # requirements defined in organizer_api.update_item_rules
+        if end is None or end > start:
+            ruled = self.make_rule(start, end, ralarm)
+            label = self.make_label(start, end, ralarm)
+            wxscheduler_api.apply_rule(kwargs['filename'], kwargs['id_'], ruled,
+                                                                          label)
+        else:
+            msgboxes.warn_bad_rule().ShowModal()
 
     @classmethod
     def insert_rule(cls, kwargs):
@@ -190,11 +199,13 @@ class Rule():
         end = kwargs['rule']['end']
         ralarm = kwargs['rule']['ralarm']
 
-        cls.create_rule(filename=kwargs['filename'], id_=kwargs['id_'],
-                        start=start, end=end, ralarm=ralarm)
+        ruled = cls.make_rule(start, end, ralarm)
+        label = cls.make_label(start, end, ralarm)
+        wxscheduler_api.insert_rule(kwargs['filename'], kwargs['id_'], ruled,
+                                                                          label)
 
     @staticmethod
-    def create_rule(filename, id_, start, end, ralarm):
+    def make_label(start, end, ralarm):
         label = ' '.join(('Occur once',
                            _time.strftime('from %a %d %b %Y at %H:%M',
                            _time.localtime(start))))
@@ -206,9 +217,11 @@ class Rule():
         if ralarm != None:
             label += ', alarm enabled'
 
-        ruled = {'rule': _RULE_NAME,
-                 'start': start,
-                 'end': end,
-                 'ralarm': ralarm}
+        return label
 
-        wxscheduler_api.insert_rule(filename, id_, ruled, label)
+    @staticmethod
+    def make_rule(start, end, ralarm):
+        return {'rule': _RULE_NAME,
+                'start': start,
+                'end': end,
+                'ralarm': ralarm}

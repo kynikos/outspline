@@ -149,8 +149,13 @@ class Rule():
         else:
             ralarm = None
 
-        self.create_rule(filename=kwargs['filename'], id_=kwargs['id_'],
-                         rstart=rstart, rendn=rendn, rendu=rendu, ralarm=ralarm)
+        # There's no need for controls to make sure this rule can only produce
+        # occurrences compliant with the requirements defined in
+        # organizer_api.update_item_rules
+        ruled = self.make_rule(rstart, rendn, rendu, ralarm)
+        label = self.make_label(rstart, rendn, rendu, ralarm)
+        wxscheduler_api.apply_rule(kwargs['filename'], kwargs['id_'], ruled,
+                                                                          label)
 
     @classmethod
     def insert_rule(cls, kwargs):
@@ -159,11 +164,13 @@ class Rule():
         rendu = kwargs['rule']['rendu']
         ralarm = kwargs['rule']['ralarm']
 
-        cls.create_rule(filename=kwargs['filename'], id_=kwargs['id_'],
-                        rstart=rstart, rendn=rendn, rendu=rendu, ralarm=ralarm)
+        ruled = cls.make_rule(rstart, rendn, rendu, ralarm)
+        label = cls.make_label(rstart, rendn, rendu, ralarm)
+        wxscheduler_api.insert_rule(kwargs['filename'], kwargs['id_'], ruled,
+                                                                          label)
 
     @staticmethod
-    def create_rule(filename, id_, rstart, rendn, rendu, ralarm):
+    def make_label(rstart, rendn, rendu, ralarm):
         label = 'Occur every day at {}:{}'.format(str(rstart // 3600).zfill(2),
                                               str(rstart % 3600 // 60).zfill(2))
 
@@ -173,10 +180,12 @@ class Rule():
         if ralarm != None:
             label += ', alarm enabled'
 
-        ruled = {'rule': _RULE_NAME,
-                 'rstart': rstart,
-                 'rendn': rendn,
-                 'rendu': rendu,
-                 'ralarm': ralarm}
+        return label
 
-        wxscheduler_api.insert_rule(filename, id_, ruled, label)
+    @staticmethod
+    def make_rule(rstart, rendn, rendu, ralarm):
+        return {'rule': _RULE_NAME,
+                'rstart': rstart,
+                'rendn': rendn,
+                'rendu': rendu,
+                'ralarm': ralarm}

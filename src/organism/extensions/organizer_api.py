@@ -23,6 +23,12 @@ from organizer import queries, items
 
 def update_item_rules(filename, id_, rules, group,
                       description='Update item rules'):
+    # All rules must be able to produce only occurrences compliant with the
+    # following requirements:
+    # * 'alarm', 'start' and 'end' must be integers representing a Unix time
+    #   each
+    # * 'start' must always be set
+    # * 'end', if set, must always be greater than 'start'
     return items.update_item_rules(filename, id_, rules, group,
                                    description=description)
 
