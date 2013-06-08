@@ -73,6 +73,17 @@ def get_snoozed_alarms(last_search, filename, occs):
             occs.add_old(alarmd)
 
 
+def activate_alarms_range(filename, mint, maxt, occsd):
+    for id_ in occsd:
+        for occ in occsd[id_]:
+            # occ may have alarm == mint, or start or end in the interval, but
+            # none of those occurrences must be activated
+            if mint < occ['alarm'] <= maxt:
+                activate_alarm(occ)
+
+    alarms_event.signal()
+
+
 def activate_old_alarms(occsd):
     for filename in occsd:
         for id_ in occsd[filename]:

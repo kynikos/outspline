@@ -38,6 +38,10 @@ def bind_to_get_next_occurrences(handler, bind=True):
     return timer.get_next_occurrences_event.bind(handler, bind)
 
 
+def bind_to_activate_occurrences_range(handler, bind=True):
+    return timer.activate_occurrences_range_event.bind(handler, bind)
+
+
 def bind_to_activate_old_occurrences(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
     return timer.activate_old_occurrences_event.bind(handler, bind)

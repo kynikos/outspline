@@ -27,6 +27,7 @@ import queries
 
 get_next_item_occurrences_event = Event()
 get_next_occurrences_event = Event()
+activate_occurrences_range_event = Event()
 activate_old_occurrences_event = Event()
 activate_occurrences_event = Event()
 
@@ -176,26 +177,30 @@ def get_next_occurrences(base_time=None, base_times=None):
     return occs
 
 
+def get_last_search(filename):
+    conn = core_api.get_connection(filename)
+    cur = conn.cursor()
+    cur.execute(queries.timerproperties_select_search)
+    core_api.give_connection(filename, conn)
+
+    return cur.fetchone()['TP_last_search']
+
+
 def get_last_search_all():
-    ls = {}
+    return {filename: get_last_search(filename)
+                                  for filename in core_api.get_open_databases()}
 
-    for filename in core_api.get_open_databases():
-        conn = core_api.get_connection(filename)
-        cur = conn.cursor()
-        cur.execute(queries.timerproperties_select_search)
-        core_api.give_connection(filename, conn)
 
-        ls[filename] = cur.fetchone()['TP_last_search']
-
-    return ls
+def set_last_search(filename, tstamp):
+    conn = core_api.get_connection(filename)
+    cur = conn.cursor()
+    cur.execute(queries.timerproperties_update, (tstamp, ))
+    core_api.give_connection(filename, conn)
 
 
 def set_last_search_all(tstamp):
     for filename in core_api.get_open_databases():
-        conn = core_api.get_connection(filename)
-        cur = conn.cursor()
-        cur.execute(queries.timerproperties_update, (tstamp, ))
-        core_api.give_connection(filename, conn)
+        set_last_search(filename, tstamp)
 
 
 def set_last_search_all_safe(tstamp):
@@ -216,6 +221,39 @@ def set_last_search_all_safe(tstamp):
             cur.execute(queries.timerproperties_update, (tstamp, ))
 
         core_api.give_connection(filename, conn)
+
+
+def search_old_occurrences(filename):
+    # Do not use directly search_next_occurrences to search for old occurrences
+    # when opening a database, in fact if the database hasn't been opened for a
+    # while and it has _many_ old occurrences to activate,
+    # search_next_occurrences could recurse too many times, eventually raising
+    # a RuntimeError exception
+    # This function can also speed up opening an old database if it has many
+    # occurrences to activate immediately
+
+    # Search until 2 minutes ago and let search_next_occurrences handle the
+    # rest, so as to make sure not to interfere with its functionality
+    whileago = int(_time.time()) - 120
+    last_search = get_last_search(filename)
+
+    if whileago > last_search:
+        log.debug('Search old occurrences')
+
+        occs = organizer_api.get_occurrences_range(mint=last_search,
+                                                                  maxt=whileago)
+        occsd = occs.get_dict()
+        # Executing occs.get_active_dict here wouldn't make sense; let
+        # search_next_occurrences deal with snoozed and active alarms
+
+        set_last_search(filename, whileago)
+
+        if filename in occsd:
+            # Note that occsd still includes occurrence times equal to
+            # last_search: these must be excluded because last_search is the
+            # time that was last already activated
+            activate_occurrences_range_event.signal(filename=filename,
+                         mint=last_search, maxt=whileago, occsd=occsd[filename])
 
 
 def search_next_occurrences(kwargs=None):
@@ -269,9 +307,9 @@ def cancel_search_next_occurrences(kwargs=None):
 
 
 def activate_occurrences_block(time, occsd):
-    # It's important that the database is blocked on this thread, and not on the
-    # main thread, otherwise the program would hang if the user is performing
-    # an action
+    # It's important that the databases are blocked on this thread, and not on
+    # the main thread, otherwise the program would hang if some occurrences are
+    # activated while the user is performing an action
     core_api.block_databases()
     activate_occurrences(time, occsd)
     core_api.release_databases()

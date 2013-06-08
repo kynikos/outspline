@@ -39,6 +39,11 @@ def handle_create_database(kwargs):
     conn.close()
 
 
+def handle_open_database(kwargs):
+    timer.search_old_occurrences(kwargs['filename'])
+    timer.search_next_occurrences()
+
+
 def handle_save_database_copy(kwargs):
     qconn = core_api.get_connection(kwargs['origin'])
     qconnd = sqlite3.connect(kwargs['destination'])
@@ -57,7 +62,7 @@ def handle_save_database_copy(kwargs):
 
 def main():
     core_api.bind_to_create_database(handle_create_database)
-    core_api.bind_to_open_database(timer.search_next_occurrences)
+    core_api.bind_to_open_database(handle_open_database)
     core_api.bind_to_close_database(timer.search_next_occurrences)
     core_api.bind_to_save_database_copy(handle_save_database_copy)
     core_api.bind_to_delete_items(timer.search_next_occurrences)
