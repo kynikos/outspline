@@ -16,45 +16,33 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+import organism.extensions.organizer_basicrules_api as organizer_basicrules_api
+
 import wxscheduler_basicrules
 
 
-def simulate_create_except_once_rule(filename, id_, start, end, inclusive):
-    kwargs = {
-        'filename': filename,
-        'id_': id_,
-        'rule': {
-            'start': start,
-            'end': end,
-            'inclusive': inclusive,
-        }
-    }
-    wxscheduler_basicrules.except_once.Rule.insert_rule(kwargs)
+def create_random_occur_once_rule():
+    return wxscheduler_basicrules.occur_once.Rule.create_random_rule()
 
 
-def simulate_create_occur_every_day_rule(filename, id_, rstart, rendn, rendu,
-                                                                        ralarm):
-    kwargs = {
-        'filename': filename,
-        'id_': id_,
-        'rule': {
-            'rstart': rstart,
-            'rendn': rendn,
-            'rendu': rendu,
-            'ralarm': ralarm,
-        }
-    }
-    wxscheduler_basicrules.occur_every_day.Rule.insert_rule(kwargs)
+def create_random_occur_every_day_rule():
+    return wxscheduler_basicrules.occur_every_day.Rule.create_random_rule()
 
 
-def simulate_create_occur_once_rule(filename, id_, start, end, ralarm):
-    kwargs = {
-        'filename': filename,
-        'id_': id_,
-        'rule': {
-            'start': start,
-            'end': end,
-            'ralarm': ralarm,
-        }
-    }
-    wxscheduler_basicrules.occur_once.Rule.insert_rule(kwargs)
+def create_random_except_once_rule():
+    return wxscheduler_basicrules.except_once.Rule.create_random_rule()
+
+
+def simulate_create_occur_once_rule(filename, id_, rule):
+    wxscheduler_basicrules.occur_once.Rule.insert_rule(filename, id_, rule,
+                                                                      rule['#'])
+
+
+def simulate_create_occur_every_day_rule(filename, id_, rule):
+    wxscheduler_basicrules.occur_every_day.Rule.insert_rule(filename, id_, rule,
+                                                                      rule['#'])
+
+
+def simulate_create_except_once_rule(filename, id_, rule):
+    wxscheduler_basicrules.except_once.Rule.insert_rule(filename, id_, rule,
+                                                                      rule['#'])

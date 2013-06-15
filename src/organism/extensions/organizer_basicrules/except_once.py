@@ -21,22 +21,27 @@ from exceptions import BadRuleError
 _RULE_NAME = 'except_once'
 
 
-def make_rule(start, end, inclusive):
+def make_rule(start, end, inclusive, guiconfig):
     # Make sure this rule can only produce occurrences compliant with the
     # requirements defined in organizer_api.update_item_rules
-    if end > start:
-        return {'rule': _RULE_NAME,
-                'start': start,
-                'end': end,
-                'inclusive': inclusive}
+    if start and end > start:
+        return {
+            'rule': _RULE_NAME,
+            '#': (
+                start,
+                end,
+                inclusive,
+                guiconfig
+            )
+        }
     else:
         raise BadRuleError
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
-    start = rule['start']
-    end = rule['end']
-    inclusive = rule['inclusive']
+    start = rule['#'][0]
+    end = rule['#'][1]
+    inclusive = rule['#'][2]
 
     if start <= maxt and end >= mint:
         # The rule is checked in make_rule, no need to use occs.except_
@@ -44,9 +49,9 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
 
 
 def get_next_item_occurrences(filename, id_, rule, occs):
-    start = rule['start']
-    end = rule['end']
-    inclusive = rule['inclusive']
+    start = rule['#'][0]
+    end = rule['#'][1]
+    inclusive = rule['#'][2]
 
     limits = occs.get_time_span()
     minstart = limits[0]

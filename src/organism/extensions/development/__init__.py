@@ -16,16 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
-import random
-import time
-
-import organism.coreaux_api as coreaux_api
-from organism.coreaux_api import Event
 import organism.core_api as core_api
-organizer_api = coreaux_api.import_extension_api('organizer')
-organizer_basicrules_api = coreaux_api.import_extension_api('organizer_basicrules')
-
-populate_tree_event = Event()
 
 
 def print_memory_table(table):
@@ -63,83 +54,3 @@ def print_all_db():
         print_db(filename)
 
     print_memory_db()
-
-
-def populate_tree(filename):
-    group = core_api.get_next_history_group(filename)
-    description = 'Populate tree'
-
-    treeitems = []
-    i = 0
-    while i < 10:
-        dbitems = core_api.get_items_ids(filename)
-
-        try:
-            itemid = random.choice(dbitems)
-        except IndexError:
-            # No items in the database yet
-            itemid = 0
-
-        mode = random.choice(('child', 'sibling'))
-
-        if mode == 'sibling' and itemid == 0:
-            continue
-
-        i += 1
-
-        text = ''
-        words = ('the quick brown fox jumps over the lazy dog ' * 6
-                 ).split()
-        seps = ' ' * 6 + '\n'
-        for x in range(random.randint(10, 100)):
-            words.append(str(random.randint(0, 100)))
-            text = ''.join((text, random.choice(words),
-                            random.choice(seps)))
-        text = ''.join((text, random.choice(words))).capitalize()
-
-        if mode == 'child':
-            id_ = core_api.append_item(filename, itemid, group, text=text,
-                                       description=description)
-        elif mode == 'sibling':
-            id_ = core_api.insert_item_after(filename, itemid, group,
-                                             text=text,
-                                             description=description)
-
-        if organizer_api and organizer_basicrules_api:
-            rules = []
-
-            for n in range(random.randint(0, 8)):
-                start = int((random.gauss(time.time(), 15000)) // 60 * 60)
-                end1 = start + random.randint(1, 360) * 60
-                end2 = random.choice((None, end1))
-                ralarm = random.choice((None, 0))
-                rstart = random.randint(0, 1440) * 60
-                # Ignore 'days', 'weeks', 'months', 'years'
-                rendu = random.choice(('minutes', 'hours'))
-                if rendu == 'minutes':
-                    rendn = random.randint(1, 360)
-                elif rendu == 'hours':
-                    rendn = random.randint(1, 24)
-                inclusive = random.choice((True, False))
-
-                rule = random.choice((
-                    organizer_basicrules_api.make_occur_once_rule(start, end2,
-                                                                        ralarm),
-                    organizer_basicrules_api.make_occur_every_day_rule(rstart,
-                                                          rendn, rendu, ralarm),
-                    organizer_basicrules_api.make_except_once_rule(start, end1,
-                                                                      inclusive)
-                ))
-
-                rules.append(rule)
-
-            organizer_api.update_item_rules(filename, id_, rules, group,
-                                            description=description)
-
-        treeitems.append({'mode': mode,
-                          'filename': filename,
-                          'baseid': itemid,
-                          'id_': id_,
-                          'text': text})
-
-    populate_tree_event.signal(treeitems=treeitems)

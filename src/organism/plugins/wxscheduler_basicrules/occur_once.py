@@ -17,217 +17,278 @@
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
 import time as _time
+import random
 import wx
 
 import organism.extensions.organizer_basicrules_api as organizer_basicrules_api
 import organism.plugins.wxscheduler_api as wxscheduler_api
 
+import widgets
 import msgboxes
 
-_RULE_DESC = 'Occur once on <date> until <date>'
+_RULE_DESC = 'Occur once'
 
 
 class Rule():
-    mwidgets = None
+    original_values = None
     mpanel = None
-    pgrid = None
+    pbox = None
+    slabel = None
+    startw = None
+    endchoicew = None
+    endw = None
+    alarmchoicew = None
+    alarmw = None
 
-    def __init__(self, kwargs):
-        self._create_widgets(kwargs['parent'])
+    def __init__(self, parent, filename, id_, rule):
+        self.original_values = self._compute_values(rule)
 
-        # dict.get() returns None if key is not in dictionary, and it happens
-        # when the interface is being set up for a new rule
-        start = kwargs['ruled'].get('start')
-        end = kwargs['ruled'].get('end')
-        ralarm = kwargs['ruled'].get('ralarm')
+        self._create_widgets(parent)
 
-        self._init_values(start, end, ralarm)
-
-        wxscheduler_api.change_rule(kwargs['filename'], kwargs['id_'],
-                                                                    self.mpanel)
+        wxscheduler_api.change_rule(filename, id_, self.mpanel)
 
     def _create_widgets(self, parent):
-        self.mwidgets = {}
-
         self.mpanel = wx.Panel(parent)
 
-        self.pgrid = wx.GridBagSizer(4, 4)
-        self.mpanel.SetSizer(self.pgrid)
+        self.pbox = wx.BoxSizer(wx.VERTICAL)
+        self.mpanel.SetSizer(self.pbox)
 
         self._create_widgets_start()
         self._create_widgets_end()
         self._create_widgets_alarm()
 
+        self._align_first_column()
+
     def _create_widgets_start(self):
-        slabel = wx.StaticText(self.mpanel, label='On:')
-        self.pgrid.Add(slabel, (0, 1), flag=wx.ALIGN_CENTER_VERTICAL)
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.pbox.Add(box, flag=wx.BOTTOM, border=4)
 
-        self.mwidgets['start_date'] = wx.DatePickerCtrl(self.mpanel,
-                                                                  size=(-1, 21))
-        # Add a 1px top border because DatePickerCtrl cuts 1px at top and left
-        self.pgrid.Add(self.mwidgets['start_date'], (0, 2),
-                  flag=wx.ALIGN_CENTER_VERTICAL | wx.TOP, border=1)
+        self.slabel = wx.StaticText(self.mpanel, label='Start date:')
+        box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
-        self.mwidgets['start_hour'] = wx.SpinCtrl(self.mpanel, min=0, max=23,
-                                           size=(40, 21),
-                                           style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        self.pgrid.Add(self.mwidgets['start_hour'], (0, 3),
-                  flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT,
-                  border=12)
-
-        slabel = wx.StaticText(self.mpanel, label=':')
-        self.pgrid.Add(slabel, (0, 4), flag=wx.ALIGN_CENTER_VERTICAL)
-
-        self.mwidgets['start_minute'] = wx.SpinCtrl(self.mpanel, min=0, max=59,
-                                           size=(40, 21),
-                                           style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        self.pgrid.Add(self.mwidgets['start_minute'], (0, 5),
-                  flag=wx.ALIGN_CENTER_VERTICAL)
+        self.startw = widgets.DateHourCtrl(self.mpanel)
+        self.startw.set_values(self.original_values['startY'],
+                               self.original_values['startm'],
+                               self.original_values['startd'],
+                               self.original_values['startH'],
+                               self.original_values['startM'])
+        box.Add(self.startw.get_main_panel())
 
     def _create_widgets_end(self):
-        self.mwidgets['end_chbox'] = wx.CheckBox(self.mpanel)
-        self.pgrid.Add(self.mwidgets['end_chbox'], (1, 0))
+        self.endchoicew = widgets.WidgetChoiceCtrl(self.mpanel,
+                                                         (('No duration', None),
+                                    ('Duration:', self._create_duration_widget),
+                                   ('End date:', self._create_end_date_widget)),
+                                             self.original_values['endtype'], 4)
+        self.endchoicew.force_update()
+        self.pbox.Add(self.endchoicew.get_main_panel(), flag=wx.BOTTOM,
+                                                                       border=4)
 
-        slabel = wx.StaticText(self.mpanel, label='Until:')
-        self.pgrid.Add(slabel, (1, 1), flag=wx.ALIGN_CENTER_VERTICAL)
+    def _create_duration_widget(self):
+        self.endw = widgets.TimeSpanCtrl(self.endchoicew.get_main_panel(), 1)
+        self.endw.set_values(self.original_values['rendn'],
+                             self.original_values['rendu'])
 
-        self.mwidgets['end_date'] = wx.DatePickerCtrl(self.mpanel,
-                                                                  size=(-1, 21))
-        # Add a 1px top border because DatePickerCtrl cuts 1px at top and left
-        self.pgrid.Add(self.mwidgets['end_date'], (1, 2),
-                  flag=wx.ALIGN_CENTER_VERTICAL | wx.TOP, border=1)
+        return self.endw.get_main_panel()
 
-        self.mwidgets['end_hour'] = wx.SpinCtrl(self.mpanel, min=0, max=23,
-                                           size=(40, 21),
-                                           style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        self.pgrid.Add(self.mwidgets['end_hour'], (1, 3),
-                                 flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
+    def _create_end_date_widget(self):
+        self.endw = widgets.DateHourCtrl(self.endchoicew.get_main_panel())
+        self.endw.set_values(self.original_values['endY'],
+                             self.original_values['endm'],
+                             self.original_values['endd'],
+                             self.original_values['endH'],
+                             self.original_values['endM'])
 
-        slabel = wx.StaticText(self.mpanel, label=':')
-        self.pgrid.Add(slabel, (1, 4), flag=wx.ALIGN_CENTER_VERTICAL)
-
-        self.mwidgets['end_minute'] = wx.SpinCtrl(self.mpanel, min=0, max=59,
-                                           size=(40, 21),
-                                           style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        self.pgrid.Add(self.mwidgets['end_minute'], (1, 5),
-                  flag=wx.ALIGN_CENTER_VERTICAL)
-
-        self.mpanel.Bind(wx.EVT_CHECKBOX, self.handle_end_checkbox,
-                                                     self.mwidgets['end_chbox'])
+        return self.endw.get_main_panel()
 
     def _create_widgets_alarm(self):
-        self.mwidgets['alarm_chbox'] = wx.CheckBox(self.mpanel)
-        self.pgrid.Add(self.mwidgets['alarm_chbox'], (2, 0))
+        self.alarmchoicew = widgets.WidgetChoiceCtrl(self.mpanel,
+                                                            (('No alarm', None),
+                          ('Alarm advance:', self._create_alarm_advance_widget),
+                               ('Alarm date:', self._create_alarm_date_widget)),
+                                           self.original_values['alarmtype'], 4)
+        self.alarmchoicew.force_update()
+        self.pbox.Add(self.alarmchoicew.get_main_panel())
 
-        slabel = wx.StaticText(self.mpanel, label='Alarm')
-        self.pgrid.Add(slabel, (2, 1), span=(1, 2),
-                                                  flag=wx.ALIGN_CENTER_VERTICAL)
+    def _create_alarm_advance_widget(self):
+        self.alarmw = widgets.TimeSpanCtrl(self.alarmchoicew.get_main_panel(),
+                                                                              0)
+        self.alarmw.set_values(self.original_values['ralarmn'],
+                               self.original_values['ralarmu'])
 
-    def _init_values(self, start, end, ralarm):
-        if start == None:
-            start = (int(_time.time()) // 3600 + 1) * 3600
+        return self.alarmw.get_main_panel()
 
-        sdate = wx.DateTime()
-        sdate.Set(year=int(_time.strftime('%Y', _time.localtime(start))),
-                  month=int(_time.strftime('%m', _time.localtime(start))) - 1,
-                  day=int(_time.strftime('%d', _time.localtime(start))))
-        shour = int(_time.strftime('%H', _time.localtime(start)))
-        smin = int(_time.strftime('%M', _time.localtime(start)))
+    def _create_alarm_date_widget(self):
+        self.alarmw = widgets.DateHourCtrl(self.alarmchoicew.get_main_panel())
+        self.alarmw.set_values(self.original_values['alarmY'],
+                               self.original_values['alarmm'],
+                               self.original_values['alarmd'],
+                               self.original_values['alarmH'],
+                               self.original_values['alarmM'])
 
-        self.mwidgets['start_date'].SetValue(sdate)
-        self.mwidgets['start_hour'].SetValue(shour)
-        self.mwidgets['start_minute'].SetValue(smin)
+        return self.alarmw.get_main_panel()
 
-        if end == None:
-            self.mwidgets['end_chbox'].SetValue(False)
-            end = start + 3600
+    def _align_first_column(self):
+        sminw = self.slabel.GetSizeTuple()[0]
+        eminw = self.endchoicew.get_choice_width()
+        aminw = self.alarmchoicew.get_choice_width()
 
-            self.mwidgets['end_date'].Disable()
-            self.mwidgets['end_hour'].Disable()
-            self.mwidgets['end_minute'].Disable()
-        else:
-            self.mwidgets['end_chbox'].SetValue(True)
+        maxw = max(sminw, eminw, aminw)
 
-        edate = wx.DateTime()
-        edate.Set(year=int(_time.strftime('%Y', _time.localtime(end))),
-                   month=int(_time.strftime('%m', _time.localtime(end))) - 1,
-                   day=int(_time.strftime('%d', _time.localtime(end))))
-        ehour = int(_time.strftime('%H', _time.localtime(end)))
-        emin = int(_time.strftime('%M', _time.localtime(end)))
+        sminh = self.slabel.GetMinHeight()
+        self.slabel.SetMinSize((maxw, sminh))
 
-        self.mwidgets['end_date'].SetValue(edate)
-        self.mwidgets['end_hour'].SetValue(ehour)
-        self.mwidgets['end_minute'].SetValue(emin)
+        self.endchoicew.set_choice_min_width(maxw)
 
-        if ralarm == None:
-            self.mwidgets['alarm_chbox'].SetValue(False)
-        else:
-            self.mwidgets['alarm_chbox'].SetValue(True)
+        self.alarmchoicew.set_choice_min_width(maxw)
 
-    def handle_end_checkbox(self, event):
-        if event.IsChecked():
-            self.mwidgets['end_date'].Enable()
-            self.mwidgets['end_hour'].Enable()
-            self.mwidgets['end_minute'].Enable()
-        else:
-            self.mwidgets['end_date'].Disable()
-            self.mwidgets['end_hour'].Disable()
-            self.mwidgets['end_minute'].Disable()
+    def apply_rule(self, filename, id_):
+        start = self.startw.get_unix_time()
 
-    def apply_rule(self, kwargs):
-        sdate = self.mwidgets['start_date'].GetValue().GetTicks()
-        shour = self.mwidgets['start_hour'].GetValue()
-        sminute = self.mwidgets['start_minute'].GetValue()
+        endtype = self.endchoicew.get_selection()
 
-        start = sdate + shour * 3600 + sminute * 60
-
-        if self.mwidgets['end_chbox'].GetValue():
-            edate = self.mwidgets['end_date'].GetValue().GetTicks()
-            ehour = self.mwidgets['end_hour'].GetValue()
-            eminute = self.mwidgets['end_minute'].GetValue()
-
-            end = edate + ehour * 3600 + eminute * 60
+        if endtype == 1:
+            end = start + self.endw.get_time_span()
+            rendn = self.endw.get_number()
+            rendu = self.endw.get_unit()
+        elif endtype == 2:
+            end = self.endw.get_unix_time()
+            rendn = None
+            rendu = None
         else:
             end = None
+            rendn = None
+            rendu = None
 
-        if self.mwidgets['alarm_chbox'].GetValue():
-            ralarm = 0
+        alarmtype = self.alarmchoicew.get_selection()
+
+        if alarmtype == 1:
+            alarm = start - self.alarmw.get_time_span()
+            ralarmn = self.alarmw.get_number()
+            ralarmu = self.alarmw.get_unit()
+        elif alarmtype == 2:
+            alarm = self.alarmw.get_unix_time()
+            ralarmn = None
+            ralarmu = None
         else:
-            ralarm = None
+            alarm = None
+            ralarmn = None
+            ralarmu = None
 
         try:
             ruled = organizer_basicrules_api.make_occur_once_rule(start, end,
-                                                                         ralarm)
+                                                    alarm, (endtype, alarmtype))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
-            label = self.make_label(start, end, ralarm)
-            wxscheduler_api.apply_rule(kwargs['filename'], kwargs['id_'], ruled,
-                                                                          label)
+            label = self._make_label(start, end, alarm, endtype, alarmtype,
+                                                 rendn, rendu, ralarmn, ralarmu)
+            wxscheduler_api.apply_rule(filename, id_, ruled, label)
 
     @classmethod
-    def insert_rule(cls, kwargs):
-        start = kwargs['rule']['start']
-        end = kwargs['rule']['end']
-        ralarm = kwargs['rule']['ralarm']
+    def insert_rule(cls, filename, id_, rule, rulev):
+        values = cls._compute_values(rulev)
+        label = cls._make_label(values['start'], values['end'], values['alarm'],
+                        values['endtype'], values['alarmtype'], values['rendn'],
+                          values['rendu'], values['ralarmn'], values['ralarmu'])
+        wxscheduler_api.insert_rule(filename, id_, rule, label)
 
-        ruled = organizer_basicrules_api.make_occur_once_rule(start, end,
-                                                                         ralarm)
-        label = cls.make_label(start, end, ralarm)
-        wxscheduler_api.insert_rule(kwargs['filename'], kwargs['id_'], ruled,
-                                                                          label)
+    @classmethod
+    def _compute_values(cls, rule):
+        values = {}
+
+        if not rule:
+            values['start'] = (int(_time.time()) // 3600 + 1) * 3600
+
+            values.update({
+                'end': values['start'] + 3600,
+                'alarm': values['start'],
+                'endtype': 0,
+                'alarmtype': 0,
+                'rendn': 1,
+                'rendu': 'hours',
+                'ralarmn': 0,
+                'ralarmu': 'minutes',
+            })
+        else:
+            values = {
+                'start': rule[0],
+                'end': rule[1] if rule[1] else rule[0] + 3600,
+                'alarm': rule[2] if rule[2] else rule[0],
+                'endtype': rule[3][0],
+                'alarmtype': rule[3][1],
+            }
+
+            values['rendn'], values['rendu'] = \
+                                    widgets.TimeSpanCtrl._compute_widget_values(
+                                                values['end'] - values['start'])
+
+            values['ralarmn'], values['ralarmu'] = \
+                                    widgets.TimeSpanCtrl._compute_widget_values(
+                                              values['start'] - values['alarm'])
+
+        localstart = _time.localtime(values['start'])
+        localend = _time.localtime(values['end'])
+        localalarm = _time.localtime(values['alarm'])
+
+        values.update({
+            'startY': int(_time.strftime('%Y', localstart)),
+            'startm': int(_time.strftime('%m', localstart)) - 1,
+            'startd': int(_time.strftime('%d', localstart)),
+            'startH': int(_time.strftime('%H', localstart)),
+            'startM': int(_time.strftime('%M', localstart)),
+            'endY': int(_time.strftime('%Y', localend)),
+            'endm': int(_time.strftime('%m', localend)) - 1,
+            'endd': int(_time.strftime('%d', localend)),
+            'endH': int(_time.strftime('%H', localend)),
+            'endM': int(_time.strftime('%M', localend)),
+            'alarmY': int(_time.strftime('%Y', localalarm)),
+            'alarmm': int(_time.strftime('%m', localalarm)) - 1,
+            'alarmd': int(_time.strftime('%d', localalarm)),
+            'alarmH': int(_time.strftime('%H', localalarm)),
+            'alarmM': int(_time.strftime('%M', localalarm)),
+        })
+
+        return values
 
     @staticmethod
-    def make_label(start, end, ralarm):
+    def _make_label(start, end, alarm, endtype, alarmtype, rendn, rendu,
+                                                              ralarmn, ralarmu):
         label = ' '.join(('Occur once',
-                           _time.strftime('on %a %d %b %Y at %H:%M',
-                           _time.localtime(start))))
+                                       _time.strftime('on %a %d %b %Y at %H:%M',
+                                                       _time.localtime(start))))
 
-        if end != None:
+        if endtype == 1:
+            label += ' for {} {}'.format(rendn, rendu)
+        elif endtype == 2:
             label += _time.strftime(' until %a %d %b %Y at %H:%M',
-                                    _time.localtime(end))
+                                                           _time.localtime(end))
 
-        if ralarm != None:
-            label += ', alarm enabled'
+        if alarmtype == 1:
+            label += ', activate alarm {} {} before'.format(ralarmn, ralarmu)
+        elif alarmtype == 2:
+            label += _time.strftime(', alarm set on %a %d %b %Y at %H:%M',
+                                                         _time.localtime(alarm))
 
         return label
+
+    @staticmethod
+    def create_random_rule():
+        start = int((random.gauss(_time.time(), 15000)) // 60 * 60)
+
+        endtype = random.randint(0, 2)
+
+        if endtype == 0:
+            end = None
+        else:
+            end = random.choice((None, start + random.randint(1, 360) * 60))
+
+        alarmtype = random.randint(0, 2)
+
+        if alarmtype == 0:
+            alarm = None
+        else:
+            alarm = random.choice((None, start - random.randint(0, 360) * 60))
+
+        return organizer_basicrules_api.make_occur_once_rule(start, end, alarm,
+                                                           (endtype, alarmtype))

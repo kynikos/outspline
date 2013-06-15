@@ -17,182 +17,213 @@
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
 import time as _time
+import random
 import wx
 
 import organism.extensions.organizer_basicrules_api as organizer_basicrules_api
 import organism.plugins.wxscheduler_api as wxscheduler_api
 
+import widgets
 import msgboxes
 
-_RULE_DESC = 'Except from <date> until <date>'
+_RULE_DESC = 'Except interval'
 
 
 class Rule():
-    mwidgets = None
+    original_values = None
     mpanel = None
-    pgrid = None
+    pbox = None
+    slabel = None
+    startw = None
+    endchoicew = None
+    endw = None
+    inclusivew = None
 
-    def __init__(self, kwargs):
-        self._create_widgets(kwargs['parent'])
+    def __init__(self, parent, filename, id_, rule):
+        self.original_values = self._compute_values(rule)
 
-        # dict.get() returns None if key is not in dictionary, and it happens
-        # when the interface is being set up for a new rule
-        start = kwargs['ruled'].get('start')
-        end = kwargs['ruled'].get('end')
-        inclusive = kwargs['ruled'].get('inclusive')
+        self._create_widgets(parent)
 
-        self._init_values(start, end, inclusive)
-
-        wxscheduler_api.change_rule(kwargs['filename'], kwargs['id_'], self.mpanel)
+        wxscheduler_api.change_rule(filename, id_, self.mpanel)
 
     def _create_widgets(self, parent):
-        self.mwidgets = {}
-
         self.mpanel = wx.Panel(parent)
 
-        self.pgrid = wx.GridBagSizer(4, 4)
-        self.mpanel.SetSizer(self.pgrid)
+        self.pbox = wx.BoxSizer(wx.VERTICAL)
+        self.mpanel.SetSizer(self.pbox)
 
         self._create_widgets_start()
         self._create_widgets_end()
         self._create_widgets_inclusive()
 
+        self._align_first_column()
+
     def _create_widgets_start(self):
-        slabel = wx.StaticText(self.mpanel, label='From:')
-        self.pgrid.Add(slabel, (0, 1), flag=wx.ALIGN_CENTER_VERTICAL)
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.pbox.Add(box, flag=wx.BOTTOM, border=4)
 
-        self.mwidgets['start_date'] = wx.DatePickerCtrl(self.mpanel, size=(-1, 21))
-        # Add a 1px top border because DatePickerCtrl cuts 1px at top and left
-        self.pgrid.Add(self.mwidgets['start_date'], (0, 2),
-                  flag=wx.ALIGN_CENTER_VERTICAL | wx.TOP, border=1)
+        self.slabel = wx.StaticText(self.mpanel, label='Start date:')
+        box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
-        self.mwidgets['start_hour'] = wx.SpinCtrl(self.mpanel, min=0, max=23,
-                                           size=(40, 21),
-                                           style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        self.pgrid.Add(self.mwidgets['start_hour'], (0, 3),
-                  flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT | wx.LEFT,
-                  border=12)
-
-        slabel = wx.StaticText(self.mpanel, label=':')
-        self.pgrid.Add(slabel, (0, 4), flag=wx.ALIGN_CENTER_VERTICAL)
-
-        self.mwidgets['start_minute'] = wx.SpinCtrl(self.mpanel, min=0, max=59,
-                                           size=(40, 21),
-                                           style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        self.pgrid.Add(self.mwidgets['start_minute'], (0, 5),
-                  flag=wx.ALIGN_CENTER_VERTICAL)
+        self.startw = widgets.DateHourCtrl(self.mpanel)
+        self.startw.set_values(self.original_values['startY'],
+                               self.original_values['startm'],
+                               self.original_values['startd'],
+                               self.original_values['startH'],
+                               self.original_values['startM'])
+        box.Add(self.startw.get_main_panel())
 
     def _create_widgets_end(self):
-        slabel = wx.StaticText(self.mpanel, label='Until:')
-        self.pgrid.Add(slabel, (1, 1), flag=wx.ALIGN_CENTER_VERTICAL)
+        self.endchoicew = widgets.WidgetChoiceCtrl(self.mpanel,
+                                   (('End date:', self._create_end_date_widget),
+                                   ('Duration:', self._create_duration_widget)),
+                                             self.original_values['endtype'], 4)
+        self.endchoicew.force_update()
+        self.pbox.Add(self.endchoicew.get_main_panel(), flag=wx.BOTTOM,
+                                                                       border=4)
 
-        self.mwidgets['end_date'] = wx.DatePickerCtrl(self.mpanel, size=(-1, 21))
-        # Add a 1px top border because DatePickerCtrl cuts 1px at top and left
-        self.pgrid.Add(self.mwidgets['end_date'], (1, 2),
-                  flag=wx.ALIGN_CENTER_VERTICAL | wx.TOP, border=1)
+    def _create_end_date_widget(self):
+        self.endw = widgets.DateHourCtrl(self.endchoicew.get_main_panel())
+        self.endw.set_values(self.original_values['endY'],
+                             self.original_values['endm'],
+                             self.original_values['endd'],
+                             self.original_values['endH'],
+                             self.original_values['endM'])
 
-        self.mwidgets['end_hour'] = wx.SpinCtrl(self.mpanel, min=0, max=23,
-                                           size=(40, 21),
-                                           style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        self.pgrid.Add(self.mwidgets['end_hour'], (1, 3),
-                                 flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
+        return self.endw.get_main_panel()
 
-        slabel = wx.StaticText(self.mpanel, label=':')
-        self.pgrid.Add(slabel, (1, 4), flag=wx.ALIGN_CENTER_VERTICAL)
+    def _create_duration_widget(self):
+        self.endw = widgets.TimeSpanCtrl(self.endchoicew.get_main_panel(), 1)
+        self.endw.set_values(self.original_values['rendn'],
+                             self.original_values['rendu'])
 
-        self.mwidgets['end_minute'] = wx.SpinCtrl(self.mpanel, min=0, max=59,
-                                           size=(40, 21),
-                                           style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        self.pgrid.Add(self.mwidgets['end_minute'], (1, 5),
-                  flag=wx.ALIGN_CENTER_VERTICAL)
+        return self.endw.get_main_panel()
 
     def _create_widgets_inclusive(self):
-        self.mwidgets['inclusive_chbox'] = wx.CheckBox(self.mpanel)
-        self.pgrid.Add(self.mwidgets['inclusive_chbox'], (2, 0))
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.pbox.Add(box)
 
-        slabel = wx.StaticText(self.mpanel, label='Inclusive')
-        self.pgrid.Add(slabel, (2, 1), span=(1, 2), flag=wx.ALIGN_CENTER_VERTICAL)
+        self.inclusivew = wx.CheckBox(self.mpanel)
+        self.inclusivew.SetValue(self.original_values['inclusive'])
+        box.Add(self.inclusivew)
 
-    def _init_values(self, start, end, inclusive):
-        if start == None:
-            start = (int(_time.time()) // 3600 + 1) * 3600
+        ilabel = wx.StaticText(self.mpanel, label='Inclusive')
+        box.Add(ilabel, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        sdate = wx.DateTime()
-        sdate.Set(year=int(_time.strftime('%Y', _time.localtime(start))),
-                  month=int(_time.strftime('%m', _time.localtime(start))) - 1,
-                  day=int(_time.strftime('%d', _time.localtime(start))))
-        shour = int(_time.strftime('%H', _time.localtime(start)))
-        smin = int(_time.strftime('%M', _time.localtime(start)))
+    def _align_first_column(self):
+        sminw = self.slabel.GetSizeTuple()[0]
+        eminw = self.endchoicew.get_choice_width()
 
-        self.mwidgets['start_date'].SetValue(sdate)
-        self.mwidgets['start_hour'].SetValue(shour)
-        self.mwidgets['start_minute'].SetValue(smin)
+        maxw = max(sminw, eminw)
 
-        if end == None:
-            end = start + 3600
+        sminh = self.slabel.GetMinHeight()
+        self.slabel.SetMinSize((maxw, sminh))
 
-        edate = wx.DateTime()
-        edate.Set(year=int(_time.strftime('%Y', _time.localtime(end))),
-                   month=int(_time.strftime('%m', _time.localtime(end))) - 1,
-                   day=int(_time.strftime('%d', _time.localtime(end))))
-        ehour = int(_time.strftime('%H', _time.localtime(end)))
-        emin = int(_time.strftime('%M', _time.localtime(end)))
+        self.endchoicew.set_choice_min_width(maxw)
 
-        self.mwidgets['end_date'].SetValue(edate)
-        self.mwidgets['end_hour'].SetValue(ehour)
-        self.mwidgets['end_minute'].SetValue(emin)
+    def apply_rule(self, filename, id_):
+        start = self.startw.get_unix_time()
 
-        if inclusive == None:
-            self.mwidgets['inclusive_chbox'].SetValue(False)
+        endtype = self.endchoicew.get_selection()
+
+        if endtype == 1:
+            end = start + self.endw.get_time_span()
+            rendn = self.endw.get_number()
+            rendu = self.endw.get_unit()
         else:
-            self.mwidgets['inclusive_chbox'].SetValue(inclusive)
+            end = self.endw.get_unix_time()
+            rendn = None
+            rendu = None
 
-
-    def apply_rule(self, kwargs):
-        sdate = self.mwidgets['start_date'].GetValue().GetTicks()
-        shour = self.mwidgets['start_hour'].GetValue()
-        sminute = self.mwidgets['start_minute'].GetValue()
-
-        start = sdate + shour * 3600 + sminute * 60
-
-        edate = self.mwidgets['end_date'].GetValue().GetTicks()
-        ehour = self.mwidgets['end_hour'].GetValue()
-        eminute = self.mwidgets['end_minute'].GetValue()
-
-        end = edate + ehour * 3600 + eminute * 60
-
-        inclusive = self.mwidgets['inclusive_chbox'].GetValue()
+        inclusive = self.inclusivew.GetValue()
 
         try:
             ruled = organizer_basicrules_api.make_except_once_rule(start, end,
-                                                                      inclusive)
+                                                         inclusive, (endtype, ))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
-            label = self.make_label(start, end, inclusive)
-            wxscheduler_api.apply_rule(kwargs['filename'], kwargs['id_'], ruled,
-                                                                          label)
+            label = self._make_label(start, end, inclusive, endtype, rendn,
+                                                                          rendu)
+            wxscheduler_api.apply_rule(filename, id_, ruled, label)
 
     @classmethod
-    def insert_rule(cls, kwargs):
-        start = kwargs['rule']['start']
-        end = kwargs['rule']['end']
-        inclusive = kwargs['rule']['inclusive']
+    def insert_rule(cls, filename, id_, rule, rulev):
+        values = cls._compute_values(rulev)
+        label = cls._make_label(values['start'], values['end'],
+                                         values['inclusive'], values['endtype'],
+                                         values['rendn'], values['rendu'])
+        wxscheduler_api.insert_rule(filename, id_, rule, label)
 
-        ruled = organizer_basicrules_api.make_except_once_rule(start, end,
-                                                                      inclusive)
-        label = cls.make_label(start, end, inclusive)
-        wxscheduler_api.insert_rule(kwargs['filename'], kwargs['id_'], ruled,
-                                                                          label)
+    @classmethod
+    def _compute_values(cls, rule):
+        values = {}
+
+        if not rule:
+            values['start'] = (int(_time.time()) // 3600 + 1) * 3600
+
+            values.update({
+                'end': values['start'] + 3600,
+                'inclusive': False,
+                'endtype': 0,
+                'rendn': 1,
+                'rendu': 'hours',
+            })
+        else:
+            values = {
+                'start': rule[0],
+                'end': rule[1] if rule[1] else rule[0] + 3600,
+                'inclusive': rule[2],
+                'endtype': rule[3][0],
+            }
+
+            values['rendn'], values['rendu'] = \
+                                    widgets.TimeSpanCtrl._compute_widget_values(
+                                                values['end'] - values['start'])
+
+        localstart = _time.localtime(values['start'])
+        localend = _time.localtime(values['end'])
+
+        values.update({
+            'startY': int(_time.strftime('%Y', localstart)),
+            'startm': int(_time.strftime('%m', localstart)) - 1,
+            'startd': int(_time.strftime('%d', localstart)),
+            'startH': int(_time.strftime('%H', localstart)),
+            'startM': int(_time.strftime('%M', localstart)),
+            'endY': int(_time.strftime('%Y', localend)),
+            'endm': int(_time.strftime('%m', localend)) - 1,
+            'endd': int(_time.strftime('%d', localend)),
+            'endH': int(_time.strftime('%H', localend)),
+            'endM': int(_time.strftime('%M', localend)),
+        })
+
+        return values
 
     @staticmethod
-    def make_label(start, end, inclusive):
+    def _make_label(start, end, inclusive, endtype, rendn, rendu):
         label = ' '.join(('Except', _time.strftime('from %a %d %b %Y at %H:%M',
-                           _time.localtime(start)),
-                           _time.strftime('until %a %d %b %Y at %H:%M',
-                           _time.localtime(end))))
+                                                       _time.localtime(start))))
+
+        if endtype == 1:
+            label += ' for {} {}'.format(rendn, rendu)
+        else:
+            label += _time.strftime(' until %a %d %b %Y at %H:%M',
+                                                           _time.localtime(end))
 
         if inclusive:
             label += ', inclusive'
 
         return label
+
+    @staticmethod
+    def create_random_rule():
+        start = int((random.gauss(_time.time(), 15000)) // 60 * 60)
+
+        endtype = random.choice((0, 1))
+
+        end = start + random.randint(1, 360) * 60
+
+        inclusive = random.choice((True, False))
+
+        return organizer_basicrules_api.make_except_once_rule(start,
+                                                    end, inclusive, (endtype, ))

@@ -21,19 +21,19 @@ from exceptions import BadRuleError
 _RULE_NAME = 'occur_once'
 
 
-def _compute_alarm(start, ralarm):
-    return None if (ralarm == None) else (start - ralarm)
-
-
-def make_rule(start, end, ralarm):
+def make_rule(start, end, alarm, guiconfig):
     # Make sure this rule can only produce occurrences compliant with the
     # requirements defined in organizer_api.update_item_rules
     if start and (end is None or end > start):
-        return {'rule': _RULE_NAME,
-                'start': start,
-                'end': end,
-                'ralarm': ralarm,
-                'alarm': _compute_alarm(start, ralarm)}
+        return {
+            'rule': _RULE_NAME,
+            '#': (
+                start,
+                end,
+                alarm,
+                guiconfig,
+            )
+        }
     else:
         raise BadRuleError()
 
@@ -42,14 +42,14 @@ def get_occurrences_range(filename, id_, rule, occs):
     # The rule is checked in make_rule, no need to use occs.add
     occs.add_safe({'filename': filename,
                    'id_': id_,
-                   'start': rule['start'],
-                   'end': rule['end'],
-                   'alarm': rule['alarm']})
+                   'start': rule['#'][0],
+                   'end': rule['#'][1],
+                   'alarm': rule['#'][2]})
 
 def get_next_item_occurrences(base_time, filename, id_, rule, occs):
     # The rule is checked in make_rule, no need to use occs.add
     occs.add_safe(base_time, {'filename': filename,
                               'id_': id_,
-                              'start': rule['start'],
-                              'end': rule['end'],
-                              'alarm': rule['alarm']})
+                              'start': rule['#'][0],
+                              'end': rule['#'][1],
+                              'alarm': rule['#'][2]})

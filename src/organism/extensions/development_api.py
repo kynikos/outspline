@@ -37,11 +37,3 @@ def print_all_tables(filename):
 
 def print_all_databases():
     return development.print_all_db()
-
-
-def populate_tree(treedb):
-    return development.populate_tree(treedb)
-
-
-def bind_to_populate_tree(handler, bind=True):
-    return development.populate_tree_event.bind(handler, bind)

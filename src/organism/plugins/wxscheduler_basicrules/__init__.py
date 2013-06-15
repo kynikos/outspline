@@ -35,33 +35,58 @@ def handle_init_rules(kwargs):
 
 
 def handle_choose_rule(kwargs):
-    if kwargs['rule'] == 'occur_once':
-        wxscheduler_api.initialize_rule(kwargs['filename'], kwargs['id_'],
-                                        occur_once.Rule(kwargs))
-    elif kwargs['rule'] == 'occur_every_day':
-        wxscheduler_api.initialize_rule(kwargs['filename'], kwargs['id_'],
-                                        occur_every_day.Rule(kwargs))
-    elif kwargs['rule'] == 'except_once':
-        wxscheduler_api.initialize_rule(kwargs['filename'], kwargs['id_'],
-                                        except_once.Rule(kwargs))
+    parent = kwargs['parent']
+    filename = kwargs['filename']
+    id_ = kwargs['id_']
+    name = kwargs['rule']
+    ruled = kwargs['ruled']
+
+    # If editing an existing rule, if the chosen new rule type is different from
+    # the current rule type, use the default values for initializing the gui
+    if name == ruled.get('rule'):
+        rulev = ruled.get('#')
+    else:
+        rulev = None
+
+    if name == 'occur_once':
+        ruleobj = occur_once.Rule(parent, filename, id_, rulev)
+    elif name == 'occur_every_day':
+        ruleobj = occur_every_day.Rule(parent, filename, id_, rulev)
+    elif name == 'except_once':
+        ruleobj = except_once.Rule(parent, filename, id_, rulev)
+
+    wxscheduler_api.initialize_rule(filename, id_, ruleobj)
 
 
 def handle_apply_rule(kwargs):
-    if kwargs['rule'] == 'occur_once':
-        kwargs['object_'].apply_rule(kwargs)
-    elif kwargs['rule'] == 'occur_every_day':
-        kwargs['object_'].apply_rule(kwargs)
-    elif kwargs['rule'] == 'except_once':
-        kwargs['object_'].apply_rule(kwargs)
+    filename = kwargs['filename']
+    id_ = kwargs['id_']
+    name = kwargs['rule']
+    object_ = kwargs['object_']
+
+    # In general the various rules could use different functions for handling
+    # this event
+    if name == 'occur_once':
+        object_.apply_rule(filename, id_)
+    elif name == 'occur_every_day':
+        object_.apply_rule(filename, id_)
+    elif name == 'except_once':
+        object_.apply_rule(filename, id_)
 
 
 def handle_insert_rule(kwargs):
-    if kwargs['rule']['rule'] == 'occur_once':
-        occur_once.Rule.insert_rule(kwargs)
-    elif kwargs['rule']['rule'] == 'occur_every_day':
-        occur_every_day.Rule.insert_rule(kwargs)
-    elif kwargs['rule']['rule'] == 'except_once':
-        except_once.Rule.insert_rule(kwargs)
+    filename = kwargs['filename']
+    id_ = kwargs['id_']
+    rule = kwargs['rule']
+    name = rule['rule']
+    rulev = rule['#']
+
+    if name == 'occur_once':
+        occur_once.Rule.insert_rule(filename, id_, rule, rulev)
+    elif name == 'occur_every_day':
+        occur_every_day.Rule.insert_rule(filename, id_, rule, rulev)
+    elif name == 'except_once':
+        except_once.Rule.insert_rule(filename, id_, rule, rulev)
 
 
 def main():

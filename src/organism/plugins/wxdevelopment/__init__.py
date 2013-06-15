@@ -17,11 +17,16 @@
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
 import os as _os
+import random
 import wx
 
+import organism.coreaux_api as coreaux_api
 import organism.core_api as core_api
 import organism.extensions.development_api as development_api
 import organism.interfaces.wxgui_api as wxgui_api
+organizer_api = coreaux_api.import_extension_api('organizer')
+wxscheduler_basicrules_api = coreaux_api.import_plugin_api(
+                                                       'wxscheduler_basicrules')
 
 import simulator
 import tests
@@ -51,7 +56,6 @@ class MenuDev(wx.Menu):
         wxgui_api.bind_to_menu(self.populate_tree, self.populate)
         wxgui_api.bind_to_menu(self.toggle_simulator, self.simulator)
 
-        development_api.bind_to_populate_tree(self.handle_populate_tree)
         wxgui_api.bind_to_reset_menu_items(self.handle_reset_menu_items)
 
     def handle_reset_menu_items(self, kwargs):
@@ -154,25 +158,92 @@ class MenuDev(wx.Menu):
         development_api.print_all_tables(filename)
         core_api.release_databases()
 
-    def handle_populate_tree(self, kwargs):
-        items = kwargs['treeitems']
-        for item in items:
-            if item['mode'] == 'child':
-                wxgui_api.append_item(item['filename'], item['baseid'],
-                                      item['id_'], item['text'])
-            elif item['mode'] == 'sibling':
-                wxgui_api.insert_item_after(item['filename'], item['baseid'],
-                                            item['id_'], item['text'])
-
     def populate_tree(self, event):
         core_api.block_databases()
         db = wxgui_api.get_active_database()
         if db:
             filename = db.get_filename()
             if filename:
-                development_api.populate_tree(filename)
+                group = core_api.get_next_history_group(filename)
+                description = 'Populate tree'
+
+                i = 0
+                while i < 10:
+                    dbitems = core_api.get_items_ids(filename)
+
+                    try:
+                        itemid = random.choice(dbitems)
+                    except IndexError:
+                        # No items in the database yet
+                        itemid = 0
+
+                    mode = random.choice(('child', 'sibling'))
+
+                    if mode == 'sibling' and itemid == 0:
+                        continue
+
+                    i += 1
+
+                    text = self._populate_tree_text()
+
+                    id_ = self._populate_tree_item(mode, filename, itemid,
+                                                       group, text, description)
+
+                    if organizer_api and wxscheduler_basicrules_api:
+                        self._populate_tree_rules(filename, id_, group,
+                                                                    description)
+
+                    self._populate_tree_gui(mode, filename, itemid, id_, text)
+
                 wxgui_api.refresh_history(filename)
         core_api.release_databases()
+
+    def _populate_tree_text(self):
+        text = ''
+        words = ('the quick brown fox jumps over the lazy dog ' * 6).split()
+        seps = ' ' * 6 + '\n'
+
+        for x in range(random.randint(10, 100)):
+            words.append(str(random.randint(0, 100)))
+            text = ''.join((text, random.choice(words), random.choice(seps)))
+
+        return ''.join((text, random.choice(words))).capitalize()
+
+    def _populate_tree_item(self, mode, filename, itemid, group, text,
+                                                                   description):
+        if mode == 'child':
+            return core_api.append_item(filename, itemid, group, text=text,
+                                                        description=description)
+        elif mode == 'sibling':
+            return core_api.insert_item_after(filename, itemid, group,
+                                             text=text, description=description)
+
+    def _populate_tree_rules(self, filename, id_, group, description):
+        rules = []
+
+        for n in range(random.randint(0, 8)):
+            r = random.randint(0, 2)
+
+            if r == 0:
+                rule = \
+                      wxscheduler_basicrules_api.create_random_occur_once_rule()
+            elif r == 1:
+                rule = \
+                 wxscheduler_basicrules_api.create_random_occur_every_day_rule()
+            else:
+                rule = \
+                     wxscheduler_basicrules_api.create_random_except_once_rule()
+
+            rules.append(rule)
+
+        organizer_api.update_item_rules(filename, id_, rules, group,
+                                                        description=description)
+
+    def _populate_tree_gui(self, mode, filename, itemid, id_, text):
+        if mode == 'child':
+            wxgui_api.append_item(filename, itemid, id_, text)
+        elif mode == 'sibling':
+            wxgui_api.insert_item_after(filename, itemid, id_, text)
 
     def reset_simulator_item(self):
         if simulator.is_active():

@@ -17,7 +17,6 @@
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
 import random
-import time
 import os
 
 import organism.core_api as core_api
@@ -375,34 +374,17 @@ def edit_editor_rules():
         rules = []
 
         for n in range(random.randint(0, 8)):
-            start = int((random.gauss(time.time(), 1000)) // 60 * 60)
-            end1 = start + random.randint(1, 360) * 60
-            end2 = random.choice((None, end1))
-            ralarm = random.choice((None, 0))
-            rstart = random.randint(0, 1440) * 60
-            # Ignore 'days', 'weeks', 'months', 'years'
-            rendu = random.choice(('minutes', 'hours'))
-            if rendu == 'minutes':
-                rendn = random.randint(1, 360)
-            elif rendu == 'hours':
-                rendn = random.randint(1, 24)
-            inclusive = random.choice((True, False))
+            r = random.randint(0, 2)
 
-            rule = random.choice((
-                {'rule': 'occur_once',
-                 'start': start,
-                 'end': end2,
-                 'ralarm': ralarm},
-                {'rule': 'occur_every_day',
-                 'rstart': rstart,
-                 'rendn': rendn,
-                 'rendu': rendu,
-                 'ralarm': ralarm},
-                {'rule': 'except_once',
-                 'start': start,
-                 'end': end1,
-                 'inclusive': inclusive}
-            ))
+            if r == 0:
+                rule = \
+                      wxscheduler_basicrules_api.create_random_occur_once_rule()
+            elif r == 1:
+                rule = \
+                 wxscheduler_basicrules_api.create_random_occur_every_day_rule()
+            else:
+                rule = \
+                     wxscheduler_basicrules_api.create_random_except_once_rule()
 
             rules.append(rule)
 
@@ -413,16 +395,13 @@ def edit_editor_rules():
         for rule in rules:
             if rule['rule'] == 'occur_once':
                 wxscheduler_basicrules_api.simulate_create_occur_once_rule(
-                                                   filename, id_, rule['start'],
-                                                    rule['end'], rule['ralarm'])
+                                                            filename, id_, rule)
             elif rule['rule'] == 'occur_every_day':
                 wxscheduler_basicrules_api.simulate_create_occur_every_day_rule(
-                                   filename, id_, rule['rstart'], rule['rendn'],
-                                                  rule['rendu'], rule['ralarm'])
+                                                            filename, id_, rule)
             elif rule['rule'] == 'except_once':
                 wxscheduler_basicrules_api.simulate_create_except_once_rule(
-                                                   filename, id_, rule['start'],
-                                                 rule['end'], rule['inclusive'])
+                                                            filename, id_, rule)
     else:
         # Databases are blocked in simulator._do_action
         core_api.release_databases()

@@ -23,20 +23,6 @@ from exceptions import BadRuleError
 _RULE_NAME = 'occur_every_day'
 
 
-def _compute_rend(rendn, rendu):
-    if rendn != None:
-        mult = {'minutes': 60,
-                'hours': 3600,
-                'days': 86400,
-                'weeks': 604800,
-                'months': 2592000,
-                'years': 31536000}
-
-        return rendn * mult[rendu]
-    else:
-        return None
-
-
 def _compute_start(reftime, rstart, rend):
     firstday = reftime // 86400 * 86400 + _time.altzone
     rday = reftime % 86400
@@ -46,41 +32,53 @@ def _compute_start(reftime, rstart, rend):
     else:
         startt = firstday + rstart
 
-    if rend != None:
+    try:
         # This algorithm must also get occurrences whose end time falls within
         # the requested range (for get_occurrences_range) or is the next
         # occurrence (for get_next_item_occurrences)
         return startt - 86400 * (1 + rend // 86400)
-    else:
+    except TypeError:
+        # rend could be None
         return startt
 
 
 def _compute_end(start, rend):
-    return start + rend if rend != None else None
+    try:
+        return start + rend
+    except TypeError:
+        # rend could be None
+        return None
 
 
 def _compute_alarm(start, ralarm):
-    return start - ralarm if ralarm != None else None
+    try:
+        return start - ralarm
+    except TypeError:
+        # ralarm could be None
+        return None
 
 
-def make_rule(rstart, rendn, rendu, ralarm):
+def make_rule(rstart, rend, ralarm, guiconfig):
     # Make sure this rule can only produce occurrences compliant with the
     # requirements defined in organizer_api.update_item_rules
-    if rstart:
-        return {'rule': _RULE_NAME,
-                'rstart': rstart,
-                'rendn': rendn,
-                'rendu': rendu,
-                'rend': _compute_rend(rendn, rendu),
-                'ralarm': ralarm}
+    if rstart and (rend is None or rend > 0):
+        return {
+            'rule': _RULE_NAME,
+            '#': (
+                rstart,
+                rend,
+                ralarm,
+                guiconfig,
+            )
+        }
     else:
         raise BadRuleError()
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
-    rend = rule['rend']
-    start = _compute_start(mint, rule['rstart'], rend)
-    ralarm = rule['ralarm']
+    rend = rule['#'][1]
+    start = _compute_start(mint, rule['#'][0], rend)
+    ralarm = rule['#'][2]
 
     while True:
         end = _compute_end(start, rend)
@@ -100,9 +98,9 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
 
 
 def get_next_item_occurrences(base_time, filename, id_, rule, occs):
-    rend = rule['rend']
-    start = _compute_start(base_time, rule['rstart'], rend)
-    ralarm = rule['ralarm']
+    rend = rule['#'][1]
+    start = _compute_start(base_time, rule['#'][0], rend)
+    ralarm = rule['#'][2]
 
     while True:
         end = _compute_end(start, rend)
