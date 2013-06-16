@@ -281,14 +281,14 @@ class Rule():
         if endtype == 0:
             end = None
         else:
-            end = random.choice((None, start + random.randint(1, 360) * 60))
+            end = start + random.randint(1, 360) * 60
 
         alarmtype = random.randint(0, 2)
 
         if alarmtype == 0:
             alarm = None
         else:
-            alarm = random.choice((None, start - random.randint(0, 360) * 60))
+            alarm = start - random.randint(0, 360) * 60
 
         return organizer_basicrules_api.make_occur_once_rule(start, end, alarm,
                                                            (endtype, alarmtype))

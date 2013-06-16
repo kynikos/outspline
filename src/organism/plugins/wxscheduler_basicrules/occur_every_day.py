@@ -286,5 +286,5 @@ class Rule():
         else:
             ralarm = random.randint(0, 360) * 60
 
-        return organizer_basicrules_api.make_occur_every_day_rule(
-                                 rstart, rend, ralarm, (endtype, alarmtype))
+        return organizer_basicrules_api.make_occur_every_day_rule(rstart, rend,
+                                                   ralarm, (endtype, alarmtype))

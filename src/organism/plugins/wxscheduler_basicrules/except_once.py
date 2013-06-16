@@ -225,5 +225,5 @@ class Rule():
 
         inclusive = random.choice((True, False))
 
-        return organizer_basicrules_api.make_except_once_rule(start,
-                                                    end, inclusive, (endtype, ))
+        return organizer_basicrules_api.make_except_once_rule(start, end,
+                                                         inclusive, (endtype, ))

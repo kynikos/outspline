@@ -61,7 +61,9 @@ def _compute_alarm(start, ralarm):
 def make_rule(rstart, rend, ralarm, guiconfig):
     # Make sure this rule can only produce occurrences compliant with the
     # requirements defined in organizer_api.update_item_rules
-    if rstart and (rend is None or rend > 0):
+    if isinstance(rstart, int) and \
+                    (rend is None or (isinstance(rend, int) and rend > 0)) and \
+                                    (ralarm is None or isinstance(ralarm, int)):
         return {
             'rule': _RULE_NAME,
             '#': (

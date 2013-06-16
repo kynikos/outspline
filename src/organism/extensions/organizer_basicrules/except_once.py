@@ -24,7 +24,8 @@ _RULE_NAME = 'except_once'
 def make_rule(start, end, inclusive, guiconfig):
     # Make sure this rule can only produce occurrences compliant with the
     # requirements defined in organizer_api.update_item_rules
-    if start and end > start:
+    if isinstance(start, int) and isinstance(end, int) and end > start and \
+                                                    isinstance(inclusive, bool):
         return {
             'rule': _RULE_NAME,
             '#': (
