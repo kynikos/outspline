@@ -84,9 +84,9 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
 
     while True:
         end = _compute_end(start, rend)
-        alarm = _compute_end(start, ralarm)
+        alarm = _compute_alarm(start, ralarm)
 
-        if (alarm and alarm > maxt) or start > maxt:
+        if start > maxt and (alarm is None or alarm > maxt):
             break
 
         # The rule is checked in make_rule, no need to use occs.add
@@ -106,7 +106,7 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
 
     while True:
         end = _compute_end(start, rend)
-        alarm = _compute_end(start, ralarm)
+        alarm = _compute_alarm(start, ralarm)
 
         occd = {'filename': filename,
                 'id_': id_,
@@ -117,9 +117,8 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
         next_occ = occs.get_next_occurrence_time()
 
         # The rule is checked in make_rule, no need to use occs.add
-        if occs.add_safe(base_time, occd) or (next_occ and
-                                         (alarm is None and start > next_occ) or
-                                                  (alarm and alarm > next_occ)):
+        if occs.add_safe(base_time, occd) or (next_occ and start > next_occ and
+                                           (alarm is None or alarm > next_occ)):
             break
 
         start += 86400
