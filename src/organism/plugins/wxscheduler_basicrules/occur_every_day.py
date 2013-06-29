@@ -142,18 +142,30 @@ class Rule():
 
         if endtype == 1:
             rend = self.endw.get_time_span()
+            fend = False
             rendn = self.endw.get_number()
             rendu = self.endw.get_unit()
             rendH = None
             rendM = None
         elif endtype == 2:
-            rend = self.endw.get_relative_time() - rstart
+            endrt = self.endw.get_relative_time()
+
+            # If time is set earlier than or equal to start, interpret it as
+            # referring to the following day
+            if endrt > rstart:
+                rend = endrt - rstart
+                fend = False
+            else:
+                rend = 86400 - rstart + endrt
+                fend = True
+
             rendn = None
             rendu = None
             rendH = self.endw.get_hour()
             rendM = self.endw.get_minute()
         else:
             rend = None
+            fend = False
             rendn = None
             rendu = None
             rendH = None
@@ -163,18 +175,30 @@ class Rule():
 
         if alarmtype == 1:
             ralarm = self.alarmw.get_time_span()
+            palarm = False
             ralarmn = self.alarmw.get_number()
             ralarmu = self.alarmw.get_unit()
             ralarmH = None
             ralarmM = None
         elif alarmtype == 2:
-            ralarm = rstart - self.alarmw.get_relative_time()
+            alarmrt = self.alarmw.get_relative_time()
+
+            # If time is set later than start, interpret it as referring to
+            # the previous day
+            if alarmrt <= rstart:
+                ralarm = rstart - alarmrt
+                palarm = False
+            else:
+                ralarm = 86400 - alarmrt + rstart
+                palarm = True
+
             ralarmn = None
             ralarmu = None
             ralarmH = self.alarmw.get_hour()
             ralarmM = self.alarmw.get_minute()
         else:
             ralarm = None
+            palarm = False
             ralarmn = None
             ralarmu = None
             ralarmH = None
@@ -187,9 +211,9 @@ class Rule():
             msgboxes.warn_bad_rule().ShowModal()
         else:
             label = self._make_label(rstartH, rstartM, rendH, rendM, ralarmH,
-                    ralarmM, rendn, rendu, ralarmn, ralarmu, endtype, alarmtype)
-            wxscheduler_api.apply_rule(filename, id_, ruled,
-                                                                          label)
+                                        ralarmM, rendn, rendu, ralarmn, ralarmu,
+                                               endtype, alarmtype, fend, palarm)
+            wxscheduler_api.apply_rule(filename, id_, ruled, label)
 
     @classmethod
     def insert_rule(cls, filename, id_, rule, rulev):
@@ -198,7 +222,8 @@ class Rule():
                             values['rendH'], values['rendM'], values['ralarmH'],
                             values['ralarmM'], values['rendn'], values['rendu'],
                                            values['ralarmn'], values['ralarmu'],
-                                         values['endtype'], values['alarmtype'])
+                                         values['endtype'], values['alarmtype'],
+                                               values['fend'], values['palarm'])
         wxscheduler_api.insert_rule(filename, id_, rule, label)
 
     @classmethod
@@ -235,8 +260,21 @@ class Rule():
             values['ralarmn'], values['ralarmu'] = \
                    widgets.TimeSpanCtrl._compute_widget_values(values['ralarm'])
 
-        rrend = min((max(((values['rstart'] + values['rend']), 0)), 86399))
-        rralarm = min((max(((values['rstart'] - values['ralarm']), 0)), 86399))
+        rrend = values['rstart'] + values['rend']
+        values['fend'] = False
+
+        # End time could be set after 23:59 of the start day
+        if rrend > 86399:
+            rrend = rrend % 86400
+            values['fend'] = True
+
+        rralarm = values['rstart'] - values['ralarm']
+        values['palarm'] = False
+
+        # Alarm time could be set before 00:00 of the start day
+        if rralarm < 0:
+            rralarm = 86400 - abs(rralarm) % 86400
+            values['palarm'] = True
 
         values.update({
             'rstartH': values['rstart'] // 3600,
@@ -251,7 +289,7 @@ class Rule():
 
     @staticmethod
     def _make_label(rstartH, rstartM, rendH, rendM, ralarmH, ralarmM, rendn,
-                                   rendu, ralarmn, ralarmu, endtype, alarmtype):
+                     rendu, ralarmn, ralarmu, endtype, alarmtype, fend, palarm):
         label = 'Occur every day at {}:{}'.format(str(rstartH).zfill(2),
                                                           str(rstartM).zfill(2))
 
@@ -260,12 +298,16 @@ class Rule():
         elif endtype == 2:
             label += ' until {}:{}'.format(str(rendH).zfill(2),
                                                             str(rendM).zfill(2))
+            if fend:
+                label += ' of the following day'
 
         if alarmtype == 1:
             label += ', activate alarm {} {} before'.format(ralarmn, ralarmu)
         elif alarmtype == 2:
             label += ', activate alarm at {}:{}'.format(
                                    str(ralarmH).zfill(2), str(ralarmM).zfill(2))
+            if palarm:
+                label += ' of the previous day'
 
         return label
 
