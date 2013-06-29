@@ -24,6 +24,7 @@ import organism.extensions.organizer_basicrules_api as organizer_basicrules_api
 import organism.plugins.wxscheduler_api as wxscheduler_api
 
 import widgets
+import msgboxes
 
 _RULE_DESC = 'Occur every day'
 
@@ -170,8 +171,8 @@ class Rule():
             ralarm = rstart - self.alarmw.get_relative_time()
             ralarmn = None
             ralarmu = None
-            ralarmH = self.endw.get_hour()
-            ralarmM = self.endw.get_minute()
+            ralarmH = self.alarmw.get_hour()
+            ralarmM = self.alarmw.get_minute()
         else:
             ralarm = None
             ralarmn = None
