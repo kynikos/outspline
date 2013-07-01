@@ -64,7 +64,6 @@ class DateHourCtrl():
     panel = None
     datectrl = None
     hourctrl = None
-    minutectrl = None
 
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
@@ -74,33 +73,24 @@ class DateHourCtrl():
         self.datectrl = wx.DatePickerCtrl(self.panel, size=(-1, 21))
         box.Add(self.datectrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        self.hourctrl = wx.SpinCtrl(self.panel, min=0, max=23, size=(40, 21),
-                                            style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        box.Add(self.hourctrl, flag=wx.ALIGN_CENTER_VERTICAL |
+        self.hourctrl = HourCtrl(self.panel)
+        box.Add(self.hourctrl.get_main_panel(), flag=wx.ALIGN_CENTER_VERTICAL |
                                             wx.ALIGN_RIGHT | wx.LEFT, border=12)
-
-        slabel = wx.StaticText(self.panel, label=':')
-        box.Add(slabel, flag=wx.ALIGN_CENTER_VERTICAL)
-
-        self.minutectrl = wx.SpinCtrl(self.panel, min=0, max=59, size=(40, 21),
-                                            style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
-        box.Add(self.minutectrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
     def set_values(self, year, month, day, hour, minute):
         sdate = wx.DateTime()
         sdate.Set(year=year, month=month, day=day)
         self.datectrl.SetValue(sdate)
 
-        self.hourctrl.SetValue(hour)
-        self.minutectrl.SetValue(minute)
+        self.hourctrl.set_values(hour, minute)
 
     def get_main_panel(self):
         return self.panel
 
     def get_unix_time(self):
         date = self.datectrl.GetValue().GetTicks()
-        hour = self.hourctrl.GetValue()
-        minute = self.minutectrl.GetValue()
+        hour = self.hourctrl.get_hour()
+        minute = self.hourctrl.get_minute()
 
         return date + hour * 3600 + minute * 60
 
