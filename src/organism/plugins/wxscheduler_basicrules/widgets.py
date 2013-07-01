@@ -115,13 +115,13 @@ class TimeSpanCtrl():
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
 
-        self.numberctrl = wx.SpinCtrl(self.panel, min=min_number, max=99,
-                                          size=(40, 21), style=wx.SP_ARROW_KEYS)
+        self.numberctrl = wx.SpinCtrl(self.panel, min=min_number, max=999,
+                                          size=(48, 21), style=wx.SP_ARROW_KEYS)
         box.Add(self.numberctrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.unitctrl = wx.ComboBox(self.panel, value='minutes', size=(100, 21),
-                                   choices=('minutes', 'hours', 'days', 'weeks',
-                                       'months', 'years'), style=wx.CB_READONLY)
+                                  choices=('minutes', 'hours', 'days', 'weeks'),
+                                                           style=wx.CB_READONLY)
         box.Add(self.unitctrl, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT |
                                                              wx.LEFT, border=12)
 
@@ -149,9 +149,7 @@ class TimeSpanCtrl():
         mult = {'minutes': 60,
                 'hours': 3600,
                 'days': 86400,
-                'weeks': 604800,
-                'months': 2592000,
-                'years': 31536000}
+                'weeks': 604800}
 
         return number * mult[unit]
 
@@ -160,9 +158,7 @@ class TimeSpanCtrl():
         adiff = abs(diff)
 
         if adiff > 0:
-            for (number, unit) in ((31536000, 'years'),
-                                   (2592000, 'months'),
-                                   (604800, 'weeks'),
+            for (number, unit) in ((604800, 'weeks'),
                                    (86400, 'days'),
                                    (3600, 'hours'),
                                    (60, 'minutes')):

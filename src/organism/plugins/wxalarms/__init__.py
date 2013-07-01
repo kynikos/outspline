@@ -135,16 +135,15 @@ class AlarmsWindow():
         label = wx.StaticText(parent, label='Snooze configuration:')
         box.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
-        self.number = wx.SpinCtrl(parent, min=1, max=99, size=(40, 21),
+        self.number = wx.SpinCtrl(parent, min=1, max=999, size=(48, 21),
                                   style=wx.SP_ARROW_KEYS)
         self.number.SetValue(5)
         box.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                 border=4)
 
         self.unit = wx.ComboBox(parent, value='minutes', size=(100, 21),
-                                choices=('minutes', 'hours', 'days',
-                                         'weeks', 'months', 'years'),
-                                style=wx.CB_READONLY)
+                                  choices=('minutes', 'hours', 'days', 'weeks'),
+                                                           style=wx.CB_READONLY)
         box.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
     def _init_bottom(self, parent):
@@ -253,9 +252,7 @@ class AlarmsWindow():
         mult = {'minutes': 60,
                 'hours': 3600,
                 'days': 86400,
-                'weeks': 604800,
-                'months': 2592000,
-                'years': 31536000}
+                'weeks': 604800}
         stime = self.number.GetValue() * mult[self.unit.GetValue()]
         return stime
 

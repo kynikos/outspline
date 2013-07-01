@@ -455,12 +455,15 @@ def snooze_alarms():
     if wxalarms_api:
         alarms = wxalarms_api.get_active_alarms()
         if alarms:
-            # Ignore 'days', 'weeks', 'months', 'years'
-            unit = random.choice(('minutes', 'hours'))
+            unit = random.choice(('minutes', 'hours', 'days', 'weeks'))
             if unit == 'minutes':
                 number = random.randint(1, 360)
             elif unit == 'hours':
                 number = random.randint(1, 24)
+            elif unit == 'days':
+                number = random.randint(1, 3)
+            elif unit == 'weeks':
+                number = random.randint(1, 2)
 
             wxalarms_api.simulate_set_snooze_time(number, unit)
 
