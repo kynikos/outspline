@@ -124,7 +124,7 @@ class Rule():
         eminw = self.endchoicew.get_choice_width()
         aminw = self.alarmchoicew.get_choice_width()
 
-        maxw = max(sminw, eminw, aminw)
+        maxw = max((sminw, eminw, aminw))
 
         sminh = self.slabel.GetMinHeight()
         self.slabel.SetMinSize((maxw, sminh))

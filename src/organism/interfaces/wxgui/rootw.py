@@ -108,8 +108,8 @@ class MainFrame(wx.Frame):
     def __init__(self):
         confsize = [int(s) for s in config['initial_geometry'].split('x')]
         clarea = wx.Display().GetClientArea()
-        initsize = [min(confsize[0], clarea.GetWidth()),
-                    min(confsize[1], clarea.GetHeight())]
+        initsize = [min((confsize[0], clarea.GetWidth())),
+                    min((confsize[1], clarea.GetHeight()))]
         wx.Frame.__init__(self, None, title='Organism', size=initsize)
         self.SetMinSize(_ROOT_MIN_SIZE)
         if config.get_bool('maximized'):
