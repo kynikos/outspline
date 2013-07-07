@@ -19,6 +19,7 @@
 import organism.plugins.wxscheduler_api as wxscheduler_api
 
 import occur_once
+import occur_every_interval
 import occur_every_day
 import except_once
 
@@ -26,6 +27,9 @@ import except_once
 def handle_init_rules(kwargs):
     wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
                                  occur_once._RULE_DESC, 'occur_once')
+
+    wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
+                        occur_every_interval._RULE_DESC, 'occur_every_interval')
 
     wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
                                  occur_every_day._RULE_DESC, 'occur_every_day')
@@ -50,6 +54,8 @@ def handle_choose_rule(kwargs):
 
     if name == 'occur_once':
         ruleobj = occur_once.Rule(parent, filename, id_, rulev)
+    elif name == 'occur_every_interval':
+        ruleobj = occur_every_interval.Rule(parent, filename, id_, rulev)
     elif name == 'occur_every_day':
         ruleobj = occur_every_day.Rule(parent, filename, id_, rulev)
     elif name == 'except_once':
@@ -68,6 +74,8 @@ def handle_apply_rule(kwargs):
     # this event
     if name == 'occur_once':
         object_.apply_rule(filename, id_)
+    elif name == 'occur_every_interval':
+        object_.apply_rule(filename, id_)
     elif name == 'occur_every_day':
         object_.apply_rule(filename, id_)
     elif name == 'except_once':
@@ -83,6 +91,8 @@ def handle_insert_rule(kwargs):
 
     if name == 'occur_once':
         occur_once.Rule.insert_rule(filename, id_, rule, rulev)
+    elif name == 'occur_every_interval':
+        occur_every_interval.Rule.insert_rule(filename, id_, rule, rulev)
     elif name == 'occur_every_day':
         occur_every_day.Rule.insert_rule(filename, id_, rule, rulev)
     elif name == 'except_once':

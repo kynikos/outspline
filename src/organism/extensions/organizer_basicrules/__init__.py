@@ -19,7 +19,7 @@
 import organism.extensions.organizer_api as organizer_api
 import organism.extensions.organizer_timer_api as organizer_timer_api
 
-import occur_once, occur_every_day, except_once
+import occur_once, occur_every_interval, occur_every_day, except_once
 
 
 def handle_get_next_item_occurrences(kwargs):
@@ -32,6 +32,9 @@ def handle_get_next_item_occurrences(kwargs):
     if rule['rule'] == occur_once._RULE_NAME:
         occur_once.get_next_item_occurrences(base_time, filename, id_, rule,
                                                                            occs)
+    elif rule['rule'] == occur_every_interval._RULE_NAME:
+        occur_every_interval.get_next_item_occurrences(base_time, filename, id_,
+                                                                     rule, occs)
     elif rule['rule'] == occur_every_day._RULE_NAME:
         occur_every_day.get_next_item_occurrences(base_time, filename, id_,
                                                                      rule, occs)
@@ -49,6 +52,9 @@ def handle_get_occurrences_range(kwargs):
 
     if rule['rule'] == occur_once._RULE_NAME:
         occur_once.get_occurrences_range(filename, id_, rule, occs)
+    elif rule['rule'] == occur_every_interval._RULE_NAME:
+        occur_every_interval.get_occurrences_range(mint, maxt, filename, id_,
+                                                                     rule, occs)
     elif rule['rule'] == occur_every_day._RULE_NAME:
         occur_every_day.get_occurrences_range(mint, maxt, filename, id_, rule,
                                                                            occs)

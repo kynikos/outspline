@@ -25,6 +25,10 @@ def create_random_occur_once_rule():
     return wxscheduler_basicrules.occur_once.Rule.create_random_rule()
 
 
+def create_random_occur_every_interval_rule():
+    return wxscheduler_basicrules.occur_every_interval.Rule.create_random_rule()
+
+
 def create_random_occur_every_day_rule():
     return wxscheduler_basicrules.occur_every_day.Rule.create_random_rule()
 
@@ -36,6 +40,11 @@ def create_random_except_once_rule():
 def simulate_create_occur_once_rule(filename, id_, rule):
     wxscheduler_basicrules.occur_once.Rule.insert_rule(filename, id_, rule,
                                                                       rule['#'])
+
+
+def simulate_create_occur_every_interval_rule(filename, id_, rule):
+    wxscheduler_basicrules.occur_every_interval.Rule.insert_rule(filename, id_,
+                                                                rule, rule['#'])
 
 
 def simulate_create_occur_every_day_rule(filename, id_, rule):
