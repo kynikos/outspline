@@ -60,6 +60,46 @@ class HourCtrl():
         return hour * 3600 + minute * 60
 
 
+class WeekDayCtrl():
+    panel = None
+    dayctrl = None
+
+    def __init__(self, parent):
+        self.panel = wx.Panel(parent)
+
+        self.dayctrl = wx.ComboBox(self.panel, value='minutes', size=(100, 21),
+                          choices=('Monday', 'Tuesday', 'Wednesday', 'Thursday',
+                          'Friday', 'Saturday', 'Sunday'), style=wx.CB_READONLY)
+
+    def set_day(self, day):
+        self.dayctrl.Select(self.dayctrl.FindString(day))
+
+    def get_main_panel(self):
+        return self.panel
+
+    def get_day(self):
+        return self.dayctrl.GetValue()
+
+    def get_relative_unix_time(self):
+        # Day 1 in Unix time was a Thursday
+        return {
+            'Thursday': 0,
+            'Friday': 86400,
+            'Saturday': 172800,
+            'Sunday': 259200,
+            'Monday': 345600,
+            'Tuesday': 432000,
+            'Wednesday': 518400,
+        }[self.get_day()]
+
+    @staticmethod
+    def _compute_widget_day(timew):
+        # Conform to strftime's %w indices
+        # Any check that 0 <= number <= 6 should be done outside of here
+        return ('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+                                                    'Friday', 'Saturday')[timew]
+
+
 class DateHourCtrl():
     panel = None
     datectrl = None
@@ -93,6 +133,53 @@ class DateHourCtrl():
         minute = self.hourctrl.get_minute()
 
         return date + hour * 3600 + minute * 60
+
+
+class WeekDayHourCtrl():
+    panel = None
+    dayctrl = None
+    hourctrl = None
+
+    def __init__(self, parent):
+        self.panel = wx.Panel(parent)
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(box)
+
+        self.dayctrl = WeekDayCtrl(self.panel)
+        box.Add(self.dayctrl.get_main_panel(), flag=wx.ALIGN_CENTER_VERTICAL)
+
+        self.hourctrl = HourCtrl(self.panel)
+        box.Add(self.hourctrl.get_main_panel(), flag=wx.ALIGN_CENTER_VERTICAL |
+                                            wx.ALIGN_RIGHT | wx.LEFT, border=12)
+
+    def set_values(self, day, hour, minute):
+        self.dayctrl.set_day(day)
+        self.hourctrl.set_values(hour, minute)
+
+    def get_main_panel(self):
+        return self.panel
+
+    def get_day(self):
+        return self.dayctrl.get_day()
+
+    def get_hour(self):
+        return self.hourctrl.get_hour()
+
+    def get_minute(self):
+        return self.hourctrl.get_minute()
+
+    def get_relative_time(self):
+        return self.hourctrl.get_relative_time()
+
+    def get_relative_unix_week_time(self):
+        rday = self.dayctrl.get_relative_unix_time()
+        rhour = self.hourctrl.get_relative_time()
+
+        return rday + rhour
+
+    @staticmethod
+    def _compute_widget_day(timew):
+        return WeekDayCtrl._compute_widget_day(timew)
 
 
 class TimeSpanCtrl():

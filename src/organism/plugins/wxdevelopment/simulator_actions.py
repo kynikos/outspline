@@ -374,7 +374,7 @@ def edit_editor_rules():
         rules = []
 
         for n in range(random.randint(0, 8)):
-            r = random.randint(0, 3)
+            r = random.randint(0, 4)
 
             if r == 0:
                 rule = \
@@ -385,6 +385,9 @@ def edit_editor_rules():
             elif r == 2:
                 rule = \
                     wxscheduler_basicrules_api.create_random_occur_every_day_rule()
+            elif r == 3:
+                rule = \
+                    wxscheduler_basicrules_api.create_random_occur_every_week_rule()
             else:
                 rule = \
                      wxscheduler_basicrules_api.create_random_except_once_rule()
@@ -402,6 +405,9 @@ def edit_editor_rules():
             elif rule['rule'] == 'occur_every_interval':
                 if rule['#'][7][0] == '1d':
                     wxscheduler_basicrules_api.simulate_create_occur_every_day_rule(
+                                                            filename, id_, rule)
+                elif rule['#'][7][0] == '1w':
+                    wxscheduler_basicrules_api.simulate_create_occur_every_week_rule(
                                                             filename, id_, rule)
                 else:
                     wxscheduler_basicrules_api.simulate_create_occur_every_interval_rule(

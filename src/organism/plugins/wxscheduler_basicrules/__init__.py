@@ -21,18 +21,22 @@ import organism.plugins.wxscheduler_api as wxscheduler_api
 import occur_once
 import occur_every_interval
 import occur_every_day
+import occur_every_week
 import except_once
 
 
 def handle_init_rules(kwargs):
     wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
-                                 occur_once._RULE_DESC, 'occur_once')
+                                            occur_once._RULE_DESC, 'occur_once')
 
     wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
                         occur_every_interval._RULE_DESC, 'occur_every_interval')
 
     wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
-                                 occur_every_day._RULE_DESC, 'occur_every_day')
+                                  occur_every_day._RULE_DESC, 'occur_every_day')
+
+    wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
+                                occur_every_week._RULE_DESC, 'occur_every_week')
 
     wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
                                  except_once._RULE_DESC, 'except_once')
@@ -70,6 +74,9 @@ def handle_edit_rule(kwargs):
         if subname == '1d':
             ruleobj = occur_every_day.Rule(parent, filename, id_, rulev)
             interface_name = 'occur_every_day'
+        elif subname == '1w':
+            ruleobj = occur_every_week.Rule(parent, filename, id_, rulev)
+            interface_name = 'occur_every_week'
         else:
             ruleobj = occur_every_interval.Rule(parent, filename, id_, rulev)
             interface_name = 'occur_every_interval'
@@ -149,6 +156,28 @@ def handle_choose_rule(kwargs):
 
         ruleobj = occur_every_day.Rule(parent, filename, id_, rulev)
 
+    elif choice == 'occur_every_week':
+        # If the chosen rule type is different from the current rule type, use
+        # the default values for initializing the gui
+        # Do not use `ruled.get('rule') == choice` as 'choice' is just the name
+        # of the interface, not necessarily corresponding to the rule name
+        if ruled.get('rule') == 'occur_every_interval':
+            rulev = ruled.get('#')
+
+            try:
+                subname = rulev[7][0]
+            except TypeError:
+                rulev = None
+            else:
+                # If subname is set to a specific value, it means it must be
+                # handled by another interface
+                if subname != '1w':
+                    rulev = None
+        else:
+            rulev = None
+
+        ruleobj = occur_every_week.Rule(parent, filename, id_, rulev)
+
     elif choice == 'except_once':
         # If the chosen rule type is different from the current rule type, use
         # the default values for initializing the gui
@@ -178,6 +207,8 @@ def handle_apply_rule(kwargs):
         object_.apply_rule(filename, id_)
     elif name == 'occur_every_day':
         object_.apply_rule(filename, id_)
+    elif name == 'occur_every_week':
+        object_.apply_rule(filename, id_)
     elif name == 'except_once':
         object_.apply_rule(filename, id_)
 
@@ -196,6 +227,8 @@ def handle_insert_rule(kwargs):
 
         if subname == '1d':
             occur_every_day.Rule.insert_rule(filename, id_, rule, rulev)
+        elif subname == '1w':
+            occur_every_week.Rule.insert_rule(filename, id_, rule, rulev)
         else:
             occur_every_interval.Rule.insert_rule(filename, id_, rule, rulev)
     # Note there will never happen an 'occur_every_day' case here, since this
