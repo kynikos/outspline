@@ -215,8 +215,8 @@ class Rule():
 
         try:
             ruled = organizer_basicrules_api.make_occur_every_interval_rule(
-                                               refmin, refmax, interval, rstart,
-                                             rend, ralarm, (endtype, alarmtype))
+                                 refmin, refmax, interval, rstart, rend, ralarm,
+                                                     (None, endtype, alarmtype))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
@@ -250,12 +250,6 @@ class Rule():
                 'ralarm': 0,
                 'endtype': 0,
                 'alarmtype': 0,
-                'intervaln': 1,
-                'intervalu': 'days',
-                'rendn': 1,
-                'rendu': 'hours',
-                'ralarmn': 0,
-                'ralarmu': 'minutes',
             })
         else:
             values = {
@@ -266,19 +260,19 @@ class Rule():
                 'rstart': rule[4],
                 'rend': rule[5] if rule[5] is not None else 3600,
                 'ralarm': rule[6] if rule[6] is not None else 0,
-                'endtype': rule[7][0],
-                'alarmtype': rule[7][1],
+                'endtype': rule[7][1],
+                'alarmtype': rule[7][2],
             }
 
-            values['intervaln'], values['intervalu'] = \
+        values['intervaln'], values['intervalu'] = \
                  widgets.TimeSpanCtrl._compute_widget_values(values['interval'])
 
-            values['rendn'], values['rendu'] = \
+        values['rendn'], values['rendu'] = \
                      widgets.TimeSpanCtrl._compute_widget_values(values['rend'])
 
-            # ralarm could be negative
-            values['ralarmn'], values['ralarmu'] = \
-                   widgets.TimeSpanCtrl._compute_widget_values(
+        # ralarm could be negative
+        values['ralarmn'], values['ralarmu'] = \
+                                    widgets.TimeSpanCtrl._compute_widget_values(
                                                      max((0, values['ralarm'])))
 
         refstart = values['refmin'] + values['rstart']
@@ -359,4 +353,4 @@ class Rule():
         refmax = refmin + rstart + max((0, rend))
 
         return organizer_basicrules_api.make_occur_every_interval_rule(refmin,
-                   refmax, interval, rstart, rend, ralarm, (endtype, alarmtype))
+             refmax, interval, rstart, rend, ralarm, (None, endtype, alarmtype))

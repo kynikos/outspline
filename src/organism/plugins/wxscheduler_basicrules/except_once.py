@@ -166,8 +166,6 @@ class Rule():
                 'end': values['start'] + 3600,
                 'inclusive': False,
                 'endtype': 0,
-                'rendn': 1,
-                'rendu': 'hours',
             })
         else:
             values = {
@@ -177,7 +175,7 @@ class Rule():
                 'endtype': rule[3][0],
             }
 
-            values['rendn'], values['rendu'] = \
+        values['rendn'], values['rendu'] = \
                                     widgets.TimeSpanCtrl._compute_widget_values(
                                                 values['end'] - values['start'])
 

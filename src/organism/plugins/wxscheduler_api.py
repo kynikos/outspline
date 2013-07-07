@@ -26,6 +26,11 @@ def display_rule(filename, id_, description, rule):
                              ].display_rule(description, rule)
 
 
+def select_rule(filename, id_, interface_name):
+    return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
+                             ].select_rule(interface_name)
+
+
 def initialize_rule(filename, id_, rule):
     return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
                              ].init_rule(rule)
@@ -48,6 +53,14 @@ def apply_rule(filename, id_, ruled, label):
 
 def bind_to_init_rules_list(handler, bind=True):
     return wxscheduler.init_rules_list_event.bind(handler, bind)
+
+
+def bind_to_create_rule(handler, bind=True):
+    return wxscheduler.create_rule_event.bind(handler, bind)
+
+
+def bind_to_edit_rule(handler, bind=True):
+    return wxscheduler.edit_rule_event.bind(handler, bind)
 
 
 def bind_to_choose_rule(handler, bind=True):

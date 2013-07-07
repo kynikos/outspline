@@ -205,10 +205,6 @@ class Rule():
                 'alarm': values['start'],
                 'endtype': 0,
                 'alarmtype': 0,
-                'rendn': 1,
-                'rendu': 'hours',
-                'ralarmn': 0,
-                'ralarmu': 'minutes',
             })
         else:
             values = {
@@ -219,11 +215,11 @@ class Rule():
                 'alarmtype': rule[3][1],
             }
 
-            values['rendn'], values['rendu'] = \
+        values['rendn'], values['rendu'] = \
                                     widgets.TimeSpanCtrl._compute_widget_values(
                                                 values['end'] - values['start'])
 
-            values['ralarmn'], values['ralarmu'] = \
+        values['ralarmn'], values['ralarmu'] = \
                                     widgets.TimeSpanCtrl._compute_widget_values(
                                               values['start'] - values['alarm'])
 

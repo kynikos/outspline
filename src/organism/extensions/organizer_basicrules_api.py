@@ -16,8 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
-from organizer_basicrules import (occur_once, occur_every_interval,
-                                                   occur_every_day, except_once)
+from organizer_basicrules import occur_once, occur_every_interval, except_once
 from organizer_basicrules.exceptions import BadRuleError
 
 
@@ -29,10 +28,6 @@ def make_occur_every_interval_rule(refmin, refmax, interval, rstart, rend,
                                                              ralarm, guiconfig):
     return occur_every_interval.make_rule(refmin, refmax, interval, rstart,
                                                         rend, ralarm, guiconfig)
-
-
-def make_occur_every_day_rule(rstart, rend, ralarm, guiconfig):
-    return occur_every_day.make_rule(rstart, rend, ralarm, guiconfig)
 
 
 def make_except_once_rule(start, end, inclusive, guiconfig):

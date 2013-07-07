@@ -134,7 +134,7 @@ class Rule():
         self.alarmchoicew.set_choice_min_width(maxw)
 
     def apply_rule(self, filename, id_):
-        rstart = self.startw.get_relative_time()
+        startrt = self.startw.get_relative_time()
         rstartH = self.startw.get_hour()
         rstartM = self.startw.get_minute()
 
@@ -152,11 +152,11 @@ class Rule():
 
             # If time is set earlier than or equal to start, interpret it as
             # referring to the following day
-            if endrt > rstart:
-                rend = endrt - rstart
+            if endrt > startrt:
+                rend = endrt - startrt
                 fend = False
             else:
-                rend = 86400 - rstart + endrt
+                rend = 86400 - startrt + endrt
                 fend = True
 
             rendn = None
@@ -185,11 +185,11 @@ class Rule():
 
             # If time is set later than start, interpret it as referring to
             # the previous day
-            if alarmrt <= rstart:
-                ralarm = rstart - alarmrt
+            if alarmrt <= startrt:
+                ralarm = startrt - alarmrt
                 palarm = False
             else:
-                ralarm = 86400 - alarmrt + rstart
+                ralarm = 86400 - alarmrt + startrt
                 palarm = True
 
             ralarmn = None
@@ -204,9 +204,27 @@ class Rule():
             ralarmH = None
             ralarmM = None
 
+        refstart = int(_time.time()) // 86400 * 86400 + startrt + _time.altzone
+
+        refs = [refstart, ]
+
+        if rend is not None:
+            refs.append(refstart + rend)
+
+        if ralarm is not None:
+            refs.append(refstart - ralarm)
+
+        refs.sort()
+
+        refmin = refs[0]
+        refmax = refs[-1]
+
+        rstart = refstart - refmin
+
         try:
-            ruled = organizer_basicrules_api.make_occur_every_day_rule(rstart,
-                                             rend, ralarm, (endtype, alarmtype))
+            ruled = organizer_basicrules_api.make_occur_every_interval_rule(
+                                 refmin, refmax, 86400, rstart, rend, ralarm,
+                                                     ('1d', endtype, alarmtype))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
@@ -233,34 +251,45 @@ class Rule():
         if not rule:
             currH = int(_time.strftime('%H', _time.localtime()))
 
-            values['rstart'] = currH * 3600 + 3600 if currH < 23 else 0
+            rrstart = currH * 3600 + 3600 if currH < 23 else 0
+
+            values['refmin'] = int(_time.time()) // 86400 * 86400 + rrstart
 
             values.update({
+                'refmax': values['refmin'] + 3600,
+                'refspan': 3600,
+                'interval': 86400,
+                'rstart': 0,
                 'rend': 3600,
                 'ralarm': 0,
                 'endtype': 0,
                 'alarmtype': 0,
-                'rendn': 1,
-                'rendu': 'hours',
-                'ralarmn': 0,
-                'ralarmu': 'minutes',
             })
         else:
             values = {
-                'rstart': rule[0],
-                'rend': rule[1] if rule[1] is not None else 3600,
-                'ralarm': rule[2] if rule[2] is not None else 0,
-                'endtype': rule[3][0],
-                'alarmtype': rule[3][1],
+                'refmin': rule[0],
+                'refmax': rule[1],
+                'refspan': rule[2],
+                'interval': rule[3],
+                'rstart': rule[4],
+                'rend': rule[5] if rule[5] is not None else 3600,
+                'ralarm': rule[6] if rule[6] is not None else 0,
+                'endtype': rule[7][1],
+                'alarmtype': rule[7][2],
             }
 
-            values['rendn'], values['rendu'] = \
+            rrstart = (values['refmin'] + values['rstart'] - _time.altzone
+                                                                       ) % 86400
+
+        values['rendn'], values['rendu'] = \
                      widgets.TimeSpanCtrl._compute_widget_values(values['rend'])
 
-            values['ralarmn'], values['ralarmu'] = \
-                   widgets.TimeSpanCtrl._compute_widget_values(values['ralarm'])
+        # ralarm could be negative
+        values['ralarmn'], values['ralarmu'] = \
+                                    widgets.TimeSpanCtrl._compute_widget_values(
+                                                     max((0, values['ralarm'])))
 
-        rrend = values['rstart'] + values['rend']
+        rrend = rrstart + values['rend']
         values['fend'] = False
 
         # End time could be set after 23:59 of the start day
@@ -268,7 +297,7 @@ class Rule():
             rrend = rrend % 86400
             values['fend'] = True
 
-        rralarm = values['rstart'] - values['ralarm']
+        rralarm = rrstart - values['ralarm']
         values['palarm'] = False
 
         # Alarm time could be set before 00:00 of the start day
@@ -277,8 +306,8 @@ class Rule():
             values['palarm'] = True
 
         values.update({
-            'rstartH': values['rstart'] // 3600,
-            'rstartM': values['rstart'] % 3600 // 60,
+            'rstartH': rrstart // 3600,
+            'rstartM': rrstart % 3600 // 60,
             'rendH': rrend // 3600,
             'rendM': rrend % 3600 // 60,
             'ralarmH': rralarm // 3600,
@@ -313,7 +342,7 @@ class Rule():
 
     @staticmethod
     def create_random_rule():
-        rstart = random.randint(0, 1440) * 60
+        refmin = int((random.gauss(_time.time(), 15000)) // 60 * 60)
 
         endtype = random.randint(0, 2)
 
@@ -329,5 +358,12 @@ class Rule():
         else:
             ralarm = random.randint(0, 360) * 60
 
-        return organizer_basicrules_api.make_occur_every_day_rule(rstart, rend,
-                                                   ralarm, (endtype, alarmtype))
+        # Since this function only creates positive ralarm values, rstart will
+        # always be equal to ralarm or 0
+        # Note that None is always less than any integer
+        rstart = max((0, ralarm))
+
+        refmax = refmin + rstart + max((0, rend))
+
+        return organizer_basicrules_api.make_occur_every_interval_rule(refmin,
+             refmax, 86400, rstart, rend, ralarm, ('1d', endtype, alarmtype))

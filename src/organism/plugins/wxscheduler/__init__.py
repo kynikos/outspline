@@ -26,6 +26,8 @@ import organism.interfaces.wxgui_api as wxgui_api
 
 init_rules_list_event = Event()
 insert_rule_event = Event()
+create_rule_event = Event()
+edit_rule_event = Event()
 choose_rule_event = Event()
 check_maker_event = Event()
 
@@ -84,6 +86,8 @@ class Scheduler():
         wxgui_api.bind_to_close_editor(self.handle_close)
 
         init_rules_list_event.signal(filename=self.filename, id_=self.id_)
+
+        self.choice.SetSelection(0)
 
     def handle_apply(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_ \
@@ -197,12 +201,8 @@ class Scheduler():
         self.mrules = {}
         self.mmode = 'append'
 
-        self.choice.SetSelection(0)
-
-        choose_rule_event.signal(filename=self.filename, id_=self.id_,
-                                 parent=self.rmaker,
-                                 rule=self.choice.GetClientData(0),
-                                 ruled=self.mrules)
+        create_rule_event.signal(filename=self.filename, id_=self.id_,
+                                                             parent=self.rmaker)
 
         self.rmaker.Show()
         self.resize_rpanel()
@@ -215,15 +215,8 @@ class Scheduler():
             self.mrules = self.rules[index]
             self.mmode = index
 
-            for i in range(self.choice.GetCount()):
-                if self.choice.GetClientData(i) == self.mrules['rule']:
-                    self.choice.SetSelection(i)
-                    break
-
-            choose_rule_event.signal(filename=self.filename, id_=self.id_,
-                                     parent=self.rmaker,
-                                     rule=self.mrules['rule'],
-                                     ruled=self.mrules)
+            edit_rule_event.signal(filename=self.filename, id_=self.id_,
+                                          parent=self.rmaker, ruled=self.mrules)
 
             self.rmaker.Show()
             self.resize_rpanel()
@@ -304,15 +297,20 @@ class Scheduler():
 
     def display_rule(self, description, rule):
         self.choice.Append(description, clientData=rule)
-        self.choice.SetSelection(0)
+
+    def select_rule(self, interface_name):
+        for i in range(self.choice.GetCount()):
+            if self.choice.GetClientData(i) == interface_name:
+                self.choice.SetSelection(i)
+                break
 
     def init_rule(self, rule):
         self.rmaker_ref = rule
 
     def choose_rule(self, event):
         choose_rule_event.signal(filename=self.filename, id_=self.id_,
-                                 parent=self.rmaker,
-                                 rule=event.GetClientData(), ruled=self.mrules)
+                               parent=self.rmaker, choice=event.GetClientData(),
+                                                              ruled=self.mrules)
 
     def change_rule(self, window):
         if self.mpanel:
