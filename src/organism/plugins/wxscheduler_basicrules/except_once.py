@@ -17,6 +17,7 @@
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
 import time as _time
+import datetime as _datetime
 import random
 import wx
 
@@ -179,20 +180,20 @@ class Rule():
                                     widgets.TimeSpanCtrl._compute_widget_values(
                                                 values['end'] - values['start'])
 
-        localstart = _time.localtime(values['start'])
-        localend = _time.localtime(values['end'])
+        localstart = _datetime.datetime.fromtimestamp(values['start'])
+        localend = _datetime.datetime.fromtimestamp(values['end'])
 
         values.update({
-            'startY': int(_time.strftime('%Y', localstart)),
-            'startm': int(_time.strftime('%m', localstart)) - 1,
-            'startd': int(_time.strftime('%d', localstart)),
-            'startH': int(_time.strftime('%H', localstart)),
-            'startM': int(_time.strftime('%M', localstart)),
-            'endY': int(_time.strftime('%Y', localend)),
-            'endm': int(_time.strftime('%m', localend)) - 1,
-            'endd': int(_time.strftime('%d', localend)),
-            'endH': int(_time.strftime('%H', localend)),
-            'endM': int(_time.strftime('%M', localend)),
+            'startY': localstart.year,
+            'startm': localstart.month - 1,
+            'startd': localstart.day,
+            'startH': localstart.hour,
+            'startM': localstart.minute,
+            'endY': localend.year,
+            'endm': localend.month - 1,
+            'endd': localend.day,
+            'endH': localend.hour,
+            'endM': localend.minute,
         })
 
         return values

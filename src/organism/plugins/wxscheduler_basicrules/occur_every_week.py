@@ -17,6 +17,7 @@
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
 import time as _time
+import datetime as _datetime
 import random
 import wx
 
@@ -252,8 +253,9 @@ class Rule():
         values = {}
 
         if not rule:
-            currw = int(_time.strftime('%w', _time.localtime()))
-            currH = int(_time.strftime('%H', _time.localtime()))
+            currdate = _datetime.datetime.now()
+            currw = currdate.weekday()
+            currH = currdate.hour
 
             rrstart = currH * 3600 + 3600 if currH < 23 else 0
 
@@ -285,8 +287,8 @@ class Rule():
             rrstart = (values['refmin'] + values['rstart'] - _time.altzone
                                                                        ) % 86400
 
-            currw = int(_time.strftime('%w', _time.localtime(values['refmin'] +
-                                                             values['rstart'])))
+            currw = _datetime.datetime.fromtimestamp(values['refmin'] +
+                                                     values['rstart']).weekday()
 
         values['rendn'], values['rendu'] = \
                      widgets.TimeSpanCtrl._compute_widget_values(values['rend'])

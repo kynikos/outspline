@@ -61,6 +61,8 @@ class HourCtrl():
 
 
 class WeekDayCtrl():
+    choices = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
+                                                           'Saturday', 'Sunday')
     panel = None
     dayctrl = None
 
@@ -68,8 +70,7 @@ class WeekDayCtrl():
         self.panel = wx.Panel(parent)
 
         self.dayctrl = wx.ComboBox(self.panel, value='minutes', size=(100, 21),
-                          choices=('Monday', 'Tuesday', 'Wednesday', 'Thursday',
-                          'Friday', 'Saturday', 'Sunday'), style=wx.CB_READONLY)
+                          choices=self.choices, style=wx.CB_READONLY)
 
     def set_day(self, day):
         self.dayctrl.Select(self.dayctrl.FindString(day))
@@ -92,12 +93,10 @@ class WeekDayCtrl():
             'Wednesday': 518400,
         }[self.get_day()]
 
-    @staticmethod
-    def _compute_widget_day(timew):
-        # Conform to strftime's %w indices
+    @classmethod
+    def _compute_widget_day(cls, timew):
         # Any check that 0 <= number <= 6 should be done outside of here
-        return ('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-                                                    'Friday', 'Saturday')[timew]
+        return cls.choices[timew]
 
 
 class DateHourCtrl():

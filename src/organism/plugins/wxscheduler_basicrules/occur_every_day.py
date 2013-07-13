@@ -17,6 +17,7 @@
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
 import time as _time
+import datetime as _datetime
 import random
 import wx
 
@@ -249,7 +250,7 @@ class Rule():
         values = {}
 
         if not rule:
-            currH = int(_time.strftime('%H', _time.localtime()))
+            currH = _datetime.datetime.now().hour
 
             rrstart = currH * 3600 + 3600 if currH < 23 else 0
 

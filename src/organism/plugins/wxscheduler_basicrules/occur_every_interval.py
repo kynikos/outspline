@@ -17,6 +17,7 @@
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
 import time as _time
+import datetime as _datetime
 import random
 import wx
 
@@ -277,26 +278,27 @@ class Rule():
 
         refstart = values['refmin'] + values['rstart']
 
-        localstart = _time.localtime(refstart)
-        localend = _time.localtime(refstart + values['rend'])
-        localalarm = _time.localtime(refstart - values['ralarm'])
+        localstart = _datetime.datetime.fromtimestamp(refstart)
+        localend = _datetime.datetime.fromtimestamp(refstart + values['rend'])
+        localalarm = _datetime.datetime.fromtimestamp(refstart - values['ralarm'
+                                                                              ])
 
         values.update({
-            'refstartY': int(_time.strftime('%Y', localstart)),
-            'refstartm': int(_time.strftime('%m', localstart)) - 1,
-            'refstartd': int(_time.strftime('%d', localstart)),
-            'refstartH': int(_time.strftime('%H', localstart)),
-            'refstartM': int(_time.strftime('%M', localstart)),
-            'refendY': int(_time.strftime('%Y', localend)),
-            'refendm': int(_time.strftime('%m', localend)) - 1,
-            'refendd': int(_time.strftime('%d', localend)),
-            'refendH': int(_time.strftime('%H', localend)),
-            'refendM': int(_time.strftime('%M', localend)),
-            'refalarmY': int(_time.strftime('%Y', localalarm)),
-            'refalarmm': int(_time.strftime('%m', localalarm)) - 1,
-            'refalarmd': int(_time.strftime('%d', localalarm)),
-            'refalarmH': int(_time.strftime('%H', localalarm)),
-            'refalarmM': int(_time.strftime('%M', localalarm)),
+            'refstartY': localstart.year,
+            'refstartm': localstart.month - 1,
+            'refstartd': localstart.day,
+            'refstartH': localstart.hour,
+            'refstartM': localstart.minute,
+            'refendY': localend.year,
+            'refendm': localend.month - 1,
+            'refendd': localend.day,
+            'refendH': localend.hour,
+            'refendM': localend.minute,
+            'refalarmY': localalarm.year,
+            'refalarmm': localalarm.month - 1,
+            'refalarmd': localalarm.day,
+            'refalarmH': localalarm.hour,
+            'refalarmM': localalarm.minute,
         })
 
         return values
