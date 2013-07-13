@@ -86,7 +86,13 @@ class TaskList():
             pass
         else:
             log.debug('Next tasklist refresh in {} seconds'.format(delay))
-            self.timer.Restart(delay * 1000)
+
+            # delay may become too big (long instead of int), limit it to 24h
+            # This has also the advantage of limiting the drift of the timer
+            try:
+                self.timer.Restart(delay * 1000)
+            except OverflowError:
+                self.timer.Restart(min(86400000, sys.maxint))
 
     def refresh(self, mint=None, dt=86400, max_=60):
         log.debug('Refresh tasklist')
