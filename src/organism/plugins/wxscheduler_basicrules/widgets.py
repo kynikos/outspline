@@ -99,6 +99,37 @@ class WeekDayCtrl():
         return cls.choices[timew]
 
 
+class MonthDayCtrl():
+    choices = ('1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th',
+               '10th', '11th', '12th', '13th', '14th', '15th', '16th', '17th',
+               '18th', '19th', '20th', '21st', '22nd', '23rd', '24th', '25th',
+               '26th', '27th', '28th', '29th', '30th', '31st')
+    panel = None
+    dayctrl = None
+
+    def __init__(self, parent):
+        self.panel = wx.Panel(parent)
+
+        self.dayctrl = wx.ComboBox(self.panel, value='1st', size=(60, 21),
+                                     choices=self.choices, style=wx.CB_READONLY)
+
+    def set_day(self, day):
+        self.dayctrl.Select(day - 1)
+
+    def get_main_panel(self):
+        return self.panel
+
+    def get_day(self):
+        return int(self.dayctrl.GetValue()[:-2])
+
+    def get_relative_time(self):
+        return self.get_day() * 86400 - 86400
+
+    @classmethod
+    def _compute_day_label(cls, day):
+        return cls.choices[day - 1]
+
+
 class DateHourCtrl():
     panel = None
     datectrl = None
@@ -181,6 +212,50 @@ class WeekDayHourCtrl():
         return WeekDayCtrl._compute_widget_day(timew)
 
 
+class MonthDayHourCtrl():
+    panel = None
+    dayctrl = None
+    hourctrl = None
+
+    def __init__(self, parent):
+        self.panel = wx.Panel(parent)
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(box)
+
+        self.dayctrl = MonthDayCtrl(self.panel)
+        box.Add(self.dayctrl.get_main_panel(), flag=wx.ALIGN_CENTER_VERTICAL)
+
+        self.hourctrl = HourCtrl(self.panel)
+        box.Add(self.hourctrl.get_main_panel(), flag=wx.ALIGN_CENTER_VERTICAL |
+                                            wx.ALIGN_RIGHT | wx.LEFT, border=12)
+
+    def set_values(self, day, hour, minute):
+        self.dayctrl.set_day(day)
+        self.hourctrl.set_values(hour, minute)
+
+    def get_main_panel(self):
+        return self.panel
+
+    def get_day(self):
+        return self.dayctrl.get_day()
+
+    def get_hour(self):
+        return self.hourctrl.get_hour()
+
+    def get_minute(self):
+        return self.hourctrl.get_minute()
+
+    def get_relative_time(self):
+        rday = self.dayctrl.get_relative_time()
+        rhour = self.hourctrl.get_relative_time()
+
+        return rday + rhour
+
+    @staticmethod
+    def _compute_day_label(day):
+        return MonthDayCtrl._compute_day_label(day)
+
+
 class TimeSpanCtrl():
     panel = None
     numberctrl = None
@@ -244,6 +319,44 @@ class TimeSpanCtrl():
                 return (adiff // 60, 'minutes')
         else:
             return (0, 'minutes')
+
+
+class MonthsCtrl():
+    # Hardcode the names since only English is supported for the moment anyway
+    mnames = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+                                                            'Oct', 'Nov', 'Dec')
+    panel = None
+    monthctrls = None
+
+    def __init__(self, parent):
+        self.panel = wx.Panel(parent)
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(box)
+
+        self.monthctrls = []
+
+        for i, month in enumerate(self.mnames):
+            self.monthctrls.append(wx.CheckBox(self.panel))
+            box.Add(self.monthctrls[i], flag=wx.ALIGN_CENTER_VERTICAL)
+
+            label = wx.StaticText(self.panel, label=month)
+            box.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT |
+                                                             wx.RIGHT, border=8)
+
+    def get_main_panel(self):
+        return self.panel
+
+    def set_months(self, months):
+        for m, ctrl in enumerate(self.monthctrls):
+            ctrl.SetValue(m + 1 in months)
+
+    def get_months(self):
+        return [m + 1 for m, ctrl in enumerate(self.monthctrls)
+                                                             if ctrl.GetValue()]
+
+    @classmethod
+    def _compute_month_name(cls, month):
+        return cls.mnames[month - 1]
 
 
 class WidgetChoiceCtrl():
