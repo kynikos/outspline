@@ -372,10 +372,9 @@ class Rule():
             ralarm = random.randint(0, 360) * 60
 
         for l in (2678400, 2592000, 2419200):
+            rstart = random.randint(0, l - 1)
             try:
-                rstart = random.randint(0, l - 1)
-            except organizer_basicrules_api.BadRuleError:
-                pass
-            else:
                 return organizer_basicrules_api.make_occur_selected_months_rule(
                              months, rstart, rend, ralarm, (endtype, alarmtype))
+            except organizer_basicrules_api.BadRuleError:
+                pass
