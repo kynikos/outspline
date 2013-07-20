@@ -355,7 +355,7 @@ class Rule():
 
     @staticmethod
     def create_random_rule():
-        months = random.sample(range(1, 13), random.randint(1, 12))
+        months = random.sample(range(1, 13), random.randint(2, 12))
 
         endtype = random.randint(0, 2)
 

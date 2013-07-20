@@ -43,7 +43,9 @@ def make_rule(months, rstart, rend, ralarm, guiconfig):
     """
     # Make sure this rule can only produce occurrences compliant with the
     # requirements defined in organizer_api.update_item_rules
-    if isinstance(months, list) and len(months) > 0 and \
+    # Note that at least 2 months must be selected, otherwise the get_*
+    # algorithms won't be able to increase the year every cycle
+    if isinstance(months, list) and len(months) > 1 and \
                                    isinstance(rstart, int) and rstart >= 0 and \
                     (rend is None or (isinstance(rend, int) and rend > 0)) and \
                                     (ralarm is None or isinstance(ralarm, int)):
@@ -108,6 +110,9 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
     month = months[date.month - 1]
 
     while True:
+        # year is increased as long as month is different from the previous
+        # cycle (more than 1 month must be selected; this is already checked in
+        # make_rule)
         if month < date.month:
             year = date.year + 1
         else:
@@ -154,6 +159,9 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
     month = months[date.month - 1]
 
     while True:
+        # year is increased as long as month is different from the previous
+        # cycle (more than 1 month must be selected; this is already checked in
+        # make_rule)
         if month < date.month:
             year = date.year + 1
         else:
