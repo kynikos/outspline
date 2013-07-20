@@ -258,8 +258,15 @@ class Rule():
 
         if not rule:
             now = _datetime.datetime.now()
-            rday = now.day
-            rhour = now.hour + 1
+
+            if now.hour == 23:
+                tomorrow = now + _datetime.timedelta(days=1)
+                rday = tomorrow.day
+                rhour = 0
+            else:
+                rday = now.day
+                rhour = now.hour + 1
+
             rrstart = rhour * 3600
             rminute = 0
 
