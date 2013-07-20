@@ -19,7 +19,10 @@
 import organism.extensions.organizer_api as organizer_api
 import organism.extensions.organizer_timer_api as organizer_timer_api
 
-import occur_once, occur_every_interval, occur_selected_months, except_once
+import occur_once
+import occur_every_interval
+import occur_selected_months
+import except_once
 
 
 def handle_get_next_item_occurrences(kwargs):
