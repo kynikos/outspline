@@ -66,12 +66,10 @@ def make_rule(months, rstart, rend, ralarm, guiconfig):
                     raise BadRuleError()
 
         nmonths = []
-        L = 0
 
-        for n, l in enumerate(limits):
-            nn = n + 1
-            if nn in months:
-                nmonths.extend([nn, ] * (nn - len(nmonths)))
+        for n in range(1, 13):
+            if n in months:
+                nmonths.extend([n, ] * (n - len(nmonths)))
         else:
             nmonths.extend([nmonths[0], ] * (12 - len(nmonths)))
 
