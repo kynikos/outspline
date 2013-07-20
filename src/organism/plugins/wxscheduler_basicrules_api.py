@@ -41,6 +41,10 @@ def create_random_occur_selected_months_rule():
     return wxscheduler_basicrules.occur_selected_months.Rule.create_random_rule()
 
 
+def create_random_occur_selected_months_inverse_rule():
+    return wxscheduler_basicrules.occur_selected_months_inverse.Rule.create_random_rule()
+
+
 def create_random_except_once_rule():
     return wxscheduler_basicrules.except_once.Rule.create_random_rule()
 
@@ -68,6 +72,11 @@ def simulate_create_occur_every_week_rule(filename, id_, rule):
 def simulate_create_occur_selected_months_rule(filename, id_, rule):
     wxscheduler_basicrules.occur_selected_months.Rule.insert_rule(filename, id_,
                                                                 rule, rule['#'])
+
+
+def simulate_create_occur_selected_months_inverse_rule(filename, id_, rule):
+    wxscheduler_basicrules.occur_selected_months_inverse.Rule.insert_rule(
+                                                 filename, id_, rule, rule['#'])
 
 
 def simulate_create_except_once_rule(filename, id_, rule):

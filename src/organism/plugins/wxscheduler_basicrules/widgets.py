@@ -104,13 +104,17 @@ class MonthDayCtrl():
                '10th', '11th', '12th', '13th', '14th', '15th', '16th', '17th',
                '18th', '19th', '20th', '21st', '22nd', '23rd', '24th', '25th',
                '26th', '27th', '28th', '29th', '30th', '31st')
+    # Defining value and size here lets derive other classes from this one more
+    # easily
+    value = '1st'
+    size = (60, 21)
     panel = None
     dayctrl = None
 
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
 
-        self.dayctrl = wx.ComboBox(self.panel, value='1st', size=(60, 21),
+        self.dayctrl = wx.ComboBox(self.panel, value=self.value, size=self.size,
                                      choices=self.choices, style=wx.CB_READONLY)
 
     def set_day(self, day):
@@ -128,6 +132,26 @@ class MonthDayCtrl():
     @classmethod
     def _compute_day_label(cls, day):
         return cls.choices[day - 1]
+
+
+class MonthInverseDayCtrl(MonthDayCtrl):
+    choices = ['last', ] + [d + ' to last' for d in ('2nd', '3rd', '4th', '5th',
+               '6th', '7th', '8th', '9th', '10th', '11th', '12th', '13th',
+               '14th', '15th', '16th', '17th', '18th', '19th', '20th', '21st',
+               '22nd', '23rd', '24th', '25th', '26th', '27th', '28th', '29th',
+               '30th', '31st')]
+    value = 'last'
+    size = (110, 21)
+
+    def get_day(self):
+        try:
+            return int(self.dayctrl.GetValue()[:-10])
+        except ValueError:
+            return 1
+
+    @classmethod
+    def _compute_day_label(cls, day):
+        return cls.choices[day - 1].replace(' ', '-')
 
 
 class DateHourCtrl():
@@ -213,6 +237,8 @@ class WeekDayHourCtrl():
 
 
 class MonthDayHourCtrl():
+    # Defining mdctrl here lets derive other classes from this one more easily
+    mdctrl = MonthDayCtrl
     panel = None
     dayctrl = None
     hourctrl = None
@@ -222,7 +248,7 @@ class MonthDayHourCtrl():
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
 
-        self.dayctrl = MonthDayCtrl(self.panel)
+        self.dayctrl = self.mdctrl(self.panel)
         box.Add(self.dayctrl.get_main_panel(), flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.hourctrl = HourCtrl(self.panel)
@@ -251,9 +277,19 @@ class MonthDayHourCtrl():
 
         return rday + rhour
 
-    @staticmethod
-    def _compute_day_label(day):
-        return MonthDayCtrl._compute_day_label(day)
+    @classmethod
+    def _compute_day_label(cls, day):
+        return cls.mdctrl._compute_day_label(day)
+
+
+class MonthInverseDayHourCtrl(MonthDayHourCtrl):
+    mdctrl = MonthInverseDayCtrl
+
+    def get_relative_time(self):
+        rday = self.dayctrl.get_relative_time()
+        rhour = self.hourctrl.get_relative_time()
+
+        return rday + 86400 - rhour
 
 
 class TimeSpanCtrl():

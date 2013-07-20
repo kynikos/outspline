@@ -18,6 +18,7 @@
 
 import time as _time
 import datetime as _datetime
+import calendar as _calendar
 import random
 import wx
 
@@ -27,7 +28,7 @@ import organism.plugins.wxscheduler_api as wxscheduler_api
 import widgets
 import msgboxes
 
-_RULE_DESC = 'Occur on the n-th day of selected months'
+_RULE_DESC = 'Occur on the n-th to last day of selected months'
 
 
 class Rule():
@@ -81,8 +82,8 @@ class Rule():
         self.slabel = wx.StaticText(self.mpanel, label='Start day:')
         box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
-        self.startw = widgets.MonthDayHourCtrl(self.mpanel)
-        self.startw.set_values(self.original_values['rstartd'],
+        self.startw = widgets.MonthInverseDayHourCtrl(self.mpanel)
+        self.startw.set_values(self.original_values['rstartid'],
                                self.original_values['rstartH'],
                                self.original_values['rstartM'])
         box.Add(self.startw.get_main_panel())
@@ -157,11 +158,11 @@ class Rule():
         smonths = self.monthsw.get_months()
 
         rstart = self.startw.get_relative_time()
-        rstartd = self.startw.get_day()
+        rstartid = self.startw.get_day()
         rstartH = self.startw.get_hour()
         rstartM = self.startw.get_minute()
 
-        startrt = rstart % 86400
+        startrt = 86400 - rstart % 86400
 
         endtype = self.endchoicew.get_selection()
 
@@ -230,12 +231,12 @@ class Rule():
             ralarmM = None
 
         try:
-            ruled = organizer_basicrules_api.make_occur_selected_months_rule(
+            ruled = organizer_basicrules_api.make_occur_selected_months_inverse_rule(
                             smonths, rstart, rend, ralarm, (endtype, alarmtype))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
-            label = self._make_label(smonths, rstartd, rstartH, rstartM, rendH,
+            label = self._make_label(smonths, rstartid, rstartH, rstartM, rendH,
                         rendM, ralarmH, ralarmM, rendn, rendu, ralarmn, ralarmu,
                                                endtype, alarmtype, fend, palarm)
             wxscheduler_api.apply_rule(filename, id_, ruled, label)
@@ -243,7 +244,7 @@ class Rule():
     @classmethod
     def insert_rule(cls, filename, id_, rule, rulev):
         values = cls._compute_values(rulev)
-        label = cls._make_label(values['smonths'], values['rstartd'],
+        label = cls._make_label(values['smonths'], values['rstartid'],
                           values['rstartH'], values['rstartM'], values['rendH'],
                           values['rendM'], values['ralarmH'], values['ralarmM'],
                                                values['rendn'], values['rendu'],
@@ -261,10 +262,12 @@ class Rule():
 
             if now.hour == 23:
                 tomorrow = now + _datetime.timedelta(days=1)
-                rday = tomorrow.day
+                lday = _calendar.monthrange(tomorrow.year, tomorrow.month)[1]
+                rday = lday - tomorrow.day + 1
                 rhour = 0
             else:
-                rday = now.day
+                lday = _calendar.monthrange(now.year, now.month)[1]
+                rday = lday - now.day + 1
                 rhour = now.hour + 1
 
             rrstart = rhour * 3600
@@ -273,7 +276,7 @@ class Rule():
             values.update({
                 'span': 3600,
                 'months': tuple(range(1, 13)),
-                'rstart': rday * 86400 + rhour * 3600,
+                'rstart': rday * 86400 - rhour * 3600,
                 'rend': 3600,
                 'ralarm': 0,
                 'endtype': 0,
@@ -290,13 +293,15 @@ class Rule():
                 'alarmtype': rule[5][1],
             }
 
-            rrday, rrstart = divmod(values['rstart'], 86400)
+            rrday, rrrstart = divmod(values['rstart'], 86400)
+            rrstart = 86400 - rrrstart
 
             rday = rrday + 1
             rhour = rrstart // 3600
             rminute = rrstart % 3600 // 60
 
-        values['smonths'] = list(set(values['months']))
+        values['smonths'] = [m - 1 if m > 1 else 12
+                                                 for m in set(values['months'])]
         values['smonths'].sort()
 
         values['rendn'], values['rendu'] = \
@@ -324,7 +329,7 @@ class Rule():
             values['palarm'] = True
 
         values.update({
-            'rstartd': rday,
+            'rstartid': rday,
             'rstartH': rhour,
             'rstartM': rminute,
             'rendH': rrend // 3600,
@@ -336,11 +341,11 @@ class Rule():
         return values
 
     @staticmethod
-    def _make_label(smonths, rstartd, rstartH, rstartM, rendH, rendM, ralarmH,
+    def _make_label(smonths, rstartid, rstartH, rstartM, rendH, rendM, ralarmH,
                                         ralarmM, rendn, rendu, ralarmn, ralarmu,
                                               endtype, alarmtype, fend, palarm):
         label = 'Occur every {} day of {} at {}:{}'.format(
-                           widgets.MonthDayHourCtrl._compute_day_label(rstartd),
+                   widgets.MonthInverseDayHourCtrl._compute_day_label(rstartid),
                             ', '.join([widgets.MonthsCtrl._compute_month_name(m)
                                                              for m in smonths]),
                                    str(rstartH).zfill(2), str(rstartM).zfill(2))
@@ -384,7 +389,7 @@ class Rule():
         for l in (2678400, 2592000, 2419200):
             rstart = random.randint(0, l - 1)
             try:
-                return organizer_basicrules_api.make_occur_selected_months_rule(
+                return organizer_basicrules_api.make_occur_selected_months_inverse_rule(
                             smonths, rstart, rend, ralarm, (endtype, alarmtype))
             except organizer_basicrules_api.BadRuleError:
                 pass
