@@ -94,14 +94,17 @@ def handle_edit_rule(kwargs):
     # function uses rule names, *not* interface names, and daily occurrences are
     # handled by 'occur_every_interval'
 
-    elif rule == 'occur_selected_months':
-        ruleobj = occur_selected_months.Rule(parent, filename, id_, rulev)
-        interface_name = 'occur_selected_months'
+    elif rule == 'occur_yearly':
+        subname = rulev[7][0]
 
-    elif rule == 'occur_selected_months_inverse':
-        ruleobj = occur_selected_months_inverse.Rule(parent, filename, id_,
+        if subname == 'sm':
+            ruleobj = occur_selected_months.Rule(parent, filename, id_, rulev)
+            interface_name = 'occur_selected_months'
+
+        elif subname == 'smi':
+            ruleobj = occur_selected_months_inverse.Rule(parent, filename, id_,
                                                                           rulev)
-        interface_name = 'occur_selected_months_inverse'
+            interface_name = 'occur_selected_months_inverse'
 
     elif rule == 'except_once':
         ruleobj = except_once.Rule(parent, filename, id_, rulev)
@@ -201,8 +204,18 @@ def handle_choose_rule(kwargs):
         # the default values for initializing the gui
         # Do not use `ruled.get('rule') == choice` as 'choice' is just the name
         # of the interface, not necessarily corresponding to the rule name
-        if ruled.get('rule') == 'occur_selected_months':
+        if ruled.get('rule') == 'occur_yearly':
             rulev = ruled.get('#')
+
+            try:
+                subname = rulev[7][0]
+            except TypeError:
+                rulev = None
+            else:
+                # If subname is set to a specific value, it means it must be
+                # handled by another interface
+                if subname != 'sm':
+                    rulev = None
         else:
             rulev = None
 
@@ -213,8 +226,18 @@ def handle_choose_rule(kwargs):
         # the default values for initializing the gui
         # Do not use `ruled.get('rule') == choice` as 'choice' is just the name
         # of the interface, not necessarily corresponding to the rule name
-        if ruled.get('rule') == 'occur_selected_months_inverse':
+        if ruled.get('rule') == 'occur_yearly':
             rulev = ruled.get('#')
+
+            try:
+                subname = rulev[7][0]
+            except TypeError:
+                rulev = None
+            else:
+                # If subname is set to a specific value, it means it must be
+                # handled by another interface
+                if subname != 'smi':
+                    rulev = None
         else:
             rulev = None
 
@@ -281,10 +304,13 @@ def handle_insert_rule(kwargs):
     # Note there will never happen an 'occur_every_day' case here, since this
     # function uses rule names, *not* interface names, and daily occurrences are
     # handled by 'occur_every_interval'
-    elif name == 'occur_selected_months':
-        occur_selected_months.Rule.insert_rule(filename, id_, rule, rulev)
-    elif name == 'occur_selected_months_inverse':
-        occur_selected_months_inverse.Rule.insert_rule(filename, id_, rule,
+    elif name == 'occur_yearly':
+        subname = rulev[7][0]
+
+        if subname == 'sm':
+            occur_selected_months.Rule.insert_rule(filename, id_, rule, rulev)
+        elif subname == 'smi':
+            occur_selected_months_inverse.Rule.insert_rule(filename, id_, rule,
                                                                           rulev)
     elif name == 'except_once':
         except_once.Rule.insert_rule(filename, id_, rule, rulev)

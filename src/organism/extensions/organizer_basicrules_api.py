@@ -17,7 +17,7 @@
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
 from organizer_basicrules import (occur_once, occur_every_interval,
-              occur_selected_months, occur_selected_months_inverse, except_once)
+                                                      occur_yearly, except_once)
 from organizer_basicrules.exceptions import BadRuleError
 
 
@@ -31,15 +31,8 @@ def make_occur_every_interval_rule(refmin, refmax, interval, rstart, rend,
                                                         rend, ralarm, guiconfig)
 
 
-def make_occur_selected_months_rule(months, rstart, rend, ralarm, guiconfig):
-    return occur_selected_months.make_rule(months, rstart, rend, ralarm,
-                                                                      guiconfig)
-
-
-def make_occur_selected_months_inverse_rule(months, rstart, rend, ralarm,
-                                                                     guiconfig):
-    return occur_selected_months_inverse.make_rule(months, rstart, rend, ralarm,
-                                                                      guiconfig)
+def make_occur_yearly_rule(occs, occsl, rend, ralarm, guiconfig):
+    return occur_yearly.make_rule(occs, occsl, rend, ralarm, guiconfig)
 
 
 def make_except_once_rule(start, end, inclusive, guiconfig):

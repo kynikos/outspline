@@ -162,6 +162,14 @@ class Rule():
         rstartH = self.startw.get_hour()
         rstartM = self.startw.get_minute()
 
+        occs = {m: {_calendar.monthrange(2001, m)[1] - rstartid + 1:
+                                       {rstartH: (rstartM, )}} for m in smonths}
+
+        if 2 in occs:
+            occsl = {30 - rstartid: {rstartH: (rstartM, )}}
+        else:
+            occsl = {}
+
         startrt = 86400 - rstart % 86400
 
         endtype = self.endchoicew.get_selection()
@@ -231,8 +239,8 @@ class Rule():
             ralarmM = None
 
         try:
-            ruled = organizer_basicrules_api.make_occur_selected_months_inverse_rule(
-                            smonths, rstart, rend, ralarm, (endtype, alarmtype))
+            ruled = organizer_basicrules_api.make_occur_yearly_rule(occs, occsl,
+                                      rend, ralarm, ('smi', endtype, alarmtype))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
@@ -275,34 +283,29 @@ class Rule():
 
             values.update({
                 'span': 3600,
-                'months': tuple(range(1, 13)),
-                'rstart': rday * 86400 - rhour * 3600,
+                'smonths': list(range(1, 13)),
                 'rend': 3600,
                 'ralarm': 0,
                 'endtype': 0,
                 'alarmtype': 0,
             })
         else:
+            occs = rule[1] + rule[2] + rule[4]
+
+            m, mr = divmod(occs[0], 1000000)
+            d, dr = divmod(mr, 10000)
+            rday = _calendar.monthrange(2001, m)[1] - d + 1
+            rhour, rminute = divmod(dr, 100)
+            rrstart = rhour * 3600 + rminute * 60
+
             values = {
                 'span': rule[0],
-                'months': rule[1],
-                'rstart': rule[2],
-                'rend': rule[3] if rule[3] is not None else 3600,
-                'ralarm': rule[4] if rule[4] is not None else 0,
-                'endtype': rule[5][0],
-                'alarmtype': rule[5][1],
+                'smonths': [v // 1000000 for v in occs],
+                'rend': rule[5] if rule[5] is not None else 3600,
+                'ralarm': rule[6] if rule[6] is not None else 0,
+                'endtype': rule[7][1],
+                'alarmtype': rule[7][2],
             }
-
-            rrday, rrrstart = divmod(values['rstart'], 86400)
-            rrstart = 86400 - rrrstart
-
-            rday = rrday + 1
-            rhour = rrstart // 3600
-            rminute = rrstart % 3600 // 60
-
-        values['smonths'] = [m - 1 if m > 1 else 12
-                                                 for m in set(values['months'])]
-        values['smonths'].sort()
 
         values['rendn'], values['rendu'] = \
                      widgets.TimeSpanCtrl._compute_widget_values(values['rend'])
@@ -370,7 +373,38 @@ class Rule():
 
     @staticmethod
     def create_random_rule():
-        smonths = random.sample(range(1, 13), random.randint(2, 12))
+        while True:
+            smonths = random.sample(range(1, 13), random.randint(1, 12))
+            siday = random.randint(0, 30)
+            shour = random.randint(0, 23)
+            sminute = random.randint(0, 59)
+
+            occs = {}
+
+            for m in smonths:
+                sday = _calendar.monthrange(2001, m)[1] - siday
+                try:
+                    _datetime.datetime(2001, m, sday, shour, sminute)
+                except ValueError:
+                    break
+                else:
+                    occs[m] = {
+                        sday: {
+                            shour: (sminute, )
+                        }
+                    }
+            else:
+                break
+
+        try:
+            occs2 = occs[2]
+        except KeyError:
+            occsl = {}
+        else:
+            for d in occs2:
+                occsl = {
+                    d + 1: occs2[d].copy()
+                }
 
         endtype = random.randint(0, 2)
 
@@ -386,10 +420,5 @@ class Rule():
         else:
             ralarm = random.randint(0, 360) * 60
 
-        for l in (2678400, 2592000, 2419200):
-            rstart = random.randint(0, l - 1)
-            try:
-                return organizer_basicrules_api.make_occur_selected_months_inverse_rule(
-                            smonths, rstart, rend, ralarm, (endtype, alarmtype))
-            except organizer_basicrules_api.BadRuleError:
-                pass
+        return organizer_basicrules_api.make_occur_yearly_rule(occs, occsl,
+                                      rend, ralarm, ('smi', endtype, alarmtype))

@@ -21,8 +21,7 @@ import organism.extensions.organizer_timer_api as organizer_timer_api
 
 import occur_once
 import occur_every_interval
-import occur_selected_months
-import occur_selected_months_inverse
+import occur_yearly
 import except_once
 
 
@@ -39,12 +38,9 @@ def handle_get_next_item_occurrences(kwargs):
     elif rule['rule'] == occur_every_interval._RULE_NAME:
         occur_every_interval.get_next_item_occurrences(base_time, filename, id_,
                                                                      rule, occs)
-    elif rule['rule'] == occur_selected_months._RULE_NAME:
-        occur_selected_months.get_next_item_occurrences(base_time, filename,
-                                                                id_, rule, occs)
-    elif rule['rule'] == occur_selected_months_inverse._RULE_NAME:
-        occur_selected_months_inverse.get_next_item_occurrences(base_time,
-                                                      filename, id_, rule, occs)
+    elif rule['rule'] == occur_yearly._RULE_NAME:
+        occur_yearly.get_next_item_occurrences(base_time, filename, id_, rule,
+                                                                           occs)
     elif rule['rule'] == except_once._RULE_NAME:
         except_once.get_next_item_occurrences(filename, id_, rule, occs)
 
@@ -62,12 +58,9 @@ def handle_get_occurrences_range(kwargs):
     elif rule['rule'] == occur_every_interval._RULE_NAME:
         occur_every_interval.get_occurrences_range(mint, maxt, filename, id_,
                                                                      rule, occs)
-    elif rule['rule'] == occur_selected_months._RULE_NAME:
-        occur_selected_months.get_occurrences_range(mint, maxt, filename, id_,
-                                                                     rule, occs)
-    elif rule['rule'] == occur_selected_months_inverse._RULE_NAME:
-        occur_selected_months_inverse.get_occurrences_range(mint, maxt,
-                                                      filename, id_, rule, occs)
+    elif rule['rule'] == occur_yearly._RULE_NAME:
+        occur_yearly.get_occurrences_range(mint, maxt, filename, id_, rule,
+                                                                           occs)
     elif rule['rule'] == except_once._RULE_NAME:
         except_once.get_occurrences_range(mint, maxt, filename, id_, rule, occs)
 
