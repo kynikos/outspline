@@ -199,29 +199,13 @@ class Rule():
             ralarmn = None
             ralarmu = None
 
-        refs = [refstart, ]
-
-        if rend is not None:
-            refs.append(refstart + rend)
-
-        if ralarm is not None:
-            refs.append(refstart - ralarm)
-
-        refs.sort()
-
-        refmin = refs[0]
-        refmax = refs[-1]
-
-        rstart = refstart - refmin
-
         try:
-            ruled = organizer_basicrules_api.make_occur_interval_rule( refmin,
-                                         refmax, interval, rstart, rend, ralarm,
-                                                     (None, endtype, alarmtype))
+            ruled = organizer_basicrules_api.make_occur_interval_rule(refstart,
+                             interval, rend, ralarm, (None, endtype, alarmtype))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
-            label = self._make_label(intervaln, intervalu, refmin, rstart, rend,
+            label = self._make_label(intervaln, intervalu, refstart, rend,
                      ralarm, endtype, alarmtype, rendn, rendu, ralarmn, ralarmu)
             wxscheduler_api.apply_rule(filename, id_, ruled, label)
 
@@ -229,10 +213,9 @@ class Rule():
     def insert_rule(cls, filename, id_, rule, rulev):
         values = cls._compute_values(rulev)
         label = cls._make_label(values['intervaln'], values['intervalu'],
-                             values['refmin'], values['rstart'], values['rend'],
-                       values['ralarm'], values['endtype'], values['alarmtype'],
-                                               values['rendn'], values['rendu'],
-                                           values['ralarmn'], values['ralarmu'])
+                           values['refstart'], values['rend'], values['ralarm'],
+                        values['endtype'], values['alarmtype'], values['rendn'],
+                          values['rendu'], values['ralarmn'], values['ralarmu'])
         wxscheduler_api.insert_rule(filename, id_, rule, label)
 
     @classmethod
@@ -264,6 +247,8 @@ class Rule():
                 'endtype': rule[7][1],
                 'alarmtype': rule[7][2],
             }
+
+        values['refstart'] = values['refmin'] + values['rstart']
 
         values['intervaln'], values['intervalu'] = \
                  widgets.TimeSpanCtrl._compute_widget_values(values['interval'])
@@ -304,11 +289,9 @@ class Rule():
         return values
 
     @staticmethod
-    def _make_label(intervaln, intervalu, refmin, rstart, rend, ralarm, endtype,
+    def _make_label(intervaln, intervalu, refstart, rend, ralarm, endtype,
                                      alarmtype, rendn, rendu, ralarmn, ralarmu):
         label = 'Occur every {} {}'.format(intervaln, intervalu)
-
-        refstart = refmin + rstart
 
         label += ', for example on {}'.format(_time.strftime(
                              '%a %d %b %Y at %H:%M', _time.localtime(refstart)))
@@ -329,7 +312,7 @@ class Rule():
 
     @staticmethod
     def create_random_rule():
-        refmin = int((random.gauss(_time.time(), 15000)) // 60 * 60)
+        refstart = int((random.gauss(_time.time(), 15000)) // 60 * 60)
 
         interval = random.randint(1, 4320) * 60
 
@@ -347,12 +330,5 @@ class Rule():
         else:
             ralarm = random.randint(0, 360) * 60
 
-        # Since this function only creates positive ralarm values, rstart will
-        # always be equal to ralarm or 0
-        # Note that None is always less than any integer
-        rstart = max((0, ralarm))
-
-        refmax = refmin + rstart + max((0, rend))
-
-        return organizer_basicrules_api.make_occur_interval_rule(refmin, refmax,
-                     interval, rstart, rend, ralarm, (None, endtype, alarmtype))
+        return organizer_basicrules_api.make_occur_interval_rule(refstart,
+                             interval, rend, ralarm, (None, endtype, alarmtype))

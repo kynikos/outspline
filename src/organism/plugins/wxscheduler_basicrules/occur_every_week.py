@@ -210,25 +210,9 @@ class Rule():
         refstart = int(_time.time()) // 604800 * 604800 + \
                        self.startw.get_relative_unix_week_time() + _time.altzone
 
-        refs = [refstart, ]
-
-        if rend is not None:
-            refs.append(refstart + rend)
-
-        if ralarm is not None:
-            refs.append(refstart - ralarm)
-
-        refs.sort()
-
-        refmin = refs[0]
-        refmax = refs[-1]
-
-        rstart = refstart - refmin
-
         try:
-            ruled = organizer_basicrules_api.make_occur_interval_rule( refmin,
-                                           refmax, 604800, rstart, rend, ralarm,
-                                                     ('1w', endtype, alarmtype))
+            ruled = organizer_basicrules_api.make_occur_interval_rule(refstart,
+                               604800, rend, ralarm, ('1w', endtype, alarmtype))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
@@ -352,7 +336,7 @@ class Rule():
 
     @staticmethod
     def create_random_rule():
-        refmin = int((random.gauss(_time.time(), 15000)) // 60 * 60)
+        refstart = int((random.gauss(_time.time(), 15000)) // 60 * 60)
 
         endtype = random.randint(0, 2)
 
@@ -368,12 +352,5 @@ class Rule():
         else:
             ralarm = random.randint(0, 360) * 60
 
-        # Since this function only creates positive ralarm values, rstart will
-        # always be equal to ralarm or 0
-        # Note that None is always less than any integer
-        rstart = max((0, ralarm))
-
-        refmax = refmin + rstart + max((0, rend))
-
-        return organizer_basicrules_api.make_occur_interval_rule(refmin, refmax,
-                       604800, rstart, rend, ralarm, ('1w', endtype, alarmtype))
+        return organizer_basicrules_api.make_occur_interval_rule(refstart,
+                               604800, rend, ralarm, ('1w', endtype, alarmtype))

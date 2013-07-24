@@ -23,41 +23,43 @@ from exceptions import BadRuleError
 _RULE_NAME = 'occur_interval'
 
 
-def make_rule(refmin, refmax, interval, rstart, rend, ralarm, guiconfig):
+def make_rule(refstart, interval, rend, ralarm, guiconfig):
     """
-    @param refmin: The low end of the reference time span: it should be either
-                   the start time or the alarm time, if set and earlier than the
-                   start time. The reference time is one real occurrence for
-                   this rule.
-    @param refmax: The high end of the reference time span: it is the start time
-                   itself or the end time, if set, or even the alarm time, if
-                   set and greater than the start and end times.
+    @param refstart: A sample occurrence Unix start time.
     @param interval: The interval in seconds between two consecutive occurrence
                      start times.
-    @param rstart: The positive difference in seconds between refmin and the
-                   reference start time.
-    @param rend: The positive difference in seconds between the reference start
-                 time and the reference end time.
-    @param ralarm: The difference in seconds between the reference start time
-                   and the reference alarm time; it is negative if the alarm is
-                   set later than the start time.
+    @param rend: The positive difference in seconds between the sample start
+                 time and the sample end time.
+    @param ralarm: The difference in seconds between the sample start time and
+                   the sample alarm time; it is negative if the alarm is set
+                   later than the start time.
     @param guiconfig: A place to store any configuration needed only by the
                       interface.
     """
     # Make sure this rule can only produce occurrences compliant with the
     # requirements defined in organizer_api.update_item_rules
-    if isinstance(refmin, int) and isinstance(refmax, int) and \
-                       refmax >= refmin >= 0 and isinstance(interval, int) and \
-                  interval > 0 and isinstance(rstart, int) and rstart >= 0 and \
+    if isinstance(refstart, int) and refstart >= 0 and \
+                                isinstance(interval, int) and interval > 0 and \
                     (rend is None or (isinstance(rend, int) and rend > 0)) and \
                                     (ralarm is None or isinstance(ralarm, int)):
+        if ralarm is None:
+            refmin = refstart
+            refmax = refstart + max((rend, 0))
+        else:
+            refmin = refstart - max((ralarm, 0))
+            refmax = refstart + max((rend, ralarm * -1, 0))
+
+        # It's ok if refspan is 0
+        refspan = refmax - refmin
+
+        rstart = refstart - refmin
+
         return {
             'rule': _RULE_NAME,
             '#': (
                 refmin,
                 refmax,
-                # It's ok if refspan is 0
-                refmax - refmin,
+                refspan,
                 interval,
                 rstart,
                 rend,

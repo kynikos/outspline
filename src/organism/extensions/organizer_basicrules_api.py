@@ -25,10 +25,8 @@ def make_occur_once_rule(start, end, alarm, guiconfig):
     return occur_once.make_rule(start, end, alarm, guiconfig)
 
 
-def make_occur_interval_rule(refmin, refmax, interval, rstart, rend, ralarm,
-                                                                     guiconfig):
-    return occur_interval.make_rule(refmin, refmax, interval, rstart, rend,
-                                                              ralarm, guiconfig)
+def make_occur_interval_rule(refstart, interval, rend, ralarm, guiconfig):
+    return occur_interval.make_rule(refstart, interval, rend, ralarm, guiconfig)
 
 
 def make_occur_yearly_rule(occs, occsl, rend, ralarm, guiconfig):
