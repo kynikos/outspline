@@ -77,7 +77,7 @@ def handle_edit_rule(kwargs):
         ruleobj = occur_once.Rule(parent, filename, id_, rulev)
         interface_name = 'occur_once'
 
-    elif rule == 'occur_every_interval':
+    elif rule == 'occur_interval':
         subname = rulev[7][0]
 
         if subname == '1d':
@@ -92,7 +92,7 @@ def handle_edit_rule(kwargs):
 
     # None there will never happen an 'occur_every_day' case here, since this
     # function uses rule names, *not* interface names, and daily occurrences are
-    # handled by 'occur_every_interval'
+    # handled by 'occur_interval'
 
     elif rule == 'occur_yearly':
         subname = rulev[7][0]
@@ -138,7 +138,7 @@ def handle_choose_rule(kwargs):
         # the default values for initializing the gui
         # Do not use `ruled.get('rule') == choice` as 'choice' is just the name
         # of the interface, not necessarily corresponding to the rule name
-        if ruled.get('rule') == 'occur_every_interval':
+        if ruled.get('rule') == 'occur_interval':
             rulev = ruled.get('#')
 
             try:
@@ -160,7 +160,7 @@ def handle_choose_rule(kwargs):
         # the default values for initializing the gui
         # Do not use `ruled.get('rule') == choice` as 'choice' is just the name
         # of the interface, not necessarily corresponding to the rule name
-        if ruled.get('rule') == 'occur_every_interval':
+        if ruled.get('rule') == 'occur_interval':
             rulev = ruled.get('#')
 
             try:
@@ -182,7 +182,7 @@ def handle_choose_rule(kwargs):
         # the default values for initializing the gui
         # Do not use `ruled.get('rule') == choice` as 'choice' is just the name
         # of the interface, not necessarily corresponding to the rule name
-        if ruled.get('rule') == 'occur_every_interval':
+        if ruled.get('rule') == 'occur_interval':
             rulev = ruled.get('#')
 
             try:
@@ -292,7 +292,7 @@ def handle_insert_rule(kwargs):
 
     if name == 'occur_once':
         occur_once.Rule.insert_rule(filename, id_, rule, rulev)
-    elif name == 'occur_every_interval':
+    elif name == 'occur_interval':
         subname = rulev[7][0]
 
         if subname == '1d':
@@ -303,7 +303,7 @@ def handle_insert_rule(kwargs):
             occur_every_interval.Rule.insert_rule(filename, id_, rule, rulev)
     # Note there will never happen an 'occur_every_day' case here, since this
     # function uses rule names, *not* interface names, and daily occurrences are
-    # handled by 'occur_every_interval'
+    # handled by 'occur_interval'
     elif name == 'occur_yearly':
         subname = rulev[7][0]
 

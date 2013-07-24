@@ -20,7 +20,7 @@ import time as _time
 
 from exceptions import BadRuleError
 
-_RULE_NAME = 'occur_every_interval'
+_RULE_NAME = 'occur_interval'
 
 
 def make_rule(refmin, refmax, interval, rstart, rend, ralarm, guiconfig):

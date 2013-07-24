@@ -223,8 +223,8 @@ class Rule():
         rstart = refstart - refmin
 
         try:
-            ruled = organizer_basicrules_api.make_occur_every_interval_rule(
-                                 refmin, refmax, 86400, rstart, rend, ralarm,
+            ruled = organizer_basicrules_api.make_occur_interval_rule( refmin,
+                                            refmax, 86400, rstart, rend, ralarm,
                                                      ('1d', endtype, alarmtype))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
@@ -366,5 +366,5 @@ class Rule():
 
         refmax = refmin + rstart + max((0, rend))
 
-        return organizer_basicrules_api.make_occur_every_interval_rule(refmin,
-             refmax, 86400, rstart, rend, ralarm, ('1d', endtype, alarmtype))
+        return organizer_basicrules_api.make_occur_interval_rule(refmin, refmax,
+                        86400, rstart, rend, ralarm, ('1d', endtype, alarmtype))

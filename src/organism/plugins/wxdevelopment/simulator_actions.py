@@ -408,7 +408,7 @@ def edit_editor_rules():
             if rule['rule'] == 'occur_once':
                 wxscheduler_basicrules_api.simulate_create_occur_once_rule(
                                                             filename, id_, rule)
-            elif rule['rule'] == 'occur_every_interval':
+            elif rule['rule'] == 'occur_interval':
                 if rule['#'][7][0] == '1d':
                     wxscheduler_basicrules_api.simulate_create_occur_every_day_rule(
                                                             filename, id_, rule)
