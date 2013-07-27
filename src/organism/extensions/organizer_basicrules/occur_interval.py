@@ -49,15 +49,12 @@ def make_rule(refstart, interval, rend, ralarm, guiconfig):
             refmin = refstart - max((ralarm, 0))
             refmax = refstart + max((rend, ralarm * -1, 0))
 
-        # It's ok if refspan is 0
         refspan = refmax - refmin
-
         rstart = refstart - refmin
 
         return {
             'rule': _RULE_NAME,
             '#': (
-                refmin,
                 refmax,
                 refspan,
                 interval,
@@ -70,25 +67,102 @@ def make_rule(refstart, interval, rend, ralarm, guiconfig):
     else:
         raise BadRuleError()
 
+"""
+* reference occurrence
+| reftime
+[] target occurrence
 
-def _compute_min_time(reftime, refmin, refmax, refspan, interval):
+--------(  *  )--------(     )--------(     )--------[  |  ]--------(     )-----
+mintime = reftime - ((reftime - refmin) % interval)
+mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+
+--------(  *  )--------(     )--------(     )-----|--[     ]--------(     )-----
+mintime = reftime - ((reftime - refmin) % interval) + interval
+mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+
+--------(     )--------(     )-----|--[     ]--------(     )--------(  *  )-----
+mintime = reftime + ((refmin - reftime) % interval)
+mintime = reftime + ((refmax - reftime) % interval) - refspan
+
+--------(     )--------[  |  ]--------(     )--------(     )--------(  *  )-----
+mintime = reftime + ((refmin - reftime) % interval) - interval
+mintime = reftime + ((refmax - reftime) % interval) - refspan
+
+--------(     )--------(     )--------[  |* ]--------(     )--------(     )-----
+mintime = refmin
+mintime = reftime - ((reftime - refmin) % interval)
+mintime = reftime + ((refmax - reftime) % interval) - refspan
+
+            *                         |
+(     (     (   ) (   ) [   ) (   ) ( | ] (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6 | 4 7   5 8   6 9   7     8     9
+(               )                     |
+      (     *         )               |
+            (               )         |
+                  (               )   |
+                        [             | ]
+                              (       |       )
+                                    ( |             )
+                                      |   (               )
+                                      |         (               )
+                                      |               (               )
+mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
+mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+
+                    |                           *
+(     [     (   ) ( | ] (   ) (   ) (   ) (   ) (   ) (   )     )     )
+0     1     2   0 3 | 1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )   |
+      [             | ]
+            (       |       )
+                  ( |             )
+                    |   (               )
+                    |         (               )
+                    |               (               )
+                    |                     (     *         )
+                    |                           (               )
+                    |                                 (               )
+mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
+mintime = reftime + ((refmax - reftime) % interval) - refspan
+
+                                    * |
+(     (     (   ) (   ) [   ) (   ) ( | ] (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6 | 4 7   5 8   6 9   7     8     9
+(               )                     |
+      (               )               |
+            (               )         |
+                  (               )   |
+                        [             | ]
+                              (     * |       )
+                                    ( |             )
+                                      |   (               )
+                                      |         (               )
+                                      |               (               )
+mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
+mintime = reftime + ((refmax - reftime) % interval) - refspan
+"""
+
+
+def _compute_min_time(reftime, refmax, refspan, interval):
+    # Always use refmax, _not_ refmin, in this algorithm, since it allows to
+    # get the right occurrence more easily
     if reftime > refmax:
         rem = (reftime - refmax) % interval
         return reftime - rem + interval - refspan
-    elif reftime < refmin:
-        rem = (refmin - reftime) % interval
-        return reftime + rem - interval
     else:
-        return refmin
+        # Don't use only refmin when refmin <= reftime <= refmax, because in
+        # case of refspan > interval (overlapping occurrences) it wouldn't
+        # always be the correct value (see the examples above)
+        rem = (refmax - reftime) % interval
+        return reftime + rem - refspan
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
-    interval = rule['#'][3]
-    mintime = _compute_min_time(mint, rule['#'][0], rule['#'][1], rule['#'][2],
-                                                                       interval)
-    start = mintime + rule['#'][4]
-    rend = rule['#'][5]
-    ralarm = rule['#'][6]
+    interval = rule['#'][2]
+    mintime = _compute_min_time(mint, rule['#'][0], rule['#'][1], interval)
+    start = mintime + rule['#'][3]
+    rend = rule['#'][4]
+    ralarm = rule['#'][5]
 
     while True:
         try:
@@ -115,12 +189,11 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
 
 
 def get_next_item_occurrences(base_time, filename, id_, rule, occs):
-    interval = rule['#'][3]
-    mintime = _compute_min_time(base_time, rule['#'][0], rule['#'][1],
-                                                         rule['#'][2], interval)
-    start = mintime + rule['#'][4]
-    rend = rule['#'][5]
-    ralarm = rule['#'][6]
+    interval = rule['#'][2]
+    mintime = _compute_min_time(base_time, rule['#'][0], rule['#'][1], interval)
+    start = mintime + rule['#'][3]
+    rend = rule['#'][4]
+    ralarm = rule['#'][5]
 
     while True:
         try:

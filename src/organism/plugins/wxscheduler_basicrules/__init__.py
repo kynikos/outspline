@@ -78,7 +78,7 @@ def handle_edit_rule(kwargs):
         interface_name = 'occur_once'
 
     elif rule == 'occur_interval':
-        subname = rulev[7][0]
+        subname = rulev[6][0]
 
         if subname == '1d':
             ruleobj = occur_every_day.Rule(parent, filename, id_, rulev)
@@ -142,7 +142,7 @@ def handle_choose_rule(kwargs):
             rulev = ruled.get('#')
 
             try:
-                subname = rulev[7][0]
+                subname = rulev[6][0]
             except TypeError:
                 rulev = None
             else:
@@ -164,7 +164,7 @@ def handle_choose_rule(kwargs):
             rulev = ruled.get('#')
 
             try:
-                subname = rulev[7][0]
+                subname = rulev[6][0]
             except TypeError:
                 rulev = None
             else:
@@ -186,7 +186,7 @@ def handle_choose_rule(kwargs):
             rulev = ruled.get('#')
 
             try:
-                subname = rulev[7][0]
+                subname = rulev[6][0]
             except TypeError:
                 rulev = None
             else:
@@ -293,7 +293,7 @@ def handle_insert_rule(kwargs):
     if name == 'occur_once':
         occur_once.Rule.insert_rule(filename, id_, rule, rulev)
     elif name == 'occur_interval':
-        subname = rulev[7][0]
+        subname = rulev[6][0]
 
         if subname == '1d':
             occur_every_day.Rule.insert_rule(filename, id_, rule, rulev)

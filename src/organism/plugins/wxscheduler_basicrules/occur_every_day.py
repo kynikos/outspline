@@ -252,16 +252,17 @@ class Rule():
             })
         else:
             values = {
-                'refmin': rule[0],
-                'refmax': rule[1],
-                'refspan': rule[2],
-                'interval': rule[3],
-                'rstart': rule[4],
-                'rend': rule[5] if rule[5] is not None else 3600,
-                'ralarm': rule[6] if rule[6] is not None else 0,
-                'endtype': rule[7][1],
-                'alarmtype': rule[7][2],
+                'refmax': rule[0],
+                'refspan': rule[1],
+                'interval': rule[2],
+                'rstart': rule[3],
+                'rend': rule[4] if rule[4] is not None else 3600,
+                'ralarm': rule[5] if rule[5] is not None else 0,
+                'endtype': rule[6][1],
+                'alarmtype': rule[6][2],
             }
+
+            values['refmin'] = values['refmax'] - values['refspan']
 
             rrstart = (values['refmin'] + values['rstart'] - _time.altzone
                                                                        ) % 86400
