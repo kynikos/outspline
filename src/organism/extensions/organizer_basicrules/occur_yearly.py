@@ -134,6 +134,8 @@ def make_rule(occs, occsl, rend, ralarm, guiconfig):
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
+    # Go back by span in order to keep into account any occurrence that still
+    # has to end
     mintime = mint - rule['#'][0]
     occs1 = rule['#'][1]
     occs2 = rule['#'][2]
@@ -201,6 +203,8 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
 
 
 def get_next_item_occurrences(base_time, filename, id_, rule, occs):
+    # Go back by span in order to keep into account any occurrence that still
+    # has to end
     mintime = base_time - rule['#'][0]
     occs1 = rule['#'][1]
     occs2 = rule['#'][2]
