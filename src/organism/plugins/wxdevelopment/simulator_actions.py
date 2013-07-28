@@ -374,7 +374,7 @@ def edit_editor_rules():
         rules = []
 
         for n in range(random.randint(0, 8)):
-            r = random.randint(0, 6)
+            r = random.randint(0, 7)
 
             if r == 0:
                 rule = \
@@ -390,8 +390,11 @@ def edit_editor_rules():
                     wxscheduler_basicrules_api.create_random_occur_every_week_rule()
             elif r == 4:
                 rule = \
-                    wxscheduler_basicrules_api.create_random_occur_selected_months_rule()
+                    wxscheduler_basicrules_api.create_random_occur_selected_weekdays_rule()
             elif r == 5:
+                rule = \
+                    wxscheduler_basicrules_api.create_random_occur_selected_months_rule()
+            elif r == 6:
                 rule = \
                     wxscheduler_basicrules_api.create_random_occur_selected_months_inverse_rule()
             else:
@@ -418,13 +421,17 @@ def edit_editor_rules():
                 else:
                     wxscheduler_basicrules_api.simulate_create_occur_every_interval_rule(
                                                             filename, id_, rule)
+            elif rule['rule'] == 'occur_regularly':
+                if rule['#'][6][0] == 'sw':
+                    wxscheduler_basicrules_api.simulate_create_occur_selected_weekdays_rule(
+                                                            filename, id_, rule)
             elif rule['rule'] == 'occur_yearly':
                 if rule['#'][7][0] == 'sm':
                     wxscheduler_basicrules_api.simulate_create_occur_selected_months_rule(
-                                                                filename, id_, rule)
+                                                            filename, id_, rule)
                 elif rule['#'][7][0] == 'smi':
                     wxscheduler_basicrules_api.simulate_create_occur_selected_months_inverse_rule(
-                                                                filename, id_, rule)
+                                                            filename, id_, rule)
             elif rule['rule'] == 'except_once':
                 wxscheduler_basicrules_api.simulate_create_except_once_rule(
                                                             filename, id_, rule)

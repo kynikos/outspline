@@ -357,38 +357,67 @@ class TimeSpanCtrl():
             return (0, 'minutes')
 
 
-class MonthsCtrl():
-    # Hardcode the names since only English is supported for the moment anyway
-    mnames = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-                                                            'Oct', 'Nov', 'Dec')
+class MultipleChoiceCtrl():
     panel = None
-    monthctrls = None
+    cbctrls = None
 
-    def __init__(self, parent):
+    def __init__(self, parent, choices):
         self.panel = wx.Panel(parent)
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
 
-        self.monthctrls = []
+        self.cbctrls = []
 
-        for i, month in enumerate(self.mnames):
-            self.monthctrls.append(wx.CheckBox(self.panel))
-            box.Add(self.monthctrls[i], flag=wx.ALIGN_CENTER_VERTICAL)
+        for i, c in enumerate(choices):
+            self.cbctrls.append(wx.CheckBox(self.panel))
+            box.Add(self.cbctrls[i], flag=wx.ALIGN_CENTER_VERTICAL)
 
-            label = wx.StaticText(self.panel, label=month)
+            label = wx.StaticText(self.panel, label=c)
             box.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT |
                                                              wx.RIGHT, border=8)
 
     def get_main_panel(self):
         return self.panel
 
+    def set_values(self, values):
+        for v, ctrl in enumerate(self.cbctrls):
+            ctrl.SetValue(v + 1 in values)
+
+    def get_values(self):
+        return [v + 1 for v, ctrl in enumerate(self.cbctrls) if ctrl.GetValue()]
+
+
+class WeekdaysCtrl(MultipleChoiceCtrl):
+    # Hardcode the names since only English is supported for the moment anyway
+    dnames = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun')
+
+    def __init__(self, parent):
+        MultipleChoiceCtrl.__init__(self, parent, self.dnames)
+
+    def set_days(self, days):
+        return self.set_values(days)
+
+    def get_days(self):
+        return self.get_values()
+
+    @classmethod
+    def _compute_day_name(cls, day):
+        return cls.dnames[day - 1]
+
+
+class MonthsCtrl(MultipleChoiceCtrl):
+    # Hardcode the names since only English is supported for the moment anyway
+    mnames = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+                                                            'Oct', 'Nov', 'Dec')
+
+    def __init__(self, parent):
+        MultipleChoiceCtrl.__init__(self, parent, self.mnames)
+
     def set_months(self, months):
-        for m, ctrl in enumerate(self.monthctrls):
-            ctrl.SetValue(m + 1 in months)
+        return self.set_values(months)
 
     def get_months(self):
-        return [m + 1 for m, ctrl in enumerate(self.monthctrls)
-                                                             if ctrl.GetValue()]
+        return self.get_values()
 
     @classmethod
     def _compute_month_name(cls, month):

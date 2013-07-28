@@ -37,6 +37,10 @@ def create_random_occur_every_week_rule():
     return wxscheduler_basicrules.occur_every_week.Rule.create_random_rule()
 
 
+def create_random_occur_selected_weekdays_rule():
+    return wxscheduler_basicrules.occur_selected_weekdays.Rule.create_random_rule()
+
+
 def create_random_occur_selected_months_rule():
     return wxscheduler_basicrules.occur_selected_months.Rule.create_random_rule()
 
@@ -67,6 +71,11 @@ def simulate_create_occur_every_day_rule(filename, id_, rule):
 def simulate_create_occur_every_week_rule(filename, id_, rule):
     wxscheduler_basicrules.occur_every_week.Rule.insert_rule(filename, id_,
                                                                 rule, rule['#'])
+
+
+def simulate_create_occur_selected_weekdays_rule(filename, id_, rule):
+    wxscheduler_basicrules.occur_selected_weekdays.Rule.insert_rule(filename,
+                                                           id_, rule, rule['#'])
 
 
 def simulate_create_occur_selected_months_rule(filename, id_, rule):

@@ -22,6 +22,7 @@ import occur_once
 import occur_every_interval
 import occur_every_day
 import occur_every_week
+import occur_selected_weekdays
 import occur_selected_months
 import occur_selected_months_inverse
 import except_once
@@ -39,6 +40,9 @@ def handle_init_rules(kwargs):
 
     wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
                                 occur_every_week._RULE_DESC, 'occur_every_week')
+
+    wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
+                  occur_selected_weekdays._RULE_DESC, 'occur_selected_weekdays')
 
     wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
                       occur_selected_months._RULE_DESC, 'occur_selected_months')
@@ -89,6 +93,13 @@ def handle_edit_rule(kwargs):
         else:
             ruleobj = occur_every_interval.Rule(parent, filename, id_, rulev)
             interface_name = 'occur_every_interval'
+
+    if rule == 'occur_regularly':
+        subname = rulev[6][0]
+
+        if subname == 'sw':
+            ruleobj = occur_selected_weekdays.Rule(parent, filename, id_, rulev)
+            interface_name = 'occur_selected_weekdays'
 
     # None there will never happen an 'occur_every_day' case here, since this
     # function uses rule names, *not* interface names, and daily occurrences are
@@ -199,6 +210,28 @@ def handle_choose_rule(kwargs):
 
         ruleobj = occur_every_week.Rule(parent, filename, id_, rulev)
 
+    elif choice == 'occur_selected_weekdays':
+        # If the chosen rule type is different from the current rule type, use
+        # the default values for initializing the gui
+        # Do not use `ruled.get('rule') == choice` as 'choice' is just the name
+        # of the interface, not necessarily corresponding to the rule name
+        if ruled.get('rule') == 'occur_regularly':
+            rulev = ruled.get('#')
+
+            try:
+                subname = rulev[6][0]
+            except TypeError:
+                rulev = None
+            else:
+                # If subname is set to a specific value, it means it must be
+                # handled by another interface
+                if subname != 'sw':
+                    rulev = None
+        else:
+            rulev = None
+
+        ruleobj = occur_selected_weekdays.Rule(parent, filename, id_, rulev)
+
     elif choice == 'occur_selected_months':
         # If the chosen rule type is different from the current rule type, use
         # the default values for initializing the gui
@@ -275,6 +308,8 @@ def handle_apply_rule(kwargs):
         object_.apply_rule(filename, id_)
     elif name == 'occur_every_week':
         object_.apply_rule(filename, id_)
+    elif name == 'occur_selected_weekdays':
+        object_.apply_rule(filename, id_)
     elif name == 'occur_selected_months':
         object_.apply_rule(filename, id_)
     elif name == 'occur_selected_months_inverse':
@@ -304,6 +339,11 @@ def handle_insert_rule(kwargs):
     # Note there will never happen an 'occur_every_day' case here, since this
     # function uses rule names, *not* interface names, and daily occurrences are
     # handled by 'occur_interval'
+    elif name == 'occur_regularly':
+        subname = rulev[6][0]
+
+        if subname == 'sw':
+            occur_selected_weekdays.Rule.insert_rule(filename, id_, rule, rulev)
     elif name == 'occur_yearly':
         subname = rulev[7][0]
 
