@@ -28,7 +28,7 @@ import organism.plugins.wxscheduler_api as wxscheduler_api
 import widgets
 import msgboxes
 
-_RULE_DESC = 'Occur on the n-th to last day of selected months'
+_RULE_DESC = 'Occur on the n-th-to-last day of selected months'
 
 
 class Rule():

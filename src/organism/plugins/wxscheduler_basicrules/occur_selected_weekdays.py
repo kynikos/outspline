@@ -27,7 +27,7 @@ import organism.plugins.wxscheduler_api as wxscheduler_api
 import widgets
 import msgboxes
 
-_RULE_DESC = 'Occur some days of the week'
+_RULE_DESC = 'Occur on selected days of the week'
 
 
 class Rule():
