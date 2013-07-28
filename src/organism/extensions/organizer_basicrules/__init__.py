@@ -21,6 +21,7 @@ import organism.extensions.organizer_timer_api as organizer_timer_api
 
 import occur_once
 import occur_interval
+import occur_regularly
 import occur_yearly
 import except_once
 
@@ -38,6 +39,9 @@ def handle_get_next_item_occurrences(kwargs):
     elif rule['rule'] == occur_interval._RULE_NAME:
         occur_interval.get_next_item_occurrences(base_time, filename, id_, rule,
                                                                            occs)
+    elif rule['rule'] == occur_regularly._RULE_NAME:
+        occur_regularly.get_next_item_occurrences(base_time, filename, id_,
+                                                                     rule, occs)
     elif rule['rule'] == occur_yearly._RULE_NAME:
         occur_yearly.get_next_item_occurrences(base_time, filename, id_, rule,
                                                                            occs)
@@ -57,6 +61,9 @@ def handle_get_occurrences_range(kwargs):
         occur_once.get_occurrences_range(filename, id_, rule, occs)
     elif rule['rule'] == occur_interval._RULE_NAME:
         occur_interval.get_occurrences_range(mint, maxt, filename, id_, rule,
+                                                                           occs)
+    elif rule['rule'] == occur_regularly._RULE_NAME:
+        occur_regularly.get_occurrences_range(mint, maxt, filename, id_, rule,
                                                                            occs)
     elif rule['rule'] == occur_yearly._RULE_NAME:
         occur_yearly.get_occurrences_range(mint, maxt, filename, id_, rule,
