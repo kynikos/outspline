@@ -161,13 +161,6 @@ class Rule():
         rstartH = self.startw.get_hour()
         rstartM = self.startw.get_minute()
 
-        occs = {m: {rstartd: {rstartH: (rstartM, )}} for m in smonths}
-
-        try:
-            occsl = occs[2]
-        except KeyError:
-            occsl = {}
-
         startrt = rstart % 86400
 
         endtype = self.endchoicew.get_selection()
@@ -237,8 +230,8 @@ class Rule():
             ralarmM = None
 
         try:
-            ruled = organizer_basicrules_api.make_occur_yearly_rule(occs, occsl,
-                                       rend, ralarm, ('sm', endtype, alarmtype))
+            ruled = organizer_basicrules_api.make_occur_monthly_number_direct_rule(
+                            smonths, rstart, rend, ralarm, (endtype, alarmtype))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
@@ -279,28 +272,31 @@ class Rule():
 
             values.update({
                 'span': 3600,
-                'smonths': list(range(1, 13)),
+                'smonths': range(1, 13),
                 'rend': 3600,
                 'ralarm': 0,
                 'endtype': 0,
                 'alarmtype': 0,
             })
         else:
-            occs = rule[1] + rule[2] + rule[4]
-
-            mr = occs[0] % 1000000
-            rday, dr = divmod(mr, 10000)
-            rhour, rminute = divmod(dr, 100)
-            rrstart = rhour * 3600 + rminute * 60
-
             values = {
                 'span': rule[0],
-                'smonths': [v // 1000000 for v in occs],
-                'rend': rule[5] if rule[5] is not None else 3600,
-                'ralarm': rule[6] if rule[6] is not None else 0,
-                'endtype': rule[7][1],
-                'alarmtype': rule[7][2],
+                'months': rule[1],
+                'rstart': rule[2],
+                'rend': rule[3] if rule[3] is not None else 3600,
+                'ralarm': rule[4] if rule[4] is not None else 0,
+                'endtype': rule[5][0],
+                'alarmtype': rule[5][1],
             }
+
+            values['smonths'] = list(set(values['months']))
+            values['smonths'].sort()
+
+            rrday, rrstart = divmod(values['rstart'], 86400)
+
+            rday = rrday + 1
+            rhour = rrstart // 3600
+            rminute = rrstart % 3600 // 60
 
         values['rendn'], values['rendu'] = \
                      widgets.TimeSpanCtrl._compute_widget_values(values['rend'])
@@ -368,32 +364,7 @@ class Rule():
 
     @staticmethod
     def create_random_rule():
-        while True:
-            smonths = random.sample(range(1, 13), random.randint(1, 12))
-            sday = random.randint(1, 31)
-            shour = random.randint(0, 23)
-            sminute = random.randint(0, 59)
-
-            occs = {}
-
-            for m in smonths:
-                try:
-                    _datetime.datetime(2001, m, sday, shour, sminute)
-                except ValueError:
-                    break
-                else:
-                    occs[m] = {
-                        sday: {
-                            shour: (sminute, )
-                        }
-                    }
-            else:
-                break
-
-        try:
-            occsl = occs[2]
-        except KeyError:
-            occsl = {}
+        smonths = random.sample(range(1, 13), random.randint(1, 12))
 
         endtype = random.randint(0, 2)
 
@@ -409,5 +380,12 @@ class Rule():
         else:
             ralarm = random.randint(0, 360) * 60
 
-        return organizer_basicrules_api.make_occur_yearly_rule(occs, occsl,
-                                       rend, ralarm, ('sm', endtype, alarmtype))
+        for l in (2678400, 2592000, 2419200):
+            rstart = random.randint(0, l - 1)
+            try:
+                rule = organizer_basicrules_api.make_occur_monthly_number_direct_rule(
+                            smonths, rstart, rend, ralarm, (endtype, alarmtype))
+            except organizer_basicrules_api.BadRuleError:
+                pass
+
+        return rule

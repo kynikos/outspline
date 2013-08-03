@@ -425,12 +425,11 @@ def edit_editor_rules():
                 if rule['#'][6][0] == 'sw':
                     wxscheduler_basicrules_api.simulate_create_occur_selected_weekdays_rule(
                                                             filename, id_, rule)
-            elif rule['rule'] == 'occur_yearly':
-                if rule['#'][7][0] == 'sm':
-                    wxscheduler_basicrules_api.simulate_create_occur_selected_months_rule(
+            elif rule['rule'] == 'occur_monthly_number_direct':
+                wxscheduler_basicrules_api.simulate_create_occur_selected_months_rule(
                                                             filename, id_, rule)
-                elif rule['#'][7][0] == 'smi':
-                    wxscheduler_basicrules_api.simulate_create_occur_selected_months_inverse_rule(
+            elif rule['rule'] == 'occur_monthly_number_inverse':
+                wxscheduler_basicrules_api.simulate_create_occur_selected_months_inverse_rule(
                                                             filename, id_, rule)
             elif rule['rule'] == 'except_once':
                 wxscheduler_basicrules_api.simulate_create_except_once_rule(
