@@ -211,8 +211,8 @@ class Rule():
                        self.startw.get_relative_unix_week_time() + _time.altzone
 
         try:
-            ruled = organizer_basicrules_api.make_occur_interval_rule(refstart,
-                               604800, rend, ralarm, ('1w', endtype, alarmtype))
+            ruled = organizer_basicrules_api.make_occur_regularly_single_rule(
+                     refstart, 604800, rend, ralarm, ('1w', endtype, alarmtype))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
@@ -353,5 +353,5 @@ class Rule():
         else:
             ralarm = random.randint(0, 360) * 60
 
-        return organizer_basicrules_api.make_occur_interval_rule(refstart,
-                               604800, rend, ralarm, ('1w', endtype, alarmtype))
+        return organizer_basicrules_api.make_occur_regularly_single_rule(
+                     refstart, 604800, rend, ralarm, ('1w', endtype, alarmtype))

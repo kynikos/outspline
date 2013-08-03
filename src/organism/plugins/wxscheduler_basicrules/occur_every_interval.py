@@ -200,8 +200,8 @@ class Rule():
             ralarmu = None
 
         try:
-            ruled = organizer_basicrules_api.make_occur_interval_rule(refstart,
-                             interval, rend, ralarm, (None, endtype, alarmtype))
+            ruled = organizer_basicrules_api.make_occur_regularly_single_rule(
+                   refstart, interval, rend, ralarm, (None, endtype, alarmtype))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
@@ -331,5 +331,5 @@ class Rule():
         else:
             ralarm = random.randint(0, 360) * 60
 
-        return organizer_basicrules_api.make_occur_interval_rule(refstart,
-                             interval, rend, ralarm, (None, endtype, alarmtype))
+        return organizer_basicrules_api.make_occur_regularly_single_rule(
+                   refstart, interval, rend, ralarm, (None, endtype, alarmtype))

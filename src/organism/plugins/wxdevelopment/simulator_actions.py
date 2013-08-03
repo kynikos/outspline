@@ -411,7 +411,7 @@ def edit_editor_rules():
             if rule['rule'] == 'occur_once':
                 wxscheduler_basicrules_api.simulate_create_occur_once_rule(
                                                             filename, id_, rule)
-            elif rule['rule'] == 'occur_interval':
+            elif rule['rule'] == 'occur_regularly_single':
                 if rule['#'][6][0] == '1d':
                     wxscheduler_basicrules_api.simulate_create_occur_every_day_rule(
                                                             filename, id_, rule)
@@ -421,7 +421,7 @@ def edit_editor_rules():
                 else:
                     wxscheduler_basicrules_api.simulate_create_occur_every_interval_rule(
                                                             filename, id_, rule)
-            elif rule['rule'] == 'occur_regularly':
+            elif rule['rule'] == 'occur_regularly_group':
                 if rule['#'][6][0] == 'sw':
                     wxscheduler_basicrules_api.simulate_create_occur_selected_weekdays_rule(
                                                             filename, id_, rule)

@@ -21,7 +21,7 @@ import bisect
 
 from exceptions import BadRuleError
 
-_RULE_NAME = 'occur_regularly'
+_RULE_NAME = 'occur_regularly_group'
 
 
 def make_rule(refstart, interval, rstarts, rend, ralarm, guiconfig):
@@ -90,7 +90,7 @@ def _compute_relative_max_time(reftime, refmax, interval):
         # Don't just return reftime - refmin when refmin <= reftime <= refmax,
         # because in case of refspan > interval (overlapping groups of
         # occurrences) it wouldn't always be the correct value (see the examples
-        # in occur_interval.py)
+        # in occur_regularly_single.py)
         return (refmax - reftime) % interval
 
 

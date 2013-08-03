@@ -20,13 +20,13 @@ import organism.extensions.organizer_api as organizer_api
 import organism.extensions.organizer_timer_api as organizer_timer_api
 
 import occur_once
-import occur_interval
-import occur_regularly
+import occur_regularly_single
+import occur_regularly_group
 import occur_monthly_number_direct
 import occur_monthly_number_inverse
 import occur_monthly_weekday_direct
 import occur_monthly_weekday_inverse
-import occur_yearly
+import occur_yearly_group
 import except_once
 
 
@@ -40,12 +40,12 @@ def handle_get_next_item_occurrences(kwargs):
     if rule['rule'] == occur_once._RULE_NAME:
         occur_once.get_next_item_occurrences(base_time, filename, id_, rule,
                                                                            occs)
-    elif rule['rule'] == occur_interval._RULE_NAME:
-        occur_interval.get_next_item_occurrences(base_time, filename, id_, rule,
-                                                                           occs)
-    elif rule['rule'] == occur_regularly._RULE_NAME:
-        occur_regularly.get_next_item_occurrences(base_time, filename, id_,
-                                                                     rule, occs)
+    elif rule['rule'] == occur_regularly_single._RULE_NAME:
+        occur_regularly_single.get_next_item_occurrences(base_time, filename,
+                                                                id_, rule, occs)
+    elif rule['rule'] == occur_regularly_group._RULE_NAME:
+        occur_regularly_group.get_next_item_occurrences(base_time, filename,
+                                                                id_, rule, occs)
     elif rule['rule'] == occur_monthly_number_direct._RULE_NAME:
         occur_monthly_number_direct.get_next_item_occurrences(base_time,
                                                       filename, id_, rule, occs)
@@ -58,9 +58,9 @@ def handle_get_next_item_occurrences(kwargs):
     elif rule['rule'] == occur_monthly_weekday_inverse._RULE_NAME:
         occur_monthly_weekday_inverse.get_next_item_occurrences(base_time,
                                                       filename, id_, rule, occs)
-    elif rule['rule'] == occur_yearly._RULE_NAME:
-        occur_yearly.get_next_item_occurrences(base_time, filename, id_, rule,
-                                                                           occs)
+    elif rule['rule'] == occur_yearly_group._RULE_NAME:
+        occur_yearly_group.get_next_item_occurrences(base_time, filename, id_,
+                                                                     rule, occs)
     elif rule['rule'] == except_once._RULE_NAME:
         except_once.get_next_item_occurrences(filename, id_, rule, occs)
 
@@ -75,12 +75,12 @@ def handle_get_occurrences_range(kwargs):
 
     if rule['rule'] == occur_once._RULE_NAME:
         occur_once.get_occurrences_range(filename, id_, rule, occs)
-    elif rule['rule'] == occur_interval._RULE_NAME:
-        occur_interval.get_occurrences_range(mint, maxt, filename, id_, rule,
-                                                                           occs)
-    elif rule['rule'] == occur_regularly._RULE_NAME:
-        occur_regularly.get_occurrences_range(mint, maxt, filename, id_, rule,
-                                                                           occs)
+    elif rule['rule'] == occur_regularly_single._RULE_NAME:
+        occur_regularly_single.get_occurrences_range(mint, maxt, filename, id_,
+                                                                     rule, occs)
+    elif rule['rule'] == occur_regularly_group._RULE_NAME:
+        occur_regularly_group.get_occurrences_range(mint, maxt, filename, id_,
+                                                                     rule, occs)
     elif rule['rule'] == occur_monthly_number_direct._RULE_NAME:
         occur_monthly_number_direct.get_occurrences_range(mint, maxt, filename,
                                                                 id_, rule, occs)
@@ -91,11 +91,11 @@ def handle_get_occurrences_range(kwargs):
         occur_monthly_weekday_direct.get_occurrences_range(mint, maxt, filename,
                                                                 id_, rule, occs)
     elif rule['rule'] == occur_monthly_weekday_inverse._RULE_NAME:
-        occur_monthly_weekday_inverse.get_occurrences_range(mint, maxt, filename,
-                                                                id_, rule, occs)
-    elif rule['rule'] == occur_yearly._RULE_NAME:
-        occur_yearly.get_occurrences_range(mint, maxt, filename, id_, rule,
-                                                                           occs)
+        occur_monthly_weekday_inverse.get_occurrences_range(mint, maxt,
+                                                      filename, id_, rule, occs)
+    elif rule['rule'] == occur_yearly_group._RULE_NAME:
+        occur_yearly_group.get_occurrences_range(mint, maxt, filename, id_,
+                                                                     rule, occs)
     elif rule['rule'] == except_once._RULE_NAME:
         except_once.get_occurrences_range(mint, maxt, filename, id_, rule, occs)
 

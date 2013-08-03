@@ -208,8 +208,8 @@ class Rule():
         refstart = int(_time.time()) // 86400 * 86400 + startrt + _time.altzone
 
         try:
-            ruled = organizer_basicrules_api.make_occur_interval_rule(refstart,
-                                86400, rend, ralarm, ('1d', endtype, alarmtype))
+            ruled = organizer_basicrules_api.make_occur_regularly_single_rule(
+                      refstart, 86400, rend, ralarm, ('1d', endtype, alarmtype))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
@@ -344,5 +344,5 @@ class Rule():
         else:
             ralarm = random.randint(0, 360) * 60
 
-        return organizer_basicrules_api.make_occur_interval_rule(refstart,
-                                86400, rend, ralarm, ('1d', endtype, alarmtype))
+        return organizer_basicrules_api.make_occur_regularly_single_rule(
+                      refstart, 86400, rend, ralarm, ('1d', endtype, alarmtype))

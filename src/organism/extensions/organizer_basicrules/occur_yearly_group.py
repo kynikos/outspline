@@ -23,7 +23,7 @@ import bisect
 
 from exceptions import BadRuleError
 
-_RULE_NAME = 'occur_yearly'
+_RULE_NAME = 'occur_yearly_group'
 
 
 def make_rule(occs, occsl, rend, ralarm, guiconfig):

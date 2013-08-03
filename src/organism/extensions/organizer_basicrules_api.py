@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
-from organizer_basicrules import (occur_once, occur_interval, occur_regularly,
-                      occur_monthly_number_direct, occur_monthly_number_inverse,
-                    occur_monthly_weekday_direct, occur_monthly_weekday_inverse,
-                                                      occur_yearly, except_once)
+from organizer_basicrules import (occur_once, occur_regularly_single,
+                             occur_regularly_group, occur_monthly_number_direct,
+                     occur_monthly_number_inverse, occur_monthly_weekday_direct,
+                 occur_monthly_weekday_inverse, occur_yearly_group, except_once)
 from organizer_basicrules.exceptions import BadRuleError
 
 
@@ -27,14 +27,16 @@ def make_occur_once_rule(start, end, alarm, guiconfig):
     return occur_once.make_rule(start, end, alarm, guiconfig)
 
 
-def make_occur_interval_rule(refstart, interval, rend, ralarm, guiconfig):
-    return occur_interval.make_rule(refstart, interval, rend, ralarm, guiconfig)
-
-
-def make_occur_regularly_rule(refstart, interval, rstarts, rend, ralarm,
+def make_occur_regularly_single_rule(refstart, interval, rend, ralarm,
                                                                      guiconfig):
-    return occur_regularly.make_rule(refstart, interval, rstarts, rend, ralarm,
+    return occur_regularly_single.make_rule(refstart, interval, rend, ralarm,
                                                                       guiconfig)
+
+
+def make_occur_regularly_group_rule(refstart, interval, rstarts, rend, ralarm,
+                                                                     guiconfig):
+    return occur_regularly_group.make_rule(refstart, interval, rstarts, rend,
+                                                              ralarm, guiconfig)
 
 
 def make_occur_monthly_number_direct_rule(months, rstart, rend, ralarm,
@@ -61,8 +63,8 @@ def make_occur_monthly_weekday_inverse_rule(months, weekday, number, rstart,
                                                 rstart, rend, ralarm, guiconfig)
 
 
-def make_occur_yearly_rule(occs, occsl, rend, ralarm, guiconfig):
-    return occur_yearly.make_rule(occs, occsl, rend, ralarm, guiconfig)
+def make_occur_yearly_group_rule(occs, occsl, rend, ralarm, guiconfig):
+    return occur_yearly_group.make_rule(occs, occsl, rend, ralarm, guiconfig)
 
 
 def make_except_once_rule(start, end, inclusive, guiconfig):
