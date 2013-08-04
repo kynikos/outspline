@@ -48,7 +48,7 @@ class OccurrencesRange():
     def add(self, occ):
         # Make sure this occurrence is compliant with the requirements defined
         # in organizer_api.update_item_rules
-        if occ['start'] and (not occ['old'] or occ['old'] > occ['start']):
+        if occ['start'] and (not occ['end'] or occ['end'] > occ['start']):
             return self.add_safe(occ)
         else:
             raise BadOccurrenceError()
