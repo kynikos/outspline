@@ -29,6 +29,7 @@ import occur_monthly_weekday_inverse
 import occur_yearly_single
 import occur_yearly_group
 import except_once
+import except_regularly_single
 
 
 def handle_get_next_item_occurrences(kwargs):
@@ -67,6 +68,9 @@ def handle_get_next_item_occurrences(kwargs):
                                                                      rule, occs)
     elif rule['rule'] == except_once._RULE_NAME:
         except_once.get_next_item_occurrences(filename, id_, rule, occs)
+    elif rule['rule'] == except_regularly_single._RULE_NAME:
+        except_regularly_single.get_next_item_occurrences(filename, id_, rule,
+                                                                           occs)
 
 
 def handle_get_occurrences_range(kwargs):
@@ -105,6 +109,9 @@ def handle_get_occurrences_range(kwargs):
                                                                      rule, occs)
     elif rule['rule'] == except_once._RULE_NAME:
         except_once.get_occurrences_range(mint, maxt, filename, id_, rule, occs)
+    elif rule['rule'] == except_regularly_single._RULE_NAME:
+        except_regularly_single.get_occurrences_range(mint, maxt, filename, id_,
+                                                                     rule, occs)
 
 
 def main():

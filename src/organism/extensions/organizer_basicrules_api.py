@@ -20,7 +20,7 @@ from organizer_basicrules import (occur_once, occur_regularly_single,
                              occur_regularly_group, occur_monthly_number_direct,
                      occur_monthly_number_inverse, occur_monthly_weekday_direct,
                               occur_monthly_weekday_inverse, occur_yearly_group,
-                                               occur_yearly_single, except_once)
+                      occur_yearly_single, except_once, except_regularly_single)
 from organizer_basicrules.exceptions import BadRuleError
 
 
@@ -76,3 +76,9 @@ def make_occur_yearly_group_rule(occs, occsl, rend, ralarm, guiconfig):
 
 def make_except_once_rule(start, end, inclusive, guiconfig):
     return except_once.make_rule(start, end, inclusive, guiconfig)
+
+
+def make_except_regularly_single(refstart, interval, rend, inclusive,
+                                                                     guiconfig):
+    return except_regularly_single.make_rule(refstart, interval, rend,
+                                                           inclusive, guiconfig)
