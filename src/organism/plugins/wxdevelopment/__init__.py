@@ -222,7 +222,7 @@ class MenuDev(wx.Menu):
         rules = []
 
         for n in range(random.randint(0, 8)):
-            r = random.randint(0, 7)
+            r = random.randint(0, 9)
 
             if r == 0:
                 rule = \
@@ -245,6 +245,12 @@ class MenuDev(wx.Menu):
             elif r == 6:
                 rule = \
                     wxscheduler_basicrules_api.create_random_occur_selected_months_inverse_rule()
+            elif r == 7:
+                rule = \
+                    wxscheduler_basicrules_api.create_random_occur_every_month_rule()
+            elif r == 8:
+                rule = \
+                    wxscheduler_basicrules_api.create_random_occur_every_month_inverse_rule()
             else:
                 rule = \
                      wxscheduler_basicrules_api.create_random_except_once_rule()

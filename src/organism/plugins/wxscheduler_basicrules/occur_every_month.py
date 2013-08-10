@@ -27,15 +27,13 @@ import organism.plugins.wxscheduler_api as wxscheduler_api
 import widgets
 import msgboxes
 
-_RULE_DESC = 'Occur on the n-th day of selected months'
+_RULE_DESC = 'Occur on the n-th day of every month'
 
 
 class Rule():
     original_values = None
     mpanel = None
     pbox = None
-    mlabel = None
-    monthsw = None
     slabel = None
     startw = None
     endchoicew = None
@@ -56,23 +54,11 @@ class Rule():
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.mpanel.SetSizer(self.pbox)
 
-        self._create_widgets_months()
         self._create_widgets_start()
         self._create_widgets_end()
         self._create_widgets_alarm()
 
         self._align_first_column()
-
-    def _create_widgets_months(self):
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        self.pbox.Add(box, flag=wx.BOTTOM, border=4)
-
-        self.mlabel = wx.StaticText(self.mpanel, label='Months:')
-        box.Add(self.mlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
-
-        self.monthsw = widgets.MonthsCtrl(self.mpanel)
-        self.monthsw.set_months(self.original_values['smonths'])
-        box.Add(self.monthsw.get_main_panel())
 
     def _create_widgets_start(self):
         box = wx.BoxSizer(wx.HORIZONTAL)
@@ -136,15 +122,11 @@ class Rule():
         return self.alarmw.get_main_panel()
 
     def _align_first_column(self):
-        mminw = self.mlabel.GetSizeTuple()[0]
         sminw = self.slabel.GetSizeTuple()[0]
         eminw = self.endchoicew.get_choice_width()
         aminw = self.alarmchoicew.get_choice_width()
 
-        maxw = max((mminw, sminw, eminw, aminw))
-
-        mminh = self.mlabel.GetMinHeight()
-        self.mlabel.SetMinSize((maxw, mminh))
+        maxw = max((sminw, eminw, aminw))
 
         sminh = self.slabel.GetMinHeight()
         self.slabel.SetMinSize((maxw, sminh))
@@ -154,8 +136,6 @@ class Rule():
         self.alarmchoicew.set_choice_min_width(maxw)
 
     def apply_rule(self, filename, id_):
-        smonths = self.monthsw.get_months()
-
         rstart = self.startw.get_relative_time()
         rstartd = self.startw.get_day()
         rstartH = self.startw.get_hour()
@@ -229,23 +209,25 @@ class Rule():
             ralarmH = None
             ralarmM = None
 
+        smonths = range(1, 13)
+
         try:
             ruled = organizer_basicrules_api.make_occur_monthly_number_direct_rule(
-                      smonths, rstart, rend, ralarm, (None, endtype, alarmtype))
+                      smonths, rstart, rend, ralarm, ('1m', endtype, alarmtype))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
-            label = self._make_label(smonths, rstartd, rstartH, rstartM, rendH,
-                        rendM, ralarmH, ralarmM, rendn, rendu, ralarmn, ralarmu,
+            label = self._make_label(rstartd, rstartH, rstartM, rendH, rendM,
+                               ralarmH, ralarmM, rendn, rendu, ralarmn, ralarmu,
                                                endtype, alarmtype, fend, palarm)
             wxscheduler_api.apply_rule(filename, id_, ruled, label)
 
     @classmethod
     def insert_rule(cls, filename, id_, rule, rulev):
         values = cls._compute_values(rulev)
-        label = cls._make_label(values['smonths'], values['rstartd'],
-                          values['rstartH'], values['rstartM'], values['rendH'],
-                          values['rendM'], values['ralarmH'], values['ralarmM'],
+        label = cls._make_label(values['rstartd'], values['rstartH'],
+                            values['rstartM'], values['rendH'], values['rendM'],
+                                           values['ralarmH'], values['ralarmM'],
                                                values['rendn'], values['rendu'],
                                            values['ralarmn'], values['ralarmu'],
                                          values['endtype'], values['alarmtype'],
@@ -267,7 +249,6 @@ class Rule():
 
             values.update({
                 'span': 3600,
-                'smonths': range(1, 13),
                 'rend': 3600,
                 'ralarm': 0,
                 'endtype': 0,
@@ -283,9 +264,6 @@ class Rule():
                 'endtype': rule[5][1],
                 'alarmtype': rule[5][2],
             }
-
-            values['smonths'] = list(set(values['months']))
-            values['smonths'].sort()
 
             rrday, rrstart = divmod(values['rstart'], 86400)
 
@@ -330,13 +308,10 @@ class Rule():
         return values
 
     @staticmethod
-    def _make_label(smonths, rstartd, rstartH, rstartM, rendH, rendM, ralarmH,
-                                        ralarmM, rendn, rendu, ralarmn, ralarmu,
-                                              endtype, alarmtype, fend, palarm):
-        label = 'Occur every {} day of {} at {}:{}'.format(
+    def _make_label(rstartd, rstartH, rstartM, rendH, rendM, ralarmH, ralarmM,
+              rendn, rendu, ralarmn, ralarmu, endtype, alarmtype, fend, palarm):
+        label = 'Occur on the {} day of every month at {}:{}'.format(
                            widgets.MonthDayHourCtrl._compute_day_label(rstartd),
-                            ', '.join([widgets.MonthsCtrl._compute_month_name(m)
-                                                             for m in smonths]),
                                    str(rstartH).zfill(2), str(rstartM).zfill(2))
 
         if endtype == 1:
@@ -359,7 +334,7 @@ class Rule():
 
     @staticmethod
     def create_random_rule():
-        smonths = random.sample(range(1, 13), random.randint(1, 12))
+        smonths = range(1, 13)
 
         endtype = random.randint(0, 2)
 
@@ -379,7 +354,7 @@ class Rule():
             rstart = random.randint(0, l - 1)
             try:
                 rule = organizer_basicrules_api.make_occur_monthly_number_direct_rule(
-                      smonths, rstart, rend, ralarm, (None, endtype, alarmtype))
+                      smonths, rstart, rend, ralarm, ('1m', endtype, alarmtype))
             except organizer_basicrules_api.BadRuleError:
                 pass
 

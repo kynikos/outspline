@@ -232,7 +232,7 @@ class Rule():
 
         try:
             ruled = organizer_basicrules_api.make_occur_monthly_number_inverse_rule(
-                            smonths, rstart, rend, ralarm, (endtype, alarmtype))
+                      smonths, rstart, rend, ralarm, (None, endtype, alarmtype))
         except organizer_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
@@ -258,17 +258,11 @@ class Rule():
         values = {}
 
         if not rule:
-            now = _datetime.datetime.now()
+            nh = _datetime.datetime.now() + _datetime.timedelta(hours=1)
 
-            if now.hour == 23:
-                tomorrow = now + _datetime.timedelta(days=1)
-                lday = _calendar.monthrange(tomorrow.year, tomorrow.month)[1]
-                rday = lday - tomorrow.day + 1
-                rhour = 0
-            else:
-                lday = _calendar.monthrange(now.year, now.month)[1]
-                rday = lday - now.day + 1
-                rhour = now.hour + 1
+            lday = _calendar.monthrange(nh.year, nh.month)[1]
+            rday = lday - nh.day + 1
+            rhour = nh.hour
 
             rrstart = rhour * 3600
             rminute = 0
@@ -288,8 +282,8 @@ class Rule():
                 'rstart': rule[2],
                 'rend': rule[3] if rule[3] is not None else 3600,
                 'ralarm': rule[4] if rule[4] is not None else 0,
-                'endtype': rule[5][0],
-                'alarmtype': rule[5][1],
+                'endtype': rule[5][1],
+                'alarmtype': rule[5][2],
             }
 
             values['smonths'] = list(set(values['months']))
@@ -388,7 +382,7 @@ class Rule():
             rstart = random.randint(0, l - 1)
             try:
                 rule = organizer_basicrules_api.make_occur_monthly_number_inverse_rule(
-                            smonths, rstart, rend, ralarm, (endtype, alarmtype))
+                      smonths, rstart, rend, ralarm, (None, endtype, alarmtype))
             except organizer_basicrules_api.BadRuleError:
                 pass
 
