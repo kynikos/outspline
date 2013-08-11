@@ -17,6 +17,8 @@
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
 from organizer_basicrules import (occur_once, occur_interval, occur_regularly,
+                      occur_monthly_number_direct, occur_monthly_number_inverse,
+                    occur_monthly_weekday_direct, occur_monthly_weekday_inverse,
                                                       occur_yearly, except_once)
 from organizer_basicrules.exceptions import BadRuleError
 
@@ -33,6 +35,30 @@ def make_occur_regularly_rule(refstart, interval, rstarts, rend, ralarm,
                                                                      guiconfig):
     return occur_regularly.make_rule(refstart, interval, rstarts, rend, ralarm,
                                                                       guiconfig)
+
+
+def make_occur_monthly_number_direct_rule(months, rstart, rend, ralarm,
+                                                                     guiconfig):
+    return occur_monthly_number_direct.make_rule(months, rstart, rend, ralarm,
+                                                                      guiconfig)
+
+
+def make_occur_monthly_number_inverse_rule(months, rstart, rend, ralarm,
+                                                                     guiconfig):
+    return occur_monthly_number_inverse.make_rule(months, rstart, rend, ralarm,
+                                                                      guiconfig)
+
+
+def make_occur_monthly_weekday_direct_rule(months, weekday, number, rstart,
+                                                       rend, ralarm, guiconfig):
+    return occur_monthly_weekday_direct.make_rule(months, weekday, number,
+                                                rstart, rend, ralarm, guiconfig)
+
+
+def make_occur_monthly_weekday_inverse_rule(months, weekday, number, rstart,
+                                                       rend, ralarm, guiconfig):
+    return occur_monthly_weekday_inverse.make_rule(months, weekday, number,
+                                                rstart, rend, ralarm, guiconfig)
 
 
 def make_occur_yearly_rule(occs, occsl, rend, ralarm, guiconfig):
