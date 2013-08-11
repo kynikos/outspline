@@ -374,7 +374,7 @@ def edit_editor_rules():
         rules = []
 
         for n in range(random.randint(0, 8)):
-            r = random.randint(0, 9)
+            r = random.randint(0, 13)
 
             if r == 0:
                 rule = \
@@ -399,10 +399,22 @@ def edit_editor_rules():
                     wxscheduler_basicrules_api.create_random_occur_selected_months_inverse_rule()
             elif r == 7:
                 rule = \
-                    wxscheduler_basicrules_api.create_random_occur_every_month_rule()
+                    wxscheduler_basicrules_api.create_random_occur_selected_months_weekday_rule()
             elif r == 8:
                 rule = \
+                    wxscheduler_basicrules_api.create_random_occur_selected_months_weekday_inverse_rule()
+            elif r == 9:
+                rule = \
+                    wxscheduler_basicrules_api.create_random_occur_every_month_rule()
+            elif r == 10:
+                rule = \
                     wxscheduler_basicrules_api.create_random_occur_every_month_inverse_rule()
+            elif r == 11:
+                rule = \
+                    wxscheduler_basicrules_api.create_random_occur_every_month_weekday_rule()
+            elif r == 12:
+                rule = \
+                    wxscheduler_basicrules_api.create_random_occur_every_month_weekday_inverse_rule()
             else:
                 rule = \
                      wxscheduler_basicrules_api.create_random_except_once_rule()
@@ -444,6 +456,20 @@ def edit_editor_rules():
                                                             filename, id_, rule)
                 else:
                     wxscheduler_basicrules_api.simulate_create_occur_selected_months_inverse_rule(
+                                                            filename, id_, rule)
+            elif rule['rule'] == 'occur_monthly_weekday_direct':
+                if rule['#'][7][0] == '1m':
+                    wxscheduler_basicrules_api.simulate_create_occur_every_month_weekday_rule(
+                                                            filename, id_, rule)
+                else:
+                    wxscheduler_basicrules_api.simulate_create_occur_selected_months_weekday_rule(
+                                                            filename, id_, rule)
+            elif rule['rule'] == 'occur_monthly_weekday_inverse':
+                if rule['#'][7][0] == '1m':
+                    wxscheduler_basicrules_api.simulate_create_occur_every_month_weekday_inverse_rule(
+                                                            filename, id_, rule)
+                else:
+                    wxscheduler_basicrules_api.simulate_create_occur_selected_months_weekday_inverse_rule(
                                                             filename, id_, rule)
             elif rule['rule'] == 'except_once':
                 wxscheduler_basicrules_api.simulate_create_except_once_rule(

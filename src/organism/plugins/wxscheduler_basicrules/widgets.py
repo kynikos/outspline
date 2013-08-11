@@ -98,6 +98,10 @@ class WeekDayCtrl():
         # Any check that 0 <= number <= 6 should be done outside of here
         return cls.choices[timew]
 
+    @classmethod
+    def _compute_day_label(cls, day):
+        return cls.choices.index(day)
+
 
 class MonthDayCtrl():
     choices = ('1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th',
@@ -152,6 +156,64 @@ class MonthInverseDayCtrl(MonthDayCtrl):
     @classmethod
     def _compute_day_label(cls, day):
         return cls.choices[day - 1].replace(' ', '-')
+
+
+class MonthWeekdayNumberCtrl(MonthDayCtrl):
+    choices = ('1st', '2nd', '3rd', '4th', '5th')
+
+
+class MonthInverseWeekdayNumberCtrl(MonthInverseDayCtrl):
+    choices = ['last', ] + [d + ' to last' for d in ('2nd', '3rd', '4th', '5th')
+                                                                               ]
+
+
+class MonthWeekdayCtrl():
+    panel = None
+    mwnctrl = MonthWeekdayNumberCtrl
+    numberctrl = None
+    dayctrl = None
+
+    def __init__(self, parent):
+        self.panel = wx.Panel(parent)
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(box)
+
+        self.numberctrl = self.mwnctrl(self.panel)
+        box.Add(self.numberctrl.get_main_panel(), flag=wx.ALIGN_CENTER_VERTICAL)
+
+        self.dayctrl = WeekDayCtrl(self.panel)
+        box.Add(self.dayctrl.get_main_panel(), flag=wx.ALIGN_CENTER_VERTICAL |
+                                            wx.ALIGN_RIGHT | wx.LEFT, border=12)
+
+    def set_values(self, number, day):
+        self.numberctrl.set_day(number)
+        self.dayctrl.set_day(day)
+
+    def get_main_panel(self):
+        return self.panel
+
+    def get_weekday_number(self):
+        return self.numberctrl.get_day()
+
+    def get_weekday(self):
+        return self.dayctrl.get_day()
+
+    @classmethod
+    def _compute_weekday_number_label(cls, number):
+        return cls.mwnctrl._compute_day_label(number)
+
+    @staticmethod
+    def _compute_weekday_label(day):
+        return WeekDayCtrl._compute_day_label(day)
+
+    @staticmethod
+    def _compute_widget_weekday(day):
+        return WeekDayCtrl._compute_widget_day(day)
+
+
+class MonthInverseWeekdayCtrl(MonthWeekdayCtrl):
+    mwnctrl = MonthInverseWeekdayNumberCtrl
+
 
 
 class DateHourCtrl():
@@ -290,6 +352,39 @@ class MonthInverseDayHourCtrl(MonthDayHourCtrl):
         rhour = self.hourctrl.get_relative_time()
 
         return rday + 86400 - rhour
+
+
+class MonthWeekdayHourCtrl(MonthDayHourCtrl):
+    mdctrl = MonthWeekdayCtrl
+
+    def set_values(self, number, weekday, hour, minute):
+        self.dayctrl.set_values(number, weekday)
+        self.hourctrl.set_values(hour, minute)
+
+    def get_relative_time(self):
+        return self.hourctrl.get_relative_time()
+
+    def get_weekday_number(self):
+        return self.dayctrl.get_weekday_number()
+
+    def get_weekday(self):
+        return self.dayctrl.get_weekday()
+
+    @classmethod
+    def _compute_weekday_number_label(cls, number):
+        return cls.mdctrl._compute_weekday_number_label(number)
+
+    @classmethod
+    def _compute_weekday_label(cls, day):
+        return cls.mdctrl._compute_weekday_label(day)
+
+    @classmethod
+    def _compute_widget_weekday(cls, day):
+        return cls.mdctrl._compute_widget_weekday(day)
+
+
+class MonthInverseWeekdayHourCtrl(MonthWeekdayHourCtrl):
+    mdctrl = MonthInverseWeekdayCtrl
 
 
 class TimeSpanCtrl():

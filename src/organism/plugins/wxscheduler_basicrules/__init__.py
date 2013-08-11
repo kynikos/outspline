@@ -25,8 +25,12 @@ import occur_every_week
 import occur_selected_weekdays
 import occur_selected_months
 import occur_selected_months_inverse
+import occur_selected_months_weekday
+import occur_selected_months_weekday_inverse
 import occur_every_month
 import occur_every_month_inverse
+import occur_every_month_weekday
+import occur_every_month_weekday_inverse
 import except_once
 
 
@@ -54,10 +58,26 @@ def handle_init_rules(kwargs):
                                                 'occur_selected_months_inverse')
 
     wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
+                                       occur_selected_months_weekday._RULE_DESC,
+                                                'occur_selected_months_weekday')
+
+    wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
+                               occur_selected_months_weekday_inverse._RULE_DESC,
+                                        'occur_selected_months_weekday_inverse')
+
+    wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
                               occur_every_month._RULE_DESC, 'occur_every_month')
 
     wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
               occur_every_month_inverse._RULE_DESC, 'occur_every_month_inverse')
+
+    wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
+                                           occur_every_month_weekday._RULE_DESC,
+                                                    'occur_every_month_weekday')
+
+    wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
+                                   occur_every_month_weekday_inverse._RULE_DESC,
+                                            'occur_every_month_weekday_inverse')
 
     wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
                                           except_once._RULE_DESC, 'except_once')
@@ -134,6 +154,30 @@ def handle_edit_rule(kwargs):
             ruleobj = occur_selected_months_inverse.Rule(parent, filename, id_,
                                                                           rulev)
             interface_name = 'occur_selected_months_inverse'
+
+    elif rule == 'occur_monthly_weekday_direct':
+        subname = rulev[7][0]
+
+        if subname == '1m':
+            ruleobj = occur_every_month_weekday.Rule(parent, filename, id_,
+                                                                          rulev)
+            interface_name = 'occur_every_month_weekday'
+        else:
+            ruleobj = occur_selected_months_weekday.Rule(parent, filename, id_,
+                                                                          rulev)
+            interface_name = 'occur_selected_months_weekday'
+
+    elif rule == 'occur_monthly_weekday_inverse':
+        subname = rulev[7][0]
+
+        if subname == '1m':
+            ruleobj = occur_every_month_weekday_inverse.Rule(parent, filename,
+                                                                     id_, rulev)
+            interface_name = 'occur_every_month_weekday_inverse'
+        else:
+            ruleobj = occur_selected_months_weekday_inverse.Rule(parent,
+                                                           filename, id_, rulev)
+            interface_name = 'occur_selected_months_weekday_inverse'
 
     elif rule == 'except_once':
         ruleobj = except_once.Rule(parent, filename, id_, rulev)
@@ -295,6 +339,52 @@ def handle_choose_rule(kwargs):
         ruleobj = occur_selected_months_inverse.Rule(parent, filename, id_,
                                                                           rulev)
 
+    elif choice == 'occur_selected_months_weekday':
+        # If the chosen rule type is different from the current rule type, use
+        # the default values for initializing the gui
+        # Do not use `ruled.get('rule') == choice` as 'choice' is just the name
+        # of the interface, not necessarily corresponding to the rule name
+        if ruled.get('rule') == 'occur_monthly_weekday_direct':
+            rulev = ruled.get('#')
+
+            try:
+                subname = rulev[7][0]
+            except TypeError:
+                rulev = None
+            else:
+                # If subname is set to a specific value, it means it must be
+                # handled by another interface
+                if subname:
+                    rulev = None
+        else:
+            rulev = None
+
+        ruleobj = occur_selected_months_weekday.Rule(parent, filename, id_,
+                                                                          rulev)
+
+    elif choice == 'occur_selected_months_weekday_inverse':
+        # If the chosen rule type is different from the current rule type, use
+        # the default values for initializing the gui
+        # Do not use `ruled.get('rule') == choice` as 'choice' is just the name
+        # of the interface, not necessarily corresponding to the rule name
+        if ruled.get('rule') == 'occur_monthly_weekday_inverse':
+            rulev = ruled.get('#')
+
+            try:
+                subname = rulev[7][0]
+            except TypeError:
+                rulev = None
+            else:
+                # If subname is set to a specific value, it means it must be
+                # handled by another interface
+                if subname:
+                    rulev = None
+        else:
+            rulev = None
+
+        ruleobj = occur_selected_months_weekday_inverse.Rule(parent, filename,
+                                                                     id_, rulev)
+
     elif choice == 'occur_every_month':
         # If the chosen rule type is different from the current rule type, use
         # the default values for initializing the gui
@@ -339,6 +429,51 @@ def handle_choose_rule(kwargs):
 
         ruleobj = occur_every_month_inverse.Rule(parent, filename, id_, rulev)
 
+    elif choice == 'occur_every_month_weekday':
+        # If the chosen rule type is different from the current rule type, use
+        # the default values for initializing the gui
+        # Do not use `ruled.get('rule') == choice` as 'choice' is just the name
+        # of the interface, not necessarily corresponding to the rule name
+        if ruled.get('rule') == 'occur_monthly_weekday_direct':
+            rulev = ruled.get('#')
+
+            try:
+                subname = rulev[7][0]
+            except TypeError:
+                rulev = None
+            else:
+                # If subname is set to a specific value, it means it must be
+                # handled by another interface
+                if subname != '1m':
+                    rulev = None
+        else:
+            rulev = None
+
+        ruleobj = occur_every_month_weekday.Rule(parent, filename, id_, rulev)
+
+    elif choice == 'occur_every_month_weekday_inverse':
+        # If the chosen rule type is different from the current rule type, use
+        # the default values for initializing the gui
+        # Do not use `ruled.get('rule') == choice` as 'choice' is just the name
+        # of the interface, not necessarily corresponding to the rule name
+        if ruled.get('rule') == 'occur_monthly_weekday_inverse':
+            rulev = ruled.get('#')
+
+            try:
+                subname = rulev[7][0]
+            except TypeError:
+                rulev = None
+            else:
+                # If subname is set to a specific value, it means it must be
+                # handled by another interface
+                if subname != '1m':
+                    rulev = None
+        else:
+            rulev = None
+
+        ruleobj = occur_every_month_weekday_inverse.Rule(parent, filename, id_,
+                                                                          rulev)
+
     elif choice == 'except_once':
         # If the chosen rule type is different from the current rule type, use
         # the default values for initializing the gui
@@ -376,9 +511,17 @@ def handle_apply_rule(kwargs):
         object_.apply_rule(filename, id_)
     elif name == 'occur_selected_months_inverse':
         object_.apply_rule(filename, id_)
+    elif name == 'occur_selected_months_weekday':
+        object_.apply_rule(filename, id_)
+    elif name == 'occur_selected_months_weekday_inverse':
+        object_.apply_rule(filename, id_)
     elif name == 'occur_every_month':
         object_.apply_rule(filename, id_)
     elif name == 'occur_every_month_inverse':
+        object_.apply_rule(filename, id_)
+    elif name == 'occur_every_month_weekday':
+        object_.apply_rule(filename, id_)
+    elif name == 'occur_every_month_weekday_inverse':
         object_.apply_rule(filename, id_)
     elif name == 'except_once':
         object_.apply_rule(filename, id_)
@@ -426,6 +569,24 @@ def handle_insert_rule(kwargs):
         else:
             occur_selected_months_inverse.Rule.insert_rule(filename, id_, rule,
                                                                           rulev)
+    elif name == 'occur_monthly_weekday_direct':
+        subname = rulev[7][0]
+
+        if subname == '1m':
+            occur_every_month_weekday.Rule.insert_rule(filename, id_, rule,
+                                                                          rulev)
+        else:
+            occur_selected_months_weekday.Rule.insert_rule(filename, id_, rule,
+                                                                          rulev)
+    elif name == 'occur_monthly_weekday_inverse':
+        subname = rulev[7][0]
+
+        if subname == '1m':
+            occur_every_month_weekday_inverse.Rule.insert_rule(filename, id_,
+                                                                    rule, rulev)
+        else:
+            occur_selected_months_weekday_inverse.Rule.insert_rule(filename,
+                                                               id_, rule, rulev)
     elif name == 'except_once':
         except_once.Rule.insert_rule(filename, id_, rule, rulev)
 
