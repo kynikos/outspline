@@ -19,7 +19,8 @@
 from organizer_basicrules import (occur_once, occur_regularly_single,
                              occur_regularly_group, occur_monthly_number_direct,
                      occur_monthly_number_inverse, occur_monthly_weekday_direct,
-                 occur_monthly_weekday_inverse, occur_yearly_group, except_once)
+                              occur_monthly_weekday_inverse, occur_yearly_group,
+                                               occur_yearly_single, except_once)
 from organizer_basicrules.exceptions import BadRuleError
 
 
@@ -61,6 +62,12 @@ def make_occur_monthly_weekday_inverse_rule(months, weekday, number, rstart,
                                                        rend, ralarm, guiconfig):
     return occur_monthly_weekday_inverse.make_rule(months, weekday, number,
                                                 rstart, rend, ralarm, guiconfig)
+
+
+def make_occur_yearly_single_rule(interval, refyear, month, day, rstart, rend,
+                                                             ralarm, guiconfig):
+    return occur_yearly_single.make_rule(interval, refyear, month, day, rstart,
+                                                        rend, ralarm, guiconfig)
 
 
 def make_occur_yearly_group_rule(occs, occsl, rend, ralarm, guiconfig):

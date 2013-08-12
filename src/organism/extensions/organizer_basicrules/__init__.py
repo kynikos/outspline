@@ -26,6 +26,7 @@ import occur_monthly_number_direct
 import occur_monthly_number_inverse
 import occur_monthly_weekday_direct
 import occur_monthly_weekday_inverse
+import occur_yearly_single
 import occur_yearly_group
 import except_once
 
@@ -58,6 +59,9 @@ def handle_get_next_item_occurrences(kwargs):
     elif rule['rule'] == occur_monthly_weekday_inverse._RULE_NAME:
         occur_monthly_weekday_inverse.get_next_item_occurrences(base_time,
                                                       filename, id_, rule, occs)
+    elif rule['rule'] == occur_yearly_single._RULE_NAME:
+        occur_yearly_single.get_next_item_occurrences(base_time, filename, id_,
+                                                                     rule, occs)
     elif rule['rule'] == occur_yearly_group._RULE_NAME:
         occur_yearly_group.get_next_item_occurrences(base_time, filename, id_,
                                                                      rule, occs)
@@ -93,6 +97,9 @@ def handle_get_occurrences_range(kwargs):
     elif rule['rule'] == occur_monthly_weekday_inverse._RULE_NAME:
         occur_monthly_weekday_inverse.get_occurrences_range(mint, maxt,
                                                       filename, id_, rule, occs)
+    elif rule['rule'] == occur_yearly_single._RULE_NAME:
+        occur_yearly_single.get_occurrences_range(mint, maxt, filename, id_,
+                                                                     rule, occs)
     elif rule['rule'] == occur_yearly_group._RULE_NAME:
         occur_yearly_group.get_occurrences_range(mint, maxt, filename, id_,
                                                                      rule, occs)
