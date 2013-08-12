@@ -250,6 +250,28 @@ class DateHourCtrl():
 
         return date + hour * 3600 + minute * 60
 
+    def get_year(self):
+        return self.datectrl.GetValue().GetYear()
+
+    def get_month(self):
+        return self.datectrl.GetValue().GetMonth()
+
+    def get_day(self):
+        return self.datectrl.GetValue().GetDay()
+
+    def get_hour(self):
+        return self.hourctrl.get_hour()
+
+    def get_minute(self):
+        return self.hourctrl.get_minute()
+
+    @staticmethod
+    def _compute_month_label(month):
+        # Hardcode the names since only English is supported for the moment anyway
+        return ('January', 'February', 'March', 'April', 'May', 'June', 'July',
+                'August', 'September', 'October', 'November', 'December')[
+                                                                      month - 1]
+
 
 class WeekDayHourCtrl():
     panel = None
