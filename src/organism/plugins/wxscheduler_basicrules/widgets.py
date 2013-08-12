@@ -69,8 +69,8 @@ class WeekDayCtrl():
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
 
-        self.dayctrl = wx.ComboBox(self.panel, value='minutes', size=(100, 21),
-                          choices=self.choices, style=wx.CB_READONLY)
+        self.dayctrl = wx.ComboBox(self.panel, value='Monday', size=(100, 21),
+                                     choices=self.choices, style=wx.CB_READONLY)
 
     def set_day(self, day):
         self.dayctrl.Select(self.dayctrl.FindString(day))
