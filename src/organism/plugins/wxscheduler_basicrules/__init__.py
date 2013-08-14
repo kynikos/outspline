@@ -31,6 +31,7 @@ import occur_every_month
 import occur_every_month_inverse
 import occur_every_month_weekday
 import occur_every_month_weekday_inverse
+import occur_every_synodic_month
 import occur_yearly
 import except_once
 
@@ -81,6 +82,9 @@ def handle_init_rules(kwargs):
                                             'occur_every_month_weekday_inverse')
 
     wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
+              occur_every_synodic_month._RULE_DESC, 'occur_every_synodic_month')
+
+    wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
                                         occur_yearly._RULE_DESC, 'occur_yearly')
 
     wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
@@ -122,6 +126,10 @@ def handle_edit_rule(kwargs):
         elif subname == '1w':
             ruleobj = occur_every_week.Rule(parent, filename, id_, rulev)
             interface_name = 'occur_every_week'
+        elif subname == 'sy':
+            ruleobj = occur_every_synodic_month.Rule(parent, filename, id_,
+                                                                          rulev)
+            interface_name = 'occur_every_synodic_month'
         else:
             ruleobj = occur_every_interval.Rule(parent, filename, id_, rulev)
             interface_name = 'occur_every_interval'
@@ -482,6 +490,28 @@ def handle_choose_rule(kwargs):
         ruleobj = occur_every_month_weekday_inverse.Rule(parent, filename, id_,
                                                                           rulev)
 
+    elif choice == 'occur_every_synodic_month':
+        # If the chosen rule type is different from the current rule type, use
+        # the default values for initializing the gui
+        # Do not use `ruled.get('rule') == choice` as 'choice' is just the name
+        # of the interface, not necessarily corresponding to the rule name
+        if ruled.get('rule') == 'occur_regularly_single':
+            rulev = ruled.get('#')
+
+            try:
+                subname = rulev[6][0]
+            except TypeError:
+                rulev = None
+            else:
+                # If subname is set to a specific value, it means it must be
+                # handled by another interface
+                if subname != 'sy':
+                    rulev = None
+        else:
+            rulev = None
+
+        ruleobj = occur_every_synodic_month.Rule(parent, filename, id_, rulev)
+
     elif choice == 'occur_yearly':
         # If the chosen rule type is different from the current rule type, use
         # the default values for initializing the gui
@@ -543,6 +573,8 @@ def handle_apply_rule(kwargs):
         object_.apply_rule(filename, id_)
     elif name == 'occur_every_month_weekday_inverse':
         object_.apply_rule(filename, id_)
+    elif name == 'occur_every_synodic_month':
+        object_.apply_rule(filename, id_)
     elif name == 'occur_yearly':
         object_.apply_rule(filename, id_)
     elif name == 'except_once':
@@ -565,6 +597,9 @@ def handle_insert_rule(kwargs):
             occur_every_day.Rule.insert_rule(filename, id_, rule, rulev)
         elif subname == '1w':
             occur_every_week.Rule.insert_rule(filename, id_, rule, rulev)
+        elif subname == 'sy':
+            occur_every_synodic_month.Rule.insert_rule(filename, id_, rule,
+                                                                          rulev)
         else:
             occur_every_interval.Rule.insert_rule(filename, id_, rule, rulev)
     # Note there will never happen an 'occur_every_day' case here, since this

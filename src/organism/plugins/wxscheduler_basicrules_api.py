@@ -73,6 +73,10 @@ def create_random_occur_every_month_weekday_inverse_rule():
     return wxscheduler_basicrules.occur_every_month_weekday_inverse.Rule.create_random_rule()
 
 
+def create_random_occur_every_synodic_month_rule():
+    return wxscheduler_basicrules.occur_every_synodic_month.Rule.create_random_rule()
+
+
 def create_random_occur_yearly_rule():
     return wxscheduler_basicrules.occur_yearly.Rule.create_random_rule()
 
@@ -145,6 +149,11 @@ def simulate_create_occur_every_month_weekday_rule(filename, id_, rule):
 def simulate_create_occur_every_month_weekday_inverse_rule(filename, id_, rule):
     wxscheduler_basicrules.occur_every_month_weekday_inverse.Rule.insert_rule(
                                                  filename, id_, rule, rule['#'])
+
+
+def simulate_create_occur_every_synodic_month_rule(filename, id_, rule):
+    wxscheduler_basicrules.occur_every_synodic_month.Rule.insert_rule(filename,
+                                                           id_, rule, rule['#'])
 
 
 def simulate_create_occur_yearly_rule(filename, id_, rule):

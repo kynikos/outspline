@@ -374,7 +374,7 @@ def edit_editor_rules():
         rules = []
 
         for n in range(random.randint(0, 8)):
-            r = random.randint(0, 14)
+            r = random.randint(0, 15)
 
             if r == 0:
                 rule = \
@@ -417,6 +417,9 @@ def edit_editor_rules():
                     wxscheduler_basicrules_api.create_random_occur_every_month_weekday_inverse_rule()
             elif r == 13:
                 rule = \
+                    wxscheduler_basicrules_api.create_random_occur_every_synodic_month_rule()
+            elif r == 14:
+                rule = \
                     wxscheduler_basicrules_api.create_random_occur_yearly_rule()
             else:
                 rule = \
@@ -438,6 +441,9 @@ def edit_editor_rules():
                                                             filename, id_, rule)
                 elif rule['#'][6][0] == '1w':
                     wxscheduler_basicrules_api.simulate_create_occur_every_week_rule(
+                                                            filename, id_, rule)
+                elif rule['#'][6][0] == 'sy':
+                    wxscheduler_basicrules_api.simulate_create_occur_every_synodic_month_rule(
                                                             filename, id_, rule)
                 else:
                     wxscheduler_basicrules_api.simulate_create_occur_every_interval_rule(
