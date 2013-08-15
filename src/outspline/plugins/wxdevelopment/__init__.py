@@ -24,7 +24,7 @@ import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 import outspline.extensions.development_api as development_api
 import outspline.interfaces.wxgui_api as wxgui_api
-organizer_api = coreaux_api.import_extension_api('organizer')
+organism_api = coreaux_api.import_extension_api('organism')
 wxscheduler_basicrules_api = coreaux_api.import_plugin_api(
                                                        'wxscheduler_basicrules')
 
@@ -189,7 +189,7 @@ class MenuDev(wx.Menu):
                     id_ = self._populate_tree_item(mode, filename, itemid,
                                                        group, text, description)
 
-                    if organizer_api and wxscheduler_basicrules_api:
+                    if organism_api and wxscheduler_basicrules_api:
                         self._populate_tree_rules(filename, id_, group,
                                                                     description)
 
@@ -278,7 +278,7 @@ class MenuDev(wx.Menu):
 
             rules.append(rule)
 
-        organizer_api.update_item_rules(filename, id_, rules, group,
+        organism_api.update_item_rules(filename, id_, rules, group,
                                                         description=description)
 
     def _populate_tree_gui(self, mode, filename, itemid, id_, text):

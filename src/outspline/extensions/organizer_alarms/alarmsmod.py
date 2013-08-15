@@ -21,7 +21,7 @@ import sqlite3
 
 from outspline.coreaux_api import Event
 import outspline.core_api as core_api
-import outspline.extensions.organizer_timer_api as organizer_timer_api
+import outspline.extensions.organism_timer_api as organism_timer_api
 
 import queries
 
@@ -165,7 +165,7 @@ def snooze_alarms(alarmst, stime):
     # Do not search occurrences (thus restarting the timer) inside the for loop,
     # otherwise it messes up with the wx.CallAfter() that manages the activated
     # alarms in the interface
-    organizer_timer_api.search_next_occurrences()
+    organism_timer_api.search_next_occurrences()
 
 
 def dismiss_alarms(alarmst):

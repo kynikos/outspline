@@ -61,12 +61,12 @@ def compose_package_metadata(head):
 
 
 def compose_metadata():
-    meta = {'name': 'outspline-organizer',
+    meta = {'name': 'outspline-organism',
             'version': '1.0.0pb1',
             'description': 'Organizer component for Outspline.',
             'author': 'Dario Giovannetti',
             'author_email': 'dev@dariogiovannetti.net',
-            'url': 'https://github.com/kynikos/outspline-organizer',
+            'url': 'https://github.com/kynikos/outspline-organism',
             'license': 'GPLv3'}
 
     meta.update(compose_package_metadata('outspline'))

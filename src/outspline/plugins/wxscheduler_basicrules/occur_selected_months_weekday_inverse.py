@@ -22,7 +22,7 @@ import calendar as _calendar
 import random
 import wx
 
-import outspline.extensions.organizer_basicrules_api as organizer_basicrules_api
+import outspline.extensions.organism_basicrules_api as organism_basicrules_api
 import outspline.plugins.wxscheduler_api as wxscheduler_api
 
 import widgets
@@ -232,10 +232,10 @@ class Rule():
             ralarmM = None
 
         try:
-            ruled = organizer_basicrules_api.make_occur_monthly_weekday_inverse_rule(
+            ruled = organism_basicrules_api.make_occur_monthly_weekday_inverse_rule(
                                smonths, weekday, rstartin, rstart, rend, ralarm,
                                                      (None, endtype, alarmtype))
-        except organizer_basicrules_api.BadRuleError:
+        except organism_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
             label = self._make_label(smonths, rstartin, rstartA, rstartH,
@@ -387,6 +387,6 @@ class Rule():
         else:
             ralarm = random.randint(0, 360) * 60
 
-        return organizer_basicrules_api.make_occur_monthly_weekday_inverse_rule(
+        return organism_basicrules_api.make_occur_monthly_weekday_inverse_rule(
                                 smonths, weekday, inumber, rstart, rend, ralarm,
                                                      (None, endtype, alarmtype))

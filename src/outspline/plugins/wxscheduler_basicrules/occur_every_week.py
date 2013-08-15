@@ -21,7 +21,7 @@ import datetime as _datetime
 import random
 import wx
 
-import outspline.extensions.organizer_basicrules_api as organizer_basicrules_api
+import outspline.extensions.organism_basicrules_api as organism_basicrules_api
 import outspline.plugins.wxscheduler_api as wxscheduler_api
 
 import widgets
@@ -211,9 +211,9 @@ class Rule():
                        self.startw.get_relative_unix_week_time() + _time.altzone
 
         try:
-            ruled = organizer_basicrules_api.make_occur_regularly_single_rule(
+            ruled = organism_basicrules_api.make_occur_regularly_single_rule(
                      refstart, 604800, rend, ralarm, ('1w', endtype, alarmtype))
-        except organizer_basicrules_api.BadRuleError:
+        except organism_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
             label = self._make_label(rstartA, rstartH, rstartM, rendH, rendM,
@@ -353,5 +353,5 @@ class Rule():
         else:
             ralarm = random.randint(0, 360) * 60
 
-        return organizer_basicrules_api.make_occur_regularly_single_rule(
+        return organism_basicrules_api.make_occur_regularly_single_rule(
                      refstart, 604800, rend, ralarm, ('1w', endtype, alarmtype))

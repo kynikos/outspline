@@ -45,7 +45,7 @@ def make_rule(months, weekday, number, rstart, rend, ralarm, guiconfig):
                       interface.
     """
     # Make sure this rule can only produce occurrences compliant with the
-    # requirements defined in organizer_api.update_item_rules
+    # requirements defined in organism_api.update_item_rules
     if isinstance(months, list) and len(months) > 0 and \
                              isinstance(weekday, int) and -1 < weekday < 7 and \
                                     isinstance(number, int) and number > 0 and \

@@ -20,8 +20,8 @@ import sqlite3
 
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
-import outspline.extensions.organizer_api as organizer_api
-import outspline.extensions.organizer_timer_api as organizer_timer_api
+import outspline.extensions.organism_api as organism_api
+import outspline.extensions.organism_timer_api as organism_timer_api
 copypaste_api = coreaux_api.import_extension_api('copypaste')
 
 import queries
@@ -182,16 +182,14 @@ def main():
     core_api.bind_to_history_clean_groups(handle_history_clean_groups)
     core_api.bind_to_history_clean(handle_history_clean)
 
-    organizer_api.bind_to_get_alarms(handle_get_alarms)
+    organism_api.bind_to_get_alarms(handle_get_alarms)
 
-    organizer_timer_api.bind_to_get_next_occurrences(
-                                                    handle_get_next_occurrences)
-    organizer_timer_api.bind_to_activate_occurrences_range(
+    organism_timer_api.bind_to_get_next_occurrences(handle_get_next_occurrences)
+    organism_timer_api.bind_to_activate_occurrences_range(
                                               handle_activate_occurrences_range)
-    organizer_timer_api.bind_to_activate_old_occurrences(
+    organism_timer_api.bind_to_activate_old_occurrences(
                                                 handle_activate_old_occurrences)
-    organizer_timer_api.bind_to_activate_occurrences(
-                                                    handle_activate_occurrences)
+    organism_timer_api.bind_to_activate_occurrences(handle_activate_occurrences)
 
     if copypaste_api:
         copypaste_api.bind_to_copy_items(handle_copy_items)

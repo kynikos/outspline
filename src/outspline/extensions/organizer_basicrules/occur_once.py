@@ -23,7 +23,7 @@ _RULE_NAME = 'occur_once'
 
 def make_rule(start, end, alarm, guiconfig):
     # Make sure this rule can only produce occurrences compliant with the
-    # requirements defined in organizer_api.update_item_rules
+    # requirements defined in organism_api.update_item_rules
     if isinstance(start, int) and \
                    (end is None or (isinstance(end, int) and end > start)) and \
                                       (alarm is None or isinstance(alarm, int)):

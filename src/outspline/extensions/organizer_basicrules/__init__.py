@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import outspline.extensions.organizer_api as organizer_api
-import outspline.extensions.organizer_timer_api as organizer_timer_api
+import outspline.extensions.organism_api as organism_api
+import outspline.extensions.organism_timer_api as organism_timer_api
 
 import occur_once
 import occur_regularly_single
@@ -115,6 +115,6 @@ def handle_get_occurrences_range(kwargs):
 
 
 def main():
-    organizer_api.bind_to_get_occurrences_range(handle_get_occurrences_range)
-    organizer_timer_api.bind_to_get_next_item_occurrences(
+    organism_api.bind_to_get_occurrences_range(handle_get_occurrences_range)
+    organism_timer_api.bind_to_get_next_item_occurrences(
                                                handle_get_next_item_occurrences)

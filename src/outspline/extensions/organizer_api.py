@@ -18,7 +18,7 @@
 
 import outspline.core_api as core_api
 
-from organizer import queries, items
+from organism import queries, items
 
 
 def update_item_rules(filename, id_, rules, group,

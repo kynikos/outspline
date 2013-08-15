@@ -21,7 +21,7 @@ import time as _time
 
 from outspline.coreaux_api import log, Event
 import outspline.core_api as core_api
-import outspline.extensions.organizer_api as organizer_api
+import outspline.extensions.organism_api as organism_api
 
 import queries
 
@@ -43,7 +43,7 @@ class NextOccurrences():
 
     def add(self, base_time, occ):
         # Make sure this occurrence is compliant with the requirements defined
-        # in organizer_api.update_item_rules
+        # in organism_api.update_item_rules
         if occ['start'] and (not occ['end'] or occ['end'] > occ['start']):
             return self.add_safe(base_time, occ)
         else:
@@ -89,7 +89,7 @@ class NextOccurrences():
 
     def except_(self, filename, id_, start, end, inclusive):
         # Make sure this call is compliant with the requirements defined in
-        # organizer_api.update_item_rules
+        # organism_api.update_item_rules
         if start and start < end:
             self.except_safe(filename, id_, start, end, inclusive)
         else:
@@ -97,7 +97,7 @@ class NextOccurrences():
 
     def except_safe(self, filename, id_, start, end, inclusive):
         # Test if the item has some rules, for safety, also for coherence with
-        # organizer.items.OccurrencesRange.except_safe
+        # organism.items.OccurrencesRange.except_safe
         try:
             occsc = self.occs[filename][id_][:]
         except KeyError:
@@ -163,7 +163,7 @@ def get_next_occurrences(base_time=None, base_times=None):
             base_time = base_times[filename]
 
         for id_ in core_api.get_items_ids(filename):
-            rules = organizer_api.get_item_rules(filename, id_)
+            rules = organism_api.get_item_rules(filename, id_)
 
             for rule in rules:
                 get_next_item_occurrences_event.signal(base_time=base_time,
@@ -241,7 +241,7 @@ def search_old_occurrences(filename):
     if whileago > last_search:
         log.debug('Search old occurrences')
 
-        occs = organizer_api.get_occurrences_range(mint=last_search,
+        occs = organism_api.get_occurrences_range(mint=last_search,
                                                                   maxt=whileago)
         occsd = occs.get_dict()
         # Executing occs.get_active_dict here wouldn't make sense; let

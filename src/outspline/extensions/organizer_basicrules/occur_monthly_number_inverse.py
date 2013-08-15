@@ -42,7 +42,7 @@ def make_rule(months, rstart, rend, ralarm, guiconfig):
                       interface.
     """
     # Make sure this rule can only produce occurrences compliant with the
-    # requirements defined in organizer_api.update_item_rules
+    # requirements defined in organism_api.update_item_rules
     if isinstance(months, list) and len(months) > 0 and \
                                    isinstance(rstart, int) and rstart >= 0 and \
                     (rend is None or (isinstance(rend, int) and rend > 0)) and \

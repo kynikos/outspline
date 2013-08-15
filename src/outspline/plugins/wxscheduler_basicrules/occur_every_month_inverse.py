@@ -22,7 +22,7 @@ import calendar as _calendar
 import random
 import wx
 
-import outspline.extensions.organizer_basicrules_api as organizer_basicrules_api
+import outspline.extensions.organism_basicrules_api as organism_basicrules_api
 import outspline.plugins.wxscheduler_api as wxscheduler_api
 
 import widgets
@@ -213,9 +213,9 @@ class Rule():
         smonths = range(1, 13)
 
         try:
-            ruled = organizer_basicrules_api.make_occur_monthly_number_inverse_rule(
+            ruled = organism_basicrules_api.make_occur_monthly_number_inverse_rule(
                       smonths, rstart, rend, ralarm, ('1m', endtype, alarmtype))
-        except organizer_basicrules_api.BadRuleError:
+        except organism_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
             label = self._make_label(rstartid, rstartH, rstartM, rendH, rendM,
@@ -356,9 +356,9 @@ class Rule():
         for l in (2678400, 2592000, 2419200):
             rstart = random.randint(0, l - 1)
             try:
-                rule = organizer_basicrules_api.make_occur_monthly_number_inverse_rule(
+                rule = organism_basicrules_api.make_occur_monthly_number_inverse_rule(
                       smonths, rstart, rend, ralarm, ('1m', endtype, alarmtype))
-            except organizer_basicrules_api.BadRuleError:
+            except organism_basicrules_api.BadRuleError:
                 pass
 
         return rule

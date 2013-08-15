@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-from organizer_timer import timer
+from organism_timer import timer
 
 
 def get_next_occurrences(base_time=None, base_times=None):

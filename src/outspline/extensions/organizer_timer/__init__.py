@@ -21,7 +21,7 @@ import time as _time
 
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
-import outspline.extensions.organizer_api as organizer_api
+import outspline.extensions.organism_api as organism_api
 copypaste_api = coreaux_api.import_extension_api('copypaste')
 
 import queries
@@ -69,7 +69,7 @@ def main():
     core_api.bind_to_history(timer.search_next_occurrences)
     core_api.bind_to_exit_app_1(timer.cancel_search_next_occurrences)
 
-    organizer_api.bind_to_update_item_rules(timer.search_next_occurrences)
+    organism_api.bind_to_update_item_rules(timer.search_next_occurrences)
 
     if copypaste_api:
         copypaste_api.bind_to_items_pasted(timer.search_next_occurrences)

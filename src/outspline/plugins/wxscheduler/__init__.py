@@ -21,7 +21,7 @@ import wx
 from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin
 
 from outspline.coreaux_api import Event
-import outspline.extensions.organizer_api as organizer_api
+import outspline.extensions.organism_api as organism_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
 init_rules_list_event = Event()
@@ -92,7 +92,7 @@ class Scheduler():
     def handle_apply(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_ \
                                                         and self.is_modified():
-            organizer_api.update_item_rules(self.filename, self.id_,
+            organism_api.update_item_rules(self.filename, self.id_,
                                             self.rules, kwargs['group'],
                                             kwargs['description'])
             self.refresh_mod_state()
@@ -146,7 +146,7 @@ class Scheduler():
         self.rules = []
 
         self.mmode = 'append'
-        oprules = organizer_api.get_item_rules(self.filename, self.id_)
+        oprules = organism_api.get_item_rules(self.filename, self.id_)
         for rule in oprules:
             insert_rule_event.signal(filename=self.filename, id_=self.id_,
                                      rule=rule)

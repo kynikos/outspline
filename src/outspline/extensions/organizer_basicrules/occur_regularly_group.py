@@ -43,7 +43,7 @@ def make_rule(refstart, interval, rstarts, rend, ralarm, guiconfig):
                       interface.
     """
     # Make sure this rule can only produce occurrences compliant with the
-    # requirements defined in organizer_api.update_item_rules
+    # requirements defined in organism_api.update_item_rules
     if isinstance(refstart, int) and refstart >= 0 and \
                                 isinstance(interval, int) and interval > 0 and \
                                 isinstance(rstarts, list) and 0 in rstarts and \

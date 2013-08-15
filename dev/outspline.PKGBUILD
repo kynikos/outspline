@@ -11,7 +11,7 @@ depends=('wxpython'
          'python2-configfile'
          'python2-texthistory'
          'python2-plural')
-optdepends=('outspline-organizer: adds personal organizer capabilities'
+optdepends=('outspline-organism: adds personal organizer capabilities'
             'outspline-development: development tools for beta testers')
 install="$pkgname.install"
 source=("http://www.dariogiovannetti.net/files/$pkgname-$pkgver.tar.gz")

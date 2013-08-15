@@ -43,7 +43,7 @@ def make_rule(interval, refyear, month, day, rstart, rend, ralarm, guiconfig):
                       interface.
     """
     # Make sure this rule can only produce occurrences compliant with the
-    # requirements defined in organizer_api.update_item_rules
+    # requirements defined in organism_api.update_item_rules
     if isinstance(interval, int) and interval > 0 and \
                                   isinstance(refyear, int) and refyear > 0 and \
                            isinstance(rstart, int) and -1 < rstart < 86400 and \

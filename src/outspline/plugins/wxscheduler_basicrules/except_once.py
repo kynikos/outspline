@@ -21,7 +21,7 @@ import datetime as _datetime
 import random
 import wx
 
-import outspline.extensions.organizer_basicrules_api as organizer_basicrules_api
+import outspline.extensions.organism_basicrules_api as organism_basicrules_api
 import outspline.plugins.wxscheduler_api as wxscheduler_api
 
 import widgets
@@ -139,9 +139,9 @@ class Rule():
         inclusive = self.inclusivew.GetValue()
 
         try:
-            ruled = organizer_basicrules_api.make_except_once_rule(start, end,
+            ruled = organism_basicrules_api.make_except_once_rule(start, end,
                                                          inclusive, (endtype, ))
-        except organizer_basicrules_api.BadRuleError:
+        except organism_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
             label = self._make_label(start, end, inclusive, endtype, rendn,
@@ -224,5 +224,5 @@ class Rule():
 
         inclusive = random.choice((True, False))
 
-        return organizer_basicrules_api.make_except_once_rule(start, end,
+        return organism_basicrules_api.make_except_once_rule(start, end,
                                                          inclusive, (endtype, ))

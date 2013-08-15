@@ -47,7 +47,7 @@ class OccurrencesRange():
 
     def add(self, occ):
         # Make sure this occurrence is compliant with the requirements defined
-        # in organizer_api.update_item_rules
+        # in organism_api.update_item_rules
         if occ['start'] and (not occ['end'] or occ['end'] > occ['start']):
             return self.add_safe(occ)
         else:
@@ -115,7 +115,7 @@ class OccurrencesRange():
 
     def except_(self, filename, id_, start, end, inclusive):
         # Make sure this call is compliant with the requirements defined in
-        # organizer_api.update_item_rules
+        # organism_api.update_item_rules
         if start and start < end:
             self.except_safe(filename, id_, start, end, inclusive)
         else:

@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-from organizer_basicrules import (occur_once, occur_regularly_single,
+from organism_basicrules import (occur_once, occur_regularly_single,
                              occur_regularly_group, occur_monthly_number_direct,
                      occur_monthly_number_inverse, occur_monthly_weekday_direct,
                               occur_monthly_weekday_inverse, occur_yearly_group,
                       occur_yearly_single, except_once, except_regularly_single)
-from organizer_basicrules.exceptions import BadRuleError
+from organism_basicrules.exceptions import BadRuleError
 
 
 def make_occur_once_rule(start, end, alarm, guiconfig):

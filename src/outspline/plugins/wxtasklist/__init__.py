@@ -26,9 +26,9 @@ import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import log
 import outspline.core_api as core_api
 import outspline.interfaces.wxgui_api as wxgui_api
-import outspline.extensions.organizer_api as organizer_api
-import outspline.extensions.organizer_timer_api as organizer_timer_api
-import outspline.extensions.organizer_alarms_api as organizer_alarms_api
+import outspline.extensions.organism_api as organism_api
+import outspline.extensions.organism_timer_api as organism_timer_api
+import outspline.extensions.organism_alarms_api as organism_alarms_api
 development_api = coreaux_api.import_extension_api('development')
 wxcopypaste_api = coreaux_api.import_plugin_api('wxcopypaste')
 
@@ -66,8 +66,8 @@ class TaskList():
         self.delay = wx.CallLater(self.DELAY, int())
         self.timer = wx.CallLater(0, self.restart)
 
-        organizer_timer_api.bind_to_search_next_occurrences(self.delay_restart)
-        organizer_alarms_api.bind_to_alarm_off(self.delay_restart)
+        organism_timer_api.bind_to_search_next_occurrences(self.delay_restart)
+        organism_alarms_api.bind_to_alarm_off(self.delay_restart)
 
     def delay_restart(self, kwargs=None):
         # Instead of self.restart, bind _this_ function to events that can be
@@ -107,7 +107,7 @@ class TaskList():
         else:
             maxt = mint + dt
 
-        occsobj = organizer_api.get_occurrences_range(mint=mint, maxt=maxt)
+        occsobj = organism_api.get_occurrences_range(mint=mint, maxt=maxt)
         occurrences = occsobj.get_list()
 
         # Always add active (but not snoozed) alarms if time interval includes
@@ -130,7 +130,7 @@ class TaskList():
             self.insert_occurrence(i, o)
 
         next_completion = occsobj.get_next_completion_time()
-        nextoccs = organizer_timer_api.get_next_occurrences(base_time=maxt)
+        nextoccs = organism_timer_api.get_next_occurrences(base_time=maxt)
         # Note that next_occurrence could even be a time of an occurrence that's
         # already displayed in the list (e.g. if an occurrence has a start time
         # within the queried range but an end time later than the maximum end)

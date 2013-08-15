@@ -21,7 +21,7 @@ import datetime as _datetime
 import random
 import wx
 
-import outspline.extensions.organizer_basicrules_api as organizer_basicrules_api
+import outspline.extensions.organism_basicrules_api as organism_basicrules_api
 import outspline.plugins.wxscheduler_api as wxscheduler_api
 
 import widgets
@@ -232,10 +232,10 @@ class Rule():
             ralarmM = None
 
         try:
-            ruled = organizer_basicrules_api.make_occur_yearly_single_rule(
+            ruled = organism_basicrules_api.make_occur_yearly_single_rule(
                             interval, refyear, month, day, rstart, rend, ralarm,
                                                            (endtype, alarmtype))
-        except organizer_basicrules_api.BadRuleError:
+        except organism_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule().ShowModal()
         else:
             label = self._make_label(interval, refyear, month, day, rstart,
@@ -385,5 +385,5 @@ class Rule():
         else:
             ralarm = random.randint(0, 360) * 60
 
-        return organizer_basicrules_api.make_occur_yearly_single_rule(interval,
+        return organism_basicrules_api.make_occur_yearly_single_rule(interval,
                 refyear, month, day, rstart, rend, ralarm, (endtype, alarmtype))

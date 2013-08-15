@@ -22,7 +22,7 @@ import wx
 from outspline.coreaux_api import log
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
-import outspline.extensions.organizer_alarms_api as organizer_alarms_api
+import outspline.extensions.organism_alarms_api as organism_alarms_api
 import outspline.interfaces.wxgui_api as wxgui_api
 wxtrayicon_api = coreaux_api.import_plugin_api('wxtrayicon')
 
@@ -103,8 +103,8 @@ class AlarmsWindow():
 
         core_api.bind_to_delete_item(self.handle_remove_item)
         core_api.bind_to_history_remove(self.handle_remove_item)
-        organizer_alarms_api.bind_to_alarm(self.handle_alarm)
-        organizer_alarms_api.bind_to_alarm_off(self.handle_alarm_off)
+        organism_alarms_api.bind_to_alarm(self.handle_alarm)
+        organism_alarms_api.bind_to_alarm_off(self.handle_alarm_off)
         wxgui_api.bind_to_close_database(self.handle_close_db)
         wxgui_api.bind_to_reset_menu_items(self.handle_reset_menu_items)
 
@@ -179,7 +179,7 @@ class AlarmsWindow():
         for a in self.alarms:
             alarmst.append((self.alarms[a].get_filename(),
                             self.alarms[a].get_alarmid()))
-        organizer_alarms_api.dismiss_alarms(alarmst)
+        organism_alarms_api.dismiss_alarms(alarmst)
         # Let the alarm off event close the alarms
 
         core_api.release_databases()
@@ -191,7 +191,7 @@ class AlarmsWindow():
         for a in self.alarms:
             alarmst.append((self.alarms[a].get_filename(),
                             self.alarms[a].get_alarmid()))
-        organizer_alarms_api.snooze_alarms(alarmst,
+        organism_alarms_api.snooze_alarms(alarmst,
                                                    stime=self.get_snooze_time())
         # Let the alarm off event close the alarms
 
@@ -322,7 +322,7 @@ class Alarm():
     def snooze(self, event):
         core_api.block_databases()
 
-        organizer_alarms_api.snooze_alarms(((self.filename, self.alarmid), ),
+        organism_alarms_api.snooze_alarms(((self.filename, self.alarmid), ),
                                           stime=self.awindow.get_snooze_time())
         # Let the alarm off event close the alarm
 
@@ -331,7 +331,7 @@ class Alarm():
     def dismiss(self, event):
         core_api.block_databases()
 
-        organizer_alarms_api.dismiss_alarms(((self.filename, self.alarmid), ))
+        organism_alarms_api.dismiss_alarms(((self.filename, self.alarmid), ))
         # Let the alarm off event close the alarm
 
         core_api.release_databases()

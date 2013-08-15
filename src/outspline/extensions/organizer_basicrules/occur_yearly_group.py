@@ -52,7 +52,7 @@ def make_rule(occs, occsl, rend, ralarm, guiconfig):
     # of February si variable)
 
     # Make sure this rule can only produce occurrences compliant with the
-    # requirements defined in organizer_api.update_item_rules
+    # requirements defined in organism_api.update_item_rules
     if isinstance(occs, dict) and isinstance(occsl, dict) and \
                     (rend is None or (isinstance(rend, int) and rend > 0)) and \
                                     (ralarm is None or isinstance(ralarm, int)):
