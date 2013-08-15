@@ -5,7 +5,7 @@
 * Update setup.py
 * Export src
 * Remove .pyc and .pyo files "find . -name '*.pyc' | xargs rm"
-* Set coreaux.configuration._ROOT_DIR to "/usr/lib/python2.7/site-packages/organism"
+* Set coreaux.configuration._ROOT_DIR to "/usr/lib/python2.7/site-packages/outspline"
 * Put LICENSE in src
 * Rename src -> pkgname-version
 * Archive package

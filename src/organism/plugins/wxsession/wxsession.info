@@ -1,7 +1,7 @@
 author = Dario Giovannetti <dev@dariogiovannetti.net>
 version = 0.1
-description = Lets save the state of Organism upon exit and restore it upon restart.
-website = https://github.com/kynikos/organism/
+description = Lets save the state of Outspline upon exit and restore it upon restart.
+website = https://github.com/kynikos/outspline/
 component = main
 component_version = 1.0.0pb1
 component_release_date = 2011-12-04

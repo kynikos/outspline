@@ -1,7 +1,7 @@
 author = Dario Giovannetti <dev@dariogiovannetti.net>
 version = 0.1
 description = Shows an alarm window whenever an item occurrence happens, and gives the possibility to snooze or dismiss it.
-website = https://github.com/kynikos/organism/
+website = https://github.com/kynikos/outspline/
 component = organizer
 component_version = 1.0.0pb1
 component_release_date = 2011-12-04

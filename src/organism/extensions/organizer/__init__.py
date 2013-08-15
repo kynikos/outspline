@@ -1,25 +1,25 @@
-# Organism - A highly modular and extensible outliner.
+# Outspline - A highly modular and extensible outliner.
 # Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
-# This file is part of Organism.
+# This file is part of Outspline.
 #
-# Organism is free software: you can redistribute it and/or modify
+# Outspline is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Organism is distributed in the hope that it will be useful,
+# Outspline is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+# along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import sqlite3
 
-import organism.coreaux_api as coreaux_api
-import organism.core_api as core_api
+import outspline.coreaux_api as coreaux_api
+import outspline.core_api as core_api
 copypaste_api = coreaux_api.import_extension_api('copypaste')
 
 import queries
@@ -48,13 +48,13 @@ def handle_save_database_copy(kwargs):
     qconnd = sqlite3.connect(kwargs['destination'])
     cur = qconn.cursor()
     curd = qconnd.cursor()
-    
+
     cur.execute(queries.rules_select)
     for row in cur:
         curd.execute(queries.rules_insert_copy, tuple(row))
-        
+
     core_api.give_connection(kwargs['origin'], qconn)
-    
+
     qconnd.commit()
     qconnd.close()
 
@@ -79,7 +79,7 @@ def handle_copy_items(kwargs):
 def handle_copy_item(kwargs):
     filename = kwargs['filename']
     id_ = kwargs['id_']
-    
+
     items.copy_item_rules(filename, id_)
 
 
@@ -90,7 +90,7 @@ def handle_paste_item(kwargs):
 
 def main():
     create_copy_table()
-    
+
     core_api.bind_to_create_database(handle_create_database)
     core_api.bind_to_save_database_copy(handle_save_database_copy)
     core_api.bind_to_insert_item(handle_insert_item)

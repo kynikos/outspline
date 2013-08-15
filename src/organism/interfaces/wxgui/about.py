@@ -1,32 +1,32 @@
-# Organism - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Outspline - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
-# This file is part of Organism.
+# This file is part of Outspline.
 #
-# Organism is free software: you can redistribute it and/or modify
+# Outspline is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Organism is distributed in the hope that it will be useful,
+# Outspline is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+# along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import wx
 from datetime import datetime
 
-import organism.coreaux_api as coreaux_api
+import outspline.coreaux_api as coreaux_api
 
 _SIZE = 600
 
 
 class AboutWindow(wx.Frame):
     def __init__(self):
-        wx.Frame.__init__(self, wx.GetApp().root, title='About Organism',
+        wx.Frame.__init__(self, wx.GetApp().root, title='About Outspline',
                           size=(_SIZE, _SIZE - 192),
                           style=wx.DEFAULT_FRAME_STYLE ^ (wx.RESIZE_BORDER |
                                                           wx.MINIMIZE_BOX |
@@ -41,7 +41,7 @@ class AboutWindow(wx.Frame):
         logo = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
                                              'text-editor', wx.ART_CMN_DIALOG))
 
-        name = wx.StaticText(self, label='Organism')
+        name = wx.StaticText(self, label='Outspline')
         name.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC,
                              wx.FONTWEIGHT_BOLD))
 

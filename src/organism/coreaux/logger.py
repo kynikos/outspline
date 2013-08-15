@@ -1,20 +1,20 @@
-# Organism - A highly modular and extensible outliner.
+# Outspline - A highly modular and extensible outliner.
 # Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
-# This file is part of Organism.
+# This file is part of Outspline.
 #
-# Organism is free software: you can redistribute it and/or modify
+# Outspline is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Organism is distributed in the hope that it will be useful,
+# Outspline is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+# along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 import errno
@@ -108,22 +108,22 @@ def set_logger(cliargs):
         },
         'filters': {
             'console': {
-                '()': 'organism.coreaux.logger.LevelFilter',
+                '()': 'outspline.coreaux.logger.LevelFilter',
                 'levels': ('INFO', ),
                 'inverse': True,
             },
             'console_info': {
-                '()': 'organism.coreaux.logger.LevelFilter',
+                '()': 'outspline.coreaux.logger.LevelFilter',
                 'levels': ('INFO', ),
                 'inverse': False,
             },
             'file_low': {
-                '()': 'organism.coreaux.logger.LevelFilter',
+                '()': 'outspline.coreaux.logger.LevelFilter',
                 'levels': ('INFO', 'DEBUG'),
                 'inverse': False,
             },
             'file': {
-                '()': 'organism.coreaux.logger.LevelFilter',
+                '()': 'outspline.coreaux.logger.LevelFilter',
                 'levels': ('INFO', 'DEBUG'),
                 'inverse': True,
             }
@@ -167,7 +167,7 @@ def set_logger(cliargs):
             }
         },
         'loggers': {
-            'organism': {
+            'outspline': {
                 'level': 'DEBUG',
                 'handlers': handlers,
                 'propagate': False
@@ -181,8 +181,8 @@ def set_logger(cliargs):
     logging.config.dictConfig(logconfig)
 
     global log
-    log = logging.getLogger('organism')
+    log = logging.getLogger('outspline')
 
     log.info('Start logging (level {}, file {})'.format(loglevel, logfile))
-    log.info('{} version {} ({})'.format('Organism', info['component_version'],
+    log.info('{} version {} ({})'.format('Outspline', info['component_version'],
                                          info['component_release_date']))

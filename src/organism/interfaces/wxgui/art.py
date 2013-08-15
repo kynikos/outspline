@@ -1,20 +1,20 @@
-# Organism - A highly modular and extensible outliner.
+# Outspline - A highly modular and extensible outliner.
 # Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
-# This file is part of Organism.
+# This file is part of Outspline.
 #
-# Organism is free software: you can redistribute it and/or modify
+# Outspline is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Organism is distributed in the hope that it will be useful,
+# Outspline is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+# along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import wx
 
@@ -22,10 +22,10 @@ import wx
 class ArtProvider(wx.ArtProvider):
     gtk = None
     bundled = None
-    
+
     def __init__(self):
         wx.ArtProvider.__init__(self)
-        
+
         # Use ids prefixed with '@' so that they're not mistaken as GTK icons
         self.gtk = {'@alarms': ('appointment-soon', 'appointment',
                                 'appointment-new', 'stock_new-appointment'),
@@ -92,7 +92,7 @@ class ArtProvider(wx.ArtProvider):
 
         # Bundled images (currently empty)
         self.bundled = {}
-    
+
     def CreateBitmap(self, artid, client, size):
         if artid in self.gtk:
             for gtkid in self.gtk[artid]:
@@ -102,5 +102,5 @@ class ArtProvider(wx.ArtProvider):
         # The default art provider will take care of the else case
         else:
             bmp = wx.ArtProvider.GetBitmap(artid, client, size)
-        
+
         return bmp

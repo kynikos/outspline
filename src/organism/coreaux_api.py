@@ -1,20 +1,20 @@
-# Organism - A highly modular and extensible outliner.
+# Outspline - A highly modular and extensible outliner.
 # Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
-# This file is part of Organism.
+# This file is part of Outspline.
 #
-# Organism is free software: you can redistribute it and/or modify
+# Outspline is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Organism is distributed in the hope that it will be useful,
+# Outspline is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+# along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
 
@@ -22,7 +22,7 @@ from coreaux.configuration import info, config
 import coreaux.configuration
 # Import the base Exception so that it can be imported by interfaces and
 # plugins
-from coreaux.exceptions import OrganismError
+from coreaux.exceptions import OutsplineError
 # Import the logger so that it can be imported by interfaces and plugins
 from coreaux.logger import log
 # Import the base Event so that it can be imported by interfaces and plugins
@@ -123,28 +123,28 @@ def get_default_history_limit():
 def import_extension_api(extension):
     if extension in config('Extensions').get_sections() and \
                            config('Extensions')(extension).get_bool('enabled'):
-        # extension = __import__('organism.extensions.' + extension + '_api')
+        # extension = __import__('outspline.extensions.' + extension + '_api')
         # somehow doesn't work
-        __import__('organism.extensions.' + extension + '_api')
-        return sys.modules['organism.extensions.' + extension + '_api']
+        __import__('outspline.extensions.' + extension + '_api')
+        return sys.modules['outspline.extensions.' + extension + '_api']
 
 
 def import_interface_api(interface):
     if interface in config('Interfaces').get_sections() and \
                            config('Interfaces')(interface).get_bool('enabled'):
-        # interface = __import__('organism.interfaces.' + interface + '_api')
+        # interface = __import__('outspline.interfaces.' + interface + '_api')
         # somehow doesn't work
-        __import__('organism.interfaces.' + interface + '_api')
-        return sys.modules['organism.interfaces.' + interface + '_api']
+        __import__('outspline.interfaces.' + interface + '_api')
+        return sys.modules['outspline.interfaces.' + interface + '_api']
 
 
 def import_plugin_api(plugin):
     if plugin in config('Plugins').get_sections() and \
                                  config('Plugins')(plugin).get_bool('enabled'):
-        # plugin = __import__('organism.plugins.' + plugin + '_api') somehow
+        # plugin = __import__('outspline.plugins.' + plugin + '_api') somehow
         # doesn't work
-        __import__('organism.plugins.' + plugin + '_api')
-        return sys.modules['organism.plugins.' + plugin + '_api']
+        __import__('outspline.plugins.' + plugin + '_api')
+        return sys.modules['outspline.plugins.' + plugin + '_api']
 
 
 def bind_to_addons_loaded(handler, bind=True):

@@ -1,27 +1,27 @@
-# Organism - A highly modular and extensible outliner.
+# Outspline - A highly modular and extensible outliner.
 # Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
-# This file is part of Organism.
+# This file is part of Outspline.
 #
-# Organism is free software: you can redistribute it and/or modify
+# Outspline is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Organism is distributed in the hope that it will be useful,
+# Outspline is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+# along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import time as _time
 import sqlite3
 
-from organism.coreaux_api import Event
-import organism.core_api as core_api
-import organism.extensions.organizer_timer_api as organizer_timer_api
+from outspline.coreaux_api import Event
+import outspline.core_api as core_api
+import outspline.extensions.organizer_timer_api as organizer_timer_api
 
 import queries
 
@@ -47,7 +47,7 @@ def get_snoozed_alarms(last_search, filename, occs):
         # Check whether the snoozed alarm has a duplicate among the alarms found
         # using the alarm rules, and in that case delete the latter; the
         # creation of duplicates is possible especially when alarm searches are
-        # performed in rapid succession, for example when launching organism
+        # performed in rapid succession, for example when launching outspline
         # with multiple databases automatically opened and many new alarms to be
         # immediately activated
         occs.try_delete_one(filename, itemid, start, end, row['A_alarm'])

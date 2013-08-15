@@ -1,8 +1,8 @@
 [Desktop Entry]
-Name=Organism
+Name=Outspline
 GenericName=Outliner
 Comment=A highly modular and extensible outliner
-Exec=organism
+Exec=outspline
 Icon=text-editor
 Terminal=false
 Type=Application

@@ -1,20 +1,20 @@
-# Organism - A highly modular and extensible outliner.
+# Outspline - A highly modular and extensible outliner.
 # Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
-# This file is part of Organism.
+# This file is part of Outspline.
 #
-# Organism is free software: you can redistribute it and/or modify
+# Outspline is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Organism is distributed in the hope that it will be useful,
+# Outspline is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+# along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 from distutils.core import setup
@@ -61,24 +61,24 @@ def compose_package_metadata(head):
 
 
 def compose_metadata():
-    meta = {'name': 'organism',
+    meta = {'name': 'outspline',
             'version': '1.0.0pb1',
             'description': 'A highly modular and extensible outliner.',
             'author': 'Dario Giovannetti',
             'author_email': 'dev@dariogiovannetti.net',
-            'url': 'https://github.com/kynikos/organism',
+            'url': 'https://github.com/kynikos/outspline',
             'license': 'GPLv3'}
 
-    meta['scripts'] = ('files/organism', )
+    meta['scripts'] = ('files/outspline', )
 
     meta['data_files'] = (('/usr/share/applications',
-                           ('files/organism.desktop', )),
+                           ('files/outspline.desktop', )),
     # Currently there isn't an original icon
     #                      ('/usr/share/icons/hicolor/##x##',
-    #                       ('files/organism.svg', ))
+    #                       ('files/outspline.svg', ))
                          )
 
-    meta.update(compose_package_metadata('organism'))
+    meta.update(compose_package_metadata('outspline'))
 
     return meta
 
