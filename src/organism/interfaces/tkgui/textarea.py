@@ -1,20 +1,20 @@
-# Organism - A highly modular and extensible outliner.
+# Outspline - A highly modular and extensible outliner.
 # Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
-# This file is part of Organism.
+# This file is part of Outspline.
 #
-# Organism is free software: you can redistribute it and/or modify
+# Outspline is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Organism is distributed in the hope that it will be useful,
+# Outspline is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+# along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import tkinter as _tk
 from tkinter import N, E, S, W
@@ -28,7 +28,7 @@ textareas = {}
 class TextArea():
     item = None
     area = None
-    
+
     def __init__(self, item, text):
         # Notare che cut copy e paste nell'area di testo funzionano già **********
         #   con CTRL+X, C e V
@@ -37,7 +37,7 @@ class TextArea():
         #     viene incollato dopo il testo selezionato
         self.item = item
         self.area = _tk.Text(editor.tabs[item].frame, wrap='none', undo=True)
-        
+
         area = self.area
         area.grid(column=0, row=0, sticky=(N, E, S, W))
         area.insert('1.0', text)
@@ -66,7 +66,7 @@ class TextArea():
             self.area.edit_undo()
         except _tk.TclError:
             pass
-    
+
     def redo(self):
         try:
             self.area.edit_redo()

@@ -1,20 +1,20 @@
-# Organism - A highly modular and extensible outliner.
+# Outspline - A highly modular and extensible outliner.
 # Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
-# This file is part of Organism.
+# This file is part of Outspline.
 #
-# Organism is free software: you can redistribute it and/or modify
+# Outspline is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Organism is distributed in the hope that it will be useful,
+# Outspline is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+# along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import tkinter as _tk
 import constants
@@ -30,14 +30,14 @@ menubar = None
 
 def initialize(root):
     global menubar
-    
+
     # Remove dashed line from menus
     root.option_add('*tearOff', _tk.FALSE)
-    
+
     menubar = _tk.Menu(root)
-    
+
     root['menu'] = menubar
-    
+
     menu_file = _tk.Menu(menubar)
     menubar.add_cascade(menu=menu_file,
                         label='File',
@@ -74,7 +74,7 @@ def initialize(root):
     menu_file.add_command(label='Exit',
                           command=exit_,
                           underline=0)
-    
+
     menu_tree = _tk.Menu(menubar)
     menubar.add_cascade(menu=menu_tree,
                         label='Tree',
@@ -126,7 +126,7 @@ def initialize(root):
     menu_tree.add_command(label='Delete items',
                           command=delete_items,
                           underline=0)
-    
+
     menu_edit = _tk.Menu(menubar)
     menubar.add_cascade(menu=menu_edit,
                         label='Edit',
@@ -181,7 +181,7 @@ def initialize(root):
     menu_edit.add_command(label='Close all',
                           command=close_all_tabs,
                           underline=0)
-    
+
     menu_view = _tk.Menu(menubar)
     menubar.add_cascade(menu=menu_view,
                         label='View',
@@ -199,7 +199,7 @@ def initialize(root):
     menu_view.add_command(label='Preferences',
                           underline=0,
                           state='disabled')
-    
+
     menu_development = _tk.Menu(menubar)
     menubar.add_cascade(menu=menu_development,
                         label='Development',
@@ -210,7 +210,7 @@ def initialize(root):
     menu_development.add_command(label='Print tables',
                                  command=development.print_db,
                                  underline=0)
-    
+
     menu_help = _tk.Menu(menubar,
                          name='help')
     menubar.add_cascade(menu=menu_help,
@@ -222,14 +222,14 @@ def initialize(root):
     menu_help.add_command(label='About {}'.format(constants._PROJECT_NAME),
                           underline=0,
                           state='disabled')
-    
+
     # ****************************************************************************
     """# Mac OS X
     apple = Menu(menubar, name='apple')
     help = Menu(menubar, name='help')
     menubar.add_cascade(menu=apple)
     menubar.add_cascade(menu=help)
-    
+
     # Windows
     sysmenu = Menu(menubar, name='system')
     menubar.add_cascade(menu=sysmenu)
