@@ -22,7 +22,7 @@ import random  # ***************************************************************
 
 from outspline.coreaux_api import log
 import outspline.core_api as core_api
-import outspline.extensions.organizer_api as organizer_api
+import outspline.extensions.organism_api as organism_api
 
 # Mozilla Lightning sembra usare 900 *********************************************
 _CAL_RES = 900
@@ -218,7 +218,7 @@ class Calendar(wx.ScrolledWindow):
         #     dal fuso orario
         dtime = (int(_time.time()) - _time.altzone
                  ) // 86400 * 86400 + _time.altzone
-        occs = organizer_api.get_daily_occurrences(dtime)
+        occs = organism_api.get_daily_occurrences(dtime)
 
         # 1) Initialize cols
         #    use a dictionary to avoid duplicates
