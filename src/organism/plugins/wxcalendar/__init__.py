@@ -1,28 +1,28 @@
-# Organism - A highly modular and extensible outliner.
+# Outspline - A highly modular and extensible outliner.
 # Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
-# This file is part of Organism.
+# This file is part of Outspline.
 #
-# Organism is free software: you can redistribute it and/or modify
+# Outspline is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Organism is distributed in the hope that it will be useful,
+# Outspline is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+# along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import wx
 import time as _time
 import random  # *****************************************************************
 
-from organism.coreaux_api import log
-import organism.core_api as core_api
-import organism.extensions.organizer_api as organizer_api
+from outspline.coreaux_api import log
+import outspline.core_api as core_api
+import outspline.extensions.organizer_api as organizer_api
 
 # Mozilla Lightning sembra usare 900 *********************************************
 _CAL_RES = 900
@@ -39,7 +39,7 @@ class Calendar(wx.ScrolledWindow):
     occpanel = None
     occgrid = None
     bground = None
-    
+
     def __init__(self, parent):
         # Vedere wxWebkit http://wxwebkit.kosoftworks.com/ ***********************
         # Vedere http://code.google.com/p/wxscheduler/ ***************************
@@ -125,50 +125,50 @@ class Calendar(wx.ScrolledWindow):
         self.SetScrollRate(20, 20)
         self.box = wx.BoxSizer(wx.HORIZONTAL)
         self.SetSizer(self.box)
-        
+
         self._init_timebox()
         self._init_occurrences()
-    
+
     def _init_timebox(self):
         self.timebox = wx.BoxSizer(wx.VERTICAL)
         self.box.Add(self.timebox)
-        
+
         resolution = _CAL_RES
         row_height = _ROW_HEIGHT
         cell_border = _CELL_BORDER
-        
+
         for t in range(24):
             h = (3600 // resolution) * (row_height + cell_border * 2)
             label = wx.StaticText(self, label=''.join((str(t), ':00')),
                                   size=(-1, h))
             self.timebox.Add(label, flag=wx.ALIGN_RIGHT | wx.LEFT |
                              wx.RIGHT, border=4)
-    
+
     def _init_occurrences(self):
         # Non riesco a togliere il bordo nero!!! *********************************
         #   al momento ho risolto con un offset di DrawRectangle in
         #     make_bground()
         self.occpanel = wx.Panel(self, style=wx.BORDER_NONE)
         self.box.Add(self.occpanel, 1, flag=wx.EXPAND)
-        
+
         # Do not put cell gap here because it messes things up
         self.occgrid = wx.GridBagSizer()
         self.occpanel.SetSizer(self.occgrid)
         self.occgrid.SetEmptyCellSize((-1, _ROW_HEIGHT + _CELL_BORDER * 2))
-        
+
         # Se riuscissi a creare l'immagine dinamicamente sarei a cavallo *********
         self.bground = wx.Bitmap(_CANVAS)
         self.refresh_bground()
-        
+
         self.occpanel.Bind(wx.EVT_SIZE, self.refresh_bground)
         self.Bind(wx.EVT_SCROLLWIN, self.refresh_bground)
-    
+
     def refresh_bground(self, event=None):
         wx.FutureCall(50, self.make_bground)
         # This method is called also explicitly
         if event:
             event.Skip()
-        
+
     def make_bground(self):
         # Questo metodo devo studiarlo meglio ************************************
         #     fonte: http://www.daniweb.com/software-development/python/threads/128350/1119379#post1119379
@@ -181,7 +181,7 @@ class Calendar(wx.ScrolledWindow):
         # wx.DC ha tanti altri metodi di disegno interessanti! *******************
         # Al momento uso un offset di 1 px per mascherare il border del Panel ****
         dc.DrawRectangle(-1, -1, w + 2, h + 2)
-        
+
     def refresh(self):
         # Questa funzione e' troppo lenta, va threadata **************************
         #     inoltre sarebbe bene testarla con microtime e provare ad
@@ -207,7 +207,7 @@ class Calendar(wx.ScrolledWindow):
         #     ma se riuscissi a fondere la procedura di disegno in una griglia
         #     unica credo proprio che riuscirei a mantenere il tempo quasi
         #     invariato
-        
+
         # Al momento ottengo la data di oggi, pero' questo va variato ************
         # Al momento converto tutte le date delle occorrenze in localtime, *******
         #     pero' potrei permettere di specificare nello scheduler se una
@@ -219,47 +219,47 @@ class Calendar(wx.ScrolledWindow):
         dtime = (int(_time.time()) - _time.altzone
                  ) // 86400 * 86400 + _time.altzone
         occs = organizer_api.get_daily_occurrences(dtime)
-        
+
         # 1) Initialize cols
         #    use a dictionary to avoid duplicates
         cols = {}
-        
+
         # 2) Creare tsdict con, come chiavi, il timestamp di ogni riga del *******
         #    giorno: creare 86400/secs righe, dove secs e' la risoluzione della
         #    griglia, cioe' l'altezza di una riga in secondi
         resolution = _CAL_RES
         tsdict = {}
-        
+
         for i in range(86400 // resolution):
             t = dtime + resolution * i
-            
+
             # Use a dictionary because it avoids checking for duplicates later
             # in ids
             tsdict[t] = {}
-        
+
         # 3) Ad ogni riga associare una lista di tutte le occorrenze che *********
         #    rientrano in quella specifica riga
         for o in occs:
             id_ = o['id_']
-            
+
             # Round start down to the previous step
             start = (o['start'] // resolution) * resolution
-            
+
             # If end is not set, use resolution value
             if isinstance(o['end'], int):
                 # Round end up to the next step
                 end = (o['end'] // resolution) * resolution
             else:
                 end = start + resolution
-                
+
             for i in range((end - start) // resolution):
                 tsdict[start + resolution * i][id_] = None
-                
+
         print('====================')  # ***************************************************************
         for r in tsdict:  # ******************************************************
             print('TSDICT', _time.strftime('%H:%M', _time.localtime(r)),  # ******
                   tsdict[r])  # **************************************************
-        
+
         # 4) Creare ids, un dizionario cosi' fatto:
         #    {id_1: {'w': width, 'h': duration, 'x1': lside, 'x2': rside,
         #                      'start': start, 'conflicts': [id_4, id_7, ...]},
@@ -279,55 +279,55 @@ class Calendar(wx.ScrolledWindow):
         #    del lato destro combaciante col bordo destro della colonna del
         #    giorno
         ids = {}
-        
+
         # Do this _after_ creating tsdict
         for o in occs:
             # Qui duplico il codice usato sopra... *******************************
             id_ = o['id_']
-            
+
             # Qui duplico il codice usato sopra... *******************************
             start = (o['start'] // resolution) * resolution
-            
+
             # Qui duplico il codice usato sopra... *******************************
             if isinstance(o['end'], int):
                 end = (o['end'] // resolution) * resolution
             else:
                 end = start + resolution
-                
+
             ids[id_] = {'h': (end - start) // resolution,
                         'y1': (start - dtime) // resolution,
                         'conflicts': {}}
-            
+
             for i in range(ids[id_]['h']):
                 row = tsdict[start + resolution * i]
                 ids[id_]['conflicts'].update(row)
-            
+
             del ids[id_]['conflicts'][id_]
-                
+
         def recurse(id_, group):
             group.append(id_)
-            
+
             for cid in ids[id_]['conflicts']:
                 if cid not in group:
                     group = recurse(cid, group)
-                    
+
             return group
-        
+
         groups = []
-        
+
         for o in occs:
             id_ = o['id_']
-            
+
             for g in groups:
                 if id_ in g:
                     break
             else:
                 groups.append(recurse(id_, []))
-        
+
         print('====================')  # ***************************************************************
         for d in ids:  # *********************************************************
             print('IDS1', d, ids[d])  # ******************************************
-        
+
         # 5) Per ogni id_ di ids risolvere i conflitti in questo modo:
         #    A) se tutti gli 'x2' delle item in 'conflicts' sono == 1 (cioe'
         #       tutte le item arrivano al bordo destro della colonna del
@@ -342,7 +342,7 @@ class Calendar(wx.ScrolledWindow):
         #       'conflicts' della propria voce nel dizionario, dato che il
         #       conflitto e' stato appena risolto
         #    C) ripetere questo sotto-ciclo finche' non ci sono piu' conflitti
-        
+
         # Provare un altro algoritmo per risolvere i conflitti: ******************
         #   (piu' semplicemente "a tentativi")
         #   * provare a mettere il rettangolo, che tanto e' di larghezza
@@ -353,97 +353,97 @@ class Calendar(wx.ScrolledWindow):
         #     i conflitti
         for group in groups:
             conflicts = {}
-            
+
             for id_ in group:
                 conflicts[len(ids[id_]['conflicts']) + 1] = None
-            
+
             maxconflicts = max(tuple(conflicts.keys()))
-            
+
             cols[maxconflicts] = None
-                
+
             for id_ in group:
                 ids[id_]['w'] = maxconflicts
                 ids[id_]['x1'] = 0
                 ids[id_]['x2'] = maxconflicts
-        
+
         print('COLS', cols)  # ***************************************************
-        
+
         conflicts = True
-        
+
         while conflicts:
             conflicts = False
-            
+
             for id_ in ids:
                 if ids[id_]['conflicts']:
                     x2s = {}
-                    
+
                     for cid in ids[id_]['conflicts']:
                         if ids[cid]['x2'] < ids[id_]['w']:
                             x2s[cid] = ids[cid]['x2']
-                        
+
                     if x2s:
                         ids[id_]['x1'] = max(tuple(x2s.values()))
-                    
+
                     ids[id_]['x2'] = ids[id_]['x1'] + 1
-                        
+
                     for cid in x2s:
                         del ids[id_]['conflicts'][cid]
                         del ids[cid]['conflicts'][id_]
-                        
+
                     if ids[id_]['conflicts']:
                         conflicts = True
-        
+
         print('====================')  # ***************************************************************
         for d in ids:  # *********************************************************
             print('IDS2', d, ids[d])  # ******************************************
-        
+
         # 6) Disegnare la colonna del giorno con un GridBagSizer, usando *********
         #    maxcolumns come numero di sotto-colonne
         if cols:
             mcmcols = lcmm(*tuple(cols.keys()))
         else:
             mcmcols = 1
-            
+
         # Clear the Sizer (and delete children with the True option) to avoid
         # memory leak
         self.occgrid.Clear(True)
-        
+
         print('CR', self.occgrid.GetCols(), self.occgrid.GetRows())  # ***********
         # Also rows must be reset every time
         self.occgrid.SetRows(86400 // _CAL_RES)
         self.occgrid.SetCols(mcmcols)
         print('MCM', mcmcols)  # *************************************************
         print('CR', self.occgrid.GetCols(), self.occgrid.GetRows())  # ***********
-        
+
         for c in range(mcmcols):
             self.occgrid.AddGrowableCol(c)
-        
+
         caltime = [_time.time()]  # **********************************************
-        
+
         for id_ in ids:
             # Il colore va implementato in maniera piu' razionale ****************
             rcol = wx.Colour(red=random.randint(0, 255),  # **********************
                              green=random.randint(0, 255),
                              blue=random.randint(0, 255))
-            
+
             opan = wx.Panel(self.occpanel, size=(-1, _ROW_HEIGHT))
             opan.SetBackgroundColour(rcol)
-            
+
             vspan = ids[id_]['h']
             hspan = mcmcols // ids[id_]['w']
             row = ids[id_]['y1']
             col = hspan * ids[id_]['x1']
-            
+
             print('POS', id_, row, col, vspan, hspan)  # *************************
-            
+
             self.occgrid.Add(opan, (row, col), span=(vspan, hspan),
                              flag=wx.EXPAND | wx.ALL,
                              border=_CELL_BORDER)
-        
+
         caltime.append(_time.time())  # ******************************************
         log.debug('Calendar redraw time: {}'.format(round(caltime[1] -  # ********
                                                           caltime[0], 3)))
-        
+
         # Non so perche' ma se chiamo subito Layout non funziona, devo dargli ****
         #     un delay
         #self.occpanel.Layout()

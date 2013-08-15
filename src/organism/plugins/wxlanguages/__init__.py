@@ -1,25 +1,25 @@
-# Organism - A highly modular and extensible outliner.
+# Outspline - A highly modular and extensible outliner.
 # Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
-# This file is part of Organism.
+# This file is part of Outspline.
 #
-# Organism is free software: you can redistribute it and/or modify
+# Outspline is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# Organism is distributed in the hope that it will be useful,
+# Outspline is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+# along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import wx
 
-import organism.coreaux_api as coreaux_api
-import organism.interfaces.wxgui_api as wxgui_api
+import outspline.coreaux_api as coreaux_api
+import outspline.interfaces.wxgui_api as wxgui_api
 
 
 class MenuLanguages(wx.Menu):
@@ -27,20 +27,20 @@ class MenuLanguages(wx.Menu):
     eng = None
     ID_ITA = None
     ita = None
-    
+
     def __init__(self):
         # Note that the content is still hard-coded, will need to be *************
         # separated from the source in order to enable language choice ***********
-        
+
         wx.Menu.__init__(self)
-        
+
         self.ID_ENG = wx.NewId()
         self.ID_ITA = wx.NewId()
-        
+
         self.eng = self.Append(self.ID_ENG, "&English",
-                               "View Organism in English").Enable(False)
+                               "View Outspline in English").Enable(False)
         self.ita = self.Append(self.ID_ITA, "&Italiano",
-                               "Visualizza Organism in Italiano").Enable(False)
+                               "Visualizza Outspline in Italiano").Enable(False)
 
 
 def main():
