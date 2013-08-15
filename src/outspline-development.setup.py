@@ -66,7 +66,7 @@ def compose_metadata():
             'description': 'Development component for Outspline.',
             'author': 'Dario Giovannetti',
             'author_email': 'dev@dariogiovannetti.net',
-            'url': 'https://github.com/kynikos/outspline-development',
+            'url': 'https://github.com/kynikos/outspline',
             'license': 'GPLv3'}
 
     meta.update(compose_package_metadata('outspline'))
