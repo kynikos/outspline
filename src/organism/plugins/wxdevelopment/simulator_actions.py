@@ -374,7 +374,7 @@ def edit_editor_rules():
         rules = []
 
         for n in range(random.randint(0, 8)):
-            r = random.randint(0, 15)
+            r = random.randint(0, 16)
 
             if r == 0:
                 rule = \
@@ -421,9 +421,12 @@ def edit_editor_rules():
             elif r == 14:
                 rule = \
                     wxscheduler_basicrules_api.create_random_occur_yearly_rule()
-            else:
+            elif r == 15:
                 rule = \
                      wxscheduler_basicrules_api.create_random_except_once_rule()
+            else:
+                rule = \
+                    wxscheduler_basicrules_api.create_random_except_every_interval_rule()
 
             rules.append(rule)
 
@@ -485,6 +488,9 @@ def edit_editor_rules():
                                                             filename, id_, rule)
             elif rule['rule'] == 'except_once':
                 wxscheduler_basicrules_api.simulate_create_except_once_rule(
+                                                            filename, id_, rule)
+            elif rule['rule'] == 'except_regularly_single':
+                wxscheduler_basicrules_api.simulate_create_except_every_interval_rule(
                                                             filename, id_, rule)
     else:
         # Databases are blocked in simulator._do_action

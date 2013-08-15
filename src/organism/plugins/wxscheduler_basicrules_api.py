@@ -85,6 +85,10 @@ def create_random_except_once_rule():
     return wxscheduler_basicrules.except_once.Rule.create_random_rule()
 
 
+def create_random_except_every_interval_rule():
+    return wxscheduler_basicrules.except_every_interval.Rule.create_random_rule()
+
+
 def simulate_create_occur_once_rule(filename, id_, rule):
     wxscheduler_basicrules.occur_once.Rule.insert_rule(filename, id_, rule,
                                                                       rule['#'])
@@ -164,3 +168,8 @@ def simulate_create_occur_yearly_rule(filename, id_, rule):
 def simulate_create_except_once_rule(filename, id_, rule):
     wxscheduler_basicrules.except_once.Rule.insert_rule(filename, id_, rule,
                                                                       rule['#'])
+
+
+def simulate_create_except_every_interval_rule(filename, id_, rule):
+    wxscheduler_basicrules.except_every_interval.Rule.insert_rule(filename, id_,
+                                                                rule, rule['#'])

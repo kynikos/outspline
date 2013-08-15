@@ -34,6 +34,7 @@ import occur_every_month_weekday_inverse
 import occur_every_synodic_month
 import occur_yearly
 import except_once
+import except_every_interval
 
 
 def handle_init_rules(kwargs):
@@ -89,6 +90,9 @@ def handle_init_rules(kwargs):
 
     wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
                                           except_once._RULE_DESC, 'except_once')
+
+    wxscheduler_api.display_rule(kwargs['filename'], kwargs['id_'],
+                      except_every_interval._RULE_DESC, 'except_every_interval')
 
 
 def handle_create_rule(kwargs):
@@ -198,6 +202,10 @@ def handle_edit_rule(kwargs):
     elif rule == 'except_once':
         ruleobj = except_once.Rule(parent, filename, id_, rulev)
         interface_name = 'except_once'
+
+    elif rule == 'except_regularly_single':
+        ruleobj = except_every_interval.Rule(parent, filename, id_, rulev)
+        interface_name = 'except_every_interval'
 
     wxscheduler_api.initialize_rule(filename, id_, ruleobj)
     wxscheduler_api.select_rule(filename, id_, interface_name)
@@ -536,6 +544,18 @@ def handle_choose_rule(kwargs):
 
         ruleobj = except_once.Rule(parent, filename, id_, rulev)
 
+    elif choice == 'except_every_interval':
+        # If the chosen rule type is different from the current rule type, use
+        # the default values for initializing the gui
+        # Do not use `ruled.get('rule') == choice` as 'choice' is just the name
+        # of the interface, not necessarily corresponding to the rule name
+        if ruled.get('rule') == 'except_regularly_single':
+            rulev = ruled.get('#')
+        else:
+            rulev = None
+
+        ruleobj = except_every_interval.Rule(parent, filename, id_, rulev)
+
     wxscheduler_api.initialize_rule(filename, id_, ruleobj)
 
 
@@ -578,6 +598,8 @@ def handle_apply_rule(kwargs):
     elif name == 'occur_yearly':
         object_.apply_rule(filename, id_)
     elif name == 'except_once':
+        object_.apply_rule(filename, id_)
+    elif name == 'except_every_interval':
         object_.apply_rule(filename, id_)
 
 
@@ -648,6 +670,8 @@ def handle_insert_rule(kwargs):
         occur_yearly.Rule.insert_rule(filename, id_, rule, rulev)
     elif name == 'except_once':
         except_once.Rule.insert_rule(filename, id_, rule, rulev)
+    elif name == 'except_regularly_single':
+        except_every_interval.Rule.insert_rule(filename, id_, rule, rulev)
 
 
 def main():
