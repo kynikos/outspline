@@ -69,8 +69,8 @@ def handle_get_next_item_occurrences(kwargs):
     elif rule['rule'] == except_once._RULE_NAME:
         except_once.get_next_item_occurrences(filename, id_, rule, occs)
     elif rule['rule'] == except_regularly_single._RULE_NAME:
-        except_regularly_single.get_next_item_occurrences(filename, id_, rule,
-                                                                           occs)
+        except_regularly_single.get_next_item_occurrences(base_time, filename,
+                                                                id_, rule, occs)
 
 
 def handle_get_occurrences_range(kwargs):
