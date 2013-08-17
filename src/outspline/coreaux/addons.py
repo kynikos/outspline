@@ -19,6 +19,7 @@
 import sys
 import pkgutil
 import os.path
+import importlib
 
 import configfile
 
@@ -40,106 +41,140 @@ def load_config(section, folder):
                                                         folder, p[1] + '.conf'))
 
 
-def load_addon(folder, addon):
-    if folder == 'extensions':
-        section = 'Extensions'
-        logname = 'extension'
-    elif folder == 'interfaces':
-        section = 'Interfaces'
-        logname = 'interface'
+def load_addon(aname, reqversion):
+    try:
+        folder, addon = aname.split('.')
+    except ValueError:
+        # Check core version
+        info = configfile.ConfigFile(os.path.join(configuration._ROOT_DIR,
+                                                        'coreaux', 'core.info'))
+        # Get only the major version number
+        if int(info.get_float('version')) != reqversion:
+            raise exceptions.AddonVersionError()
     else:
-        section = 'Plugins'
-        logname = 'plugin'
+        section, logname = {
+            'extensions': ('Extensions', 'extension'),
+            'interfaces': ('Interfaces', 'interface'),
+            'plugins': ('Plugins', 'plugin'),
+        }[folder]
 
-    faddon = '.'.join((folder, addon))
-    mfaddon = '.'.join(('outspline', faddon))
+        faddon = '.'.join((folder, addon))
+        mfaddon = '.'.join(('outspline', faddon))
 
-    if mfaddon not in sys.modules:
+        # An addon may list a dependency that is not installed
+        # This check must be done before the other ones, in fact if the addon is
+        # not installed it's impossible to read its info
         if addon in configuration.config(section).get_sections():
-            if configuration.config(section)(addon).get_bool('enabled'):
-                info = configfile.ConfigFile(os.path.join(
-                                                        configuration._ROOT_DIR,
-                                                        folder, addon,
-                                                        addon + '.info'))
+            info = configfile.ConfigFile(os.path.join(
+                   configuration._ROOT_DIR, folder, addon, addon + '.info'))
 
-                deps = []
-                opts = []
-                for o in info.get_options():
-                    if o[:10] == 'dependency':
-                        deps.append(info[o])
-                    elif o[:19] == 'optional_dependency':
-                        opts.append(info[o])
+            # Get only the major version number
+            # This version check must be done before the 'mfaddon not in
+            # sys.modules' one, otherwise it's not always performed; for example
+            # two different addons may require the same addon with different
+            # versions, and if the first one required the correct version, when
+            # checking the second one no exception would be raised
+            if reqversion is False or int(info.get_float('version')) == \
+                                                                     reqversion:
+                # This check must be done before the enabled/disabled one, in
+                # order to prevent duplicated log messages in case of disabled
+                # addons optionally required by more than one addon
+                if mfaddon not in sys.modules:
+                    if configuration.config(section)(addon).get_bool('enabled'):
+                        deps = []
+                        opts = []
 
-                for d in deps:
-                    p = d.split('.')
-                    try:
-                        load_addon(p[0], p[1])
-                    except exceptions.AddonDisabledError:
-                        log.warning('Dependency for ' + faddon + ' not found: '
-                                                                            + d)
-                        # Disable the addon in the configuration to prevent
-                        # the following bug: an enabled addon is activated
-                        # since all its dependencies are enabled; that addon
-                        # also has an optional dependency which is also enabled
-                        # and activated; this optional dependency, though, has
-                        # a dependency which is not enabled, so it is not
-                        # imported by this load_addon() function; however,
-                        # since in the configuration it is enabled, it's
-                        # imported by the main addon anyway with
-                        # coreaux_api.import_optional_extension_api(), thus
-                        # breaking the application, since the dependency for the
-                        # optional dependency is still missing
-                        # Note that this change won't be written in the
-                        # configuration file, since it's updated with
-                        # config.export_add()
-                        configuration.config(section)(addon)['enabled'] = 'off'
-                        # Raise AddonDisabledError explicitly because
-                        # otherwise it's caught and ignored in start_addons()
-                        raise
-                        # Note that AddonNotFound instead is never caught and
-                        # will always terminate the program
+                        for o in info.get_options():
+                            osplit = info[o].split(' ')
 
-                for o in opts:
-                    p = o.split('.')
-                    try:
-                        load_addon(p[0], p[1])
-                    except exceptions.AddonNotFoundError:
-                        log.debug('Optional dependency for ' + faddon +
-                                                             ' not found: ' + o)
-                    except exceptions.AddonDisabledError:
-                        log.debug('Optional dependency for ' + faddon +
-                                                              ' disabled: ' + o)
+                            if o[:10] == 'dependency':
+                                deps.append((osplit[0], int(osplit[-1])))
+                            elif o[:19] == 'optional_dependency':
+                                opts.append((osplit[0], int(osplit[-1])))
 
-                log.info('Load ' + logname + ': ' + addon)
+                        for d in deps:
+                            try:
+                                load_addon(*d)
+                            except exceptions.AddonNotFoundError:
+                                log.error('Dependency for ' + faddon +
+                                                          ' not found: ' + d[0])
+                                # Note that AddonNotFoundError is never caught and
+                                # will always terminate the program
+                                raise
+                            except exceptions.AddonDisabledError:
+                                log.warning('Dependency for ' + faddon +
+                                                           ' disabled: ' + d[0])
+                                # Disable the addon in the configuration to
+                                # prevent the following bug: an enabled addon is
+                                # activated since all its dependencies are
+                                # enabled; that addon also has an optional
+                                # dependency which is also enabled and
+                                # activated; this optional dependency, though,
+                                # has a dependency which is not enabled, so it
+                                # is not imported by this load_addon() function;
+                                # however, since in the configuration it is
+                                # enabled, it's imported by the main addon
+                                # anyway with
+                                # coreaux_api.import_optional_extension_api(),
+                                # thus breaking the application, since the
+                                # dependency for the optional dependency is
+                                # still missing
+                                # Note that this change won't be written in the
+                                # configuration file, since it's updated with
+                                # config.export_add()
+                                configuration.config(section)(addon)['enabled'
+                                                                       ] = 'off'
+                                # Propagate AddonDisabledError so it's caught in
+                                # start_addons()
+                                raise
+                            except exceptions.AddonVersionError:
+                                log.error('Dependency for ' + faddon +
+                                    ' found with incompatible version: ' + d[0])
+                                # Note that AddonVersionError is never caught
+                                # and will always terminate the program
+                                raise
 
-                # ext = __import__(mfaddon) somehow doesn't work
-                __import__(mfaddon)
-                mod = sys.modules[mfaddon]
+                        for o in opts:
+                            try:
+                                load_addon(*o)
+                            except exceptions.AddonNotFoundError:
+                                log.debug('Optional dependency for ' + faddon +
+                                                          ' not found: ' + o[0])
+                            except exceptions.AddonVersionError:
+                                log.debug('Optional dependency for ' + faddon +
+                                    ' found with incompatible version: ' + o[0])
+                            except exceptions.AddonDisabledError:
+                                log.debug('Optional dependency for ' + faddon +
+                                                           ' disabled: ' + o[0])
 
-                # Interfaces must have a main() fnuction
-                if hasattr(mod, 'main') or folder == 'interfaces':
-                    mod.main()
+                        log.info('Load ' + logname + ': ' + addon)
+
+                        mod = importlib.import_module(mfaddon)
+
+                        # Interfaces must have a main() fnuction
+                        if hasattr(mod, 'main') or folder == 'interfaces':
+                            mod.main()
+                    else:
+                        raise exceptions.AddonDisabledError()
             else:
-                raise exceptions.AddonDisabledError()
+                raise exceptions.AddonVersionError()
         else:
             raise exceptions.AddonNotFoundError()
 
 
 def start_addons():
     # Use a tuple because a simple dictionary doesn't keep sequence order
-    t = (('Extensions', 'extensions'),
-         ('Interfaces', 'interfaces'),
-         ('Plugins', 'plugins'))
-
-    for p in t:
-        section = p[0]
-        folder = p[1]
+    for section, folder in (('Extensions', 'extensions'),
+                            ('Interfaces', 'interfaces'),
+                            ('Plugins', 'plugins')):
         load_config(section, folder)
         for pkg in configuration.config(section).get_sections():
+            aname = folder + '.' + pkg
+
             try:
-                load_addon(folder, pkg)
+                load_addon(aname, False)
             except exceptions.AddonDisabledError:
-                log.debug(folder + '.' + pkg + ' is disabled')
+                log.debug(aname + ' is disabled')
 
     addons_loaded_event.signal()
 
@@ -166,13 +201,17 @@ def get_addons_info(disabled=True):
     # Do not use a global info, because for example some addons may be disabled
     # by load_addon()
     info = configfile.ConfigFile({}, inherit_options=False)
+
     for t in ('Extensions', 'Interfaces', 'Plugins'):
         info.make_subsection(t)
+
         for a in configuration.config(t).get_sections():
             if disabled or configuration.config(t)(a).get_bool('enabled'):
                 info(t).make_subsection(a)
+                # Let the normal exception be raised if the .info file is not
+                # found
                 info(t)(a).add(os.path.join(configuration._ROOT_DIR, t.lower(),
-                                            a, a + '.info'))
+                                                                a, a + '.info'))
     return info
 
 

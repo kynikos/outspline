@@ -25,6 +25,10 @@ class AddonDisabledError(OutsplineError):
     pass
 
 
+class AddonVersionError(OutsplineError):
+    pass
+
+
 class AddonNotFoundError(OutsplineError):
     pass
 

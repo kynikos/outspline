@@ -273,13 +273,13 @@ class InfoBox(wx.SplitterWindow):
         self.textw.AppendText('\nDependencies:')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
         for d in dependencies:
-            self.textw.AppendText('\n\t{}'.format(d))
+            self.textw.AppendText('\n\t{}.x'.format(d))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nOptional dependencies:')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
         for o in optionaldependencies:
-            self.textw.AppendText('\n\t{}'.format(o))
+            self.textw.AppendText('\n\t{}.x'.format(o))
 
     def compose_list(self, type_):
         config = coreaux_api.get_configuration()
