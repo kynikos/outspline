@@ -22,7 +22,7 @@ __version__ = "1.0.0.a20110710"
 __date__ = "2011-07-10"
 
 _PROJECT_NAME = "Outspline"
-_FILE_EXT = "ogd"
+_FILE_EXT = "osl"
 
 _ROOT_GEOMETRY = '760x540'
 _ROOT_MIN_SIZE = (600, 400)
