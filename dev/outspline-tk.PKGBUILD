@@ -2,7 +2,7 @@
 
 pkgname='outspline-tk'
 pkgver='0.1'
-pkgrel=2
+pkgrel=1
 pkgdesc="Tk component for Outspline."
 arch=('any')
 url="https://github.com/kynikos/outspline"

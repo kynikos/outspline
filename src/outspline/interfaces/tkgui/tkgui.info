@@ -5,3 +5,4 @@ website = https://github.com/kynikos/outspline/
 component = tk
 component_version = 0.1
 component_release_date = 2011-11-25
+dependency_1 = core 0
