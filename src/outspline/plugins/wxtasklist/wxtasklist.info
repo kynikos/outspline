@@ -9,5 +9,3 @@ dependency_1 = extensions.organism
 dependency_2 = extensions.organism_timer
 dependency_3 = extensions.organism_alarms
 dependency_4 = interfaces.wxgui
-optional_dependency_1 = extensions.development
-optional_dependency_2 = plugins.wxcopypaste
