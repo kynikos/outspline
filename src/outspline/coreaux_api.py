@@ -17,6 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import importlib
 
 from coreaux.configuration import info, config
 import coreaux.configuration
@@ -122,29 +123,23 @@ def get_default_history_limit():
 
 def import_extension_api(extension):
     if extension in config('Extensions').get_sections() and \
-                           config('Extensions')(extension).get_bool('enabled'):
-        # extension = __import__('outspline.extensions.' + extension + '_api')
-        # somehow doesn't work
-        __import__('outspline.extensions.' + extension + '_api')
-        return sys.modules['outspline.extensions.' + extension + '_api']
+                            config('Extensions')(extension).get_bool('enabled'):
+        return importlib.import_module(''.join(('outspline.extensions.',
+                                                            extension, '_api')))
 
 
 def import_interface_api(interface):
     if interface in config('Interfaces').get_sections() and \
-                           config('Interfaces')(interface).get_bool('enabled'):
-        # interface = __import__('outspline.interfaces.' + interface + '_api')
-        # somehow doesn't work
-        __import__('outspline.interfaces.' + interface + '_api')
-        return sys.modules['outspline.interfaces.' + interface + '_api']
+                            config('Interfaces')(interface).get_bool('enabled'):
+        return importlib.import_module(''.join(('outspline.interfaces.',
+                                                            interface, '_api')))
 
 
 def import_plugin_api(plugin):
     if plugin in config('Plugins').get_sections() and \
-                                 config('Plugins')(plugin).get_bool('enabled'):
-        # plugin = __import__('outspline.plugins.' + plugin + '_api') somehow
-        # doesn't work
-        __import__('outspline.plugins.' + plugin + '_api')
-        return sys.modules['outspline.plugins.' + plugin + '_api']
+                                  config('Plugins')(plugin).get_bool('enabled'):
+        return importlib.import_module(''.join(('outspline.plugins.', plugin,
+                                                                       '_api')))
 
 
 def bind_to_addons_loaded(handler, bind=True):

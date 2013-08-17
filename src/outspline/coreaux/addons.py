@@ -36,8 +36,8 @@ def load_config(section, folder):
         if p[2]:
             configuration.config(section).make_subsection(p[1])
             configuration.config(section)(p[1]).add(os.path.join(
-                                                       configuration._ROOT_DIR,
-                                                       folder, p[1] + '.conf'))
+                                                        configuration._ROOT_DIR,
+                                                        folder, p[1] + '.conf'))
 
 
 def load_addon(folder, addon):
@@ -58,9 +58,9 @@ def load_addon(folder, addon):
         if addon in configuration.config(section).get_sections():
             if configuration.config(section)(addon).get_bool('enabled'):
                 info = configfile.ConfigFile(os.path.join(
-                                                       configuration._ROOT_DIR,
-                                                       folder, addon,
-                                                       addon + '.info'))
+                                                        configuration._ROOT_DIR,
+                                                        folder, addon,
+                                                        addon + '.info'))
 
                 deps = []
                 opts = []
@@ -75,8 +75,8 @@ def load_addon(folder, addon):
                     try:
                         load_addon(p[0], p[1])
                     except exceptions.AddonDisabledError:
-                        log.warning('Dependency for ' + faddon +
-                                    ' not found: ' + d)
+                        log.warning('Dependency for ' + faddon + ' not found: '
+                                                                            + d)
                         # Disable the addon in the configuration to prevent
                         # the following bug: an enabled addon is activated
                         # since all its dependencies are enabled; that addon
@@ -92,8 +92,7 @@ def load_addon(folder, addon):
                         # Note that this change won't be written in the
                         # configuration file, since it's updated with
                         # config.export_add()
-                        configuration.config(section)(addon)['enabled'
-                                                               ] = 'off'
+                        configuration.config(section)(addon)['enabled'] = 'off'
                         # Raise AddonDisabledError explicitly because
                         # otherwise it's caught and ignored in start_addons()
                         raise
@@ -106,10 +105,10 @@ def load_addon(folder, addon):
                         load_addon(p[0], p[1])
                     except exceptions.AddonNotFoundError:
                         log.debug('Optional dependency for ' + faddon +
-                                                            ' not found: ' + o)
+                                                             ' not found: ' + o)
                     except exceptions.AddonDisabledError:
                         log.debug('Optional dependency for ' + faddon +
-                                                             ' disabled: ' + o)
+                                                              ' disabled: ' + o)
 
                 log.info('Load ' + logname + ': ' + addon)
 
