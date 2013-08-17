@@ -20,7 +20,7 @@ import sqlite3
 
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
-copypaste_api = coreaux_api.import_extension_api('copypaste')
+copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
 
 import queries
 import items

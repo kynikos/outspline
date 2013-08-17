@@ -22,7 +22,7 @@ import time as _time
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 import outspline.extensions.organism_api as organism_api
-copypaste_api = coreaux_api.import_extension_api('copypaste')
+copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
 
 import queries
 import timer

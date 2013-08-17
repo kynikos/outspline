@@ -29,8 +29,8 @@ import outspline.interfaces.wxgui_api as wxgui_api
 import outspline.extensions.organism_api as organism_api
 import outspline.extensions.organism_timer_api as organism_timer_api
 import outspline.extensions.organism_alarms_api as organism_alarms_api
-development_api = coreaux_api.import_extension_api('development')
-wxcopypaste_api = coreaux_api.import_plugin_api('wxcopypaste')
+development_api = coreaux_api.import_optional_extension_api('development')
+wxcopypaste_api = coreaux_api.import_optional_plugin_api('wxcopypaste')
 
 
 class AutoListView(wx.ListView, ListCtrlAutoWidthMixin):

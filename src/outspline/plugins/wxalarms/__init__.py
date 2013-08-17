@@ -24,7 +24,7 @@ import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 import outspline.extensions.organism_alarms_api as organism_alarms_api
 import outspline.interfaces.wxgui_api as wxgui_api
-wxtrayicon_api = coreaux_api.import_plugin_api('wxtrayicon')
+wxtrayicon_api = coreaux_api.import_optional_plugin_api('wxtrayicon')
 
 _ALARMS_MIN_SIZE = (400, 140)
 _ALARMS_TITLE = 'Outspline - Alarms'

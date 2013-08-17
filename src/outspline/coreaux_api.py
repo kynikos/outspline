@@ -121,21 +121,14 @@ def get_default_history_limit():
     return config('History').get_int('default_max_operations')
 
 
-def import_extension_api(extension):
+def import_optional_extension_api(extension):
     if extension in config('Extensions').get_sections() and \
                             config('Extensions')(extension).get_bool('enabled'):
         return importlib.import_module(''.join(('outspline.extensions.',
                                                             extension, '_api')))
 
 
-def import_interface_api(interface):
-    if interface in config('Interfaces').get_sections() and \
-                            config('Interfaces')(interface).get_bool('enabled'):
-        return importlib.import_module(''.join(('outspline.interfaces.',
-                                                            interface, '_api')))
-
-
-def import_plugin_api(plugin):
+def import_optional_plugin_api(plugin):
     if plugin in config('Plugins').get_sections() and \
                                   config('Plugins')(plugin).get_bool('enabled'):
         return importlib.import_module(''.join(('outspline.plugins.', plugin,

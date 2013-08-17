@@ -86,8 +86,8 @@ def load_addon(folder, addon):
                         # imported by this load_addon() function; however,
                         # since in the configuration it is enabled, it's
                         # imported by the main addon anyway with
-                        # coreaux_api.import_extension_api(), thus breaking
-                        # the application, since the dependency for the
+                        # coreaux_api.import_optional_extension_api(), thus
+                        # breaking the application, since the dependency for the
                         # optional dependency is still missing
                         # Note that this change won't be written in the
                         # configuration file, since it's updated with

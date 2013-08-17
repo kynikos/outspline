@@ -19,8 +19,8 @@
 import outspline.core_api as core_api
 import outspline.coreaux_api as coreaux_api
 import outspline.interfaces.wxgui_api as wxgui_api
-wxcopypaste_api = coreaux_api.import_plugin_api('wxcopypaste')
-wxalarms_api = coreaux_api.import_plugin_api('wxalarms')
+wxcopypaste_api = coreaux_api.import_optional_plugin_api('wxcopypaste')
+wxalarms_api = coreaux_api.import_optional_plugin_api('wxalarms')
 
 import msgboxes
 

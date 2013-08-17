@@ -24,8 +24,8 @@ import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 import outspline.extensions.development_api as development_api
 import outspline.interfaces.wxgui_api as wxgui_api
-organism_api = coreaux_api.import_extension_api('organism')
-wxscheduler_basicrules_api = coreaux_api.import_plugin_api(
+organism_api = coreaux_api.import_optional_extension_api('organism')
+wxscheduler_basicrules_api = coreaux_api.import_optional_plugin_api(
                                                        'wxscheduler_basicrules')
 
 import simulator
