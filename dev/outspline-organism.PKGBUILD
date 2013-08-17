@@ -1,9 +1,9 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='outspline-organism'
-pkgver='1.0.0pb1'
-pkgrel=2
-pkgdesc="Organizer component for Outspline, adds advanced time management abilities (PRE-BETA!)"
+pkgver='0.2'
+pkgrel=1
+pkgdesc="Organizer component for Outspline, adds advanced time management abilities"
 arch=('any')
 url="https://github.com/kynikos/outspline"
 license=('GPL3')

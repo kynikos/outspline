@@ -1,9 +1,9 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='outspline'
-pkgver='1.0.0pb1'
-pkgrel=2
-pkgdesc="A highly modular and extensible outliner for managing your notes (PRE-BETA!)"
+pkgver='0.2'
+pkgrel=1
+pkgdesc="Highly modular and extensible outliner for managing your notes"
 arch=('any')
 url="https://github.com/kynikos/outspline"
 license=('GPL3')

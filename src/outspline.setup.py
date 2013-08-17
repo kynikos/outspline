@@ -62,8 +62,8 @@ def compose_package_metadata(head):
 
 def compose_metadata():
     meta = {'name': 'outspline',
-            'version': '1.0.0pb1',
-            'description': 'A highly modular and extensible outliner.',
+            'version': '0.2',
+            'description': 'Highly modular and extensible outliner.',
             'author': 'Dario Giovannetti',
             'author_email': 'dev@dariogiovannetti.net',
             'url': 'https://github.com/kynikos/outspline',

@@ -1,9 +1,9 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='outspline-development'
-pkgver='1.0.0pb1'
-pkgrel=2
-pkgdesc="Development component for Outspline (PRE-BETA!)"
+pkgver='0.2'
+pkgrel=1
+pkgdesc="Development component for Outspline"
 arch=('any')
 url="https://github.com/kynikos/outspline"
 license=('GPL3')

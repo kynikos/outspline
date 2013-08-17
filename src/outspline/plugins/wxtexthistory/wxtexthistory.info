@@ -1,8 +1,8 @@
 author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.1
+version = 0.2
 description = Lets undo and redo the changes to items text.
 website = https://github.com/kynikos/outspline/
 component = main
-component_version = 1.0.0pb1
+component_version = 0.2
 component_release_date = 2011-12-04
 dependency_1 = interfaces.wxgui
