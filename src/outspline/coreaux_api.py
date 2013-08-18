@@ -128,6 +128,15 @@ def import_optional_extension_api(extension):
                                                             extension, '_api')))
 
 
+def import_optional_interface_api(interface):
+    # Interfaces are not optional, but a plugin may support more than one
+    # interface, and this is the safe way to test which one is enabled
+    if interface in config('Interfaces').get_sections() and \
+                            config('Interfaces')(interface).get_bool('enabled'):
+        return importlib.import_module(''.join(('outspline.interfaces.',
+                                                            interface, '_api')))
+
+
 def import_optional_plugin_api(plugin):
     if plugin in config('Plugins').get_sections() and \
                                   config('Plugins')(plugin).get_bool('enabled'):
