@@ -38,6 +38,7 @@ def handle_uncaught_exception(type, value, traceback):
 
 
 def main():
+    configuration.load_addon_info()
     configuration.load_default_config()
 
     import cliargparse

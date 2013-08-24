@@ -58,9 +58,27 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with Outspline.  If not, see <http://www.gnu.org/licenses/>.'''
 
-info = configfile.ConfigFile(_CORE_INFO, inherit_options=False)
 user_config_file = _USER_CONFIG_FILE
+info = None
 config = None
+
+
+def load_addon_info():
+    global info
+
+    info = configfile.ConfigFile({}, inherit_options=False)
+    info.make_subsection('Core')
+    info('Core').add(_CORE_INFO)
+
+    for t in ('Extensions', 'Interfaces', 'Plugins'):
+        info.make_subsection(t)
+
+        for a in os.walk(os.path.join(_ROOT_DIR, t.lower())).next()[1]:
+            info(t).make_subsection(a)
+
+            # Let the normal exception be raised if the .info file is not
+            # found
+            info(t)(a).add(os.path.join(_ROOT_DIR, t.lower(), a, a + '.info'))
 
 
 def load_default_config():

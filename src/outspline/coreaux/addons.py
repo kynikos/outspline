@@ -20,6 +20,7 @@ import sys
 import pkgutil
 import os.path
 import importlib
+import copy
 
 import configfile
 
@@ -58,10 +59,9 @@ def load_addon(faddon, reqversion, tablenames, historynames):
         folder, addon = faddon.split('.')
     except ValueError:
         # Check core version
-        info = configfile.ConfigFile(os.path.join(configuration._ROOT_DIR,
-                                                        'coreaux', 'core.info'))
+
         # Get only the major version number
-        instversion = int(info.get_float('version'))
+        instversion = int(configuration.info('Core').get_float('version'))
 
         if instversion != reqversion:
             raise exceptions.AddonVersionError(instversion)
@@ -86,8 +86,7 @@ def load_addon(faddon, reqversion, tablenames, historynames):
         if not configuration.config(section)(addon).get_bool('enabled'):
             raise exceptions.AddonDisabledError()
 
-        info = configfile.ConfigFile(os.path.join(configuration._ROOT_DIR,
-                                                folder, addon, addon + '.info'))
+        info = configuration.info(section)(addon)
 
         # Get only the major version number
         # This version check must be done before the 'mfaddon not in
@@ -247,8 +246,7 @@ def load_addon(faddon, reqversion, tablenames, historynames):
 
 
 def start_addons():
-    info = configfile.ConfigFile(os.path.join(configuration._ROOT_DIR,
-                                                        'coreaux', 'core.info'))
+    info = configuration.info('Core')
 
     tablenames = {t: 'core' for t in info['provides_tables'].split(' ') if t}
     historynames = {a: 'core' for a in info['provides_history_actions'
@@ -304,21 +302,17 @@ def start_interface():
 
 
 def get_addons_info(disabled=True):
-    # Do not use a global info, because for example some addons may be disabled
-    # by load_addon()
-    info = configfile.ConfigFile({}, inherit_options=False)
+    if not disabled:
+        info = copy.deepcopy(configuration.info)
 
-    for t in ('Extensions', 'Interfaces', 'Plugins'):
-        info.make_subsection(t)
+        for t in ('Extensions', 'Interfaces', 'Plugins'):
+            for a in info(t).get_sections():
+                if not configuration.config(t)(a).get_bool('enabled'):
+                    info(t)(a).delete()
 
-        for a in configuration.config(t).get_sections():
-            if disabled or configuration.config(t)(a).get_bool('enabled'):
-                info(t).make_subsection(a)
-                # Let the normal exception be raised if the .info file is not
-                # found
-                info(t)(a).add(os.path.join(configuration._ROOT_DIR, t.lower(),
-                                                                a, a + '.info'))
-    return info
+        return info
+    else:
+        return configuration.info
 
 
 def main():

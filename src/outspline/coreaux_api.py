@@ -33,38 +33,37 @@ import coreaux.addons
 
 
 def get_main_component_version():
-    return info['component_version']
+    return info('Core')['component_version']
 
 
 def get_core_version():
-    return info['version']
+    return info('Core')['version']
 
 
 def get_main_component_release_date():
-    return info['component_release_date']
+    return info('Core')['component_release_date']
 
 
 def get_website():
-    return info['website']
+    return info('Core')['website']
 
 
 def get_core_contributors():
-    return [info[o] for o in info.get_options() if o[:11] == 'contributor']
+    return [info('Core')[o] for o in info.get_options() if o[:11] ==
+                                                                  'contributor']
 
 
 def get_installed_components():
-    components = ['{} {} ({})'.format(info['component'],
-                                      info['component_version'],
-                                      info['component_release_date'])]
-    addons = coreaux.addons.get_addons_info()
-    for t in addons.get_sections():
-        for a in addons(t).get_sections():
-            addon = addons(t)(a)
-            component = '{} {} ({})'.format(addon['component'],
-                                            addon['component_version'],
-                                            addon['component_release_date'])
-            if component not in components:
-                components.append(component)
+    components = set()
+    components.add((info('Core')['component'], info('Core')['component_version'],
+                                        info('Core')['component_release_date']))
+
+    for t in ('Extensions', 'Interfaces', 'Plugins'):
+        for a in info(t).get_sections():
+            addon = info(t)(a)
+            components.add((addon['component'], addon['component_version'],
+                                               addon['component_release_date']))
+
     return components
 
 
@@ -86,7 +85,7 @@ def get_disclaimer():
 
 
 def get_description():
-    return info['description']
+    return info('Core')['description']
 
 
 def get_long_description():
