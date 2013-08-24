@@ -168,15 +168,12 @@ class Database(history.DBHistory):
 
                 info = coreaux_api.get_addons_info(disabled=False)
 
-                for ext in info('Extensions').get_sections():
-                    cursor.execute(queries.compatibility_insert, ('Extension',
-                                       ext, info('Extensions')(ext)['version']))
-                for ui in info('Interfaces').get_sections():
-                    cursor.execute(queries.compatibility_insert, ('Interface',
-                                         ui, info('Interfaces')(ui)['version']))
-                for plg in info('Plugins').get_sections():
-                    cursor.execute(queries.compatibility_insert, ('Plugin',
-                                          plg, info('Plugins')(plg)['version']))
+                for t in ('Extensions', 'Interfaces', 'Plugins'):
+                    for a in info(t).get_sections():
+                        if info(t)(a).get('affects_database', fallback=None
+                                                                      ) != 'no':
+                            cursor.execute(queries.compatibility_insert, (t, a,
+                                                         info(t)(a)['version']))
 
                 cursor.execute(queries.items_create)
 
@@ -225,41 +222,20 @@ class Database(history.DBHistory):
             if row[1] == 'Core':
                 if row[3] != coreaux_api.get_core_version():
                     break
-            elif row[1] == 'Extension':
-                if row[2] in info('Extensions').get_sections():
-                    if row[3] == info('Extensions')(str(row[2]))['version']:
-                        info('Extensions')(str(row[2])).delete()
-                    else:
-                        break
-                else:
-                    break
-            elif row[1] == 'Interface':
-                if row[2] in info('Interfaces').get_sections():
-                    if row[3] == info('Interfaces')(str(row[2]))['version']:
-                        info('Interfaces')(str(row[2])).delete()
-                    else:
-                        break
-                else:
-                    break
-            elif row[1] == 'Plugin':
-                if row[2] in info('Plugins').get_sections():
-                    if row[3] == info('Plugins')(str(row[2]))['version']:
-                        info('Plugins')(str(row[2])).delete()
-                    else:
+            elif row[1] in info.get_sections():
+                if row[2] in info(str(row[1])).get_sections():
+                    # Only compare major versions, as they are supposed to keep
+                    # backward compatibility
+                    if int(float(row[3])) != int(info(str(row[1]))(str(row[2])
+                                                        ).get_float('version')):
                         break
                 else:
                     break
             else:
                 break
         else:
-            if ('Extensions' not in info.get_sections() or
-                              len(info('Extensions').get_sections()) == 0) and (
-                              'Interfaces' not in info.get_sections() or
-                              len(info('Interfaces').get_sections()) == 0) and (
-                              'Plugins' not in info.get_sections() or
-                              len(info('Plugins').get_sections()) == 0):
-                qconn.close()
-                return True
+            qconn.close()
+            return True
 
         qconn.close()
         return False
