@@ -23,11 +23,13 @@ from outspline.coreaux_api import log, Event
 import outspline.core_api as core_api
 
 import queries
-from exceptions import BadOccurrenceError, BadExceptRuleError
+from exceptions import (BadOccurrenceError, BadExceptRuleError,
+                                                    ConflictingRuleHandlerError)
 
 update_item_rules_event = Event()
-get_occurrences_range_event = Event()
 get_alarms_event = Event()
+
+rule_handlers = {}
 
 
 class OccurrencesRange():
@@ -174,6 +176,14 @@ class OccurrencesRange():
         return ctime
 
 
+def install_rule_handler(rulename, handler):
+    global rule_handlers
+
+    if rulename not in rule_handlers:
+        rule_handlers[rulename] = handler
+    else:
+        raise ConflictingRuleHandlerError()
+
 def insert_item(filename, id_, group, description='Insert item'):
     query_redo = queries.rules_insert.format(id_)
     query_undo = queries.rules_delete_id.format(id_)
@@ -291,8 +301,8 @@ def get_occurrences_range(mint, maxt):
         for id_ in core_api.get_items_ids(filename):
             rules = get_item_rules(filename, id_)
             for rule in rules:
-                get_occurrences_range_event.signal(mint=mint, maxt=maxt,
-                               filename=filename, id_=id_, rule=rule, occs=occs)
+                rule_handlers[rule['rule']](mint, maxt, filename, id_, rule,
+                                                                           occs)
 
         # Get active alarms *after* all occurrences, to avoid except rules
         get_alarms_event.signal(mint=mint, maxt=maxt, filename=filename,

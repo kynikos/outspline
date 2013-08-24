@@ -24,8 +24,9 @@ import outspline.core_api as core_api
 import outspline.extensions.organism_api as organism_api
 
 import queries
+from exceptions import (BadOccurrenceError, BadExceptRuleError,
+                                                    ConflictingRuleHandlerError)
 
-get_next_item_occurrences_event = Event()
 get_next_occurrences_event = Event()
 search_next_occurrences_event = Event()
 activate_occurrences_range_event = Event()
@@ -33,6 +34,8 @@ activate_old_occurrences_event = Event()
 activate_occurrences_event = Event()
 
 timer = None
+
+rule_handlers = {}
 
 
 class NextOccurrences():
@@ -153,6 +156,15 @@ class NextOccurrences():
         return (minstart, maxend)
 
 
+def install_rule_handler(rulename, handler):
+    global rule_handlers
+
+    if rulename not in rule_handlers:
+        rule_handlers[rulename] = handler
+    else:
+        raise ConflictingRuleHandlerError()
+
+
 def get_next_occurrences(base_time=None, base_times=None):
     occs = NextOccurrences()
 
@@ -166,8 +178,8 @@ def get_next_occurrences(base_time=None, base_times=None):
             rules = organism_api.get_item_rules(filename, id_)
 
             for rule in rules:
-                get_next_item_occurrences_event.signal(base_time=base_time,
-                               filename=filename, id_=id_, rule=rule, occs=occs)
+                rule_handlers[rule['rule']](base_time, filename, id_, rule,
+                                                                           occs)
 
         get_next_occurrences_event.signal(base_time=base_time,
                                                    filename=filename, occs=occs)

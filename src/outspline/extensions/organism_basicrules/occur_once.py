@@ -40,7 +40,7 @@ def make_rule(start, end, alarm, guiconfig):
         raise BadRuleError()
 
 
-def get_occurrences_range(filename, id_, rule, occs):
+def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
     # The rule is checked in make_rule, no need to use occs.add
     occs.add_safe({'filename': filename,
                    'id_': id_,

@@ -21,6 +21,10 @@ import outspline.core_api as core_api
 from organism import queries, items
 
 
+def install_rule_handler(rulename, handler):
+    return items.install_rule_handler(rulename, handler)
+
+
 def update_item_rules(filename, id_, rules, group,
                       description='Update item rules'):
     # All rules must be able to produce only occurrences compliant with the
@@ -52,10 +56,6 @@ def get_occurrences_range(mint, maxt):
 
 def bind_to_update_item_rules(handler, bind=True):
     return items.update_item_rules_event.bind(handler, bind)
-
-
-def bind_to_get_occurrences_range(handler, bind=True):
-    return items.get_occurrences_range_event.bind(handler, bind)
 
 
 def bind_to_get_alarms(handler, bind=True):
