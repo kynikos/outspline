@@ -5,5 +5,7 @@ website = https://github.com/kynikos/outspline/
 component = organism
 component_version = 0.2
 component_release_date = 2011-12-04
+provides_tables =
+provides_history_actions = rules_insert rules_update rules_delete
 dependency_1 = core 0
 optional_dependency_1 = extensions.copypaste 0

@@ -5,3 +5,5 @@ website = https://github.com/kynikos/outspline/
 component = main
 component_version = 0.2
 component_release_date = 2011-12-04
+provides_tables = Properties CoMpatibility Items History
+provides_history_actions = insert update delete
