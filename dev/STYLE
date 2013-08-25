@@ -1,5 +1,9 @@
 ### BEST PRACTICES ###
+- Component versioning follows http://semver.org/
+  Addon versioning merges the MINOR and PATCH numbers
 - Make sure that every database table is managed by one and only one extension
+- Major addon version number should be increased when breaking backward
+  compatibility
 - Import optional dependency APIs with the appropriate function
 - Don't rely on automatic database maintenance procedures when the database or
   the entire program is closed, in fact in case of a crash, since the procedure
