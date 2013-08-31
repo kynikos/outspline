@@ -36,6 +36,7 @@ activate_occurrences_event = Event()
 timer = None
 
 rule_handlers = {}
+cdbs = set()
 
 
 class NextOccurrences():
@@ -170,7 +171,7 @@ def get_next_occurrences(base_time=None, base_times=None):
 
     search_start = (_time.time(), _time.clock())
 
-    for filename in core_api.get_open_databases():
+    for filename in cdbs:
         if not base_time:
             base_time = base_times[filename]
 
@@ -200,8 +201,7 @@ def get_last_search(filename):
 
 
 def get_last_search_all():
-    return {filename: get_last_search(filename)
-                                  for filename in core_api.get_open_databases()}
+    return {filename: get_last_search(filename) for filename in cdbs}
 
 
 def set_last_search(filename, tstamp):
@@ -212,12 +212,12 @@ def set_last_search(filename, tstamp):
 
 
 def set_last_search_all(tstamp):
-    for filename in core_api.get_open_databases():
+    for filename in cdbs:
         set_last_search(filename, tstamp)
 
 
 def set_last_search_all_safe(tstamp):
-    for filename in core_api.get_open_databases():
+    for filename in cdbs:
         conn = core_api.get_connection(filename)
         cur = conn.cursor()
 

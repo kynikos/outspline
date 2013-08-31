@@ -44,6 +44,10 @@ def paste_items_as_siblings(filename, baseid, description='Paste as siblings'):
                                 description=description)
 
 
+def can_paste_safely(filename):
+    return copypaste.can_paste_safely(filename)
+
+
 def has_copied_items(filename):
     return copypaste.has_copied_items(filename)
 
@@ -62,3 +66,7 @@ def bind_to_paste_item(handler, bind=True):
 
 def bind_to_items_pasted(handler, bind=True):
     return copypaste.items_pasted_event.bind(handler, bind)
+
+
+def bind_to_safe_paste_check(handler, bind=True):
+    return copypaste.paste_check_event.bind(handler, bind)

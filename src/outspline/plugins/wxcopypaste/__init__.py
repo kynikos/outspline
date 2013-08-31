@@ -24,6 +24,8 @@ import outspline.core_api as core_api
 import outspline.interfaces.wxgui_api as wxgui_api
 import outspline.extensions.copypaste_api as copypaste_api
 
+import msgboxes
+
 cut_items_event = Event()
 
 ID_CUT = None
@@ -89,42 +91,47 @@ def copy_items(event):
     core_api.release_databases()
 
 
-def paste_items_as_siblings(event):
+def paste_items_as_siblings(event, no_confirm=False):
     core_api.block_databases()
 
     treedb = wxgui_api.get_active_database()
+
     if treedb:
         filename = treedb.get_filename()
 
-        # Do not use none=False in order to allow pasting in an empty database
-        selection = treedb.get_selections(many=False)
-        if selection:
-            base = selection[0]
-            baseid = treedb.get_item_id(base)
+        if no_confirm or copypaste_api.can_paste_safely(filename) or \
+                        msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK:
+            # Do not use none=False in order to allow pasting in an empty
+            # database
+            selection = treedb.get_selections(many=False)
 
-            roots = copypaste_api.paste_items_as_siblings(filename, baseid,
-                                                     description='Paste items')
+            if selection:
+                base = selection[0]
+                baseid = treedb.get_item_id(base)
 
-            for r in roots:
-                treeroot = treedb.insert_item(selection[0], 'after', id_=r)
-                treedb.create(base=treeroot)
-        else:
-            base = treedb.get_root()
-            baseid = treedb.get_item_id(base)
+                roots = copypaste_api.paste_items_as_siblings(filename, baseid,
+                                                      description='Paste items')
 
-            roots = copypaste_api.paste_items_as_children(filename, baseid,
-                                                     description='Paste items')
+                for r in roots:
+                    treeroot = treedb.insert_item(selection[0], 'after', id_=r)
+                    treedb.create(base=treeroot)
+            else:
+                base = treedb.get_root()
+                baseid = treedb.get_item_id(base)
 
-            for r in roots:
-                treeroot = treedb.insert_item(base, 'append', id_=r)
-                treedb.create(base=treeroot)
+                roots = copypaste_api.paste_items_as_children(filename, baseid,
+                                                      description='Paste items')
 
-        treedb.history.refresh()
+                for r in roots:
+                    treeroot = treedb.insert_item(base, 'append', id_=r)
+                    treedb.create(base=treeroot)
+
+            treedb.history.refresh()
 
     core_api.release_databases()
 
 
-def paste_items_as_children(event):
+def paste_items_as_children(event, no_confirm=False):
     core_api.block_databases()
 
     treedb = wxgui_api.get_active_database()
@@ -132,16 +139,19 @@ def paste_items_as_children(event):
         selection = treedb.get_selections(none=False, many=False)
         if selection:
             filename = treedb.get_filename()
-            baseid = treedb.get_item_id(selection[0])
 
-            roots = copypaste_api.paste_items_as_children(filename, baseid,
-                                                 description='Paste sub-items')
+            if no_confirm or copypaste_api.can_paste_safely(filename) or \
+                        msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK:
+                baseid = treedb.get_item_id(selection[0])
 
-            for r in roots:
-                treeroot = treedb.insert_item(selection[0], 'append', id_=r)
-                treedb.create(base=treeroot)
+                roots = copypaste_api.paste_items_as_children(filename, baseid,
+                                                  description='Paste sub-items')
 
-            treedb.history.refresh()
+                for r in roots:
+                    treeroot = treedb.insert_item(selection[0], 'append', id_=r)
+                    treedb.create(base=treeroot)
+
+                treedb.history.refresh()
 
     core_api.release_databases()
 

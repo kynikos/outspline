@@ -27,6 +27,8 @@ copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
 import queries
 import alarmsmod
 
+_ADDON_NAME = ('Extensions', 'organism_alarms')
+
 
 def create_copy_table():
     mem = core_api.get_memory_connection()
@@ -45,53 +47,74 @@ def handle_create_database(kwargs):
     conn.close()
 
 
+def handle_open_database_dirty(kwargs):
+    info = coreaux_api.get_addons_info()
+    dependencies = info(_ADDON_NAME[0])(_ADDON_NAME[1]
+                                     )['database_dependency_group_1'].split(' ')
+
+    if not set(dependencies) - set(kwargs['dependencies']):
+        alarmsmod.cdbs.add(kwargs['filename'])
+
+
 def handle_close_database(kwargs):
-    del alarmsmod.changes[kwargs['filename']]
-    del alarmsmod.dismiss_state[kwargs['filename']]
+    try:
+        del alarmsmod.changes[kwargs['filename']]
+        del alarmsmod.dismiss_state[kwargs['filename']]
+    except KeyError:
+        pass
+    else:
+        alarmsmod.cdbs.discard(kwargs['filename'])
 
 
 def handle_check_pending_changes(kwargs):
     filename = kwargs['filename']
 
-    conn = core_api.get_connection(filename)
-    cur = conn.cursor()
-    change_state = alarmsmod.changes[filename] != [row for row in cur.execute(
-                                                         queries.alarms_select)]
-    core_api.give_connection(filename, conn)
+    if filename in alarmsmod.cdbs:
+        conn = core_api.get_connection(filename)
+        cur = conn.cursor()
+        change_state = alarmsmod.changes[filename] != [row for row in
+                                             cur.execute(queries.alarms_select)]
+        core_api.give_connection(filename, conn)
 
-    if change_state or alarmsmod.dismiss_state[filename]:
-        core_api.set_modified(filename)
+        if change_state or alarmsmod.dismiss_state[filename]:
+            core_api.set_modified(filename)
 
 
 def handle_reset_modified_state(kwargs):
     filename = kwargs['filename']
 
-    conn = core_api.get_connection(filename)
-    cur = conn.cursor()
-    alarmsmod.changes[filename] = [row for row in cur.execute(
+    if filename in alarmsmod.cdbs:
+        conn = core_api.get_connection(filename)
+        cur = conn.cursor()
+        alarmsmod.changes[filename] = [row for row in cur.execute(
                                                          queries.alarms_select)]
-    core_api.give_connection(filename, conn)
+        core_api.give_connection(filename, conn)
 
-    alarmsmod.dismiss_state[filename] = False
+        alarmsmod.dismiss_state[filename] = False
 
 
 def handle_save_database_copy(kwargs):
-    qconn = core_api.get_connection(kwargs['origin'])
-    qconnd = sqlite3.connect(kwargs['destination'])
-    cur = qconn.cursor()
-    curd = qconnd.cursor()
+    origin = kwargs['origin']
 
-    cur.execute(queries.alarms_select)
-    for row in cur:
-        curd.execute(queries.alarms_insert_copy, tuple(row))
+    if origin in alarmsmod.cdbs:
+        qconn = core_api.get_connection(origin)
+        qconnd = sqlite3.connect(kwargs['destination'])
+        cur = qconn.cursor()
+        curd = qconnd.cursor()
 
-    core_api.give_connection(kwargs['origin'], qconn)
+        cur.execute(queries.alarms_select)
+        for row in cur:
+            curd.execute(queries.alarms_insert_copy, tuple(row))
 
-    qconnd.commit()
-    qconnd.close()
+        core_api.give_connection(origin, qconn)
+
+        qconnd.commit()
+        qconnd.close()
 
 
 def handle_copy_items(kwargs):
+    # Do not check if kwargs['filename'] is in cdbs, always clear the table as
+    # the other functions rely on the table to be clear
     mem = core_api.get_memory_connection()
     cur = mem.cursor()
     cur.execute(queries.copyalarms_delete)
@@ -99,14 +122,15 @@ def handle_copy_items(kwargs):
 
 
 def handle_copy_item(kwargs):
-    filename = kwargs['filename']
-    id_ = kwargs['id_']
-
-    alarmsmod.copy_alarms(filename, id_)
+    alarmsmod.copy_alarms(kwargs['filename'], kwargs['id_'])
 
 
 def handle_paste_item(kwargs):
     alarmsmod.paste_alarms(kwargs['filename'], kwargs['id_'], kwargs['oldid'])
+
+
+def handle_safe_paste_check(kwargs):
+    alarmsmod.can_paste_safely(kwargs['filename'], kwargs['exception'])
 
 
 def handle_delete_item(kwargs):
@@ -130,48 +154,33 @@ def handle_history_clean(kwargs):
 
 
 def handle_get_alarms(kwargs):
-    mint = kwargs['mint']
-    maxt = kwargs['maxt']
-    filename = kwargs['filename']
-    occs = kwargs['occs']
-
-    alarmsmod.get_alarms(mint, maxt, filename, occs)
+    alarmsmod.get_alarms(kwargs['mint'], kwargs['maxt'], kwargs['filename'],
+                                                                 kwargs['occs'])
 
 
 def handle_get_next_occurrences(kwargs):
-    last_search = kwargs['base_time']
-    filename = kwargs['filename']
-    occs = kwargs['occs']
-
-    alarmsmod.get_snoozed_alarms(last_search, filename, occs)
+    alarmsmod.get_snoozed_alarms(kwargs['base_time'], kwargs['filename'],
+                                                                 kwargs['occs'])
 
 
 def handle_activate_occurrences_range(kwargs):
-    filename = kwargs['filename']
-    mint = kwargs['mint']
-    maxt = kwargs['maxt']
-    occsd = kwargs['occsd']
-
-    alarmsmod.activate_alarms_range(filename, mint, maxt, occsd)
+    alarmsmod.activate_alarms_range(kwargs['filename'], kwargs['mint'],
+                                                kwargs['maxt'], kwargs['occsd'])
 
 
 def handle_activate_old_occurrences(kwargs):
-    occsd = kwargs['oldoccsd']
-
-    alarmsmod.activate_old_alarms(occsd)
+    alarmsmod.activate_old_alarms(kwargs['oldoccsd'])
 
 
 def handle_activate_occurrences(kwargs):
-    time = kwargs['time']
-    occsd = kwargs['occsd']
-
-    alarmsmod.activate_alarms(time, occsd)
+    alarmsmod.activate_alarms(kwargs['time'], kwargs['occsd'])
 
 
 def main():
     create_copy_table()
 
     core_api.bind_to_create_database(handle_create_database)
+    core_api.bind_to_open_database_dirty(handle_open_database_dirty)
     core_api.bind_to_check_pending_changes(handle_check_pending_changes)
     core_api.bind_to_reset_modified_state(handle_reset_modified_state)
     core_api.bind_to_close_database(handle_close_database)
@@ -195,3 +204,4 @@ def main():
         copypaste_api.bind_to_copy_items(handle_copy_items)
         copypaste_api.bind_to_copy_item(handle_copy_item)
         copypaste_api.bind_to_paste_item(handle_paste_item)
+        copypaste_api.bind_to_safe_paste_check(handle_safe_paste_check)

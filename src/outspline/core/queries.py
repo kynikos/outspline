@@ -40,7 +40,7 @@ compatibility_create = ('CREATE TABLE CoMpatibility ('
                                                   'CM_id INTEGER PRIMARY KEY, '
                                                   'CM_type TEXT, '
                                                   'CM_addon TEXT, '
-                                                  'CM_version TEXT)')
+                                                  'CM_version INTEGER)')
 
 compatibility_select = 'SELECT * FROM CoMpatibility'
 

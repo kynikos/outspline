@@ -189,7 +189,9 @@ class MenuDev(wx.Menu):
                     id_ = self._populate_tree_item(mode, filename, itemid,
                                                        group, text, description)
 
-                    if organism_api and wxscheduler_basicrules_api:
+                    if organism_api and wxscheduler_basicrules_api and \
+                                                                   filename in \
+                                    organism_api.get_supported_open_databases():
                         self._populate_tree_rules(filename, id_, group,
                                                                     description)
 

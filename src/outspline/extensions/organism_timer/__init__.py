@@ -27,6 +27,8 @@ copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
 import queries
 import timer
 
+_ADDON_NAME = ('Extensions', 'organism_timer')
+
 
 def handle_create_database(kwargs):
     # Cannot use core_api.get_connection() here because the database isn't
@@ -39,31 +41,52 @@ def handle_create_database(kwargs):
     conn.close()
 
 
+def handle_open_database_dirty(kwargs):
+    info = coreaux_api.get_addons_info()
+    dependencies = info(_ADDON_NAME[0])(_ADDON_NAME[1]
+                                     )['database_dependency_group_1'].split(' ')
+
+    if not set(dependencies) - set(kwargs['dependencies']):
+        timer.cdbs.add(kwargs['filename'])
+
+
 def handle_open_database(kwargs):
-    timer.search_old_occurrences(kwargs['filename'])
-    timer.search_next_occurrences()
+    filename = kwargs['filename']
+
+    if filename in timer.cdbs:
+        timer.search_old_occurrences(filename)
+        timer.search_next_occurrences()
 
 
 def handle_save_database_copy(kwargs):
-    qconn = core_api.get_connection(kwargs['origin'])
-    qconnd = sqlite3.connect(kwargs['destination'])
-    cur = qconn.cursor()
-    curd = qconnd.cursor()
+    origin = kwargs['origin']
 
-    cur.execute(queries.timerproperties_select)
-    for row in cur:
-        curd.execute(queries.timerproperties_update_copy, tuple(row))
+    if origin in timer.cdbs:
+        qconn = core_api.get_connection(origin)
+        qconnd = sqlite3.connect(kwargs['destination'])
+        cur = qconn.cursor()
+        curd = qconnd.cursor()
 
-    core_api.give_connection(kwargs['origin'], qconn)
+        cur.execute(queries.timerproperties_select)
+        for row in cur:
+            curd.execute(queries.timerproperties_update_copy, tuple(row))
 
-    qconnd.commit()
-    qconnd.close()
+        core_api.give_connection(origin, qconn)
+
+        qconnd.commit()
+        qconnd.close()
+
+
+def handle_close_database(kwargs):
+    timer.cdbs.discard(kwargs['filename'])
+    timer.search_next_occurrences()
 
 
 def main():
     core_api.bind_to_create_database(handle_create_database)
+    core_api.bind_to_open_database_dirty(handle_open_database_dirty)
     core_api.bind_to_open_database(handle_open_database)
-    core_api.bind_to_close_database(timer.search_next_occurrences)
+    core_api.bind_to_close_database(handle_close_database)
     core_api.bind_to_save_database_copy(handle_save_database_copy)
     core_api.bind_to_delete_items(timer.search_next_occurrences)
     core_api.bind_to_history(timer.search_next_occurrences)

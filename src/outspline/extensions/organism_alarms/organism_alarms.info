@@ -12,3 +12,4 @@ dependency_1 = core 0
 dependency_2 = extensions.organism 0
 dependency_3 = extensions.organism_timer 0
 optional_dependency_1 = extensions.copypaste 0
+database_dependency_group_1 = core.0 extensions.organism.0 extensions.organism_timer.0 extensions.organism_alarms.0

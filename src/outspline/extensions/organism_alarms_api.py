@@ -19,12 +19,16 @@
 from organism_alarms import alarmsmod
 
 
-def snooze_alarms(alarmst, stime):
-    alarmsmod.snooze_alarms(alarmst, stime)
+def get_supported_open_databases():
+    return alarmsmod.cdbs
 
 
-def dismiss_alarms(alarmst):
-    alarmsmod.dismiss_alarms(alarmst)
+def snooze_alarms(alarmsd, stime):
+    alarmsmod.snooze_alarms(alarmsd, stime)
+
+
+def dismiss_alarms(alarmsd):
+    alarmsmod.dismiss_alarms(alarmsd)
 
 
 def bind_to_alarm(handler, bind=True):

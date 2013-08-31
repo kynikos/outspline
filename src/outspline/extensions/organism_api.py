@@ -44,6 +44,10 @@ def update_item_rules(filename, id_, rules, group,
                                    description=description)
 
 
+def get_supported_open_databases():
+    return items.cdbs
+
+
 def get_item_rules(filename, id_):
     return items.get_item_rules(filename, id_)
 
