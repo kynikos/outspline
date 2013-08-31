@@ -34,6 +34,8 @@ rules_delete_id = 'DELETE FROM Rules WHERE R_id={}'
 copyrules_create = ("CREATE TABLE CopyRules (CR_id INTEGER, "
                                             "CR_rules TEXT)")
 
+copyrules_select = 'SELECT CR_id FROM CopyRules WHERE CR_rules!=? LIMIT 1'
+
 copyrules_select_id = 'SELECT CR_rules FROM CopyRules WHERE CR_id=?'
 
 copyrules_insert = 'INSERT INTO CopyRules (CR_id, CR_rules) VALUES (?, ?)'
