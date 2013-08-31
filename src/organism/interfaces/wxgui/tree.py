@@ -78,9 +78,6 @@ class Database(wx.SplitterWindow):
         self.hpanel.Show(False)
         self.Initialize(self.treec)
 
-        if history.is_shown():
-            self.show_history()
-
         self.create()
 
         self.accels = [(wx.ACCEL_SHIFT | wx.ACCEL_CTRL, ord('s'),
@@ -185,8 +182,17 @@ class Database(wx.SplitterWindow):
         nb_left = wx.GetApp().nb_left
         global dbs
         dbs[filename] = cls(filename, nb_left)
+
         nb_left.add_page(dbs[filename], os.path.basename(filename),
                          select=True)
+
+        # The history panel must be shown only *after* adding the page to the
+        # notebook, otherwise *for*some*reason* the databases opened
+        # automatically by the wxsession plugin (those opened manually aren't
+        # affected) will have the sash of the SplitterWindow not correctly
+        # positioned (only if using SetSashGravity)
+        if history.is_shown():
+            dbs[filename].show_history()
 
     def insert_item(self, base, mode, label=None, data=None, id_=None):
         # The empty string is a valid label
@@ -195,7 +201,7 @@ class Database(wx.SplitterWindow):
                                                                 id_))
 
         if not data:
-            data = wx.TreeItemData(int(id_))
+            data = wx.TreeItemData(id_)
 
         if id_ == None:
             id_ = data.GetData()
@@ -318,7 +324,7 @@ class Database(wx.SplitterWindow):
         self.SetSashGravity(1.0)
 
         # The same workaround for http://trac.wxwidgets.org/ticket/9821
-        # (self.SendSizeEvent()) used in rootw, here sets sash position to
+        # (self.SendSizeEvent()) used in rootw, here would set sash position to
         # min pane size
 
         self.SetSashPosition(-80)
@@ -368,7 +374,7 @@ class Database(wx.SplitterWindow):
         while child[0].IsOk():
             children.append(child[0])
             child = self.treec.GetNextChild(treeitem, cookie=child[1])
-        return(children)
+        return children
 
     def get_item_descendants(self, treeitem):
         descendants = []
@@ -392,6 +398,21 @@ class Database(wx.SplitterWindow):
         # However in this case all the items have just been deselected, so no
         # check must be done
         self.treec.SelectItem(treeitem)
+
+    def unselect_all_items(self):
+        self.treec.UnselectAll()
+
+    def add_item_to_selection(self, treeitem):
+        # If the item is already selected, SelectItem would actually deselect
+        # it, see http://trac.wxwidgets.org/ticket/11157
+        if not self.treec.IsSelected(treeitem):
+            self.treec.SelectItem(treeitem)
+
+    def remove_item_from_selection(self, treeitem):
+        # If the item is not selected, UnselectItem may actually select it, see
+        # http://trac.wxwidgets.org/ticket/11157
+        if self.treec.IsSelected(treeitem):
+            self.treec.UnselectItem(treeitem)
 
     @staticmethod
     def make_item_title(text):

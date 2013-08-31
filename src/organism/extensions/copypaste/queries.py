@@ -21,8 +21,6 @@ copy_create = ("CREATE TABLE Copy (C_id INTEGER, "
                                   "C_previous INTEGER, "
                                   "C_text TEXT)")
 
-copy_select = 'SELECT * FROM Copy'
-
 copy_select_check = 'SELECT C_id FROM Copy LIMIT 1'
 
 copy_select_parent = ('SELECT C_id, C_text FROM Copy WHERE C_parent=? '

@@ -19,6 +19,7 @@
 import os as _os
 import wx
 
+from organism.coreaux_api import log
 import organism.coreaux_api as coreaux_api
 import organism.core_api as core_api
 import organism.extensions.organizer_alarms_api as organizer_alarms_api
@@ -41,6 +42,8 @@ _ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
                                                    wx.ART_MESSAGE_BOX))
 _ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms', wx.ART_OTHER))
 _WRAP = 260
+
+alarmswindow = None
 
 
 class AlarmsWindow():
@@ -72,7 +75,6 @@ class AlarmsWindow():
         self.window.SetSizer(box)
 
         self.panel = wx.ScrolledWindow(self.window, style=wx.BORDER_SUNKEN)
-        self.panel.SetBackgroundColour(wx.WHITE)
         self.panel.SetScrollRate(20, 20)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
@@ -104,14 +106,15 @@ class AlarmsWindow():
         organizer_alarms_api.bind_to_alarm(self.handle_alarm)
         organizer_alarms_api.bind_to_alarm_off(self.handle_alarm_off)
         wxgui_api.bind_to_close_database(self.handle_close_db)
-        wxgui_api.bind_to_reset_menus(self.handle_reset_menus)
+        wxgui_api.bind_to_reset_menu_items(self.handle_reset_menu_items)
 
         if wxtrayicon_api:
             wxtrayicon_api.bind_to_create_menu(self.handle_create_tray_menu)
             wxtrayicon_api.bind_to_reset_menu(self.handle_reset_tray_menu)
 
-    def handle_reset_menus(self, kwargs):
-        self.menushow.Check(check=self.window.IsShown())
+    def handle_reset_menu_items(self, kwargs):
+        if kwargs['menu'] is self.menushow.GetMenu():
+            self.menushow.Check(check=self.window.IsShown())
 
     def handle_create_tray_menu(self, kwargs):
         self.traymenushow = wxtrayicon_api.insert_menu_item(
@@ -132,16 +135,15 @@ class AlarmsWindow():
         label = wx.StaticText(parent, label='Snooze configuration:')
         box.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
-        self.number = wx.SpinCtrl(parent, min=1, max=99, size=(40, 21),
+        self.number = wx.SpinCtrl(parent, min=1, max=999, size=(48, 21),
                                   style=wx.SP_ARROW_KEYS)
         self.number.SetValue(5)
         box.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                 border=4)
 
         self.unit = wx.ComboBox(parent, value='minutes', size=(100, 21),
-                                choices=('minutes', 'hours', 'days',
-                                         'weeks', 'months', 'years'),
-                                style=wx.CB_READONLY)
+                                  choices=('minutes', 'hours', 'days', 'weeks'),
+                                                           style=wx.CB_READONLY)
         box.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
     def _init_bottom(self, parent):
@@ -190,7 +192,7 @@ class AlarmsWindow():
             alarmst.append((self.alarms[a].get_filename(),
                             self.alarms[a].get_alarmid()))
         organizer_alarms_api.snooze_alarms(alarmst,
-                                                  stime=self.get_snooze_time())
+                                                   stime=self.get_snooze_time())
         # Let the alarm off event close the alarms
 
         core_api.release_databases()
@@ -201,7 +203,7 @@ class AlarmsWindow():
             aitem = self.alarms[a].get_id()
             aid = self.alarms[a].get_alarmid()
             if filename in (afilename, None) and id_ in (aitem, None) and \
-                                                        alarmid in (aid, None):
+                                                         alarmid in (aid, None):
                 self.alarms[a].close()
 
     def handle_close_db(self, kwargs):
@@ -250,9 +252,7 @@ class AlarmsWindow():
         mult = {'minutes': 60,
                 'hours': 3600,
                 'days': 86400,
-                'weeks': 604800,
-                'months': 2592000,
-                'years': 31536000}
+                'weeks': 604800}
         stime = self.number.GetValue() * mult[self.unit.GetValue()]
         return stime
 
@@ -281,6 +281,8 @@ class Alarm():
         self.start = start
         self.end = end
         self.alarm = alarm
+
+        log.debug('Appending alarm id: {}'.format(self.alarmid))
 
         self._init_widgets(self.panel)
 
@@ -338,6 +340,8 @@ class Alarm():
         wxgui_api.open_editor(self.filename, self.id_)
 
     def close(self):
+        log.debug('Destroying alarm id: {}'.format(self.alarmid))
+
         self.panel.Destroy()
         self.awindow.window.Layout()
         del self.awindow.alarms[self.awindow.make_alarmid(self.filename,
@@ -357,4 +361,5 @@ class Alarm():
 
 
 def main():
-    AlarmsWindow(wxgui_api.get_main_frame())
+    global alarmswindow
+    alarmswindow = AlarmsWindow(wxgui_api.get_main_frame())
