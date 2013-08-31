@@ -1,0 +1,7 @@
+post_install() {
+    echo "WARNING: this is a pre-beta release of the Organizer component"
+    echo "for Outspline, you should consider it as unstable!"
+    echo "All the included plugins are enabled by default, but you will have"
+    echo "to customize their menu entries in your configuration file"
+    echo "(default is ~/.config/outspline/outspline.conf)."
+}

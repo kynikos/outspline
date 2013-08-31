@@ -1,9 +1,0 @@
-[Desktop Entry]
-Name=Organism
-GenericName=Outliner
-Comment=A highly modular and extensible outliner
-Exec=organism
-Icon=text-editor
-Terminal=false
-Type=Application
-Categories=Office;TextTools;Calendar;
