@@ -19,6 +19,8 @@
 import outspline.core_api as core_api
 import outspline.coreaux_api as coreaux_api
 import outspline.interfaces.wxgui_api as wxgui_api
+organism_alarms_api = coreaux_api.import_optional_extension_api(
+                                                              'organism_alarms')
 wxcopypaste_api = coreaux_api.import_optional_plugin_api('wxcopypaste')
 wxalarms_api = coreaux_api.import_optional_plugin_api('wxalarms')
 
@@ -28,7 +30,8 @@ import msgboxes
 def check_all_active_alarms_have_a_corresponding_item(kwargs):
     leftovers = set()
     for alarm in wxalarms_api.get_active_alarms():
-        if alarm['filename'] not in core_api.get_open_databases() or \
+        if alarm['filename'] not in \
+                         organism_alarms_api.get_supported_open_databases() or \
                    alarm['id'] not in core_api.get_items_ids(alarm['filename']):
             leftovers.add((alarm['filename'], str(alarm['id'])))
     if leftovers:
@@ -39,7 +42,7 @@ def check_all_active_alarms_have_a_corresponding_item(kwargs):
 
 
 def main():
-    if wxalarms_api:
+    if organism_alarms_api and wxalarms_api:
         wxgui_api.bind_to_delete_items(
                               check_all_active_alarms_have_a_corresponding_item)
         wxgui_api.bind_to_undo_tree(
