@@ -16,23 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
-alarmsproperties_create = ('CREATE TABLE AlarmsProperties '
-                           '(AP_id INTEGER PRIMARY KEY, '
-                            'AP_last_search INTEGER)')
-
-alarmsproperties_select = 'SELECT * FROM AlarmsProperties'
-
-alarmsproperties_select_search = ('SELECT AP_last_search '
-                                  'FROM AlarmsProperties LIMIT 1')
-
-alarmsproperties_insert = ('INSERT INTO AlarmsProperties (AP_id, '
-                           'AP_last_search) VALUES (NULL, ?)')
-
-alarmsproperties_update = 'UPDATE AlarmsProperties SET AP_last_search=?'
-
-alarmsproperties_update_copy = ('UPDATE AlarmsProperties SET AP_id=?, '
-                                'AP_last_search=?')
-
 alarms_create = ("CREATE TABLE Alarms (A_id INTEGER PRIMARY KEY, "
                                       "A_del_id INTEGER, "
                                       "A_item INTEGER, "
@@ -75,8 +58,6 @@ copyalarms_create = ("CREATE TABLE CopyAlarms (CA_id INTEGER, "
                                               "CA_end INTEGER, "
                                               "CA_alarm INTEGER, "
                                               "CA_snooze INTEGER)")
-
-copyalarms_select = 'SELECT * FROM CopyAlarms'
 
 copyalarms_select_id = ('SELECT CA_id, CA_start, CA_end, CA_alarm, CA_snooze '
                         'FROM CopyAlarms WHERE CA_item=?')

@@ -21,24 +21,21 @@ import organism.core_api as core_api
 from organizer import queries, items
 
 
-def select_rules_table(filename):
-    qconn = core_api.get_connection(filename)
-    cur = qconn.cursor()
-    cur.execute(queries.rules_select)
-    core_api.give_connection(filename, qconn)
-    return cur
-
-
-def select_copyrules_table():
-    qmemory = core_api.get_memory_connection()
-    cur = qmemory.cursor()
-    cur.execute(queries.copyrules_select)
-    core_api.give_memory_connection(qmemory)
-    return cur
-
-
 def update_item_rules(filename, id_, rules, group,
                       description='Update item rules'):
+    # All rules must be able to produce only occurrences compliant with the
+    # following requirements:
+    # - Normal rules:
+    #   * 'alarm', 'start' and 'end', if set, must be integers representing a
+    #     Unix time each
+    #   * 'start' must always be set
+    #   * 'end', if set, must always be greater than 'start'
+    # - Except rules:
+    #   * 'start' and 'end' must be integers representing a Unix time
+    #     each
+    #   * 'inclusive' must be a boolean value
+    #   * 'start', 'end' and 'inclusive' must always be set
+    #   * 'end' must always be greater than 'start'
     return items.update_item_rules(filename, id_, rules, group,
                                    description=description)
 
@@ -47,16 +44,18 @@ def get_item_rules(filename, id_):
     return items.get_item_rules(filename, id_)
 
 
-def get_occurrences(mint, maxt):
-    return items.get_occurrences(mint, maxt)
+def get_occurrences_range(mint, maxt):
+    # Note that the list is practically unsorted: sorting its items is a duty
+    # of the interface
+    return items.get_occurrences_range(mint, maxt)
 
 
 def bind_to_update_item_rules(handler, bind=True):
     return items.update_item_rules_event.bind(handler, bind)
 
 
-def bind_to_get_occurrences(handler, bind=True):
-    return items.get_occurrences_event.bind(handler, bind)
+def bind_to_get_occurrences_range(handler, bind=True):
+    return items.get_occurrences_range_event.bind(handler, bind)
 
 
 def bind_to_get_alarms(handler, bind=True):

@@ -26,7 +26,7 @@ def handle_addons_loaded(kwargs):
     for o in config('Files'):
         filename = config('Files')[o]
         wxgui_api.open_database(filename, startup=True)
-    
+
     try:
         wxgui_api.select_database_tab_index(0)
     except IndexError:
@@ -52,7 +52,7 @@ def handle_exit_application(kwargs):
 def refresh_session():
     config = coreaux_api.get_plugin_configuration('wxsession')
     config('Files').reset({})
-    for n, filename in enumerate(wxgui_api.get_open_databases()):
+    for n, filename in enumerate(core_api.get_open_databases()):
         config('Files')['db' + str(n)] = str(filename)
     config('Files').export_reset(coreaux_api.get_user_config_file())
 

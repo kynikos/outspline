@@ -16,48 +16,42 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+from exceptions import BadRuleError
 
-def normalize_rule(rule):
-    start = int(rule['start'])
-    end = rule['end']
-    ralarm = rule['ralarm']
-    
-    if end == 'None':
-        end = None
-    # end could have been already None (not a string)
-    elif end != None:
-        end = int(end)
-    
-    if ralarm == 'None':
-        alarm = None
-    elif ralarm == None:
-        alarm = None
-    elif ralarm != None:
-        alarm = start - int(ralarm)
-    
-    return (start, end, alarm)
-    
-def search_alarms(last_search, filename, id_, rule, alarms):
-    rule = normalize_rule(rule)
-    start = rule[0]
-    end = rule[1]
-    alarm = rule[2]
-    
-    alarms.add(last_search, {'filename': filename,
-                             'id_': id_,
-                             'start': start,
-                             'end': end,
-                             'alarm': alarm})
+_RULE_NAME = 'occur_once'
 
 
-def get_occurrences(filename, id_, rule, tempoccs):
-    rule = normalize_rule(rule)
-    start = rule[0]
-    end = rule[1]
-    alarm = rule[2]
-    
-    tempoccs.add({'filename': filename,
-                  'id_': id_,
-                  'start': start,
-                  'end': end,
-                  'alarm': alarm})
+def make_rule(start, end, alarm, guiconfig):
+    # Make sure this rule can only produce occurrences compliant with the
+    # requirements defined in organizer_api.update_item_rules
+    if isinstance(start, int) and \
+                   (end is None or (isinstance(end, int) and end > start)) and \
+                                      (alarm is None or isinstance(alarm, int)):
+        return {
+            'rule': _RULE_NAME,
+            '#': (
+                start,
+                end,
+                alarm,
+                guiconfig,
+            )
+        }
+    else:
+        raise BadRuleError()
+
+
+def get_occurrences_range(filename, id_, rule, occs):
+    # The rule is checked in make_rule, no need to use occs.add
+    occs.add_safe({'filename': filename,
+                   'id_': id_,
+                   'start': rule['#'][0],
+                   'end': rule['#'][1],
+                   'alarm': rule['#'][2]})
+
+def get_next_item_occurrences(base_time, filename, id_, rule, occs):
+    # The rule is checked in make_rule, no need to use occs.add
+    occs.add_safe(base_time, {'filename': filename,
+                              'id_': id_,
+                              'start': rule['#'][0],
+                              'end': rule['#'][1],
+                              'alarm': rule['#'][2]})

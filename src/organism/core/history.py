@@ -36,33 +36,33 @@ history_clean_groups_event = Event()
 
 class DBHistory():
     modified = None
-    
+
     def get_next_history_group(self):
         history_clean_groups_event.signal(filename=self.filename)
-        
+
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.history_delete_status)
         cursor.execute(queries.history_select_status_next)
         self.connection.give(qconn)
-        
+
         row = cursor.fetchone()
         if row['H_group']:
             group = row['H_group'] + 1
         else:
             group = 1
         return group
-    
+
     def get_history_descriptions(self):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.history_select_description)
         self.connection.give(qconn)
-        
+
         # Putting the results in a dictionary loses record order
-        
+
         return cursor
-    
+
     def update_history_id(self, id_, status):
         if status == 0:
             newstatus = 1
@@ -83,28 +83,28 @@ class DBHistory():
 
     def check_pending_changes(self):
         check_pending_changes_event.signal(filename=self.filename)
-        
+
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.history_select_status)
         self.connection.give(qconn)
-        
+
         row = cursor.fetchone()
         if row or self.modified:
             return True
         else:
             return False
-    
+
     def set_modified(self):
         self.modified = True
-    
+
     def reset_modified_state(self):
         self.modified = False
-        
+
         reset_modified_state_event.signal(filename=self.filename)
-    
+
     def read_history(self, action):
-        
+
         # SavedStatus  CurrentStatus  Status
         # 0 unsaved    0 undone       0 unsaved and undone
         # 0 unsaved    1 done         1 unsaved and done
@@ -112,7 +112,7 @@ class DBHistory():
         # 2 undone     1 done         3 saved as undone but pending as done
         # 4 done       0 undone       4 saved as done but pending as undone
         # 4 done       1 done         5 saved as done
-        
+
         # Possible scenarios:
         # 5
         # 5 4
@@ -145,7 +145,7 @@ class DBHistory():
         # 1
         # 1 0
         # 0
-                
+
         if action == 'undo':
             query = queries.history_select_status_undo
         elif action == 'redo':
@@ -155,7 +155,7 @@ class DBHistory():
         cursor.execute(query)
         self.connection.give(qconn)
         lastgroup = cursor.fetchone()
-        
+
         if lastgroup:
             if action == 'undo':
                 q = queries.history_select_group_undo
@@ -178,10 +178,10 @@ class DBHistory():
             status = read['status']
             for row in history:
                 self.do_history_row(action, row[3], row[4], row['H_id'],
-                                                  row['H_type'], row['H_item'])
+                                                   row['H_type'], row['H_item'])
                 self.update_history_id(row['H_id'], status)
             history_event.signal()
-    
+
     def do_history_row(self, action, query, text, hid, type_, itemid):
         qconn = self.connection.get()
         cursor = qconn.cursor()
@@ -189,17 +189,16 @@ class DBHistory():
         # don't accept a query binding
         try:
             cursor.execute(query)
-        except _sql.ProgrammingError:  # @UndefinedVariable
+        except _sql.ProgrammingError:
             cursor.execute(query, (text, ))
         self.connection.give(qconn)
-        
+
         filename = self.filename
-        item = items.Item.make_itemid(filename, str(itemid))
-        
+
         if (action == 'undo' and type_ == 'insert') or (action == 'redo' and
-                                                            type_ == 'delete'):
-            items.items[item].remove()
-            
+                                                             type_ == 'delete'):
+            self.items[itemid].remove()
+
             history_remove_event.signal(filename=filename, id_=itemid, hid=hid)
         elif type_ in ('insert', 'update', 'delete'):
             qconn = self.connection.get()
@@ -207,17 +206,19 @@ class DBHistory():
             cursor.execute(queries.items_select_id, (itemid, ))
             select = cursor.fetchone()
             self.connection.give(qconn)
-            
+
             if type_ == 'update':
                 history_update_event.signal(filename=filename, id_=itemid,
                                             parent=select['I_parent'],
                                             previous=select['I_previous'],
                                             text=select['I_text'])
-            
+
             if (action == 'undo' and type_ == 'delete') or \
-                                      (action == 'redo' and type_ == 'insert'):
-                items.Item.add(item=item)
-                
+                                       (action == 'redo' and type_ == 'insert'):
+                self.items[itemid] = items.Item(database=self,
+                                                filename=filename,
+                                                id_=itemid)
+
                 history_insert_event.signal(filename=filename, id_=itemid,
                                             parent=select['I_parent'],
                                             previous=select['I_previous'],
@@ -226,35 +227,31 @@ class DBHistory():
             # Other types are processed here
             history_other_event.signal(type_=type_, action=action,
                                        filename=filename, id_=itemid, hid=hid)
-    
+
     def clean_history(self):
-        # This method is issued both when closing the database and when
-        # opening, to make sure it's executed even in case the database has not
-        # been closed correctly
-        
         # This operation must be performed on a different connection than
         # the main one (which at this point has been closed already anyway)
         qconn = _sql.connect(self.filename)
         cursor = qconn.cursor()
-        
+
         cursor.execute(queries.properties_select_history)
         hlimit = cursor.fetchone()[0]
-        
+
         cursor.execute(queries.history_select_select, (hlimit, ))
         t = tuple(cursor)
-        
+
         # history_clean_event handlers will need a proper connection
         qconn.close()
-        
+
         history_clean_event.signal(filename=self.filename, hids=t)
-        
+
         qconn = _sql.connect(self.filename)
         cursor = qconn.cursor()
-        
+
         for row in t:
             cursor.execute(queries.history_delete_id, (row[0], ))
-        
+
         cursor.execute(queries.history_update_group)
-        
+
         qconn.commit()
         qconn.close()

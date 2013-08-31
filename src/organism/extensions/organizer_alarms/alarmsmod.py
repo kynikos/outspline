@@ -21,70 +21,151 @@ import sqlite3
 
 from organism.coreaux_api import Event
 import organism.core_api as core_api
+import organism.extensions.organizer_timer_api as organizer_timer_api
 
 import queries
-import timer
 
 alarm_event = Event()
-alarms_event = Event()
 alarm_off_event = Event()
 
 changes = {}
 dismiss_state = {}
 
 
-def activate_alarms(time, alarmsd, old=False):
-    # Do not use only alarmsd to get filenames, but use all open filenames
-    # regardless whether they are in alarmsd or not (see set_last_search()
-    # further down)
-    for filename in core_api.get_open_databases():
-        if filename in alarmsd:
-            for id_ in alarmsd[filename]:
-                for alarm in alarmsd[filename][id_]:
-                    # alarm may have start or end == time
-                    if alarm['alarm'] == time or old:
-                        if 'alarmid' not in alarm:
-                            alarmid = insert_alarm(filename=alarm['filename'],
-                                                   id_=alarm['id_'],
-                                                   start=alarm['start'],
-                                                   end=alarm['end'],
-                                                   alarm=alarm['alarm'],
-                                                   snooze=None)
-                        else:
-                            alarmid = alarm['alarmid']
-                            if alarm['alarm'] != None:
-                                update_alarm(filename=alarm['filename'],
-                                             alarmid=alarmid, newalarm=None)
-                        
-                        alarm_event.signal(filename=alarm['filename'],
-                                           id_=alarm['id_'], alarmid=alarmid,
-                                           start=alarm['start'],
-                                           end=alarm['end'],
-                                           alarm=alarm['alarm'])
-        
-        # Reset last_search in every open database, even if alarmsd is empty:
-        # this will let the next search_alarms ignore the alarms excepted in
-        # the previous search
-        timer.set_last_search(filename, time)
-    
-    alarms_event.signal()
+def get_snoozed_alarms(last_search, filename, occs):
+    conn = core_api.get_connection(filename)
+    cur = conn.cursor()
+    cur.execute(queries.alarms_select_alarms)
+    core_api.give_connection(filename, conn)
+
+    for row in cur:
+        itemid = row['A_item']
+        start = row['A_start']
+        end = row['A_end']
+        snooze = row['A_snooze']
+
+        # Check whether the snoozed alarm has a duplicate among the alarms found
+        # using the alarm rules, and in that case delete the latter; the
+        # creation of duplicates is possible especially when alarm searches are
+        # performed in rapid succession, for example when launching organism
+        # with multiple databases automatically opened and many new alarms to be
+        # immediately activated
+        occs.try_delete_one(filename, itemid, start, end, row['A_alarm'])
+
+        alarmd = {'filename': filename,
+                  'id_': itemid,
+                  'alarmid': row['A_id'],
+                  'start': start,
+                  'end': end,
+                  'alarm': snooze}
+
+        # For safety, also check that there aren't any alarms with snooze <=
+        # last_search left (for example this may happen if an alarm is
+        # temporarily undone together with its item, and then it's restored with
+        # a redo)
+        # Note that whatever the value of last_search is, it doesn't really have
+        # the possibility to prevent the activation of a snoozed alarm, be it
+        # immediately or later (last_search can't be set on a future time)
+        if snooze and snooze > last_search:
+            occs.add_safe(last_search, alarmd)
+        else:
+            occs.add_old(alarmd)
+
+
+def activate_alarms_range(filename, mint, maxt, occsd):
+    for id_ in occsd:
+        for occ in occsd[id_]:
+            # occ may have alarm == mint, or start or end in the interval, but
+            # none of those occurrences must be activated
+            if mint < occ['alarm'] <= maxt:
+                activate_alarm(occ)
+
+
+def activate_old_alarms(occsd):
+    for filename in occsd:
+        for id_ in occsd[filename]:
+            for occ in occsd[filename][id_]:
+                activate_alarm(occ)
+
+
+def activate_alarms(time, occsd):
+    for filename in occsd:
+        for id_ in occsd[filename]:
+            for occ in occsd[filename][id_]:
+                # occ may have start or end == time
+                if occ['alarm'] == time:
+                    activate_alarm(occ)
+
+
+def activate_alarm(alarm):
+    if 'alarmid' not in alarm:
+        alarmid = insert_alarm(filename=alarm['filename'],
+                               id_=alarm['id_'],
+                               start=alarm['start'],
+                               end=alarm['end'],
+                               origalarm=alarm['alarm'],
+                               snooze=None)
+    else:
+        alarmid = alarm['alarmid']
+        if alarm['alarm'] != None:
+            update_alarm(filename=alarm['filename'],
+                         alarmid=alarmid,
+                         newalarm=None)
+
+    alarm_event.signal(filename=alarm['filename'],
+                       id_=alarm['id_'],
+                       alarmid=alarmid,
+                       start=alarm['start'],
+                       end=alarm['end'],
+                       alarm=alarm['alarm'])
+
+
+def get_alarms(mint, maxt, filename, occs):
+    conn = core_api.get_connection(filename)
+    cur = conn.cursor()
+    cur.execute(queries.alarms_select_alarms)
+    core_api.give_connection(filename, conn)
+
+    for row in cur:
+        origalarm = row['A_alarm']
+        snooze = row['A_snooze']
+
+        alarmd = {'filename': filename,
+                  'id_': row['A_item'],
+                  'alarmid': row['A_id'],
+                  'start': row['A_start'],
+                  'end': row['A_end'],
+                  'alarm': snooze}
+
+        # If the alarm is not added to occs, add it to the active dictionary if
+        # it's active (but not snoozed)
+        # Note that if the alarm is active but its time values are included
+        # between mint and maxt, the alarm is added to the main dictionary, not
+        # the active one
+        # Also note that the second argument must be origalarm, not snooze, in
+        # fact it's used to *update* the occurrence (if present) using the new
+        # snooze time stored in alarmd
+        if not occs.update(alarmd, origalarm) and snooze == None:
+            occs.move_active(alarmd, origalarm)
+
 
 
 def snooze_alarms(alarmst, stime):
     newalarm = ((int(_time.time()) + stime) // 60 + 1) * 60
-    
+
     alarmsd = divide_alarms(alarmst)
     for filename in alarmsd:
         for alarmid in alarmsd[filename]:
             update_alarm(filename, alarmid, newalarm)
-    
+
             # Signal the event after updating the database, so, for example,
             # the tasklist can be correctly updated
             alarm_off_event.signal(filename=filename, alarmid=alarmid)
-    
-    # Do not refresh the timer inside the for loop, otherwise it messes up with
-    # the wx.CallAfter() that manages the activated alarms in the interface
-    timer.search_alarms()
+
+    # Do not search occurrences (thus restarting the timer) inside the for loop,
+    # otherwise it messes up with the wx.CallAfter() that manages the activated
+    # alarms in the interface
+    organizer_timer_api.search_next_occurrences()
 
 
 def dismiss_alarms(alarmst):
@@ -95,7 +176,7 @@ def dismiss_alarms(alarmst):
             cursor = qconn.cursor()
             cursor.execute(queries.alarms_delete_id, (alarmid, ))
             core_api.give_connection(filename, qconn)
-            
+
             # It's necessary to change the dismiss status, otherwise it's
             # possible that a database is loaded and some of its alarms are
             # activated: if at that point those alarms are dismissed and then
@@ -103,16 +184,16 @@ def dismiss_alarms(alarmst):
             # unmodified, and won't ask to be saved
             global dismiss_state
             dismiss_state[filename] = True
-    
+
             # Signal the event after updating the database, so, for example,
             # the tasklist can be correctly updated
             alarm_off_event.signal(filename=filename, alarmid=alarmid)
 
 
-def insert_alarm(filename, id_, start, end, alarm, snooze):
+def insert_alarm(filename, id_, start, end, origalarm, snooze):
     conn = core_api.get_connection(filename)
     cur = conn.cursor()
-    cur.execute(queries.alarms_insert, (id_, start, end, alarm, snooze))
+    cur.execute(queries.alarms_insert, (id_, start, end, origalarm, snooze))
     core_api.give_connection(filename, conn)
     aid = cur.lastrowid
     return aid
@@ -127,14 +208,14 @@ def update_alarm(filename, alarmid, newalarm):
 
 def copy_alarms(filename, id_):
     occs = []
-    
+
     conn = core_api.get_connection(filename)
     cur = conn.cursor()
     cur.execute(queries.alarms_select_item, (id_, ))
     for row in cur:
         occs.append(row)
     core_api.give_connection(filename, conn)
-        
+
     mem = core_api.get_memory_connection()
     curm = mem.cursor()
     for o in occs:
@@ -149,7 +230,7 @@ def paste_alarms(filename, id_, oldid):
     curm = mem.cursor()
     curm.execute(queries.copyalarms_select_id, (oldid, ))
     core_api.give_memory_connection(mem)
-    
+
     for occ in curm:
         insert_alarm(filename, id_, occ['CA_start'], occ['CA_end'],
                      occ['CA_alarm'], occ['CA_snooze'])
@@ -160,7 +241,7 @@ def delete_alarms(filename, id_, hid):
     cursor = qconn.cursor()
     cursor.execute(queries.alarms_update_id_delete, (hid, id_))
     core_api.give_connection(filename, qconn)
-    
+
     # Signal the event after updating the database, so, for example,
     # the tasklist can be correctly updated
     alarm_off_event.signal(filename=filename, id_=id_)
@@ -191,14 +272,14 @@ def clean_old_history_alarms(filename, hids):
 
 def divide_alarms(alarmsl):
     alarmsd = {}
-    
+
     for alarm in alarmsl:
         filename = alarm[0]
         alarmid = alarm[1]
-        
+
         if filename not in alarmsd:
             alarmsd[filename] = []
-        
+
         alarmsd[filename].append(alarmid)
-    
+
     return alarmsd

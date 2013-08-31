@@ -6,4 +6,4 @@ component = organizer
 component_version = 1.0.0pb1
 component_release_date = 2011-12-04
 dependency_1 = extensions.organizer
-dependency_2 = extensions.organizer_alarms
+dependency_2 = extensions.organizer_timer

@@ -20,91 +20,78 @@ from organism.coreaux_api import Event
 
 import databases
 import queries
+import exceptions
 
 item_insert_event = Event()
 item_delete_event = Event()
 
-items = {}
-
 
 class Item():
+    database = None
     filename = None
     id_ = None
-    item = None
-    
-    def __init__(self, filename, id_, item):
+
+    def __init__(self, database, filename, id_):
+        self.database = database
         self.filename = filename
         self.id_ = id_
-        self.item = item
-    
+
     @classmethod
-    def add(cls, filename=None, id_=None, item=None):
-        if not item:
-            item = cls.make_itemid(filename, id_)
-        if not (filename and id_):
-            filename = item.rsplit('_', 1)[0]
-            id_ = item.rsplit('_', 1)[1]
-        
-        global items
-        items[item] = cls(filename, id_, item)
-    
-    @classmethod
-    def insert(cls, mode, base, group, text='New item',
+    def insert(cls, filename, mode, baseid, group, text='New item',
                description='Insert item'):
-        if mode == 'child':
-            parent = base
-            if items[base].has_children():
-                previous = items[items[base].get_children()[-1]].get_id()
-            else:
-                previous = '0'
-        elif mode == 'sibling':
-            parent = items[base].get_parent()
-            previous = items[base].get_id()
-        
-        if mode == 'sibling':
-            updnext = items[base].get_next()
-        else:
+        items = databases.dbs[filename].items
+
+        if not baseid:
+            parent = 0
+            previous = cls.get_last_base_item_id(filename)
             updnext = False
-        
-        qparent = items[parent].get_id()
-        filename = items[parent].get_filename()
-        
+        elif mode == 'child':
+            base = items[baseid]
+            parent = baseid
+            children = base.get_children()
+            previous = children[-1].get_id() if children else 0
+            updnext = False
+        elif mode == 'sibling':
+            parentt = items[baseid].get_parent()
+            parent = parentt.get_id() if parentt else 0
+            previous = items[baseid].get_id()
+            updnext = items[baseid].get_next()
+
         qconn = databases.dbs[filename].connection.get()
         cursor = qconn.cursor()
-        
-        cursor.execute(queries.items_insert.format('NULL', qparent, previous,),  # @UndefinedVariable
+
+        cursor.execute(queries.items_insert.format('NULL', parent, previous, ),
                        (text, ))
         id_ = cursor.lastrowid
         cursor.execute(queries.history_insert,
                         (group, id_, 'insert', description,
-                         queries.items_insert.format(id_, qparent, previous,),  # @UndefinedVariable
+                         queries.items_insert.format(id_, parent, previous, ),
                          text, queries.items_delete_id.format(id_), ''))
-        
+
         databases.dbs[filename].connection.give(qconn)
-        
-        cls.add(filename=filename, id_=id_)
-        
+
+        databases.dbs[filename].items[id_] = cls(database=databases.dbs[filename
+                                                  ], filename=filename, id_=id_)
+
         item_insert_event.signal(filename=filename, id_=id_, group=group,
                                  description=description)
-        
+
         if updnext:
-            items[updnext].update(group, previous=id_, description=description)
-        
+            items[updnext.get_id()].update(group, previous=id_,
+                                                        description=description)
+
         return id_
 
     def update(self, group, parent=None, previous=None, text=None,
                description='Update item'):
-        filename = self.filename
-        id_ = self.id_
-        
         new_values = {'I_parent': parent,
                       'I_previous': previous}
-        
-        qconn = databases.dbs[filename].connection.get()
+
+        qconn = self.database.connection.get()
         cursor = qconn.cursor()
-        cursor.execute(queries.items_select_id, (id_, ))
+        cursor.execute(queries.items_select_id, (self.id_, ))
         current_values = cursor.fetchone()
-        
+
         set = []
         unset = []
         for field in new_values:
@@ -112,7 +99,7 @@ class Item():
                 string = ''.join((field, '={}'))
                 set.append(string.format(new_values[field]))
                 unset.append(string.format(current_values[field]))
-        
+
         if text != None:
             field = 'I_text=?'
             set.append(field)
@@ -122,234 +109,250 @@ class Item():
         else:
             qtext = ''
             unqtext = ''
-        
-        query_redo = queries.items_update_id.format(', '.join(set), str(id_))
-        query_undo = queries.items_update_id.format(', '.join(unset), str(id_))
-        
+
+        query_redo = queries.items_update_id.format(', '.join(set), self.id_)
+        query_undo = queries.items_update_id.format(', '.join(unset), self.id_)
+
         if text != None:
             cursor.execute(query_redo, (qtext, ))
         else:
             cursor.execute(query_redo)
-        
-        cursor.execute(queries.history_insert, (group, id_, 'update',
+
+        cursor.execute(queries.history_insert, (group, self.id_, 'update',
                                                 description, query_redo, qtext,
                                                 query_undo, unqtext))
-        
-        databases.dbs[filename].connection.give(qconn)
-    
+
+        self.database.connection.give(qconn)
+
     def delete(self, group, description='Delete item'):
-        filename = self.filename
-        id_ = self.id_
         prev = self.get_previous()
         next = self.get_next()
-        
+
         if next:
             if prev:
-                prev = items[prev].get_id()
+                previd = prev.get_id()
             else:
-                prev = '0'
-            items[next].update(group, previous=prev, description=description)
-        
-        qconn = databases.dbs[filename].connection.get()
+                previd = 0
+            next.update(group, previous=previd, description=description)
+
+        qconn = self.database.connection.get()
         cursor = qconn.cursor()
-        
-        cursor.execute(queries.items_select_id, (id_, ))
+
+        cursor.execute(queries.items_select_id, (self.id_, ))
         current_values = cursor.fetchone()
-        
-        query_redo = queries.items_delete_id.format(id_)
-        query_undo = queries.items_insert.format(id_,  # @UndefinedVariable
+
+        query_redo = queries.items_delete_id.format(self.id_)
+        query_undo = queries.items_insert.format(self.id_,
                       current_values['I_parent'], current_values['I_previous'])
-        
+
         cursor.execute(query_redo)
-        cursor.execute(queries.history_insert, (group, id_, 'delete',
+        cursor.execute(queries.history_insert, (group, self.id_, 'delete',
                                                 description, query_redo, '',
                                                 query_undo,
                                                 current_values['I_text']))
-        
-        databases.dbs[filename].connection.give(qconn)
-        
+
+        self.database.connection.give(qconn)
+
         self.remove()
-        
+
         # This event is designed to be signalled _after_ self.remove()
-        item_delete_event.signal(filename=filename, id_=id_,
+        item_delete_event.signal(filename=self.filename, id_=self.id_,
                                  hid=cursor.lastrowid, group=group,
                                  description=description)
-    
+
     def remove(self):
-        global items
-        del items[self.item]
-    
+        del self.database.items[self.id_]
+
     def shift(self, mode, group, description='Shift item'):
-        # Keep all items[item].get_{next|previous|...} _before_ updates!
-        item = self.item
+        items = self.database.items
         filename = self.filename
         id_ = self.id_
         if mode == 'up':
-            prev = items[item].get_previous()
-            parent = self.get_parent()
-            prev2 = items[prev].get_previous()
-            if prev2:
-                prev2 = items[prev2].get_id()
-            else:
-                prev2 = '0'
-            next = items[item].get_next()
-            prev = items[prev].get_id()
-            self.update(group, previous=prev2, description=description)
-            items[self.make_itemid(filename, prev)
-                  ].update(group, previous=id_, description=description)
-            if next:
-                next = items[next].get_id()
-                items[self.make_itemid(filename, next)
-                      ].update(group, previous=prev, description=description)
-        elif mode == 'down':
-            next = items[item].get_next()
-            parent = self.get_parent()
-            prev = items[item].get_previous()
+            prev = self.get_previous()
             if prev:
-                prev = items[prev].get_id()
+                previd = prev.get_id()
+                prev2 = prev.get_previous()
+                prev2id = prev2.get_id() if prev2 else 0
+                next_ = self.get_next()
+                # Keep all items[id_].get_{next,previous,...} _before_ updates!
+                self.update(group, previous=prev2id, description=description)
+                prev.update(group, previous=id_, description=description)
+                if next_:
+                    next_.update(group, previous=previd,
+                                                        description=description)
             else:
-                prev = '0'
-            next2 = items[next].get_next()
-            next = items[next].get_id()
-            self.update(group, previous=next, description=description)
-            items[self.make_itemid(filename, next)
-                  ].update(group, previous=prev, description=description)
-            if next2:
-                next2 = items[next2].get_id()
-                items[self.make_itemid(filename, next2)
-                      ].update(group, previous=id_, description=description)
+                raise exceptions.CannotMoveItemError()
+        elif mode == 'down':
+            next_ = self.get_next()
+            if next_:
+                nextid = next_.get_id()
+                prev = self.get_previous()
+                previd = prev.get_id() if prev else 0
+                next2 = next_.get_next()
+                # Keep all items[id_].get_{next,previous,...} _before_ updates!
+                self.update(group, previous=nextid, description=description)
+                next_.update(group, previous=previd, description=description)
+                if next2:
+                    next2.update(group, previous=id_, description=description)
+            else:
+                raise exceptions.CannotMoveItemError()
         elif mode == 'parent':
-            parent = items[self.get_parent()].get_parent()
-            parentid = items[parent].get_id()
-            lastchild = items[parent].get_children()[-1]
-            lastchild = items[lastchild].get_id()
-            next = items[item].get_next()
-            if next:
-                prev = items[item].get_previous()
-            self.update(group, parent=parentid, previous=lastchild,
-                        description=description)
-            if next:
-                if prev:
-                    prev = items[prev].get_id()
+            parent = self.get_parent()
+            if parent:
+                parent2 = parent.get_parent()
+                if parent2:
+                    parent2id = parent2.get_id()
+                    lastchild = parent2.get_children()[-1]
+                    lastchildid = lastchild.get_id()
                 else:
-                    prev = '0'
-                next = items[next].get_id()
-                items[self.make_itemid(filename, next)
-                      ].update(group, previous=prev, description=description)
+                    parent2id = 0
+                    lastchildid = self.get_last_base_item_id(filename)
+                next_ = self.get_next()
+                if next_:
+                    prev = self.get_previous()
+                    previd = prev.get_id() if prev else 0
+                # Keep all items[id_].get_{next,previous,...} _before_ updates!
+                self.update(group, parent=parent2id, previous=lastchildid,
+                            description=description)
+                if next_:
+                    next_.update(group, previous=previd,
+                                                        description=description)
+            else:
+                raise exceptions.CannotMoveItemError()
+
+        return True
 
     def get_filename(self):
-        return(self.filename)
+        return self.filename
 
     def get_id(self):
-        return(self.id_)
-    
+        return self.id_
+
     def get_children(self):
-        qconn = databases.dbs[self.filename].connection.get()
+        qconn = self.database.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_children, (self.id_, ))
-        databases.dbs[self.filename].connection.give(qconn)
-        
+        self.database.connection.give(qconn)
+
         dd = {}
         for row in cursor:
             dd[row['I_previous']] = row['I_id']
-        
+
         children = []
         prev = 0
         while prev in dd:
-            children.append(self.make_itemid(self.filename, dd[prev]))
+            children.append(self.database.items[dd[prev]])
             prev = dd[prev]
-        
+
         return children
-    
-    def get_all(self):
-        qconn = databases.dbs[self.filename].connection.get()
+
+    def get_all_info(self):
+        qconn = self.database.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id, (self.id_, ))
-        databases.dbs[self.filename].connection.give(qconn)
+        self.database.connection.give(qconn)
         row = cursor.fetchone()
         if row:
-            return {'id_': int(self.id_),
+            return {'id_': self.id_,
                     'parent': row['I_parent'],
                     'previous': row['I_previous'],
                     'text': row['I_text']}
         else:
             return False
-    
-    def get_tree_item(self, previd):
-        qconn = databases.dbs[self.filename].connection.get()
+
+    @staticmethod
+    def get_tree_item(filename, parentid, previd):
+        qconn = databases.dbs[filename].connection.get()
         cursor = qconn.cursor()
-        cursor.execute(queries.items_select_parent, (self.id_, previd))
-        databases.dbs[self.filename].connection.give(qconn)
+        cursor.execute(queries.items_select_parent, (parentid, previd))
+        databases.dbs[filename].connection.give(qconn)
         row = cursor.fetchone()
         if row:
             return {'id_': row['I_id'],
                     'text': row['I_text']}
         else:
             return False
-    
+
     def get_descendants(self):
+        items = self.database.items
         descendants = []
-        
-        def recurse(item):
-            children = items[item].get_children()
+
+        def recurse(id_):
+            children = items[id_].get_children()
             descendants.extend(children)
             for child in children:
                 recurse(child)
-        
-        recurse(self.item)
+
+        recurse(self.id_)
         return descendants
-    
+
     def get_previous(self):
-        qconn = databases.dbs[self.filename].connection.get()
+        qconn = self.database.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_previous, (self.id_, ))
-        databases.dbs[self.filename].connection.give(qconn)
+        self.database.connection.give(qconn)
         pid = cursor.fetchone()
-        if pid:
-            return self.make_itemid(self.filename, pid['I_previous'])
+        if pid['I_previous'] != 0:
+            return self.database.items[pid['I_previous']]
         else:
-            return False
-    
+            return None
+
     def get_next(self):
-        qconn = databases.dbs[self.filename].connection.get()
+        qconn = self.database.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_next, (self.id_, ))
-        databases.dbs[self.filename].connection.give(qconn)
+        self.database.connection.give(qconn)
         nid = cursor.fetchone()
         if nid:
-            return self.make_itemid(self.filename, nid['I_id'])
+            return self.database.items[nid['I_id']]
         else:
-            return False
-    
+            return None
+
     def get_parent(self):
-        qconn = databases.dbs[self.filename].connection.get()
+        qconn = self.database.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_parent, (self.id_, ))
-        databases.dbs[self.filename].connection.give(qconn)
+        self.database.connection.give(qconn)
         pid = cursor.fetchone()
-        if pid:
-            return self.make_itemid(self.filename, pid['I_parent'])
+        if pid['I_parent']:
+            return self.database.items[pid['I_parent']]
         else:
-            return False
-    
+            return None
+
     def get_text(self):
-        qconn = databases.dbs[self.filename].connection.get()
+        qconn = self.database.connection.get()
         cur = qconn.cursor()
         cur.execute(queries.items_select_id_editor, (self.id_, ))
         text = cur.fetchone()['I_text']
-        databases.dbs[self.filename].connection.give(qconn)
+        self.database.connection.give(qconn)
         return text
-    
+
     def has_children(self):
-        qconn = databases.dbs[self.filename].connection.get()
+        qconn = self.database.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_haschildren, (self.id_, ))
-        databases.dbs[self.filename].connection.give(qconn)
+        self.database.connection.give(qconn)
         if cursor.fetchone():
             return True
         else:
             return False
-    
+
     @staticmethod
-    def make_itemid(filename, id_):
-        return '_'.join((filename, str(id_)))
+    def get_last_base_item_id(filename):
+        qconn =  databases.dbs[filename].connection.get()
+        cursor = qconn.cursor()
+        cursor.execute(queries.items_select_id_children, (0, ))
+        databases.dbs[filename].connection.give(qconn)
+
+        ids = set()
+        prevs = set()
+        for row in cursor:
+            ids.add(row['I_id'])
+            prevs.add(row['I_previous'])
+
+        last = ids - prevs
+
+        try:
+            return last.pop()
+        except KeyError:
+            return 0

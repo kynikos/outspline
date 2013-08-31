@@ -16,12 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+import organism.interfaces.wxgui_api as wxgui_api
+
 import wxscheduler
 
 
-def initialize_rule(filename, id_, description, rule):
+def display_rule(filename, id_, description, rule):
     return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
-                             ].init_rule(description, rule)
+                             ].display_rule(description, rule)
+
+
+def select_rule(filename, id_, interface_name):
+    return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
+                             ].select_rule(interface_name)
+
+
+def initialize_rule(filename, id_, rule):
+    return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
+                             ].init_rule(rule)
 
 
 def change_rule(filename, id_, sizer):
@@ -34,8 +46,21 @@ def insert_rule(filename, id_, ruled, label):
                              ].insert_rule(ruled, label)
 
 
+def apply_rule(filename, id_, ruled, label):
+    return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
+                             ].apply_maker(ruled, label)
+
+
 def bind_to_init_rules_list(handler, bind=True):
     return wxscheduler.init_rules_list_event.bind(handler, bind)
+
+
+def bind_to_create_rule(handler, bind=True):
+    return wxscheduler.create_rule_event.bind(handler, bind)
+
+
+def bind_to_edit_rule(handler, bind=True):
+    return wxscheduler.edit_rule_event.bind(handler, bind)
 
 
 def bind_to_choose_rule(handler, bind=True):
@@ -43,8 +68,21 @@ def bind_to_choose_rule(handler, bind=True):
 
 
 def bind_to_apply_rule(handler, bind=True):
-    return wxscheduler.apply_maker_event.bind(handler, bind)
+    return wxscheduler.check_maker_event.bind(handler, bind)
 
 
 def bind_to_insert_rule(handler, bind=True):
     return wxscheduler.insert_rule_event.bind(handler, bind)
+
+
+def simulate_expand_rules_panel(filename, id_):
+    fpanel = wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
+                                                                        ].fpanel
+    wxgui_api.expand_panel(filename, id_, fpanel)
+    wxgui_api.resize_foldpanelbar(filename, id_)
+
+def simulate_remove_all_rules(filename, id_):
+    sched = wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)]
+    while sched.rulesl.GetItemCount() > 0:
+        sched.rulesl.Select(0)
+        sched.remove_rule(None)
