@@ -20,11 +20,13 @@ from outspline.coreaux_api import Event
 import outspline.core_api as core_api
 
 import queries
+from exceptions import UnsafePasteWarning
 
 copy_items_event = Event()
 item_copy_event = Event()
 item_paste_event = Event()
 items_pasted_event = Event()
+paste_check_event = Event()
 
 
 def copy_items(filename, cids, cut=False, group=None,
@@ -106,6 +108,16 @@ def paste_items(filename, baseid, mode, group, description='Paste items'):
         newroots.append(ids[r['C_id']])
 
     return newroots
+
+
+def can_paste_safely(filename):
+    try:
+        paste_check_event.signal(filename=filename,
+                                                   exception=UnsafePasteWarning)
+    except UnsafePasteWarning:
+        return False
+    else:
+        return True
 
 
 def has_copied_items(filename):

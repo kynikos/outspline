@@ -16,24 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import wxcopypaste
+import wx
 
 
-def bind_to_cut_items(handler, bind=True):
-    return wxcopypaste.cut_items_event.bind(handler, bind)
-
-
-def simulate_cut_items(no_confirm=False):
-    return wxcopypaste.cut_items(None, no_confirm=no_confirm)
-
-
-def simulate_copy_items():
-    return wxcopypaste.copy_items(None)
-
-
-def simulate_paste_items_as_siblings(no_confirm=False):
-    return wxcopypaste.paste_items_as_siblings(None, no_confirm=no_confirm)
-
-
-def simulate_paste_items_as_children(no_confirm=False):
-    return wxcopypaste.paste_items_as_children(None, no_confirm=no_confirm)
+def unsafe_paste_confirm():
+    return wx.MessageDialog(wx.GetApp().root, 'The destination database does '
+                    'not support all the data copied from the origin database: '
+                          'consider upgrading the destination database first.\n'
+                     'Paste the items anyway, discarding the unsupported data?',
+           caption="Paste items", style=wx.OK | wx.CANCEL | wx.ICON_EXCLAMATION)
