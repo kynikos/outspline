@@ -186,17 +186,17 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
             except TypeError:
                 alarm = None
 
-        occd = {'filename': filename,
-                'id_': id_,
-                'start': start,
-                'end': end,
-                'alarm': alarm}
+            occd = {'filename': filename,
+                    'id_': id_,
+                    'start': start,
+                    'end': end,
+                    'alarm': alarm}
 
-        next_occ = occs.get_next_occurrence_time()
+            next_occ = occs.get_next_occurrence_time()
 
-        # The rule is checked in make_rule, no need to use occs.add
-        if occs.add_safe(base_time, occd) or (next_occ and start > next_occ and
-                                           (alarm is None or alarm > next_occ)):
-            break
+            # The rule is checked in make_rule, no need to use occs.add
+            if occs.add_safe(base_time, occd) or (next_occ and start > next_occ and
+                                               (alarm is None or alarm > next_occ)):
+                break
 
         year += interval
