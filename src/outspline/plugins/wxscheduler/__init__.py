@@ -345,10 +345,10 @@ def handle_open_editor(kwargs):
     filename = kwargs['filename']
     id_ = kwargs['id_']
 
-    global items
-    items[Scheduler.make_itemid(filename, id_)] = Scheduler(filename, id_)
-
-    items[Scheduler.make_itemid(filename, id_)].post_init()
+    if filename in organism_api.get_supported_open_databases():
+        global items
+        items[Scheduler.make_itemid(filename, id_)] = Scheduler(filename, id_)
+        items[Scheduler.make_itemid(filename, id_)].post_init()
 
 
 def main():

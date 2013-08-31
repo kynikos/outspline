@@ -23,6 +23,7 @@ import outspline.core_api as core_api
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import log
 import outspline.interfaces.wxgui_api as wxgui_api
+organism_api = coreaux_api.import_optional_extension_api('organism')
 wxcopypaste_api = coreaux_api.import_optional_plugin_api('wxcopypaste')
 wxscheduler_api = coreaux_api.import_optional_plugin_api('wxscheduler')
 wxscheduler_basicrules_api = coreaux_api.import_optional_plugin_api(
@@ -268,12 +269,12 @@ def paste_items():
             log.debug('Simulate paste items as siblings')
             # Databases are blocked in simulator._do_action
             core_api.release_databases()
-            wxcopypaste_api.simulate_paste_items_as_siblings()
+            wxcopypaste_api.simulate_paste_items_as_siblings(no_confirm=True)
         else:
             log.debug('Simulate paste items as children')
             # Databases are blocked in simulator._do_action
             core_api.release_databases()
-            wxcopypaste_api.simulate_paste_items_as_children()
+            wxcopypaste_api.simulate_paste_items_as_children(no_confirm=True)
     else:
         # Databases are blocked in simulator._do_action
         core_api.release_databases()
@@ -365,133 +366,139 @@ def edit_editor_text():
 
 
 def edit_editor_rules():
-    if wxscheduler_api and wxscheduler_basicrules_api and _select_editor():
+    if organism_api and wxscheduler_api and wxscheduler_basicrules_api and \
+                                                               _select_editor():
         filename, id_ = wxgui_api.get_active_editor()
 
-        wxscheduler_api.simulate_expand_rules_panel(filename, id_)
-        wxscheduler_api.simulate_remove_all_rules(filename, id_)
+        if filename in organism_api.get_supported_open_databases():
+            wxscheduler_api.simulate_expand_rules_panel(filename, id_)
+            wxscheduler_api.simulate_remove_all_rules(filename, id_)
 
-        rules = []
+            rules = []
 
-        for n in range(random.randint(0, 8)):
-            r = random.randint(0, 16)
+            for n in range(random.randint(0, 8)):
+                r = random.randint(0, 16)
 
-            if r == 0:
-                rule = \
-                      wxscheduler_basicrules_api.create_random_occur_once_rule()
-            elif r == 1:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_occur_every_interval_rule()
-            elif r == 2:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_occur_every_day_rule()
-            elif r == 3:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_occur_every_week_rule()
-            elif r == 4:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_occur_selected_weekdays_rule()
-            elif r == 5:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_occur_selected_months_rule()
-            elif r == 6:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_occur_selected_months_inverse_rule()
-            elif r == 7:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_occur_selected_months_weekday_rule()
-            elif r == 8:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_occur_selected_months_weekday_inverse_rule()
-            elif r == 9:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_occur_every_month_rule()
-            elif r == 10:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_occur_every_month_inverse_rule()
-            elif r == 11:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_occur_every_month_weekday_rule()
-            elif r == 12:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_occur_every_month_weekday_inverse_rule()
-            elif r == 13:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_occur_every_synodic_month_rule()
-            elif r == 14:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_occur_yearly_rule()
-            elif r == 15:
-                rule = \
-                     wxscheduler_basicrules_api.create_random_except_once_rule()
-            else:
-                rule = \
-                    wxscheduler_basicrules_api.create_random_except_every_interval_rule()
-
-            rules.append(rule)
-
-        log.debug('Simulate replace item rules')
-        # Databases are blocked in simulator._do_action
-        core_api.release_databases()
-
-        for rule in rules:
-            if rule['rule'] == 'occur_once':
-                wxscheduler_basicrules_api.simulate_create_occur_once_rule(
-                                                            filename, id_, rule)
-            elif rule['rule'] == 'occur_regularly_single':
-                if rule['#'][6][0] == '1d':
-                    wxscheduler_basicrules_api.simulate_create_occur_every_day_rule(
-                                                            filename, id_, rule)
-                elif rule['#'][6][0] == '1w':
-                    wxscheduler_basicrules_api.simulate_create_occur_every_week_rule(
-                                                            filename, id_, rule)
-                elif rule['#'][6][0] == 'sy':
-                    wxscheduler_basicrules_api.simulate_create_occur_every_synodic_month_rule(
-                                                            filename, id_, rule)
+                if r == 0:
+                    rule = \
+                          wxscheduler_basicrules_api.create_random_occur_once_rule()
+                elif r == 1:
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_occur_every_interval_rule()
+                elif r == 2:
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_occur_every_day_rule()
+                elif r == 3:
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_occur_every_week_rule()
+                elif r == 4:
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_occur_selected_weekdays_rule()
+                elif r == 5:
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_occur_selected_months_rule()
+                elif r == 6:
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_occur_selected_months_inverse_rule()
+                elif r == 7:
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_occur_selected_months_weekday_rule()
+                elif r == 8:
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_occur_selected_months_weekday_inverse_rule()
+                elif r == 9:
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_occur_every_month_rule()
+                elif r == 10:
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_occur_every_month_inverse_rule()
+                elif r == 11:
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_occur_every_month_weekday_rule()
+                elif r == 12:
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_occur_every_month_weekday_inverse_rule()
+                elif r == 13:
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_occur_every_synodic_month_rule()
+                elif r == 14:
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_occur_yearly_rule()
+                elif r == 15:
+                    rule = \
+                         wxscheduler_basicrules_api.create_random_except_once_rule()
                 else:
-                    wxscheduler_basicrules_api.simulate_create_occur_every_interval_rule(
+                    rule = \
+                        wxscheduler_basicrules_api.create_random_except_every_interval_rule()
+
+                rules.append(rule)
+
+            log.debug('Simulate replace item rules')
+            # Databases are blocked in simulator._do_action
+            core_api.release_databases()
+
+            for rule in rules:
+                if rule['rule'] == 'occur_once':
+                    wxscheduler_basicrules_api.simulate_create_occur_once_rule(
                                                             filename, id_, rule)
-            elif rule['rule'] == 'occur_regularly_group':
-                if rule['#'][6][0] == 'sw':
-                    wxscheduler_basicrules_api.simulate_create_occur_selected_weekdays_rule(
+                elif rule['rule'] == 'occur_regularly_single':
+                    if rule['#'][6][0] == '1d':
+                        wxscheduler_basicrules_api.simulate_create_occur_every_day_rule(
                                                             filename, id_, rule)
-            elif rule['rule'] == 'occur_monthly_number_direct':
-                if rule['#'][5][0] == '1m':
-                    wxscheduler_basicrules_api.simulate_create_occur_every_month_rule(
+                    elif rule['#'][6][0] == '1w':
+                        wxscheduler_basicrules_api.simulate_create_occur_every_week_rule(
                                                             filename, id_, rule)
-                else:
-                    wxscheduler_basicrules_api.simulate_create_occur_selected_months_rule(
+                    elif rule['#'][6][0] == 'sy':
+                        wxscheduler_basicrules_api.simulate_create_occur_every_synodic_month_rule(
                                                             filename, id_, rule)
-            elif rule['rule'] == 'occur_monthly_number_inverse':
-                if rule['#'][5][0] == '1m':
-                    wxscheduler_basicrules_api.simulate_create_occur_every_month_inverse_rule(
+                    else:
+                        wxscheduler_basicrules_api.simulate_create_occur_every_interval_rule(
                                                             filename, id_, rule)
-                else:
-                    wxscheduler_basicrules_api.simulate_create_occur_selected_months_inverse_rule(
+                elif rule['rule'] == 'occur_regularly_group':
+                    if rule['#'][6][0] == 'sw':
+                        wxscheduler_basicrules_api.simulate_create_occur_selected_weekdays_rule(
                                                             filename, id_, rule)
-            elif rule['rule'] == 'occur_monthly_weekday_direct':
-                if rule['#'][7][0] == '1m':
-                    wxscheduler_basicrules_api.simulate_create_occur_every_month_weekday_rule(
+                elif rule['rule'] == 'occur_monthly_number_direct':
+                    if rule['#'][5][0] == '1m':
+                        wxscheduler_basicrules_api.simulate_create_occur_every_month_rule(
                                                             filename, id_, rule)
-                else:
-                    wxscheduler_basicrules_api.simulate_create_occur_selected_months_weekday_rule(
+                    else:
+                        wxscheduler_basicrules_api.simulate_create_occur_selected_months_rule(
                                                             filename, id_, rule)
-            elif rule['rule'] == 'occur_monthly_weekday_inverse':
-                if rule['#'][7][0] == '1m':
-                    wxscheduler_basicrules_api.simulate_create_occur_every_month_weekday_inverse_rule(
+                elif rule['rule'] == 'occur_monthly_number_inverse':
+                    if rule['#'][5][0] == '1m':
+                        wxscheduler_basicrules_api.simulate_create_occur_every_month_inverse_rule(
                                                             filename, id_, rule)
-                else:
-                    wxscheduler_basicrules_api.simulate_create_occur_selected_months_weekday_inverse_rule(
+                    else:
+                        wxscheduler_basicrules_api.simulate_create_occur_selected_months_inverse_rule(
                                                             filename, id_, rule)
-            elif rule['rule'] == 'occur_yearly_single':
-                wxscheduler_basicrules_api.simulate_create_occur_yearly_rule(
+                elif rule['rule'] == 'occur_monthly_weekday_direct':
+                    if rule['#'][7][0] == '1m':
+                        wxscheduler_basicrules_api.simulate_create_occur_every_month_weekday_rule(
                                                             filename, id_, rule)
-            elif rule['rule'] == 'except_once':
-                wxscheduler_basicrules_api.simulate_create_except_once_rule(
+                    else:
+                        wxscheduler_basicrules_api.simulate_create_occur_selected_months_weekday_rule(
                                                             filename, id_, rule)
-            elif rule['rule'] == 'except_regularly_single':
-                wxscheduler_basicrules_api.simulate_create_except_every_interval_rule(
+                elif rule['rule'] == 'occur_monthly_weekday_inverse':
+                    if rule['#'][7][0] == '1m':
+                        wxscheduler_basicrules_api.simulate_create_occur_every_month_weekday_inverse_rule(
                                                             filename, id_, rule)
+                    else:
+                        wxscheduler_basicrules_api.simulate_create_occur_selected_months_weekday_inverse_rule(
+                                                            filename, id_, rule)
+                elif rule['rule'] == 'occur_yearly_single':
+                    wxscheduler_basicrules_api.simulate_create_occur_yearly_rule(
+                                                            filename, id_, rule)
+                elif rule['rule'] == 'except_once':
+                    wxscheduler_basicrules_api.simulate_create_except_once_rule(
+                                                            filename, id_, rule)
+                elif rule['rule'] == 'except_regularly_single':
+                    wxscheduler_basicrules_api.simulate_create_except_every_interval_rule(
+                                                            filename, id_, rule)
+        else:
+            # Databases are blocked in simulator._do_action
+            core_api.release_databases()
+            return False
     else:
         # Databases are blocked in simulator._do_action
         core_api.release_databases()

@@ -33,6 +33,7 @@ protection = None
 memory = None
 
 create_database_event = Event()
+open_database_dirty_event = Event()
 open_database_event = Event()
 close_database_event = Event()
 save_database_copy_event = Event()
@@ -163,8 +164,10 @@ class Database(history.DBHistory):
                                (coreaux_api.get_default_history_limit(), ))
 
                 cursor.execute(queries.compatibility_create)
+                # Only store major versions, as they are supposed to keep
+                # backward compatibility
                 cursor.execute(queries.compatibility_insert, ('Core', 'core',
-                                              coreaux_api.get_core_version(), ))
+                                  int(float(coreaux_api.get_core_version())), ))
 
                 info = coreaux_api.get_addons_info(disabled=False)
 
@@ -172,8 +175,10 @@ class Database(history.DBHistory):
                     for a in info(t).get_sections():
                         if info(t)(a).get('affects_database', fallback=None
                                                                       ) != 'no':
+                            # Only store major versions, as they are supposed to
+                            # keep backward compatibility
                             cursor.execute(queries.compatibility_insert, (t, a,
-                                                         info(t)(a)['version']))
+                                          int(info(t)(a).get_float('version'))))
 
                 cursor.execute(queries.items_create)
 
@@ -193,18 +198,24 @@ class Database(history.DBHistory):
             raise exceptions.DatabaseAlreadyOpenError()
         elif not os.access(filename, os.W_OK):
             raise exceptions.DatabaseNotAccessibleError()
-        elif not cls.check_compatibility(filename):
-            raise exceptions.DatabaseNotValidError()
         else:
-            dbs[filename] = cls(filename)
+            compat = cls.check_compatibility(filename)
 
-            # Reset modified state after instantiating the class, since this
-            # signals an event whose handlers might require the object to be
-            # already created
-            dbs[filename].reset_modified_state()
+            if not compat:
+                raise exceptions.DatabaseNotValidError()
+            else:
+                dbs[filename] = cls(filename)
 
-            open_database_event.signal(filename=filename)
-            return True
+                open_database_dirty_event.signal(filename=filename,
+                                                            dependencies=compat)
+
+                # Reset modified state after instantiating the class, since this
+                # signals an event whose handlers might require the object to be
+                # already created
+                dbs[filename].reset_modified_state()
+
+                open_database_event.signal(filename=filename)
+                return True
 
     @staticmethod
     def check_compatibility(filename):
@@ -217,25 +228,36 @@ class Database(history.DBHistory):
             return False
 
         info = coreaux_api.get_addons_info(disabled=False)
+        compat = []
 
         for row in cursor:
             if row[1] == 'Core':
-                if row[3] != coreaux_api.get_core_version():
+                # Only compare major versions, as they are supposed to keep
+                # backward compatibility
+                if row[3] == int(float(coreaux_api.get_core_version())):
+                    compat.append('.'.join(('core', str(row[3]))))
+                else:
                     break
             elif row[1] in info.get_sections():
                 if row[2] in info(str(row[1])).get_sections():
                     # Only compare major versions, as they are supposed to keep
                     # backward compatibility
-                    if int(float(row[3])) != int(info(str(row[1]))(str(row[2])
+                    if row[3] == int(info(str(row[1]))(str(row[2])
                                                         ).get_float('version')):
+                        compat.append('.'.join((row[1].lower(), row[2],
+                                                                  str(row[3]))))
+                    else:
                         break
                 else:
                     break
             else:
                 break
         else:
+            # Note that it's possible that there are other addons installed with
+            # the affects_database flag, however all addons are required to be
+            # able to ignore a database that doesn't support them
             qconn.close()
-            return True
+            return compat
 
         qconn.close()
         return False

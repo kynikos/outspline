@@ -30,6 +30,7 @@ update_item_rules_event = Event()
 get_alarms_event = Event()
 
 rule_handlers = {}
+cdbs = set()
 
 
 class OccurrencesRange():
@@ -185,16 +186,17 @@ def install_rule_handler(rulename, handler):
         raise ConflictingRuleHandlerError()
 
 def insert_item(filename, id_, group, description='Insert item'):
-    query_redo = queries.rules_insert.format(id_)
-    query_undo = queries.rules_delete_id.format(id_)
+    if filename in cdbs:
+        query_redo = queries.rules_insert.format(id_)
+        query_undo = queries.rules_delete_id.format(id_)
 
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(query_redo, (rules_to_string([]), ))
-    core_api.give_connection(filename, qconn)
+        qconn = core_api.get_connection(filename)
+        cursor = qconn.cursor()
+        cursor.execute(query_redo, (rules_to_string([]), ))
+        core_api.give_connection(filename, qconn)
 
-    core_api.insert_history(filename, group, id_, 'rules_insert', description,
-                            query_redo, rules_to_string([]), query_undo, None)
+        core_api.insert_history(filename, group, id_, 'rules_insert',
+                 description, query_redo, rules_to_string([]), query_undo, None)
 
 
 def update_item_rules(filename, id_, rules, group,
@@ -226,11 +228,16 @@ def update_item_rules(filename, id_, rules, group,
 def copy_item_rules(filename, id_):
     record = [id_, ]
 
-    conn = core_api.get_connection(filename)
-    cur = conn.cursor()
-    cur.execute(queries.rules_select_id, (id_, ))
-    record.extend(cur.fetchone())
-    core_api.give_connection(filename, conn)
+    if filename in cdbs:
+        conn = core_api.get_connection(filename)
+        cur = conn.cursor()
+        cur.execute(queries.rules_select_id, (id_, ))
+        record.extend(cur.fetchone())
+        core_api.give_connection(filename, conn)
+    else:
+        # Even if filename doesn't support rules, create a correct table that
+        # can be safely used when pasting
+        record.append(rules_to_string([]))
 
     mem = core_api.get_memory_connection()
     curm = mem.cursor()
@@ -238,36 +245,48 @@ def copy_item_rules(filename, id_):
     core_api.give_memory_connection(mem)
 
 
-def paste_item_rules(filename, id_, oldid, group, description):
+def can_paste_safely(filename, exception):
     mem = core_api.get_memory_connection()
     curm = mem.cursor()
-    curm.execute(queries.copyrules_select_id, (oldid, ))
+    curm.execute(queries.copyrules_select, (rules_to_string([]), ))
     core_api.give_memory_connection(mem)
 
-    update_item_rules(filename, id_, curm.fetchone()['CR_rules'], group,
-                      description)
+    # Warn if CopyRules table has rules but filename doesn't support them
+    if curm.fetchone() and filename not in cdbs:
+        raise exception()
+
+
+def paste_item_rules(filename, id_, oldid, group, description):
+    if filename in cdbs:
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+        curm.execute(queries.copyrules_select_id, (oldid, ))
+        core_api.give_memory_connection(mem)
+
+        update_item_rules(filename, id_, curm.fetchone()['CR_rules'], group,
+                                                                    description)
 
 
 def delete_item_rules(filename, id_, group, description='Delete item rules'):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
+    if filename in cdbs:
+        qconn = core_api.get_connection(filename)
+        cursor = qconn.cursor()
 
-    cursor.execute(queries.rules_select_id, (id_, ))
-    sel = cursor.fetchone()
+        cursor.execute(queries.rules_select_id, (id_, ))
+        sel = cursor.fetchone()
 
-    # The query should always return a result, so sel should never be None
-    current_rules = sel['R_rules']
+        # The query should always return a result, so sel should never be None
+        current_rules = sel['R_rules']
 
-    query_redo = queries.rules_delete_id.format(id_)
-    query_undo = queries.rules_insert.format(id_)
+        query_redo = queries.rules_delete_id.format(id_)
+        query_undo = queries.rules_insert.format(id_)
 
-    cursor.execute(query_redo)
+        cursor.execute(query_redo)
 
-    core_api.give_connection(filename, qconn)
+        core_api.give_connection(filename, qconn)
 
-    return core_api.insert_history(filename, group, id_, 'rules_delete',
-                                   description, query_redo, None, query_undo,
-                                   current_rules)
+        return core_api.insert_history(filename, group, id_, 'rules_delete',
+                       description, query_redo, None, query_undo, current_rules)
 
 
 def get_item_rules(filename, id_):
@@ -297,7 +316,7 @@ def get_occurrences_range(mint, maxt):
 
     search_start = (_time.time(), _time.clock())
 
-    for filename in core_api.get_open_databases():
+    for filename in cdbs:
         for id_ in core_api.get_items_ids(filename):
             rules = get_item_rules(filename, id_)
             for rule in rules:

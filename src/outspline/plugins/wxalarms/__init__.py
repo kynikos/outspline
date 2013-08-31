@@ -175,11 +175,7 @@ class AlarmsWindow():
     def dismiss_all(self, event):
         core_api.block_databases()
 
-        alarmst = []
-        for a in self.alarms:
-            alarmst.append((self.alarms[a].get_filename(),
-                            self.alarms[a].get_alarmid()))
-        organism_alarms_api.dismiss_alarms(alarmst)
+        organism_alarms_api.dismiss_alarms(self.get_alarms_dictionary())
         # Let the alarm off event close the alarms
 
         core_api.release_databases()
@@ -187,11 +183,7 @@ class AlarmsWindow():
     def snooze_all(self, event):
         core_api.block_databases()
 
-        alarmst = []
-        for a in self.alarms:
-            alarmst.append((self.alarms[a].get_filename(),
-                            self.alarms[a].get_alarmid()))
-        organism_alarms_api.snooze_alarms(alarmst,
+        organism_alarms_api.snooze_alarms(self.get_alarms_dictionary(),
                                                    stime=self.get_snooze_time())
         # Let the alarm off event close the alarms
 
@@ -255,6 +247,21 @@ class AlarmsWindow():
                 'weeks': 604800}
         stime = self.number.GetValue() * mult[self.unit.GetValue()]
         return stime
+
+    def get_alarms_dictionary(self):
+        alarmsd = {}
+
+        for a in self.alarms:
+            filename = self.alarms[a].get_filename()
+
+            try:
+                alarmsd[filename]
+            except KeyError:
+                alarmsd[filename] = []
+            else:
+                alarmsd[filename].append(self.alarms[a].get_alarmid())
+
+        return alarmsd
 
 
 class Alarm():
@@ -322,8 +329,8 @@ class Alarm():
     def snooze(self, event):
         core_api.block_databases()
 
-        organism_alarms_api.snooze_alarms(((self.filename, self.alarmid), ),
-                                          stime=self.awindow.get_snooze_time())
+        organism_alarms_api.snooze_alarms({self.filename: [self.alarmid, ]},
+                                           stime=self.awindow.get_snooze_time())
         # Let the alarm off event close the alarm
 
         core_api.release_databases()
@@ -331,7 +338,7 @@ class Alarm():
     def dismiss(self, event):
         core_api.block_databases()
 
-        organism_alarms_api.dismiss_alarms(((self.filename, self.alarmid), ))
+        organism_alarms_api.dismiss_alarms({self.filename: [self.alarmid, ]})
         # Let the alarm off event close the alarm
 
         core_api.release_databases()
@@ -345,7 +352,7 @@ class Alarm():
         self.panel.Destroy()
         self.awindow.window.Layout()
         del self.awindow.alarms[self.awindow.make_alarmid(self.filename,
-                                                          self.alarmid)]
+                                                                  self.alarmid)]
 
         if len(self.awindow.alarms) == 0:
             self.awindow.hide()
