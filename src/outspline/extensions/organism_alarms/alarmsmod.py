@@ -150,10 +150,9 @@ def get_alarms(mint, maxt, filename, occs):
 
 
 
-def snooze_alarms(alarmst, stime):
+def snooze_alarms(alarmsd, stime):
     newalarm = ((int(_time.time()) + stime) // 60 + 1) * 60
 
-    alarmsd = divide_alarms(alarmst)
     for filename in alarmsd:
         for alarmid in alarmsd[filename]:
             update_alarm(filename, alarmid, newalarm)
@@ -168,8 +167,7 @@ def snooze_alarms(alarmst, stime):
     organism_timer_api.search_next_occurrences()
 
 
-def dismiss_alarms(alarmst):
-    alarmsd = divide_alarms(alarmst)
+def dismiss_alarms(alarmsd):
     for filename in alarmsd:
         for alarmid in alarmsd[filename]:
             qconn = core_api.get_connection(filename)
@@ -268,18 +266,3 @@ def clean_old_history_alarms(filename, hids):
         cursor.execute(queries.alarms_delete_clean_soft, (hid[0], ))
     qconn.commit()
     qconn.close()
-
-
-def divide_alarms(alarmsl):
-    alarmsd = {}
-
-    for alarm in alarmsl:
-        filename = alarm[0]
-        alarmid = alarm[1]
-
-        if filename not in alarmsd:
-            alarmsd[filename] = []
-
-        alarmsd[filename].append(alarmid)
-
-    return alarmsd
