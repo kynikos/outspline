@@ -49,7 +49,7 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
         occs.except_safe(filename, id_, start, end, inclusive)
 
 
-def get_next_item_occurrences(filename, id_, rule, occs):
+def get_next_item_occurrences(base_time, filename, id_, rule, occs):
     start = rule['#'][0]
     end = rule['#'][1]
     inclusive = rule['#'][2]

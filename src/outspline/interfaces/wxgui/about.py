@@ -202,7 +202,7 @@ class InfoBox(wx.SplitterWindow):
         self.textw.AppendText('\n\nInstalled components:')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
         for c in coreaux_api.get_installed_components():
-            self.textw.AppendText('\n\t{}'.format(c))
+            self.textw.AppendText('\n\t{} {} ({})'.format(*c))
 
     def compose_addon_info(self, type_, addon):
         info = coreaux_api.get_addons_info()

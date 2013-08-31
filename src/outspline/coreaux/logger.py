@@ -184,5 +184,6 @@ def set_logger(cliargs):
     log = logging.getLogger('outspline')
 
     log.info('Start logging (level {}, file {})'.format(loglevel, logfile))
-    log.info('{} version {} ({})'.format('Outspline', info['component_version'],
-                                         info['component_release_date']))
+    log.info('{} version {} ({})'.format('Outspline',
+                                              info('Core')['component_version'],
+                                        info('Core')['component_release_date']))
