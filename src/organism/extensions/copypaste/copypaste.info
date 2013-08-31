@@ -1,7 +1,0 @@
-author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.1
-description = Adds the backend for cutting, copying and pasting database items.
-website = https://github.com/kynikos/organism/
-component = main
-component_version = 1.0.0pb1
-component_release_date = 2011-12-04

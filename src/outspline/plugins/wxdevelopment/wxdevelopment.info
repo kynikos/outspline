@@ -1,0 +1,15 @@
+author = Dario Giovannetti <dev@dariogiovannetti.net>
+version = 0.2
+description = Development tools.
+website = https://github.com/kynikos/outspline/
+component = development
+component_version = 0.2
+component_release_date = 2011-12-04
+dependency_1 = core 0
+dependency_2 = extensions.development 0
+dependency_3 = interfaces.wxgui 0
+optional_dependency_1 = extensions.organism 0
+optional_dependency_2 = plugins.wxcopypaste 0
+optional_dependency_3 = plugins.wxscheduler 0
+optional_dependency_4 = plugins.wxscheduler_basicrules 0
+optional_dependency_5 = plugins.wxalarms 0

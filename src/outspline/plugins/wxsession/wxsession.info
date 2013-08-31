@@ -1,0 +1,9 @@
+author = Dario Giovannetti <dev@dariogiovannetti.net>
+version = 0.2
+description = Lets save the state of Outspline upon exit and restore it upon restart.
+website = https://github.com/kynikos/outspline/
+component = main
+component_version = 0.2
+component_release_date = 2011-12-04
+dependency_1 = core 0
+dependency_2 = interfaces.wxgui 0
