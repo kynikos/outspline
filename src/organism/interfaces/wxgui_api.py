@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -37,9 +37,9 @@ def get_textctrl(filename, id_):
     return editor.tabs[editor.Editor.make_tabid(filename, id_)].area.area
 
 
-def close_editor_if_needed(filename, id_, warn=True):
+def close_editor(filename, id_, ask='apply'):
     tab = editor.Editor.make_tabid(filename, id_)
-    if tab in editor.tabs and not editor.tabs[tab].close_if_needed():
+    if tab in editor.tabs and not editor.tabs[tab].close(ask=ask):
         return False
     else:
         return True
@@ -102,6 +102,31 @@ def bind_to_open_textctrl(handler, bind=True):
     return editor.open_textctrl_event.bind(handler, bind)
 
 
+def simulate_replace_editor_text(text):
+    tab = wx.GetApp().nb_right.get_selected_editor()
+    if tab:
+        last = editor.tabs[tab].area.area.GetLastPosition()
+        return editor.tabs[tab].area.area.Replace(0, last, text)
+    else:
+        return False
+
+
+def simulate_apply_editor():
+    return wx.GetApp().menu.edit.apply_tab(None)
+
+
+def simulate_apply_all_editors():
+    return wx.GetApp().menu.edit.apply_all_tabs(None)
+
+
+def simulate_close_editor(ask='apply'):
+    return wx.GetApp().menu.edit.close_tab(None, ask=ask)
+
+
+def simulate_close_all_editors(ask='apply'):
+    return wx.GetApp().menu.edit.close_all_tabs(None, ask=ask)
+
+
 ### MENUBAR ###
 
 def get_menu():
@@ -119,20 +144,12 @@ def insert_menu_item(menu, pos, item, id_=wx.ID_ANY, help='', sep='none',
                                         sub, icon)
 
 
-def bind_to_reset_menus(handler, bind=True):
-    return menubar.reset_menus_event.bind(handler, bind)
-
-
-def bind_to_enable_database_menus(handler, bind=True):
-    return menubar.enable_database_menus_event.bind(handler, bind)
+def bind_to_reset_menu_items(handler, bind=True):
+    return menubar.reset_menu_items_event.bind(handler, bind)
 
 
 def bind_to_enable_tree_menus(handler, bind=True):
     return menubar.enable_tree_menus_event.bind(handler, bind)
-
-
-def bind_to_enable_editor_menus(handler, bind=True):
-    return menubar.enable_editor_menus_event.bind(handler, bind)
 
 
 def bind_to_enable_textarea_menus(handler, bind=True):
@@ -167,22 +184,107 @@ def bind_to_delete_items(handler, bind=True):
     return menubar.delete_items_event.bind(handler, bind)
 
 
+def simulate_create_database(filename):
+    return wx.GetApp().menu.file.new_database(None, filename)
+
+
+def simulate_open_database(filename):
+    return wx.GetApp().menu.file.open_database(None, filename)
+
+
+def simulate_save_database():
+    return wx.GetApp().menu.file.save_database(None)
+
+
+def simulate_save_all_databases():
+    return wx.GetApp().menu.file.save_all_databases(None)
+
+
+def simulate_close_database(no_confirm=False):
+    return wx.GetApp().menu.file.close_database(None, no_confirm=no_confirm)
+
+
+def simulate_close_all_databases(no_confirm=False):
+    return wx.GetApp().menu.file.close_all_databases(None,
+                                                          no_confirm=no_confirm)
+
+
+def simulate_undo_tree(no_confirm=False):
+    return wx.GetApp().menu.database.undo_tree(None, no_confirm=no_confirm)
+
+
+def simulate_redo_tree(no_confirm=False):
+    return wx.GetApp().menu.database.redo_tree(None, no_confirm=no_confirm)
+
+
+def simulate_create_sibling():
+    return wx.GetApp().menu.database.create_sibling(None)
+
+
+def simulate_create_child():
+    return wx.GetApp().menu.database.create_child(None)
+
+
+def simulate_move_item_up():
+    return wx.GetApp().menu.database.move_item_up(None)
+
+
+def simulate_move_item_down():
+    return wx.GetApp().menu.database.move_item_down(None)
+
+
+def simulate_move_item_to_parent():
+    return wx.GetApp().menu.database.move_item_to_parent(None)
+
+
+def simulate_edit_item():
+    return wx.GetApp().menu.database.edit_item(None)
+
+
+def simulate_delete_items(no_confirm=False):
+    return wx.GetApp().menu.database.delete_items(None, no_confirm=no_confirm)
+
+
 ### NOTEBOOKS ###
 
 def select_database_tab_index(index):
     return wx.GetApp().nb_left.select_page(index)
 
 
-def get_open_databases():
-    return [o.get_filename() for o in wx.GetApp().nb_left.get_tabs()]
+def get_selected_database_tab_index():
+    # Returns -1 if there's no tab
+    return wx.GetApp().nb_left.get_selected_tab_index()
+
+
+def get_active_database():
+    return wx.GetApp().nb_left.get_selected_tab()
 
 
 def get_right_nb():
     return wx.GetApp().nb_right
 
 
+def select_editor_tab_index(index):
+    return wx.GetApp().nb_right.select_page(index)
+
+
+def get_selected_editor_tab_index():
+    # Returns -1 if there's no tab
+    return wx.GetApp().nb_right.get_selected_tab_index()
+
+
 def get_active_editor():
-    return wx.GetApp().nb_right.get_selected_tab()
+    item = wx.GetApp().nb_right.get_selected_editor()
+    tab = editor.tabs[item]
+    return (tab.get_filename(), tab.get_id())
+
+
+def get_active_editor_tag():
+    return wx.GetApp().nb_right.get_selected_editor()
+
+
+def get_open_editors_tab_indexes():
+    return wx.GetApp().nb_right.get_open_editors()
 
 
 def add_plugin_to_right_nb(window, caption, close=True):
@@ -213,10 +315,6 @@ def bind_to_exit_application(handler, bind=True):
 
 
 ### TREE ###
-
-def get_active_database():
-    return wx.GetApp().nb_left.get_selected_tab()
-
 
 def get_tree_selections(filename, none=True, many=True, descendants=None):
     return tree.dbs[filename].get_selections(none=none, many=many,
@@ -260,3 +358,19 @@ def bind_to_reset_tree_context_menu(handler, bind=True):
 
 def bind_to_popup_tree_context_menu(handler, bind=True):
     return tree.popup_context_menu_event.bind(handler, bind)
+
+
+def simulate_unselect_all_items(filename):
+    return tree.dbs[filename].unselect_all_items()
+
+
+def simulate_add_items_to_selection(filename, ids):
+    for id_ in ids:
+        item = tree.dbs[filename].find_item(id_)
+        tree.dbs[filename].add_item_to_selection(item)
+
+
+def simulate_remove_items_from_selection(filename, ids):
+    for id_ in ids:
+        item = tree.dbs[filename].find_item(id_)
+        tree.dbs[filename].remove_item_from_selection(item)

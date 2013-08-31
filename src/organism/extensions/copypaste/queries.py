@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -20,8 +20,6 @@ copy_create = ("CREATE TABLE Copy (C_id INTEGER, "
                                   "C_parent INTEGER, "
                                   "C_previous INTEGER, "
                                   "C_text TEXT)")
-
-copy_select = 'SELECT * FROM Copy'
 
 copy_select_check = 'SELECT C_id FROM Copy LIMIT 1'
 

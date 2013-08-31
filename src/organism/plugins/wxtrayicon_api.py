@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -23,7 +23,7 @@ import wxtrayicon
 
 def insert_menu_item(pos, item, id_=wx.ID_ANY, help='', sep='none',
                      kind='normal', sub=None, icon=None):
-    return wxtrayicon.trayicon.menu.insert_item(pos, item, id_, help, sep,  # @UndefinedVariable
+    return wxtrayicon.trayicon.menu.insert_item(pos, item, id_, help, sep,
                                                 kind, sub, icon)
 
 

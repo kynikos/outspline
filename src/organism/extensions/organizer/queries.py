@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -33,8 +33,6 @@ rules_delete_id = 'DELETE FROM Rules WHERE R_id={}'
 
 copyrules_create = ("CREATE TABLE CopyRules (CR_id INTEGER, "
                                             "CR_rules TEXT)")
-
-copyrules_select = 'SELECT * FROM CopyRules'
 
 copyrules_select_id = 'SELECT CR_rules FROM CopyRules WHERE CR_id=?'
 

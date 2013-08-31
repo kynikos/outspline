@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -15,6 +15,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
+
+master_select_tables = "SELECT name FROM sqlite_master WHERE type='table'"
+
+master_select_table = "SELECT * FROM {}"
 
 properties_create = ('CREATE TABLE Properties (P_id INTEGER PRIMARY KEY, '
                                               'P_max_history INTEGER)')
@@ -35,7 +39,7 @@ properties_delete = 'DELETE FROM Properties'
 compatibility_create = ('CREATE TABLE CoMpatibility ('
                                                   'CM_id INTEGER PRIMARY KEY, '
                                                   'CM_type TEXT, '
-                                                  'CM_addon TEXT, ' 
+                                                  'CM_addon TEXT, '
                                                   'CM_version TEXT)')
 
 compatibility_select = 'SELECT * FROM CoMpatibility'

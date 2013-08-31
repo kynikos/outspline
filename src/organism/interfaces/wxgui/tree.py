@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -19,7 +19,7 @@
 import os
 import wx
 
-from organism.coreaux_api import Event 
+from organism.coreaux_api import Event
 import organism.core_api as core_api
 
 import history
@@ -47,43 +47,40 @@ class Database(wx.SplitterWindow):
     history = None
     accels = None
     accelstree = None
-    
+
     def __init__(self, filename, parent):
         wx.SplitterWindow.__init__(self, parent, style=wx.SP_LIVE_UPDATE)
-        
+
         # Prevent the window from unsplitting when dragging the sash to the
         # border
         self.SetMinimumPaneSize(20)
-        
+
         self.filename = filename
-        
+
         self.treec = Tree(self)
         data = wx.TreeItemData(0)
         self.root = self.treec.AddRoot(text='root', data=data)
         self.titems = {0: data}
-        
+
         self.cmenu = ContextMenu(self)
-        
+
         self.hpanel = wx.Panel(self)
         bs = wx.BoxSizer(wx.VERTICAL)
         self.hpanel.SetSizer(bs)
-        
+
         self.history = history.HistoryWindow(self.hpanel, self.filename)
-        
+
         line = wx.StaticLine(self.hpanel, size=(1, 1), style=wx.LI_HORIZONTAL)
-        
+
         bs.Add(line, flag=wx.EXPAND)
         bs.Add(self.history, 1, flag=wx.EXPAND)
-        
+
         self.hpanel.Show(False)
         self.Initialize(self.treec)
-        
-        if history.is_shown():
-            self.show_history()
-        
+
         self.create()
-        
-        self.accels = [(wx.ACCEL_SHIFT | wx.ACCEL_CTRL, ord('s'), 
+
+        self.accels = [(wx.ACCEL_SHIFT | wx.ACCEL_CTRL, ord('s'),
                         wx.GetApp().menu.file.ID_SAVE),
                        (wx.ACCEL_SHIFT | wx.ACCEL_CTRL, ord('a'),
                         wx.GetApp().menu.file.ID_SAVE_ALL),
@@ -95,7 +92,7 @@ class Database(wx.SplitterWindow):
                         wx.GetApp().menu.database.ID_UNDO),
                        (wx.ACCEL_CTRL, ord('y'),
                         wx.GetApp().menu.database.ID_REDO)]
-        
+
         self.accelstree = [(wx.ACCEL_NORMAL, wx.WXK_INSERT,
                             wx.GetApp().menu.database.ID_SIBLING),
                            (wx.ACCEL_SHIFT, wx.WXK_INSERT,
@@ -112,17 +109,17 @@ class Database(wx.SplitterWindow):
                             wx.GetApp().menu.database.ID_EDIT),
                            (wx.ACCEL_NORMAL, wx.WXK_DELETE,
                             wx.GetApp().menu.database.ID_DELETE)]
-        
+
         self.SetAcceleratorTable(wx.AcceleratorTable(self.accels))
         self.treec.SetAcceleratorTable(wx.AcceleratorTable(self.accelstree))
-        
+
         self.treec.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.veto_label_edit)
         self.treec.Bind(wx.EVT_TREE_ITEM_MENU, self.popup_item_menu)
-        
+
         core_api.bind_to_history_insert(self.handle_history_insert)
         core_api.bind_to_history_update(self.handle_history_update)
         core_api.bind_to_history_remove(self.handle_history_remove)
-        
+
     def veto_label_edit(self, event):
         event.Veto()
 
@@ -133,7 +130,7 @@ class Database(wx.SplitterWindow):
             parent = kwargs['parent']
             previous = kwargs['previous']
             text = kwargs['text']
-            
+
             if previous == 0:
                 par = self.find_item(parent)
                 label = self.make_item_title(text)
@@ -142,7 +139,7 @@ class Database(wx.SplitterWindow):
                 prev = self.find_item(previous)
                 label = self.make_item_title(text)
                 self.insert_item(prev, 'after', label=label, id_=id_)
-    
+
     def handle_history_update(self, kwargs):
         filename = kwargs['filename']
         if filename == self.filename:
@@ -150,14 +147,14 @@ class Database(wx.SplitterWindow):
             parent = kwargs['parent']
             previous = kwargs['previous']
             text = kwargs['text']
-            
+
             item = self.find_item(id_)
-            
+
             # Reset the label before moving the item, otherwise the item has to
             # be found again, or the program crashes
             label = self.make_item_title(text)
             self.set_item_title(item, label)
-            
+
             if self.get_item_id(
                                 self.get_item_parent(item)) != parent or \
                                 (self.get_item_previous(item).IsOk() and \
@@ -171,37 +168,46 @@ class Database(wx.SplitterWindow):
                 else:
                     prev = self.find_item(previous)
                     self.move_item(item, prev, mode='after')
-    
+
     def handle_history_remove(self, kwargs):
         filename = kwargs['filename']
         id_ = kwargs['id_']
-        
+
         if filename == self.filename:
             item = self.find_item(id_)
             self.remove_items([item, ])
-    
+
     @classmethod
     def open(cls, filename):
         nb_left = wx.GetApp().nb_left
         global dbs
         dbs[filename] = cls(filename, nb_left)
+
         nb_left.add_page(dbs[filename], os.path.basename(filename),
                          select=True)
-    
+
+        # The history panel must be shown only *after* adding the page to the
+        # notebook, otherwise *for*some*reason* the databases opened
+        # automatically by the wxsession plugin (those opened manually aren't
+        # affected) will have the sash of the SplitterWindow not correctly
+        # positioned (only if using SetSashGravity)
+        if history.is_shown():
+            dbs[filename].show_history()
+
     def insert_item(self, base, mode, label=None, data=None, id_=None):
         # The empty string is a valid label
         if not label and label != '':
             label = self.make_item_title(core_api.get_item_text(self.filename,
                                                                 id_))
-        
+
         if not data:
-            data = wx.TreeItemData(int(id_))
-        
+            data = wx.TreeItemData(id_)
+
         if id_ == None:
             id_ = data.GetData()
-        
+
         self.titems[id_] = data
-        
+
         if mode == 'append':
             return self.treec.AppendItem(base, text=label, data=data)
         elif mode == 'after':
@@ -217,68 +223,84 @@ class Database(wx.SplitterWindow):
                                                data=data)
         else:
             return False
-    
+
     def create(self, base=None, previd=0):
         if not base:
             base = self.treec.GetRootItem()
         baseid = self.get_item_id(base)
-        
+
         child = core_api.get_tree_item(self.filename, baseid, previd)
         if child:
             id_ = child['id_']
             title = self.make_item_title(child['text'])
-            
+
             titem = self.insert_item(base, 'append', label=title, id_=id_)
-            
+
             self.create(base=titem, previd=0)
             self.create(base=base, previd=id_)
-    
+
     def find_item(self, id_):
         return self.titems[id_].GetId()
 
     def get_selections(self, none=True, many=True, descendants=None):
         selection = self.treec.GetSelections()
-        
+
         if (not none and len(selection) == 0) or (not many and
                                                   len(selection) > 1):
             return False
-        elif descendants != None:
+        elif descendants == False:
             for item in selection:
-                if descendants == False:
-                    for ancestor in self.get_item_ancestors(item):
-                        if ancestor in selection:
-                            self.treec.UnselectItem(ancestor)
-                elif descendants == True:
-                    for descendant in self.get_item_descendants(item):
+                for ancestor in self.get_item_ancestors(item):
+                    if ancestor in selection:
+                        # Note that UnselectItem may actually select if the item
+                        # is not selected, see
+                        # http://trac.wxwidgets.org/ticket/11157
+                        # However in this case the item has just been checked if
+                        # selected, so no further checks must be done
+                        self.treec.UnselectItem(item)
+        elif descendants == True:
+            for item in selection:
+                for descendant in self.get_item_descendants(item):
+                    # If the descendant is already selected, SelectItem would
+                    # actually deselect it, see
+                    # http://trac.wxwidgets.org/ticket/11157
+                    # This would e.g. generate the following bug: create an item
+                    # (A), create a sibling (B) of A, create a child (C) of B,
+                    # select *all* three items (thus expanding B) and try to
+                    # delete them: without the IsSelected check it would go in
+                    # an infinite loop since C gets deselected and the function
+                    # that deletes items has to start from the items that do not
+                    # have children
+                    if not self.treec.IsSelected(descendant):
                         self.treec.SelectItem(descendant)
-        
+
         return self.treec.GetSelections()
-        
+
     def move_item(self, treeitem, base, mode='append'):
         title = self.treec.GetItemText(treeitem)
         # Do not just copy data with self.treec.GetItemData() because it causes
         # crashes even without throwing exceptions or errors in console!
         data = wx.TreeItemData(self.treec.GetPyData(treeitem))
-        
+
         if mode in ('append', 'after', 'before') or isinstance(mode, int):
             # When moving down, add 1 to the destination index, because the
             # move method first copies the item, and only afterwards deletes it
             newtreeitem = self.insert_item(base, mode, label=title, data=data)
         else:
             raise ValueError()
-        
+
         while self.treec.ItemHasChildren(treeitem):
             first = self.treec.GetFirstChild(treeitem)
             # Always use append mode for the descendants
             self.move_item(first[0], newtreeitem)
-        
+
         # Do not use remove_items, as self.titems has already been updated
         # here, and using remove_items would remove the moved item from
         # self.titems
         self.treec.Delete(treeitem)
-        
+
         return newtreeitem
-    
+
     def remove_items(self, treeitems):
         # When deleting items, make sure to delete first those without
         # children, otherwise crashes without exceptions or errors could occur
@@ -289,45 +311,45 @@ class Database(wx.SplitterWindow):
                     id_ = self.treec.GetPyData(item)
                     self.treec.Delete(item)
                     del self.titems[id_]
-    
+
     def close(self):
         self.treec.DeleteAllItems()
         self.titems = {}
-        
+
         global dbs
         del dbs[self.filename]
-    
+
     def show_history(self):
         self.SplitHorizontally(self.treec, self.hpanel)
         self.SetSashGravity(1.0)
-            
+
         # The same workaround for http://trac.wxwidgets.org/ticket/9821
-        # (self.SendSizeEvent()) used in rootw, here sets sash position to
+        # (self.SendSizeEvent()) used in rootw, here would set sash position to
         # min pane size
-        
+
         self.SetSashPosition(-80)
-    
+
     def hide_history(self):
         self.Unsplit(self.hpanel)
-    
+
     def get_filename(self):
         return self.filename
-    
+
     def get_root(self):
         return self.treec.GetRootItem()
-    
+
     def get_item_id(self, treeitem):
         return self.treec.GetPyData(treeitem)
-    
+
     def get_item_index(self, treeitem):
         parent = self.get_item_parent(treeitem)
         siblings = self.get_item_children(parent)
         index = siblings.index(treeitem)
         return index
-    
+
     def get_item_previous(self, treeitem):
         return self.treec.GetPrevSibling(treeitem)
-    
+
     def get_item_next(self, treeitem):
         return self.treec.GetNextSibling(treeitem)
 
@@ -336,69 +358,82 @@ class Database(wx.SplitterWindow):
 
     def get_item_ancestors(self, treeitem):
         ancestors = []
-        
+
         def recurse(treeitem):
             parent = self.get_item_parent(treeitem)
             if parent:
                 ancestors.append(parent)
                 recurse(parent)
-        
+
         recurse(treeitem)
         return ancestors
-    
+
     def get_item_children(self, treeitem):
         child = self.treec.GetFirstChild(treeitem)
         children = []
         while child[0].IsOk():
             children.append(child[0])
             child = self.treec.GetNextChild(treeitem, cookie=child[1])
-        return(children)
+        return children
 
     def get_item_descendants(self, treeitem):
         descendants = []
-        
+
         def recurse(treeitem):
             children = self.get_item_children(treeitem)
             descendants.extend(children)
             for child in children:
                 recurse(child)
-        
+
         recurse(treeitem)
         return descendants
-    
+
     def set_item_title(self, treeitem, title):
         self.treec.SetItemText(treeitem, title)
 
     def select_item(self, treeitem):
         self.treec.UnselectAll()
-        self.add_item_to_selection(treeitem)
-    
+        # Note that SelectItem may actually unselect if the item is selected,
+        # see http://trac.wxwidgets.org/ticket/11157
+        # However in this case all the items have just been deselected, so no
+        # check must be done
+        self.treec.SelectItem(treeitem)
+
+    def unselect_all_items(self):
+        self.treec.UnselectAll()
+
+    def add_item_to_selection(self, treeitem):
+        # If the item is already selected, SelectItem would actually deselect
+        # it, see http://trac.wxwidgets.org/ticket/11157
+        if not self.treec.IsSelected(treeitem):
+            self.treec.SelectItem(treeitem)
+
+    def remove_item_from_selection(self, treeitem):
+        # If the item is not selected, UnselectItem may actually select it, see
+        # http://trac.wxwidgets.org/ticket/11157
+        if self.treec.IsSelected(treeitem):
+            self.treec.UnselectItem(treeitem)
+
     @staticmethod
     def make_item_title(text):
         title = text.partition('\n')[0]
         return title
 
-    def remove_item_from_selection(self, treeitem):
-        self.treec.UnselectItem(treeitem)
-    
-    def add_item_to_selection(self, treeitem):
-        self.treec.SelectItem(treeitem)
-    
     def is_database_root(self, treeitem):
         return self.treec.GetItemParent(treeitem) == self.treec.GetRootItem()
-        
+
     def popup_item_menu(self, event):
         self.treec.SetFocus()
-        
+
         self.cmenu.update_items()
         popup_context_menu_event.signal(filename=self.filename)
-        
+
         self.treec.PopupMenu(self.cmenu, event.GetPoint())
-    
+
     def add_accelerators(self, accels):
         self.accels.extend(accels)
         self.SetAcceleratorTable(wx.AcceleratorTable(self.accels))
-    
+
     def add_tree_accelerators(self, accels):
         self.accelstree.extend(accels)
         self.treec.SetAcceleratorTable(wx.AcceleratorTable(self.accelstree))
@@ -413,12 +448,12 @@ class ContextMenu(wx.Menu):
     movept = None
     edit = None
     delete = None
-    
+
     def __init__(self, parent):
         wx.Menu.__init__(self)
-        
+
         self.parent = parent
-        
+
         self.sibling = wx.MenuItem(self, wx.GetApp().menu.database.ID_SIBLING,
                                    "Create s&ibling",
                                    "Create a sibling after the selected item")
@@ -439,7 +474,7 @@ class ContextMenu(wx.Menu):
                                 "Open the selected item in the editor")
         self.delete = wx.MenuItem(self, wx.GetApp().menu.database.ID_DELETE,
                                   "&Delete items", "Delete the selected items")
-        
+
         self.sibling.SetBitmap(wx.ArtProvider.GetBitmap('@newitem',
                                                         wx.ART_MENU))
         self.child.SetBitmap(wx.ArtProvider.GetBitmap('@newsubitem',
@@ -451,7 +486,7 @@ class ContextMenu(wx.Menu):
                                                        wx.ART_MENU))
         self.edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
         self.delete.SetBitmap(wx.ArtProvider.GetBitmap('@delete', wx.ART_MENU))
-        
+
         self.AppendItem(self.sibling)
         self.AppendItem(self.child)
         self.AppendSeparator()
@@ -462,19 +497,19 @@ class ContextMenu(wx.Menu):
         self.AppendItem(self.edit)
         self.AppendSeparator()
         self.AppendItem(self.delete)
-    
+
     def insert_item(self, pos, text, id_=wx.ID_ANY, help='', sep='none',
                     kind='normal', sub=None, icon=None):
         kinds = {'normal': wx.ITEM_NORMAL,
                  'check': wx.ITEM_CHECK,
                  'radio': wx.ITEM_RADIO}
-        
+
         item = wx.MenuItem(parentMenu=self, id=id_, text=text, help=help,
                            kind=kinds[kind], subMenu=sub)
-        
+
         if icon is not None:
             item.SetBitmap(wx.ArtProvider.GetBitmap(icon, wx.ART_MENU))
-        
+
         if pos == -1:
             if sep in ('up', 'both'):
                 self.AppendSeparator()
@@ -489,7 +524,7 @@ class ContextMenu(wx.Menu):
             if sep in ('up', 'both'):
                 self.InsertSeparator(pos)
         return item
-    
+
     def reset_items(self):
         self.sibling.Enable(False)
         self.child.Enable(False)
@@ -498,32 +533,32 @@ class ContextMenu(wx.Menu):
         self.movept.Enable(False)
         self.edit.Enable(False)
         self.delete.Enable(False)
-        
+
         reset_context_menu_event.signal(filename=self.parent.filename)
-        
+
     def update_items(self):
         self.reset_items()
-        
+
         sel = self.parent.get_selections()
-        
+
         if len(sel) == 1:
             self.sibling.Enable()
             self.child.Enable()
-                    
+
             if self.parent.get_item_previous(sel[0]).IsOk():
                 self.moveup.Enable()
-            
+
             if self.parent.get_item_next(sel[0]).IsOk():
                 self.movedn.Enable()
-            
+
             if not self.parent.is_database_root(sel[0]):
                 self.movept.Enable()
-            
+
             self.edit.Enable()
             self.delete.Enable()
-        
+
         elif len(sel) > 1:
             self.delete.Enable()
-        
+
         else:
             self.sibling.Enable()

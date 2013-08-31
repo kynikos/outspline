@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -16,12 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+import organism.interfaces.wxgui_api as wxgui_api
+
 import wxscheduler
 
 
-def initialize_rule(filename, id_, description, rule):
+def display_rule(filename, id_, description, rule):
     return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
-                             ].init_rule(description, rule)
+                             ].display_rule(description, rule)
+
+
+def initialize_rule(filename, id_, rule):
+    return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
+                             ].init_rule(rule)
 
 
 def change_rule(filename, id_, sizer):
@@ -48,3 +55,16 @@ def bind_to_apply_rule(handler, bind=True):
 
 def bind_to_insert_rule(handler, bind=True):
     return wxscheduler.insert_rule_event.bind(handler, bind)
+
+
+def simulate_expand_rules_panel(filename, id_):
+    fpanel = wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
+                                                                        ].fpanel
+    wxgui_api.expand_panel(filename, id_, fpanel)
+    wxgui_api.resize_foldpanelbar(filename, id_)
+
+def simulate_remove_all_rules(filename, id_):
+    sched = wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)]
+    while sched.rulesl.GetItemCount() > 0:
+        sched.rulesl.Select(0)
+        sched.remove_rule(None)

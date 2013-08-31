@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -101,7 +101,7 @@ def close_tab_ask():
 def close_tab_without_saving():
     return wx.MessageDialog(wx.GetApp().root, 'This editor must be closed '
                             'without saving in order to perform the requested '
-                            'oepration.', caption="Close editor",
+                            'operation.', caption="Close editor",
                             style=wx.OK | wx.CANCEL | wx.ICON_EXCLAMATION)
 
 

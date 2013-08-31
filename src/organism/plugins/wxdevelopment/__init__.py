@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -16,34 +16,121 @@
 # You should have received a copy of the GNU General Public License
 # along with Organism.  If not, see <http://www.gnu.org/licenses/>.
 
+import os as _os
 import wx
 
+import organism.core_api as core_api
 import organism.extensions.development_api as development_api
 import organism.interfaces.wxgui_api as wxgui_api
 
+import simulator
+
 
 class MenuDev(wx.Menu):
-    ID_POPULATE = None
     populate = None
+    simulator = None
     ID_PRINT = None
     printtb = None
-        
+    all_ = None
+    databases = None
+    memory = None
+
     def __init__(self):
         wx.Menu.__init__(self)
-        
-        self.ID_POPULATE = wx.NewId()
+
+        # Initialize self.ID_PRINT so it can be deleted at the beginning of
+        # self.handle_reset_menu_items
         self.ID_PRINT = wx.NewId()
-        
-        self.populate = self.Append(self.ID_POPULATE, "&Populate database")
-        self.printtb = self.Append(self.ID_PRINT, "Print &tables")
-        
+
+        self.populate = self.Append(wx.NewId(), "&Populate database")
+        self.simulator = self.AppendCheckItem(wx.NewId(), "&Run simulator")
+
         wxgui_api.insert_menu_main_item('Developmen&t', 'Help', self)
 
         wxgui_api.bind_to_menu(self.populate_tree, self.populate)
-        wxgui_api.bind_to_menu(self.print_tables, self.printtb)
-        
+        wxgui_api.bind_to_menu(self.toggle_simulator, self.simulator)
+
+        core_api.bind_to_exit_app_1(simulator.stop)
         development_api.bind_to_populate_tree(self.handle_populate_tree)
-    
+        wxgui_api.bind_to_reset_menu_items(self.handle_reset_menu_items)
+
+    def handle_reset_menu_items(self, kwargs):
+        if kwargs['menu'] is self:
+            self.reset_print_menu()
+            self.reset_simulator_item()
+
+    def reset_print_menu(self):
+        self.Delete(self.ID_PRINT)
+        self.ID_PRINT = wx.NewId()
+        self.printtb = wx.Menu()
+        self.PrependMenu(self.ID_PRINT, "Print &databases", self.printtb)
+
+        self.all_ = self.printtb.Append(wx.NewId(), 'All databases')
+        wxgui_api.bind_to_menu(lambda event:
+                               development_api.print_all_databases(), self.all_)
+
+        self.printtb.AppendSeparator()
+
+        self.databases = {}
+
+        for filename in core_api.get_open_databases():
+            self.databases[filename] = {
+                'menu': wx.Menu(),
+                'all_': None,
+                'tables': {}
+            }
+
+            self.printtb.AppendMenu(wx.NewId(), _os.path.basename(filename),
+                                    self.databases[filename]['menu'])
+
+            self.databases[filename]['all_'] = self.databases[filename][
+                                        'menu'].Append(wx.NewId(), 'All tables')
+            wxgui_api.bind_to_menu(self.print_all_tables(filename),
+                                   self.databases[filename]['all_'])
+
+            self.databases[filename]['menu'].AppendSeparator()
+
+            for table in core_api.select_all_table_names(filename):
+                self.databases[filename]['tables'][table[0]] = \
+                                        self.databases[filename]['menu'].Append(
+                                                           wx.NewId(), table[0])
+                wxgui_api.bind_to_menu(self.print_table(filename, table[0]),
+                                   self.databases[filename]['tables'][table[0]])
+
+        if self.databases:
+            self.printtb.AppendSeparator()
+
+        self.memory = {
+            'menu': wx.Menu(),
+            'all_': None,
+            'tables': {}
+        }
+
+        self.printtb.AppendMenu(wx.NewId(), ':memory:', self.memory['menu'])
+
+        self.memory['all_'] = self.memory['menu'].Append(wx.NewId(),
+                                                                   'All tables')
+        wxgui_api.bind_to_menu(lambda event:
+                               development_api.print_all_memory_tables(),
+                               self.memory['all_'])
+
+        self.memory['menu'].AppendSeparator()
+
+        for table in core_api.select_all_memory_table_names():
+            self.memory['tables'][table[0]] = self.memory['menu'].Append(
+                                                           wx.NewId(), table[0])
+            wxgui_api.bind_to_menu(self.print_memory_table(table[0]),
+                                   self.memory['tables'][table[0]])
+
+    def print_memory_table(self, table):
+        return lambda event: development_api.print_memory_table(table)
+
+    def print_table(self, filename, table):
+        return lambda event: development_api.print_table(filename, table)
+
+    def print_all_tables(self, filename):
+        return lambda event: development_api.print_all_tables(filename)
+
     def handle_populate_tree(self, kwargs):
         items = kwargs['treeitems']
         for item in items:
@@ -53,7 +140,7 @@ class MenuDev(wx.Menu):
             elif item['mode'] == 'sibling':
                 wxgui_api.insert_item_after(item['filename'], item['baseid'],
                                             item['id_'], item['text'])
-        
+
     def populate_tree(self, event):
         db = wxgui_api.get_active_database()
         if db:
@@ -61,9 +148,18 @@ class MenuDev(wx.Menu):
             if filename:
                 development_api.populate_tree(filename)
                 wxgui_api.refresh_history(filename)
-        
-    def print_tables(self, event):
-        development_api.print_tables()
+
+    def reset_simulator_item(self):
+        if simulator.is_active():
+            self.simulator.Check(True)
+        else:
+            self.simulator.Check(False)
+
+    def toggle_simulator(self, event):
+        if simulator.is_active():
+            simulator.stop()
+        else:
+            simulator.start()
 
 
 def main():

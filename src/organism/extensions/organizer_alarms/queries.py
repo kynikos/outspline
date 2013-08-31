@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -75,8 +75,6 @@ copyalarms_create = ("CREATE TABLE CopyAlarms (CA_id INTEGER, "
                                               "CA_end INTEGER, "
                                               "CA_alarm INTEGER, "
                                               "CA_snooze INTEGER)")
-
-copyalarms_select = 'SELECT * FROM CopyAlarms'
 
 copyalarms_select_id = ('SELECT CA_id, CA_start, CA_end, CA_alarm, CA_snooze '
                         'FROM CopyAlarms WHERE CA_item=?')

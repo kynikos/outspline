@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -18,7 +18,8 @@
 
 from core import databases, items, history, queries
 from core.exceptions import (AccessDeniedError, DatabaseAlreadyOpenError,
-                             DatabaseNotAccessibleError, DatabaseNotValidError)
+                             DatabaseNotAccessibleError, DatabaseNotValidError,
+                             CannotMoveItemError)
 
 
 def get_memory_connection():
@@ -63,64 +64,67 @@ def exit_():
 
 def create_child(filename, baseid, text='New item',
                  description='Create child'):
-    base = items.Item.make_itemid(filename, baseid)
     group = databases.dbs[filename].get_next_history_group()
-    return items.Item.insert(mode='child', base=base, group=group, text=text,
-                             description=description)
+    return items.Item.insert(filename=filename, mode='child', baseid=baseid,
+                             group=group, text=text, description=description)
 
 
 def create_sibling(filename, baseid, text='New item',
                    description='Create sibling'):
-    base = items.Item.make_itemid(filename, baseid)
     group = databases.dbs[filename].get_next_history_group()
-    return items.Item.insert(mode='sibling', base=base, group=group, text=text,
-                             description=description)
+    return items.Item.insert(filename=filename, mode='sibling', baseid=baseid,
+                             group=group, text=text, description=description)
 
 
 def append_item(filename, baseid, group=None, text='New item',
                 description='Insert item'):
-    base = items.Item.make_itemid(filename, baseid)
     if group == None:
         group = databases.dbs[filename].get_next_history_group()
-    return items.Item.insert(mode='child', base=base, group=group, text=text,
-                            description=description)
+    return items.Item.insert(filename=filename, mode='child', baseid=baseid,
+                             group=group, text=text, description=description)
 
 
 def insert_item_after(filename, baseid, group=None, text='New item',
                       description='Insert item'):
-    base = items.Item.make_itemid(filename, baseid)
     if group == None:
         group = databases.dbs[filename].get_next_history_group()
-    return items.Item.insert(mode='sibling', base=base, group=group, text=text,
-                            description=description)
+    return items.Item.insert(filename=filename, mode='sibling', baseid=baseid,
+                             group=group, text=text, description=description)
 
 
 def move_item_up(filename, id_, description='Move item up'):
     group = databases.dbs[filename].get_next_history_group()
-    return items.items[items.Item.make_itemid(filename, id_)
-                      ].shift(mode='up', group=group, description=description)
+    try:
+        return databases.dbs[filename].items[id_].shift(mode='up', group=group,
+                                                        description=description)
+    except CannotMoveItemError:
+        return False
 
 
 def move_item_down(filename, id_, description='Move item down'):
     group = databases.dbs[filename].get_next_history_group()
-    return items.items[items.Item.make_itemid(filename, id_)
-                      ].shift(mode='down', group=group,
-                              description=description)
+    try:
+        return databases.dbs[filename].items[id_].shift(mode='down',
+                                           group=group, description=description)
+    except CannotMoveItemError:
+        return False
 
 
 def move_item_to_parent(filename, id_, description='Move item to parent'):
     group = databases.dbs[filename].get_next_history_group()
-    return items.items[items.Item.make_itemid(filename, id_)
-                      ].shift(mode='parent', group=group,
-                              description=description)
+    try:
+        return databases.dbs[filename].items[id_].shift(mode='parent',
+                                           group=group, description=description)
+    except CannotMoveItemError:
+        return False
 
 
 def update_item_text(filename, id_, text, group=None,
                      description='Update item text'):
     if group == None:
         group = databases.dbs[filename].get_next_history_group()
-    return items.items[items.Item.make_itemid(filename, id_)
-                      ].update(group, description=description, text=text)
+    return databases.dbs[filename].items[id_].update(group,
+                                             description=description, text=text)
 
 
 def insert_history(filename, group, id_, type, description, query_redo,
@@ -184,69 +188,63 @@ def set_modified(filename):
 
 
 def get_tree_item(filename, parent, previous):
-    item = items.items[items.Item.make_itemid(filename, parent
-                                              )].get_tree_item(previous)
-    return item
+    return items.Item.get_tree_item(filename, parent, previous)
 
 
-def get_items(filename):
-    itemsl = []
-    for i in items.items:
-        if items.items[i].get_filename() == filename:
-            itemsl.append(int(items.items[i].get_id()))
-    return itemsl
+def get_items_ids(filename):
+    return databases.dbs[filename].items.keys()
 
 
-def get_items_count():
-    return len(items.items)
+def get_items_count(filename):
+    return len(databases.dbs[filename].items)
 
 
 def get_item_info(filename, id_):
-    return items.items[items.Item.make_itemid(filename, id_)].get_all()
+    return databases.dbs[filename].items[id_].get_all_info()
 
 
 def get_item_text(filename, id_):
-    return items.items[items.Item.make_itemid(filename, id_)].get_text()
+    return databases.dbs[filename].items[id_].get_text()
 
 
 def get_history_descriptions(filename):
     return databases.dbs[filename].get_history_descriptions()
 
 
-def select_properties_table(filename):
+def select_all_memory_table_names():
+    qconn = databases.memory.get()
+    cur = qconn.cursor()
+    cur.execute(queries.master_select_tables)
+    databases.memory.give(qconn)
+    return cur
+
+
+def select_all_table_names(filename):
     qconn = databases.dbs[filename].connection.get()
     cur = qconn.cursor()
-    cur.execute(queries.properties_select)
+    cur.execute(queries.master_select_tables)
     databases.dbs[filename].connection.give(qconn)
     return cur
 
 
-def select_compatibility_table(filename):
+def select_memory_table(table):
+    qconn = databases.memory.get()
+    cur = qconn.cursor()
+    cur.execute(queries.master_select_table.format(table))
+    databases.memory.give(qconn)
+    return cur
+
+
+def select_table(filename, table):
     qconn = databases.dbs[filename].connection.get()
     cur = qconn.cursor()
-    cur.execute(queries.compatibility_select)
+    cur.execute(queries.master_select_table.format(table))
     databases.dbs[filename].connection.give(qconn)
     return cur
 
 
-def select_items_table(filename):
-    qconn = databases.dbs[filename].connection.get()
-    cur = qconn.cursor()
-    cur.execute(queries.items_select)
-    databases.dbs[filename].connection.give(qconn)
-    return cur
-
-
-def select_history_table(filename):
-    qconn = databases.dbs[filename].connection.get()
-    cur = qconn.cursor()
-    cur.execute(queries.history_select)
-    databases.dbs[filename].connection.give(qconn)
-    return cur
-
-
-def block_databases():
-    return databases.protection.block()
+def block_databases(block=True):
+    return databases.protection.block(block)
 
 
 def release_databases():
@@ -255,6 +253,10 @@ def release_databases():
 
 def get_open_databases():
     return tuple(databases.dbs.keys())
+
+
+def is_database_open(filename):
+    return filename in databases.dbs
 
 
 def get_databases_count():

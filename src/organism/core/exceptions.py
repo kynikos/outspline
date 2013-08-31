@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -32,4 +32,8 @@ class DatabaseNotAccessibleError(OrganismError):
 
 
 class DatabaseNotValidError(OrganismError):
+    pass
+
+
+class CannotMoveItemError(OrganismError):
     pass

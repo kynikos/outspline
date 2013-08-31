@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -38,15 +38,15 @@ class Alarms():
     def __init__(self):
         self.alarms = {}
         self.next = None
-    
+
     def add(self, last_search, alarm):
         filename = alarm['filename']
         id_ = alarm['id_']
-        
+
         tl = [alarm['start'], alarm['end'], alarm['alarm']]
         # Sort alarm, start, end (None values are always put first)
         tl.sort()
-        
+
         if self.next:
             if alarm['alarm'] == self.next or alarm['start'] == self.next or \
                                                      alarm['end'] == self.next:
@@ -72,30 +72,43 @@ class Alarms():
                     return True
             else:
                 return False
-    
+
     def except_(self, filename, id_, start, end, inclusive):
-        if self.has_alarms():
-            for alarm in self.alarms[filename][id_][:]:
+        # Test if the item has some rules, for safety, also for coherence with
+        # organizer.items.TempOccurrences.except_
+        try:
+            alarmsc = self.alarms[filename][id_][:]
+        except KeyError:
+            pass
+        else:
+            for alarm in alarmsc:
                 if start <= alarm['start'] <= end or \
                        (inclusive and alarm['start'] <= start <= alarm['end']):
                     self.alarms[filename][id_].remove(alarm)
         # Do not reset self.next to None in case there are no alarms left: this
         # lets restart_timer, and consequently search_alarms, ignore the
         # excepted alarms at the following search
-    
-    def has_alarms(self):
-        for f in self.alarms:
-            for i in self.alarms[f]:
-                for o in self.alarms[f][i]:
+
+    def try_delete_one(self, filename, id_, start, end, alarm):
+        if filename in self.alarms and id_ in self.alarms[filename]:
+            for alarmd in self.alarms[filename][id_][:]:
+                if start == alarmd['start'] and end == alarmd['end'] and \
+                                                       alarm == alarmd['alarm']:
+                    self.alarms[filename][id_].remove(alarmd)
+                    if not self.alarms[filename][id_]:
+                        del self.alarms[filename][id_]
+                    if not self.alarms[filename]:
+                        del self.alarms[filename]
+                    # Delete only one occurrence, hence the name try_delete_one
                     return True
         return False
-    
+
     def get_dict(self):
         return self.alarms
-    
+
     def get_next_alarm(self):
         return self.next
-    
+
     def get_time_span(self):
         minstart = None
         maxend = None
@@ -115,26 +128,26 @@ def search_alarms():
     #def search_alarms(filename=None, id_=None):
     filename = None
     id_ = None
-    
+
     log.debug('Search alarms')
-    
+
     alarms = Alarms()
-    
+
     if filename is None:
         for filename in core_api.get_open_databases():
             last_search = get_last_search(filename)
-            for id_ in core_api.get_items(filename):
+            for id_ in core_api.get_items_ids(filename):
                 search_item_alarms(last_search, filename, id_, alarms)
     elif id_ is None:
         last_search = get_last_search(filename)
-        for id_ in core_api.get_items(filename):
+        for id_ in core_api.get_items_ids(filename):
             search_item_alarms(last_search, filename, id_, alarms)
     else:
         last_search = get_last_search(filename)
         search_item_alarms(last_search, filename, id_, alarms)
-    
+
     oldalarms = get_snoozed_alarms(alarms)
-    
+
     restart_timer(oldalarms, alarms.get_next_alarm(), alarms.get_dict())
 
 
@@ -147,26 +160,38 @@ def search_item_alarms(last_search, filename, id_, alarms):
 
 def get_snoozed_alarms(alarms):
     oldalarms = {}
-    
+
     for filename in core_api.get_open_databases():
         conn = core_api.get_connection(filename)
         cur = conn.cursor()
         cur.execute(queries.alarms_select_alarms)
         core_api.give_connection(filename, conn)
-        
+
         last_search = get_last_search(filename)
-        
+
         for row in cur:
             itemid = row['A_item']
+            start = row['A_start']
+            end = row['A_end']
             snooze = row['A_snooze']
-            
+
+            # Check whether the snoozed alarm has a duplicate among the alarms
+            # found using the alarm rules, and in that case delete the latter;
+            # the creation of duplicates is possible especially when alarm
+            # searches are performed in rapid succession, for example when
+            # launching organism with multiple databases automatically opened
+            # and many new alarms to be immediately activated
+            # If I gave the possibility to use search_alarms for a specific
+            # filename or id_, this check would probably become unnecessary
+            alarms.try_delete_one(filename, itemid, start, end, row['A_alarm'])
+
             alarmd = {'filename': filename,
                       'id_': itemid,
                       'alarmid': row['A_id'],
-                      'start': row['A_start'],
-                      'end': row['A_end'],
+                      'start': start,
+                      'end': end,
                       'alarm': snooze}
-            
+
             # For safety, also check that there aren't any alarms with snooze
             # <= last_search left (for example this may happen if an alarms is
             # temporarily undone together with its item, and then it's restored
@@ -179,7 +204,7 @@ def get_snoozed_alarms(alarms):
                 if itemid not in oldalarms[filename]:
                     oldalarms[filename][itemid] = []
                 oldalarms[filename][itemid].append(alarmd)
-    
+
     return oldalarms
 
 
@@ -188,23 +213,27 @@ def get_alarms(mint, maxt, filename, tempoccs):
     cur = conn.cursor()
     cur.execute(queries.alarms_select_alarms)
     core_api.give_connection(filename, conn)
-    
+
     for row in cur:
+        origalarm = row['A_alarm']
         snooze = row['A_snooze']
-        
+
         alarmd = {'filename': filename,
                   'id_': row['A_item'],
                   'alarmid': row['A_id'],
                   'start': row['A_start'],
                   'end': row['A_end'],
                   'alarm': snooze}
-        
+
         # Always add active (but not snoozed) alarms if time interval includes
         # current time
         if snooze == None and mint <= int(_time.time()) <= maxt:
-            tempoccs.update(alarmd, row['A_alarm'], force=True)
+            tempoccs.update(alarmd, origalarm, force=True)
         else:
-            tempoccs.update(alarmd, row['A_alarm'])
+            # Note that the second argument must be origalarm, not snooze, in
+            # fact it's used to *update* the occurrence (if present) using the
+            # new snooze time stored in alarmd
+            tempoccs.update(alarmd, origalarm)
 
 
 def set_last_search(filename, tstamp):
@@ -219,18 +248,18 @@ def get_last_search(filename):
     cur = conn.cursor()
     cur.execute(queries.alarmsproperties_select_search)
     core_api.give_connection(filename, conn)
-    
+
     return cur.fetchone()['AP_last_search']
 
 
 def restart_timer(oldalarms, next_alarm, alarmsd):
     cancel_timer()
-    
+
     now = int(_time.time())
-    
+
     if oldalarms:
         occurrences.activate_alarms(now, oldalarms, old=True)
-    
+
     if next_alarm != None:
         if next_alarm <= now:
             occurrences.activate_alarms(next_alarm, alarmsd)
@@ -240,20 +269,24 @@ def restart_timer(oldalarms, next_alarm, alarmsd):
             global timer
             timer = Timer(next_loop, activate_alarms, (next_alarm, alarmsd, ))
             timer.start()
-            
+
             log.debug('Timer refresh: {}'.format(next_loop))
 
 
 def cancel_timer(kwargs=None):
-    if timer:
+    # kwargs is passed from the binding to core_api.bind_to_exit_app_1
+    if timer and timer.is_alive():
         log.debug('Timer cancel')
         timer.cancel()
 
 
 def activate_alarms(time, alarmsd):
+    # It's important that the database is blocked on this thread, and not on the
+    # main thread, otherwise the program would hang if the user is performing
+    # an action
     core_api.block_databases()
-    
+
     occurrences.activate_alarms(time, alarmsd)
     search_alarms()
-    
+
     core_api.release_databases()

@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -20,12 +20,21 @@ import os
 import errno
 import logging.config
 
-# This module is used indirectly, make sure it's imported
-import loggingext
-
 from configuration import info, config, _USER_FOLDER_PERMISSIONS
 
 log = None
+
+
+class LevelFilter():
+    levels = None
+    inverse = None
+
+    def __init__(self, levels, inverse):
+        self.levels = levels
+        self.inverse = inverse
+
+    def filter(self, record):
+        return (record.levelname in self.levels) ^ self.inverse
 
 
 def set_logger(cliargs):
@@ -33,25 +42,42 @@ def set_logger(cliargs):
         loglevel = cliargs.loglevel
     else:
         loglevel = config('Log')['log_level']
-    
+
     if cliargs.logfile != None:
         logfile = os.path.expanduser(cliargs.logfile)
     else:
         logfile = os.path.expanduser(config('Log')['log_file'])
-    
+
     try:
         os.makedirs(os.path.dirname(logfile), mode=_USER_FOLDER_PERMISSIONS)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
-    
+
     level = {'console': int(loglevel[0]), 'file': int(loglevel[1:])}
-    
+
     if level['console'] not in (0, 1, 2, 3):
         level['console'] = 2
     if level['file'] not in (0, 1, 2, 3):
         level['file'] = 0
-    
+
+    console_level = ('CRITICAL', 'ERROR', 'INFO', 'DEBUG')[level['console']]
+    file_level = ('CRITICAL', 'WARNING', 'INFO', 'DEBUG')[level['file']]
+    console_formatter = ('simple_default', 'simple_default', 'simple_default',
+                         'verbose_default')[level['console']]
+    console_info_formatter = ('simple_info', 'simple_info', 'simple_info',
+                              'verbose_info')[level['console']]
+    file_low_formatter = ('simple', 'simple', 'simple', 'verbose')[level['file']
+                                                                               ]
+    file_formatter = ('simple', 'verbose', 'verbose', 'verbose')[level['file']]
+    file_max_bytes = (1, 10000, 30000, 100000)[level['file']]
+    file_delay = (True, True, False, False)[level['file']]
+    handlers = [('null', 'console', 'console', 'console')[level['console']],
+                ('null', 'console_info', 'console_info', 'console_info')
+                 [level['console']],
+                ('null', 'file_low', 'file_low', 'file_low')[level['file']],
+                ('null', 'file', 'file', 'file')[level['file']]]
+
     logconfig = {
         'version': 1,
         'formatters': {
@@ -80,69 +106,70 @@ def set_logger(cliargs):
                                                       '[%(module)s %(lineno)d]'
             }
         },
-        'handlers': {
+        'filters': {
             'console': {
-                'class': 'loggingext.StreamHandler',
-                'level': ('CRITICAL', 'ERROR', 'INFO', 'DEBUG'
-                          )[level['console']],
-                'formatters': {
-                    'debug': ('simple_default', 'simple_default',
-                              'simple_default', 'verbose_default'
-                              )[level['console']],
-                    'info': ('simple_info', 'simple_info',
-                             'simple_info', 'verbose_info'
-                             )[level['console']],
-                    'warning': ('simple_default', 'simple_default',
-                                'simple_default', 'verbose_default'
-                                )[level['console']],
-                    'error': ('simple_default', 'simple_default',
-                              'simple_default', 'verbose_default'
-                              )[level['console']],
-                    'critical': ('simple_default', 'simple_default',
-                                 'simple_default', 'verbose_default'
-                                 )[level['console']],
-                    'default': ('simple_default', 'simple_default',
-                                'simple_default', 'verbose_default'
-                                )[level['console']]
-                },
+                '()': 'organism.coreaux.logger.LevelFilter',
+                'levels': ('INFO', ),
+                'inverse': True,
+            },
+            'console_info': {
+                '()': 'organism.coreaux.logger.LevelFilter',
+                'levels': ('INFO', ),
+                'inverse': False,
+            },
+            'file_low': {
+                '()': 'organism.coreaux.logger.LevelFilter',
+                'levels': ('INFO', 'DEBUG'),
+                'inverse': False,
             },
             'file': {
-                'class': 'loggingext.RotatingFileHandler',
-                'level': ('CRITICAL', 'WARNING', 'INFO', 'DEBUG'
-                          )[level['file']],
-                'formatters': {
-                    'debug': ('simple', 'simple', 'simple', 'verbose'
-                              )[level['file']],
-                    'info': ('simple', 'simple', 'simple', 'verbose'
-                             )[level['file']],
-                    'warning': ('simple', 'verbose', 'verbose', 'verbose'
-                                )[level['file']],
-                    'error': ('simple', 'verbose', 'verbose', 'verbose'
-                              )[level['file']],
-                    'critical': ('simple', 'verbose', 'verbose', 'verbose'
-                                 )[level['file']],
-                    'default': ('simple', 'simple', 'simple', 'verbose'
-                                )[level['file']]
-                },
+                '()': 'organism.coreaux.logger.LevelFilter',
+                'levels': ('INFO', 'DEBUG'),
+                'inverse': True,
+            }
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'level': console_level,
+                'formatter': console_formatter,
+                'filters': ['console', ]
+            },
+            'console_info': {
+                'class': 'logging.StreamHandler',
+                'level': console_level,
+                'formatter': console_info_formatter,
+                'filters': ['console_info', ]
+            },
+            'file_low': {
+                'class': 'logging.handlers.RotatingFileHandler',
+                'level': file_level,
+                'formatter': file_low_formatter,
                 'filename': logfile,
-                'maxBytes': (1, 10000, 30000, 100000)[level['file']],
+                'maxBytes': file_max_bytes,
                 'backupCount': 1,
-                'delay': (True, True, False, False)[level['file']]
+                'delay': file_delay,
+                'filters': ['file_low', ]
+            },
+            'file': {
+                'class': 'logging.handlers.RotatingFileHandler',
+                'level': file_level,
+                'formatter': file_formatter,
+                'filename': logfile,
+                'maxBytes': file_max_bytes,
+                'backupCount': 1,
+                'delay': file_delay,
+                'filters': ['file', ]
             },
             'null': {
                 'class': 'logging.NullHandler',
-                'formatters': {
-                    'default': 'simple'
-                },
+                'formatter': 'simple',
             }
         },
         'loggers': {
-            'organism1': {
+            'organism': {
                 'level': 'DEBUG',
-                'handlers': [('null', 'console', 'console', 'console'
-                              )[level['console']],
-                             ('null', 'file', 'file', 'file'
-                              )[level['file']]],
+                'handlers': handlers,
                 'propagate': False
             }
         },
@@ -150,12 +177,12 @@ def set_logger(cliargs):
             'level': 'DEBUG'
         }
     }
-    
+
     logging.config.dictConfig(logconfig)
-    
+
     global log
-    log = logging.getLogger('organism1')
-    
+    log = logging.getLogger('organism')
+
     log.info('Start logging (level {}, file {})'.format(loglevel, logfile))
     log.info('{} version {} ({})'.format('Organism', info['component_version'],
                                          info['component_release_date']))

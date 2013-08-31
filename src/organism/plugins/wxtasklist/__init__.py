@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -41,25 +41,25 @@ class AutoListView(wx.ListView, ListCtrlAutoWidthMixin):
 
 
 class TaskList():
-    list = None
+    list_ = None
     occs = None
-    
+
     def __init__(self, parent):
-        self.list = AutoListView(parent)
-        
+        self.list_ = AutoListView(parent)
+
         self.occs = {}
-    
-        self.list.InsertColumn(0, 'Database', width=80)
-        self.list.InsertColumn(1, 'Title', width=200)
-        self.list.InsertColumn(2, 'Start', width=120)
-        self.list.InsertColumn(3, 'End', width=120)
-        self.list.InsertColumn(4, 'Alarm', width=120)
-        
+
+        self.list_.InsertColumn(0, 'Database', width=80)
+        self.list_.InsertColumn(1, 'Title', width=200)
+        self.list_.InsertColumn(2, 'Start', width=120)
+        self.list_.InsertColumn(3, 'End', width=120)
+        self.list_.InsertColumn(4, 'Alarm', width=120)
+
         self.refresh()
-        
+
         organizer_alarms_api.bind_to_alarms(self.handle_alarms)
-        organizer_alarms_api.bind_to_alarm_off(self.handle_alarm_off)
-        
+        organizer_alarms_api.bind_to_alarm_off(self.handle_refresh)
+
         wxgui_api.bind_to_apply_editor_2(self.handle_refresh)
         wxgui_api.bind_to_open_database(self.handle_refresh)
         wxgui_api.bind_to_save_database_as(self.handle_refresh)
@@ -68,55 +68,55 @@ class TaskList():
         wxgui_api.bind_to_redo_tree(self.handle_refresh)
         wxgui_api.bind_to_move_item(self.handle_refresh)
         wxgui_api.bind_to_delete_items(self.handle_refresh)
-        
+
         if development_api:
             development_api.bind_to_populate_tree(self.handle_refresh)
-        
+
         if wxcopypaste_api:
             wxcopypaste_api.bind_to_cut_items(self.handle_refresh)
             wxcopypaste_api.bind_to_paste_items(self.handle_refresh)
 
     def handle_alarms(self, kwargs):
         wx.CallAfter(self.refresh)
-        
-    def handle_alarm_off(self, kwargs):
-        self.refresh()
-    
+
     def handle_refresh(self, kwargs):
         self.refresh()
-    
+
     def refresh(self, t=None, dt=86400, max=50):
         log.debug('Tasklist refresh')
-        
+
         self.occs = {}
-        self.list.DeleteAllItems()
-        
+        self.list_.DeleteAllItems()
+
         if t == None:
-            # Always round up to the next second
-            t = int(_time.time()) + 1
-        
+            # Always round down to the previous second
+            t = int(_time.time()) - 1
+
         occurrences = organizer_api.get_occurrences(mint=t, maxt=t + dt)
-    
+
+        def compare(c):
+            return c['start']
+
+        occurrences.sort(key=compare)
+
         if max:
             occurrences = occurrences[:max]
-        
+
         for i, o in enumerate(occurrences):
             filename = o['filename']
             id_ = o['id_']
             start = o['start']
             end = o['end']
             alarm = o['alarm']
-            
+
             self.occs[i] = ListItem(filename, id_, start, end, alarm)
-            
+
             fname = os.path.basename(filename)
             text = core_api.get_item_text(filename, id_)
             title = ListItem.make_heading(text)
-            startdate = _time.strftime('%Y.%m.%d %H:%M',
-                                       _time.localtime(start))
+            startdate = _time.strftime('%Y.%m.%d %H:%M', _time.localtime(start))
             if isinstance(end, int):
-                enddate = _time.strftime('%Y.%m.%d %H:%M',
-                                         _time.localtime(end))
+                enddate = _time.strftime('%Y.%m.%d %H:%M', _time.localtime(end))
             else:
                 enddate = 'none'
             if isinstance(alarm, int):
@@ -124,12 +124,12 @@ class TaskList():
                                            _time.localtime(alarm))
             else:
                 alarmdate = 'none'
-            
-            index = self.list.InsertStringItem(sys.maxint, fname)
-            self.list.SetStringItem(index, 1, title)
-            self.list.SetStringItem(index, 2, startdate)
-            self.list.SetStringItem(index, 3, enddate)
-            self.list.SetStringItem(index, 4, alarmdate)
+
+            index = self.list_.InsertStringItem(sys.maxint, fname)
+            self.list_.SetStringItem(index, 1, title)
+            self.list_.SetStringItem(index, 2, startdate)
+            self.list_.SetStringItem(index, 3, enddate)
+            self.list_.SetStringItem(index, 4, alarmdate)
 
 
 class ListItem():
@@ -138,14 +138,14 @@ class ListItem():
     start = None
     end = None
     alarm = None
-    
+
     def __init__(self, filename, id_, start, end, alarm):
         self.filename = filename
         self.id_ = id_
         self.start = start
         self.end = end
         self.alarm = alarm
-    
+
     @staticmethod
     def make_heading(text):
         return text.partition('\n')[0]
@@ -153,4 +153,4 @@ class ListItem():
 
 def main():
     nb = wxgui_api.get_right_nb()
-    wxgui_api.add_plugin_to_right_nb(TaskList(nb).list, 'List', close=False)
+    wxgui_api.add_plugin_to_right_nb(TaskList(nb).list_, 'List', close=False)

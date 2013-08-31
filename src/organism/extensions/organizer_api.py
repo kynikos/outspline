@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -19,22 +19,6 @@
 import organism.core_api as core_api
 
 from organizer import queries, items
-
-
-def select_rules_table(filename):
-    qconn = core_api.get_connection(filename)
-    cur = qconn.cursor()
-    cur.execute(queries.rules_select)
-    core_api.give_connection(filename, qconn)
-    return cur
-
-
-def select_copyrules_table():
-    qmemory = core_api.get_memory_connection()
-    cur = qmemory.cursor()
-    cur.execute(queries.copyrules_select)
-    core_api.give_memory_connection(qmemory)
-    return cur
 
 
 def update_item_rules(filename, id_, rules, group,

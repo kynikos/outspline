@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -33,27 +33,29 @@ save_database_as_event = Event()
 close_database_event = Event()
 
 
-def create_database(deffname=None):
-    dlg = msgboxes.create_db_ask()
-    if not deffname:
-        deffname = '.'.join(('new_database',
-                             coreaux_api.get_standard_extension()))
-    dlg.SetFilename(deffname)
-    if dlg.ShowModal() == wx.ID_OK:
-        filename = dlg.GetPath()
-        if filename:
-            try:
-                core_api.create_database(filename)
-            except core_api.DatabaseAlreadyOpenError:
-                msgboxes.create_db_open(filename).ShowModal()
-                return False
-            except core_api.AccessDeniedError:
-                msgboxes.create_db_access(filename).ShowModal()
-                return False
-            else:
-                return filename
+def create_database(deffname=None, filename=None):
+    if not filename:
+        dlg = msgboxes.create_db_ask()
+        if not deffname:
+            deffname = '.'.join(('new_database',
+                                          coreaux_api.get_standard_extension()))
+        dlg.SetFilename(deffname)
+        if dlg.ShowModal() == wx.ID_OK:
+            filename = dlg.GetPath()
         else:
             return False
+
+    if filename:
+        try:
+            core_api.create_database(filename)
+        except core_api.DatabaseAlreadyOpenError:
+            msgboxes.create_db_open(filename).ShowModal()
+            return False
+        except core_api.AccessDeniedError:
+            msgboxes.create_db_access(filename).ShowModal()
+            return False
+        else:
+            return filename
     else:
         return False
 
@@ -65,6 +67,7 @@ def open_database(filename=None, startup=False):
             filename = dlg.GetPath()
         else:
             return False
+
     if filename:
         try:
             core_api.open_database(filename)
@@ -88,7 +91,7 @@ def open_database(filename=None, startup=False):
 def save_database_as(origin):
     for tab in tuple(editor.tabs.copy()):
         if editor.tabs[tab].get_filename() == origin and \
-                              not editor.tabs[tab].close_if_needed(warn=False):
+                                                   not editor.tabs[tab].close():
             break
     else:
         currname = os.path.basename(origin).rpartition('.')
@@ -96,9 +99,9 @@ def save_database_as(origin):
         destination = create_database(deffname)
         if destination:
             core_api.save_database_copy(origin, destination)
-            close_database(origin, ask=False)
+            close_database(origin, no_confirm=True)
             open_database(destination)
-    
+
             save_database_as_event.signal()
 
 
@@ -112,30 +115,28 @@ def save_database_backup(origin):
         core_api.save_database_copy(origin, destination)
 
 
-def close_database(filename, ask=True, exit_=False):
+def close_database(filename, no_confirm=False, exit_=False):
     # Do not use nb_left.select_tab() to get the tree, use tree.dbs
     nbl = wx.GetApp().nb_left
     nbr = wx.GetApp().nb_right
-    
+
     for item in tuple(editor.tabs.keys()):
         if editor.tabs[item].get_filename() == filename:
-            tab = editor.tabs[item].panel
-            tabid = nbr.GetPageIndex(tab)
-            nbr.SetSelection(tabid)
-            if editor.tabs[item].close(ask=ask) == False:
+            if editor.tabs[item].close(ask='quiet' if no_confirm else 'apply'
+                                                                     ) == False:
                 return False
-    
-    if ask and core_api.check_pending_changes(filename):
+
+    if not no_confirm and core_api.check_pending_changes(filename):
         save = msgboxes.close_db_ask(filename).ShowModal()
         if save == wx.ID_YES:
             core_api.save_database(filename)
         elif save == wx.ID_CANCEL:
             return False
-    
+
     index = nbl.GetPageIndex(tree.dbs[filename])
     tree.dbs[filename].close()
     nbl.close_page(index)
-    
+
     core_api.close_database(filename)
-    
+
     close_database_event.signal(filename=filename, exit_=exit_)

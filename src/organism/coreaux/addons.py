@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -50,10 +50,10 @@ def load_addon(folder, addon):
     else:
         section = 'Plugins'
         logname = 'plugin'
-    
+
     faddon = '.'.join((folder, addon))
     mfaddon = '.'.join(('organism', faddon))
-    
+
     if mfaddon not in sys.modules:
         if addon in configuration.config(section).get_sections():
             if configuration.config(section)(addon).get_bool('enabled'):
@@ -61,7 +61,7 @@ def load_addon(folder, addon):
                                                        configuration._ROOT_DIR,
                                                        folder, addon,
                                                        addon + '.info'))
-                
+
                 deps = []
                 opts = []
                 for o in info.get_options():
@@ -69,7 +69,7 @@ def load_addon(folder, addon):
                         deps.append(info[o])
                     elif o[:19] == 'optional_dependency':
                         opts.append(info[o])
-                
+
                 for d in deps:
                     p = d.split('.')
                     try:
@@ -99,7 +99,7 @@ def load_addon(folder, addon):
                         raise
                         # Note that AddonNotFound instead is never caught and
                         # will always terminate the program
-                
+
                 for o in opts:
                     p = o.split('.')
                     try:
@@ -110,13 +110,13 @@ def load_addon(folder, addon):
                     except exceptions.AddonDisabledError:
                         log.debug('Optional dependency for ' + faddon +
                                                              ' disabled: ' + o)
-                
+
                 log.info('Load ' + logname + ': ' + addon)
-                
+
                 # ext = __import__(mfaddon) somehow doesn't work
                 __import__(mfaddon)
                 mod = sys.modules[mfaddon]
-                
+
                 # Interfaces must have a main() fnuction
                 if hasattr(mod, 'main') or folder == 'interfaces':
                     mod.main()
@@ -131,7 +131,7 @@ def start_addons():
     t = (('Extensions', 'extensions'),
          ('Interfaces', 'interfaces'),
          ('Plugins', 'plugins'))
-    
+
     for p in t:
         section = p[0]
         folder = p[1]
@@ -141,13 +141,13 @@ def start_addons():
                 load_addon(folder, pkg)
             except exceptions.AddonDisabledError:
                 log.debug(folder + '.' + pkg + ' is disabled')
-    
+
     addons_loaded_event.signal()
 
 
 def start_interface():
     interface = None
-    
+
     for i in configuration.config('Interfaces').get_sections():
         if configuration.config('Interfaces')(i).get_bool('enabled'):
             # Exactly one interface must be enabled
@@ -155,7 +155,7 @@ def start_interface():
                 raise exceptions.MultipleInterfacesError()
             else:
                 interface = sys.modules['organism.interfaces.' + i]
-    
+
     # Exactly one interface must be enabled
     if interface:
         interface.loop()
@@ -181,4 +181,4 @@ def main():
     start_addons()
     configuration.config.export_add(configuration.user_config_file)
     start_interface()
-    log.debug('Organism exited successfully')
+    log.info('Organism exited successfully')

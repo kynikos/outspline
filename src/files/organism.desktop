@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Organism
 GenericName=Outliner
-Comment=A simple and extensible outliner
+Comment=A highly modular and extensible outliner
 Exec=organism
 Icon=text-editor
 Terminal=false
