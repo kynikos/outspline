@@ -19,6 +19,10 @@
 from organism_alarms import alarmsmod
 
 
+def get_supported_open_databases():
+    return alarmsmod.cdbs
+
+
 def snooze_alarms(alarmsd, stime):
     alarmsmod.snooze_alarms(alarmsd, stime)
 

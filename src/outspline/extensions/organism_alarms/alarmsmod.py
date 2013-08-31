@@ -30,46 +30,49 @@ alarm_off_event = Event()
 
 changes = {}
 dismiss_state = {}
+cdbs = set()
 
 
 def get_snoozed_alarms(last_search, filename, occs):
-    conn = core_api.get_connection(filename)
-    cur = conn.cursor()
-    cur.execute(queries.alarms_select_alarms)
-    core_api.give_connection(filename, conn)
+    if filename in cdbs:
+        conn = core_api.get_connection(filename)
+        cur = conn.cursor()
+        cur.execute(queries.alarms_select_alarms)
+        core_api.give_connection(filename, conn)
 
-    for row in cur:
-        itemid = row['A_item']
-        start = row['A_start']
-        end = row['A_end']
-        snooze = row['A_snooze']
+        for row in cur:
+            itemid = row['A_item']
+            start = row['A_start']
+            end = row['A_end']
+            snooze = row['A_snooze']
 
-        # Check whether the snoozed alarm has a duplicate among the alarms found
-        # using the alarm rules, and in that case delete the latter; the
-        # creation of duplicates is possible especially when alarm searches are
-        # performed in rapid succession, for example when launching outspline
-        # with multiple databases automatically opened and many new alarms to be
-        # immediately activated
-        occs.try_delete_one(filename, itemid, start, end, row['A_alarm'])
+            # Check whether the snoozed alarm has a duplicate among the alarms
+            # found using the alarm rules, and in that case delete the latter;
+            # the creation of duplicates is possible especially when alarm
+            # searches are performed in rapid succession, for example when
+            # launching outspline with multiple databases automatically opened
+            # and many new alarms to be immediately activated
+            occs.try_delete_one(filename, itemid, start, end, row['A_alarm'])
 
-        alarmd = {'filename': filename,
-                  'id_': itemid,
-                  'alarmid': row['A_id'],
-                  'start': start,
-                  'end': end,
-                  'alarm': snooze}
+            alarmd = {'filename': filename,
+                      'id_': itemid,
+                      'alarmid': row['A_id'],
+                      'start': start,
+                      'end': end,
+                      'alarm': snooze}
 
-        # For safety, also check that there aren't any alarms with snooze <=
-        # last_search left (for example this may happen if an alarm is
-        # temporarily undone together with its item, and then it's restored with
-        # a redo)
-        # Note that whatever the value of last_search is, it doesn't really have
-        # the possibility to prevent the activation of a snoozed alarm, be it
-        # immediately or later (last_search can't be set on a future time)
-        if snooze and snooze > last_search:
-            occs.add_safe(last_search, alarmd)
-        else:
-            occs.add_old(alarmd)
+            # For safety, also check that there aren't any alarms with snooze <=
+            # last_search left (for example this may happen if an alarm is
+            # temporarily undone together with its item, and then it's restored
+            # with a redo)
+            # Note that whatever the value of last_search is, it doesn't really
+            # have the possibility to prevent the activation of a snoozed alarm,
+            # be it immediately or later (last_search can't be set on a future
+            # time)
+            if snooze and snooze > last_search:
+                occs.add_safe(last_search, alarmd)
+            else:
+                occs.add_old(alarmd)
 
 
 def activate_alarms_range(filename, mint, maxt, occsd):
@@ -121,32 +124,33 @@ def activate_alarm(alarm):
 
 
 def get_alarms(mint, maxt, filename, occs):
-    conn = core_api.get_connection(filename)
-    cur = conn.cursor()
-    cur.execute(queries.alarms_select_alarms)
-    core_api.give_connection(filename, conn)
+    if filename in cdbs:
+        conn = core_api.get_connection(filename)
+        cur = conn.cursor()
+        cur.execute(queries.alarms_select_alarms)
+        core_api.give_connection(filename, conn)
 
-    for row in cur:
-        origalarm = row['A_alarm']
-        snooze = row['A_snooze']
+        for row in cur:
+            origalarm = row['A_alarm']
+            snooze = row['A_snooze']
 
-        alarmd = {'filename': filename,
-                  'id_': row['A_item'],
-                  'alarmid': row['A_id'],
-                  'start': row['A_start'],
-                  'end': row['A_end'],
-                  'alarm': snooze}
+            alarmd = {'filename': filename,
+                      'id_': row['A_item'],
+                      'alarmid': row['A_id'],
+                      'start': row['A_start'],
+                      'end': row['A_end'],
+                      'alarm': snooze}
 
-        # If the alarm is not added to occs, add it to the active dictionary if
-        # it's active (but not snoozed)
-        # Note that if the alarm is active but its time values are included
-        # between mint and maxt, the alarm is added to the main dictionary, not
-        # the active one
-        # Also note that the second argument must be origalarm, not snooze, in
-        # fact it's used to *update* the occurrence (if present) using the new
-        # snooze time stored in alarmd
-        if not occs.update(alarmd, origalarm) and snooze == None:
-            occs.move_active(alarmd, origalarm)
+            # If the alarm is not added to occs, add it to the active dictionary
+            # if it's active (but not snoozed)
+            # Note that if the alarm is active but its time values are included
+            # between mint and maxt, the alarm is added to the main dictionary,
+            # not the active one
+            # Also note that the second argument must be origalarm, not snooze,
+            # in fact it's used to *update* the occurrence (if present) using
+            # the new snooze time stored in alarmd
+            if not occs.update(alarmd, origalarm) and snooze == None:
+                occs.move_active(alarmd, origalarm)
 
 
 
@@ -205,64 +209,80 @@ def update_alarm(filename, alarmid, newalarm):
 
 
 def copy_alarms(filename, id_):
-    occs = []
+    if filename in cdbs:
+        occs = []
 
-    conn = core_api.get_connection(filename)
-    cur = conn.cursor()
-    cur.execute(queries.alarms_select_item, (id_, ))
-    for row in cur:
-        occs.append(row)
-    core_api.give_connection(filename, conn)
+        conn = core_api.get_connection(filename)
+        cur = conn.cursor()
+        cur.execute(queries.alarms_select_item, (id_, ))
+        for row in cur:
+            occs.append(row)
+        core_api.give_connection(filename, conn)
 
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+        for o in occs:
+            curm.execute(queries.copyalarms_insert, (o['A_id'], id_,
+                         o['A_start'], o['A_end'], o['A_alarm'], o['A_snooze']))
+        core_api.give_memory_connection(mem)
+
+
+def can_paste_safely(filename, exception):
     mem = core_api.get_memory_connection()
     curm = mem.cursor()
-    for o in occs:
-        curm.execute(queries.copyalarms_insert, (o['A_id'], id_, o['A_start'],
-                                                 o['A_end'], o['A_alarm'],
-                                                 o['A_snooze']))
+    curm.execute(queries.copyalarms_select)
     core_api.give_memory_connection(mem)
+
+    # Warn if CopyAlarms table has alarms but filename doesn't support them
+    if curm.fetchone() and filename not in cdbs:
+        raise exception()
 
 
 def paste_alarms(filename, id_, oldid):
-    mem = core_api.get_memory_connection()
-    curm = mem.cursor()
-    curm.execute(queries.copyalarms_select_id, (oldid, ))
-    core_api.give_memory_connection(mem)
+    if filename in cdbs:
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+        curm.execute(queries.copyalarms_select_id, (oldid, ))
+        core_api.give_memory_connection(mem)
 
-    for occ in curm:
-        insert_alarm(filename, id_, occ['CA_start'], occ['CA_end'],
-                     occ['CA_alarm'], occ['CA_snooze'])
+        for occ in curm:
+            insert_alarm(filename, id_, occ['CA_start'], occ['CA_end'],
+                         occ['CA_alarm'], occ['CA_snooze'])
 
 
 def delete_alarms(filename, id_, hid):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.alarms_update_id_delete, (hid, id_))
-    core_api.give_connection(filename, qconn)
+    if filename in cdbs:
+        qconn = core_api.get_connection(filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.alarms_update_id_delete, (hid, id_))
+        core_api.give_connection(filename, qconn)
 
-    # Signal the event after updating the database, so, for example,
-    # the tasklist can be correctly updated
-    alarm_off_event.signal(filename=filename, id_=id_)
+        # Signal the event after updating the database, so, for example,
+        # the tasklist can be correctly updated
+        alarm_off_event.signal(filename=filename, id_=id_)
 
 
 def undelete_alarms(filename, id_, hid):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.alarms_update_id_undelete, (id_, hid))
-    core_api.give_connection(filename, qconn)
+    if filename in cdbs:
+        qconn = core_api.get_connection(filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.alarms_update_id_undelete, (id_, hid))
+        core_api.give_connection(filename, qconn)
 
 
 def clean_deleted_alarms(filename):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.alarms_delete_clean)
-    core_api.give_connection(filename, qconn)
+    if filename in cdbs:
+        qconn = core_api.get_connection(filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.alarms_delete_clean)
+        core_api.give_connection(filename, qconn)
 
 
 def clean_old_history_alarms(filename, hids):
-    qconn = sqlite3.connect(filename)
-    cursor = qconn.cursor()
-    for hid in hids:
-        cursor.execute(queries.alarms_delete_clean_soft, (hid[0], ))
-    qconn.commit()
-    qconn.close()
+    if filename in cdbs:
+        qconn = sqlite3.connect(filename)
+        cursor = qconn.cursor()
+        for hid in hids:
+            cursor.execute(queries.alarms_delete_clean_soft, (hid[0], ))
+        qconn.commit()
+        qconn.close()
