@@ -19,6 +19,11 @@
 from organism_timer import timer
 
 
+def install_rule_handler(rulename, handler):
+    # Warning, the handler will be executed on a separate thread!!!
+    return timer.install_rule_handler(rulename, handler)
+
+
 def get_next_occurrences(base_time=None, base_times=None):
     return timer.get_next_occurrences(base_time=base_time,
                                                           base_times=base_times)
@@ -26,11 +31,6 @@ def get_next_occurrences(base_time=None, base_times=None):
 
 def search_next_occurrences():
     return timer.search_next_occurrences()
-
-
-def bind_to_get_next_item_occurrences(handler, bind=True):
-    # Warning, this function is executed on a separate thread!!!
-    return timer.get_next_item_occurrences_event.bind(handler, bind)
 
 
 def bind_to_get_next_occurrences(handler, bind=True):

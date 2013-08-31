@@ -25,11 +25,39 @@ class AddonDisabledError(OutsplineError):
     pass
 
 
+class AddonProvidedHistoryActionsError(OutsplineError):
+    actions = None
+    addons = None
+
+    def __init__(self, actions, addons):
+        self.actions = actions
+        self.addons = addons
+        OutsplineError.__init__(self)
+
+
+class AddonProvidedTablesError(OutsplineError):
+    tables = None
+    addons = None
+
+    def __init__(self, tables, addons):
+        self.tables = tables
+        self.addons = addons
+        OutsplineError.__init__(self)
+
+
 class AddonVersionError(OutsplineError):
-    pass
+    version = None
+
+    def __init__(self, version):
+        self.version = version
+        OutsplineError.__init__(self)
 
 
 class AddonNotFoundError(OutsplineError):
+    pass
+
+
+class AddonDependencyError(OutsplineError):
     pass
 
 
