@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -18,7 +18,7 @@
 
 import os
 import errno
-import logging.config
+import logging
 
 # This module is used indirectly, make sure it's imported
 import loggingext
@@ -82,48 +82,19 @@ def set_logger(cliargs):
         },
         'handlers': {
             'console': {
-                'class': 'loggingext.StreamHandler',
+                'class': 'logging.StreamHandler',
                 'level': ('CRITICAL', 'ERROR', 'INFO', 'DEBUG'
                           )[level['console']],
-                'formatters': {
-                    'debug': ('simple_default', 'simple_default',
+                'formatter': ('simple_default', 'simple_default',
                               'simple_default', 'verbose_default'
                               )[level['console']],
-                    'info': ('simple_info', 'simple_info',
-                             'simple_info', 'verbose_info'
-                             )[level['console']],
-                    'warning': ('simple_default', 'simple_default',
-                                'simple_default', 'verbose_default'
-                                )[level['console']],
-                    'error': ('simple_default', 'simple_default',
-                              'simple_default', 'verbose_default'
-                              )[level['console']],
-                    'critical': ('simple_default', 'simple_default',
-                                 'simple_default', 'verbose_default'
-                                 )[level['console']],
-                    'default': ('simple_default', 'simple_default',
-                                'simple_default', 'verbose_default'
-                                )[level['console']]
-                },
             },
             'file': {
-                'class': 'loggingext.RotatingFileHandler',
+                'class': 'logging.handlers.RotatingFileHandler',
                 'level': ('CRITICAL', 'WARNING', 'INFO', 'DEBUG'
                           )[level['file']],
-                'formatters': {
-                    'debug': ('simple', 'simple', 'simple', 'verbose'
+                'formatter': ('simple', 'simple', 'simple', 'verbose'
                               )[level['file']],
-                    'info': ('simple', 'simple', 'simple', 'verbose'
-                             )[level['file']],
-                    'warning': ('simple', 'verbose', 'verbose', 'verbose'
-                                )[level['file']],
-                    'error': ('simple', 'verbose', 'verbose', 'verbose'
-                              )[level['file']],
-                    'critical': ('simple', 'verbose', 'verbose', 'verbose'
-                                 )[level['file']],
-                    'default': ('simple', 'simple', 'simple', 'verbose'
-                                )[level['file']]
-                },
                 'filename': logfile,
                 'maxBytes': (1, 10000, 30000, 100000)[level['file']],
                 'backupCount': 1,
@@ -131,9 +102,7 @@ def set_logger(cliargs):
             },
             'null': {
                 'class': 'logging.NullHandler',
-                'formatters': {
-                    'default': 'simple'
-                },
+                'formatter': 'simple',
             }
         },
         'loggers': {
@@ -151,7 +120,24 @@ def set_logger(cliargs):
         }
     }
     
-    logging.config.dictConfig(logconfig)
+    formconfig = {
+        'console': {
+            'info': ('simple_info', 'simple_info',
+                     'simple_info', 'verbose_info'
+                     )[level['console']],
+        },
+        'file': {
+            'warning': ('simple', 'verbose', 'verbose', 'verbose'
+                        )[level['file']],
+            'error': ('simple', 'verbose', 'verbose', 'verbose'
+                      )[level['file']],
+            'critical': ('simple', 'verbose', 'verbose', 'verbose'
+                         )[level['file']],
+        },
+    }
+    
+    logging.setLoggerClass(loggingext.Logger)
+    loggingext.dictConfig(logconfig, formconfig)
     
     global log
     log = logging.getLogger('organism1')

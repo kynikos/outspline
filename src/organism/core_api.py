@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -255,6 +255,10 @@ def release_databases():
 
 def get_open_databases():
     return tuple(databases.dbs.keys())
+
+
+def is_database_open(filename):
+    return filename in databases.dbs
 
 
 def get_databases_count():

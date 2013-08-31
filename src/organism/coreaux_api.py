@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -18,7 +18,7 @@
 
 import sys
 
-from coreaux.configuration import info, config, _ROOT_DIR
+from coreaux.configuration import info, config
 import coreaux.configuration
 # Import the base Exception so that it can be imported by interfaces and
 # plugins
@@ -72,11 +72,24 @@ def get_standard_extension():
 
 
 def get_root_directory():
-    return _ROOT_DIR
+    return coreaux.configuration._ROOT_DIR
+
+
+def get_copyright(alt=False):
+    return coreaux.configuration._COPYRIGHT_V2 if alt else \
+                                             coreaux.configuration._COPYRIGHT_V1
+
+
+def get_disclaimer():
+    return coreaux.configuration._DISCLAIMER
 
 
 def get_description():
     return info['description']
+
+
+def get_long_description():
+    return coreaux.configuration._DESCRIPTION_LONG
 
 
 def get_user_config_file():

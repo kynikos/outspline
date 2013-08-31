@@ -1,5 +1,5 @@
-# Organism - A simple and extensible outliner.
-# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
+# Organism - A highly modular and extensible outliner.
+# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Organism.
 #
@@ -19,30 +19,24 @@
 import sys
 import os.path
 import argparse
-from datetime import datetime
 
-from configuration import (_USER_CONFIG_FILE, info, config)
+from configuration import (_USER_CONFIG_FILE, _COPYRIGHT_V1, _DISCLAIMER_SHORT,
+                           info, config)
 
 
 class ShowVersion(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        print('''Organism {} ({})
-
-Copyright (C) 2011-{} Dario Giovannetti <dev@dariogiovannetti.net>
-This program comes with ABSOLUTELY NO WARRANTY.
-This is free software, you are welcome to redistribute it under the
-conditions of the GNU General Public License version 3 or later.
-See <http://gnu.org/licenses/gpl.html> for details.'''.format(
-                                               info['component_version'],
-                                               info['component_release_date'],
-                                               datetime.now().year))
+        print("Organism {} ({})\n\n{}\n{}".format(info['component_version'],
+                                                 info['component_release_date'],
+                                                 _COPYRIGHT_V1,
+                                                 _DISCLAIMER_SHORT))
         sys.exit()
 
 
 def parse_cli_args():
     # Options -h and --help are automatically created
     cliparser = argparse.ArgumentParser(description=info['description'])
-    
+
     cliparser.add_argument('-c',
                            '--config',
                            default=None,
@@ -51,7 +45,7 @@ def parse_cli_args():
                            help='set the configuration file name: a relative '
                                 'or full path can be specified (default: {})'
                                 ''.format(_USER_CONFIG_FILE))
-    
+
     cliparser.add_argument('-l',
                            '--loglevel',
                            default=None,
@@ -65,7 +59,7 @@ def parse_cli_args():
                                 'from 0,1,2,3 will be converted to 3 '
                                 '(default: {}, see also --logfile option)'
                                 ''.format(config('Log')['log_level']))
-    
+
     cliparser.add_argument('-f',
                            '--logfile',
                            default=None,
@@ -76,7 +70,7 @@ def parse_cli_args():
                                 '--loglevel option)'
                                 ''.format(os.path.expanduser(config('Log'
                                                                )['log_file'])))
-    
+
     cliparser.add_argument('-v',
                            '--version',
                            '--about',
@@ -85,5 +79,5 @@ def parse_cli_args():
                            dest='version',
                            help='show program\'s version number, copyright '
                                 'and license information, then exit')
-    
+
     return cliparser.parse_args()
