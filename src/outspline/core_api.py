@@ -267,6 +267,10 @@ def bind_to_create_database(handler, bind=True):
     return databases.create_database_event.bind(handler, bind)
 
 
+def bind_to_open_database_dirty(handler, bind=True):
+    return databases.open_database_dirty_event.bind(handler, bind)
+
+
 def bind_to_open_database(handler, bind=True):
     return databases.open_database_event.bind(handler, bind)
 

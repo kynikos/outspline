@@ -33,6 +33,7 @@ protection = None
 memory = None
 
 create_database_event = Event()
+open_database_dirty_event = Event()
 open_database_event = Event()
 close_database_event = Event()
 save_database_copy_event = Event()
@@ -205,13 +206,15 @@ class Database(history.DBHistory):
             else:
                 dbs[filename] = cls(filename)
 
+                open_database_dirty_event.signal(filename=filename,
+                                                            dependencies=compat)
+
                 # Reset modified state after instantiating the class, since this
                 # signals an event whose handlers might require the object to be
                 # already created
                 dbs[filename].reset_modified_state()
 
-                open_database_event.signal(filename=filename,
-                                                            dependencies=compat)
+                open_database_event.signal(filename=filename)
                 return True
 
     @staticmethod
