@@ -1,0 +1,9 @@
+version = 0.2.0
+release_date = 2011-12-04
+provides_core = true
+extension_1 = copypaste 0.2
+interface_1 = wxgui 0.2
+plugin_1 = wxsession 0.2
+plugin_2 = wxcopypaste 0.2
+plugin_3 = wxtrayicon 0.2
+plugin_4 = wxtexthistory 0.2

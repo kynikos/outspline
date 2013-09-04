@@ -1,0 +1,10 @@
+version = 0.2.0
+release_date = 2011-12-04
+extension_1 = organism 0.2
+extension_2 = organism_timer 0.2
+extension_3 = organism_basicrules 0.2
+extension_4 = organism_alarms 0.2
+plugin_1 = wxscheduler 0.2
+plugin_2 = wxscheduler_basicrules 0.2
+plugin_3 = wxtasklist 0.2
+plugin_4 = wxalarms 0.2

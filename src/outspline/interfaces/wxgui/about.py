@@ -201,8 +201,11 @@ class InfoBox(wx.SplitterWindow):
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\n\nInstalled components:')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        for c in coreaux_api.get_installed_components():
-            self.textw.AppendText('\n\t{} {} ({})'.format(*c))
+        cinfo = coreaux_api.get_components_info()
+        for c in cinfo('Components').get_sections():
+            self.textw.AppendText('\n\t{} {} ({})'.format(c,
+                                              cinfo('Components')(c)['version'],
+                                        cinfo('Components')(c)['release_date']))
 
     def compose_addon_info(self, type_, addon):
         info = coreaux_api.get_addons_info()
@@ -264,10 +267,11 @@ class InfoBox(wx.SplitterWindow):
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nComponent: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        self.textw.AppendText('{} {} ({})'.format(
-                                 info(type_)(addon)['component'],
-                                 info(type_)(addon)['component_version'],
-                                 info(type_)(addon)['component_release_date']))
+        cinfo = coreaux_api.get_components_info()
+        component = cinfo(type_)(addon)[info(type_)(addon)['version']]
+        self.textw.AppendText('{} {} ({})'.format(component,
+                                      cinfo('Components')(component)['version'],
+                                cinfo('Components')(component)['release_date']))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nDependencies:')
