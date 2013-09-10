@@ -1,0 +1,9 @@
+author = Dario Giovannetti <dev@dariogiovannetti.net>
+version = 0.2
+description = Lets undo and redo the changes to items text.
+website = https://github.com/kynikos/outspline/
+affects_database = no
+provides_tables =
+provides_history_actions =
+dependency_1 = core 0
+dependency_2 = interfaces.wxgui 0

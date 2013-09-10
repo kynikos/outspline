@@ -1,0 +1,35 @@
+* Test with the simulator for several hours
+  Test with only some components enabled
+  Test with only some addons enabled
+* Update and release any library that is maintained in external repos
+* Checkout the develop branch
+* Update any library statically included in the project
+* Update files:
+  - *.component
+  - *.info
+  - interfaces.wxgui.about
+  - *.setup.py
+  - Copyright dates
+  - docstrings (@version, @date...)
+  - *.PKGBUILD
+  - *.install
+  - release.py
+* Run release.py (inside ./dev)
+  Note that it depends on the installed version of python-configfile
+* Upload the archives to SourceForge
+* Check the PKGBUILDs with namcap
+* Test PKGBUILD installation
+* Commit on the develop branch
+* Merge the develop branch on master
+  Use --no-ff
+* Tag release merge commit
+* Push commits to GitHub
+* Update documentation:
+  - Changelog
+  - New features
+  - Links to downloads
+  - Screenshots
+  - Forum thread
+  - Wiki
+  - GitHub page
+* Upload PKGBUILD archives to AUR

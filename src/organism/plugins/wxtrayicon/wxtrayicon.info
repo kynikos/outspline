@@ -1,8 +1,0 @@
-author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.1
-description = Adds an icon in the system tray and lets the user hide and show the main window.
-website = https://github.com/kynikos/organism/
-component = main
-component_version = 1.0.0pb1
-component_release_date = 2011-12-04
-dependency_1 = interfaces.wxgui
