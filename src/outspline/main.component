@@ -1,5 +1,5 @@
 version = 0.2.0
-release_date = 2011-12-04
+release_date = 2013-09-10
 provides_core = true
 extension_1 = copypaste 0.2
 interface_1 = wxgui 0.2
