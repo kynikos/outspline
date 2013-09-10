@@ -17,12 +17,8 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-import pkgutil
 import os.path
 import importlib
-import copy
-
-import configfile
 
 import configuration
 import exceptions
@@ -30,15 +26,6 @@ from logger import log
 from events import Event
 
 addons_loaded_event = Event()
-
-
-def load_config(section, folder):
-    for p in pkgutil.iter_modules((os.path.join(configuration._ROOT_DIR,
-                                                                    folder), )):
-        if p[2]:
-            configuration.config(section).make_subsection(p[1])
-            configuration.config(section)(p[1]).add(os.path.join(
-                               configuration._ROOT_DIR, folder, p[1] + '.conf'))
 
 
 def load_addon(faddon, reqversion, tablenames, historynames):
@@ -256,8 +243,12 @@ def start_addons():
     for section, folder in (('Extensions', 'extensions'),
                             ('Interfaces', 'interfaces'),
                             ('Plugins', 'plugins')):
-        load_config(section, folder)
-        for pkg in configuration.config(section).get_sections():
+        # Don't use configuration.config to prevent the following bug: an
+        # optional component is installed, then Outspline is run, then the
+        # optional component is uninstalled; its configuration would still be
+        # read in configuration.config, so this function would try to load an
+        # addon that is not installed anymore; use configuration.info instead
+        for pkg in configuration.info(section).get_sections():
             faddon = folder + '.' + pkg
 
             try:
@@ -301,22 +292,8 @@ def start_interface():
         raise exceptions.InterfaceNotFoundError()
 
 
-def get_addons_info(disabled=True):
-    if not disabled:
-        info = copy.deepcopy(configuration.info)
-
-        for t in ('Extensions', 'Interfaces', 'Plugins'):
-            for a in info(t).get_sections():
-                if not configuration.config(t)(a).get_bool('enabled'):
-                    info(t)(a).delete()
-
-        return info
-    else:
-        return configuration.info
-
-
 def main():
     start_addons()
-    configuration.config.export_add(configuration.user_config_file)
+    configuration.export_configuration()
     start_interface()
     log.info('Outspline exited successfully')

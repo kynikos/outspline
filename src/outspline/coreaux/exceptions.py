@@ -21,6 +21,14 @@ class OutsplineError(Exception):
     pass
 
 
+class ComponentConflictError(OutsplineError):
+    pass
+
+
+class CoreComponentNotFoundError(OutsplineError):
+    pass
+
+
 class AddonDisabledError(OutsplineError):
     pass
 
