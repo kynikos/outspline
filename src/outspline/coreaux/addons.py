@@ -243,7 +243,12 @@ def start_addons():
     for section, folder in (('Extensions', 'extensions'),
                             ('Interfaces', 'interfaces'),
                             ('Plugins', 'plugins')):
-        for pkg in configuration.config(section).get_sections():
+        # Don't use configuration.config to prevent the following bug: an
+        # optional component is installed, then Outspline is run, then the
+        # optional component is uninstalled; its configuration would still be
+        # read in configuration.config, so this function would try to load an
+        # addon that is not installed anymore; use configuration.info instead
+        for pkg in configuration.info(section).get_sections():
             faddon = folder + '.' + pkg
 
             try:
