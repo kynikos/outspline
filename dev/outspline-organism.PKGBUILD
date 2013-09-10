@@ -12,7 +12,7 @@ conflicts=('organism-organizer')
 replaces=('organism-organizer')
 install="$pkgname.install"
 source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
-sha256sums=('879b5f78ddc617431b4cee1e3bd73dbc879b5f78ddc617431b4cee1e3bd73dbc')
+sha256sums=('33803cb89861e1ebf1180bfdef2aff427d71305d458838aa557c2a1c28842545')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"
