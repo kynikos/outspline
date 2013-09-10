@@ -23,11 +23,12 @@ import errno
 from datetime import datetime
 
 import configfile
+
 import exceptions
 
 __author__ = "Dario Giovannetti <dev@dariogiovannetti.net>"
 
-_ROOT_DIR = 'src/outspline'
+_ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
 _CORE_INFO = os.path.join(_ROOT_DIR, 'coreaux', 'core.info')
 _CONFIG_FILE = os.path.join(_ROOT_DIR, 'outspline.conf')
 _USER_CONFIG_FILE = os.path.join(os.path.expanduser('~'), '.config',
