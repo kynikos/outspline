@@ -13,11 +13,13 @@ depends=('wxpython'
          'python2-plural')
 optdepends=('outspline-organism: adds personal organizer capabilities'
             'outspline-development: development tools for beta testers')
+conflicts=('organism')
+replaces=('organism')
 install="$pkgname.install"
-source=("http://www.dariogiovannetti.net/files/$pkgname-$pkgver.tar.gz")
-md5sums=('a243d18c2900312634c205278c25239f')
+source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
+sha256sums=('5d3095ee7ced3a19c09e4f51602b6d003711ac08671517d1da2ba841a0d6691e')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"
-    python2 setup.py install --prefix="/usr" --root="$pkgdir" --optimize=1
+    python2 setup.py install --root="$pkgdir" --optimize=1
 }

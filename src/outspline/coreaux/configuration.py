@@ -24,9 +24,11 @@ from datetime import datetime
 
 import configfile
 
+import exceptions
+
 __author__ = "Dario Giovannetti <dev@dariogiovannetti.net>"
 
-_ROOT_DIR = 'src/outspline'
+_ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
 _CORE_INFO = os.path.join(_ROOT_DIR, 'coreaux', 'core.info')
 _CONFIG_FILE = os.path.join(_ROOT_DIR, 'outspline.conf')
 _USER_CONFIG_FILE = os.path.join(os.path.expanduser('~'), '.config',
@@ -59,31 +61,94 @@ You should have received a copy of the GNU General Public License
 along with Outspline.  If not, see <http://www.gnu.org/licenses/>.'''
 
 user_config_file = _USER_CONFIG_FILE
+components = None
 info = None
 config = None
 
 
-def load_addon_info():
+def load_component_info():
+    global components
+
+    components = configfile.ConfigFile({}, inherit_options=False)
+    components.make_subsection('Components')
+    components.make_subsection('Core')
+    components.make_subsection('Extensions')
+    components.make_subsection('Interfaces')
+    components.make_subsection('Plugins')
+
+    for c in os.listdir(_ROOT_DIR):
+        split = os.path.splitext(c)
+
+        if split[1] == '.component':
+            components('Components').make_subsection(split[0])
+            components('Components')(split[0]).add(os.path.join(_ROOT_DIR, c))
+
+            if components('Components')(split[0]).get_bool('provides_core',
+                                                              fallback='false'):
+                if 'core' not in components:
+                    components['core'] = split[0]
+                else:
+                    raise exceptions.ComponentConflictError()
+
+            for a in components('Components')(split[0]):
+                if a[:9] == 'extension':
+                    extension, version = components('Components')(split[0])[a
+                                                                    ].split(' ')
+                    components('Extensions').make_subsection(extension)
+
+                    if version not in components('Extensions')(extension):
+                        components('Extensions')(extension)[version] = split[0]
+                    else:
+                        raise exceptions.ComponentConflictError()
+                elif a[:9] == 'interface':
+                    interface, version = components('Components')(split[0])[a
+                                                                    ].split(' ')
+                    components('Interfaces').make_subsection(interface)
+
+                    if version not in components('Interfaces')(interface):
+                        components('Interfaces')(interface)[version] = split[0]
+                    else:
+                        raise exceptions.ComponentConflictError()
+                elif a[:6] == 'plugin':
+                    plugin, version = components('Components')(split[0])[a
+                                                                    ].split(' ')
+                    components('Plugins').make_subsection(plugin)
+
+                    if version not in components('Plugins')(plugin):
+                        components('Plugins')(plugin)[version] = split[0]
+                    else:
+                        raise exceptions.ComponentConflictError()
+
+    if 'core' not in components:
+        raise exceptions.CoreComponentNotFoundError()
+
+
+def load_addon_info_and_default_config():
     global info
+    global config
 
     info = configfile.ConfigFile({}, inherit_options=False)
     info.make_subsection('Core')
     info('Core').add(_CORE_INFO)
 
+    config = configfile.ConfigFile(_CONFIG_FILE, inherit_options=False)
+
     for t in ('Extensions', 'Interfaces', 'Plugins'):
         info.make_subsection(t)
 
-        for a in os.walk(os.path.join(_ROOT_DIR, t.lower())).next()[1]:
+        # Note that an addon needs to be provided by a component in order to be
+        # loaded (the mere existence of its folder and files is not enough)
+        for a in components(t).get_sections():
             info(t).make_subsection(a)
+            config(t).make_subsection(a)
 
-            # Let the normal exception be raised if the .info file is not
-            # found
+            # Let the normal exception be raised if the .info or .conf files are
+            # not found
             info(t)(a).add(os.path.join(_ROOT_DIR, t.lower(), a, a + '.info'))
+            config(t)(a).add(os.path.join(_ROOT_DIR, t.lower(), a + '.conf'))
 
-
-def load_default_config():
-    global config
-    config = configfile.ConfigFile(_CONFIG_FILE, inherit_options=False)
+            if info(t)(a)['version'] not in components(t)(a).get_options():
+                raise exceptions.AddonNotFoundError()
 
 
 def load_user_config(cliargs):
@@ -103,3 +168,7 @@ def load_user_config(cliargs):
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
+
+
+def export_configuration():
+    config.export_add(user_config_file)

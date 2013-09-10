@@ -21,14 +21,14 @@ import os.path
 import argparse
 
 from configuration import (_USER_CONFIG_FILE, _COPYRIGHT_V1, _DISCLAIMER_SHORT,
-                           info, config)
+                           components, info, config)
 
 
 class ShowVersion(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         print("Outspline {} ({})\n\n{}\n{}".format(
-                                              info('Core')['component_version'],
-                                         info('Core')['component_release_date'],
+                        components('Components')(components['core'])['version'],
+                   components('Components')(components['core'])['release_date'],
                                               _COPYRIGHT_V1, _DISCLAIMER_SHORT))
         sys.exit()
 

@@ -20,7 +20,7 @@ import os
 import errno
 import logging.config
 
-from configuration import info, config, _USER_FOLDER_PERMISSIONS
+from configuration import components, info, config, _USER_FOLDER_PERMISSIONS
 
 log = None
 
@@ -185,5 +185,5 @@ def set_logger(cliargs):
 
     log.info('Start logging (level {}, file {})'.format(loglevel, logfile))
     log.info('{} version {} ({})'.format('Outspline',
-                                              info('Core')['component_version'],
-                                        info('Core')['component_release_date']))
+                        components('Components')(components['core'])['version'],
+                  components('Components')(components['core'])['release_date']))

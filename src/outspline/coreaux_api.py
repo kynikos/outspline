@@ -18,8 +18,9 @@
 
 import sys
 import importlib
+import copy
 
-from coreaux.configuration import info, config
+from coreaux.configuration import components, info, config
 import coreaux.configuration
 # Import the base Exception so that it can be imported by interfaces and
 # plugins
@@ -33,15 +34,15 @@ import coreaux.addons
 
 
 def get_main_component_version():
-    return info('Core')['component_version']
+    return components('Components')(components['core'])['version']
+
+
+def get_main_component_release_date():
+    return components('Components')(components['core'])['release_date']
 
 
 def get_core_version():
     return info('Core')['version']
-
-
-def get_main_component_release_date():
-    return info('Core')['component_release_date']
 
 
 def get_website():
@@ -51,20 +52,6 @@ def get_website():
 def get_core_contributors():
     return [info('Core')[o] for o in info.get_options() if o[:11] ==
                                                                   'contributor']
-
-
-def get_installed_components():
-    components = set()
-    components.add((info('Core')['component'], info('Core')['component_version'],
-                                        info('Core')['component_release_date']))
-
-    for t in ('Extensions', 'Interfaces', 'Plugins'):
-        for a in info(t).get_sections():
-            addon = info(t)(a)
-            components.add((addon['component'], addon['component_version'],
-                                               addon['component_release_date']))
-
-    return components
 
 
 def get_standard_extension():
@@ -96,8 +83,22 @@ def get_user_config_file():
     return coreaux.configuration.user_config_file
 
 
+def get_components_info():
+    return components
+
+
 def get_addons_info(disabled=True):
-    return coreaux.addons.get_addons_info(disabled=disabled)
+    if not disabled:
+        cinfo = copy.deepcopy(info)
+
+        for t in ('Extensions', 'Interfaces', 'Plugins'):
+            for a in cinfo(t).get_sections():
+                if not config(t)(a).get_bool('enabled'):
+                    cinfo(t)(a).delete()
+
+        return cinfo
+    else:
+        return info
 
 
 def get_configuration():
