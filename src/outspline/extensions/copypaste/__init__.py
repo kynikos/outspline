@@ -22,6 +22,7 @@ import outspline.core_api as core_api
 import queries
 from exceptions import UnsafePasteWarning
 
+origin_filename = None
 copy_items_event = Event()
 item_copy_event = Event()
 item_paste_event = Event()
@@ -37,6 +38,9 @@ def copy_items(filename, cids, cut=False, group=None,
     core_api.give_memory_connection(qmemory)
 
     copy_items_event.signal()
+
+    global origin_filename
+    origin_filename = filename
 
     for id_ in cids:
         info = core_api.get_item_info(filename, id_)
