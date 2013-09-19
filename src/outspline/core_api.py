@@ -335,5 +335,9 @@ def bind_to_insert_item(handler, bind=True):
     return items.item_insert_event.bind(handler, bind)
 
 
+def bind_to_update_item(handler, bind=True):
+    return items.item_update_event.bind(handler, bind)
+
+
 def bind_to_delete_item(handler, bind=True):
     return items.item_delete_event.bind(handler, bind)
