@@ -401,6 +401,9 @@ class Database(wx.SplitterWindow):
     def set_item_title(self, treeitem, title):
         self.treec.SetItemText(treeitem, title)
 
+    def set_item_font(self, treeitem, wxfont):
+        self.treec.SetItemFont(treeitem, wxfont)
+
     def select_item(self, treeitem):
         self.treec.UnselectAll()
         # Note that SelectItem may actually unselect if the item is selected,

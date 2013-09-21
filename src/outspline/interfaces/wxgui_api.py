@@ -321,6 +321,15 @@ def insert_item_after(filename, baseid, id_, text):
     return tree.dbs[filename].insert_item(base, 'after', label=label, id_=id_)
 
 
+def set_item_font(filename, id_, wxfont):
+    try:
+        treeitem = tree.dbs[filename].find_item(id_)
+    except KeyError:
+        return False
+    else:
+        return tree.dbs[filename].set_item_font(treeitem, wxfont)
+
+
 def insert_tree_context_menu_item(filename, pos, item, id_=wx.ID_ANY, help='',
                                   sep='none', kind='normal', sub=None,
                                   icon=None):
