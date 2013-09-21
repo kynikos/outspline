@@ -17,6 +17,7 @@ PACKAGES = {
     'main': 'outspline',
     'development': 'outspline-development',
     'organism': 'outspline-organism',
+    'experimental': 'outspline-experimental',
 }
 
 def main():
