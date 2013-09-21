@@ -23,6 +23,10 @@ def bind_to_cut_items(handler, bind=True):
     return wxcopypaste.cut_items_event.bind(handler, bind)
 
 
+def bind_to_items_pasted(handler, bind=True):
+    return wxcopypaste.items_pasted_event.bind(handler, bind)
+
+
 def simulate_cut_items(no_confirm=False):
     return wxcopypaste.cut_items(None, no_confirm=no_confirm)
 

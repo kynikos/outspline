@@ -27,6 +27,7 @@ import outspline.extensions.copypaste_api as copypaste_api
 import msgboxes
 
 cut_items_event = Event()
+items_pasted_event = Event()
 
 ID_CUT = None
 mcut = None
@@ -125,6 +126,8 @@ def paste_items_as_siblings(event, no_confirm=False):
 
             treedb.history.refresh()
 
+            items_pasted_event.signal(filename=filename)
+
     core_api.release_databases()
 
 
@@ -149,6 +152,8 @@ def paste_items_as_children(event, no_confirm=False):
                     treedb.create(base=treeroot)
 
                 treedb.history.refresh()
+
+                items_pasted_event.signal(filename=filename)
 
     core_api.release_databases()
 
