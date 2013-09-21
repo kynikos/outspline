@@ -1,0 +1,10 @@
+author = Dario Giovannetti <dev@dariogiovannetti.net>
+version = 0.1
+description = Adds the backend for managing links to database items.
+website = https://github.com/kynikos/outspline/
+affects_database = yes
+provides_tables = Links CopyLinks
+provides_history_actions = link_upsert link_delete link_break
+dependency_1 = core 0
+optional_dependency_1 = extensions.copypaste 0
+database_dependency_group_1 = core.0 extensions.links.0
