@@ -130,9 +130,7 @@ class TextArea():
 
     def refresh_mod_state(self):
         treedb = tree.dbs[self.filename]
-        title = treedb.make_item_title(self.area.GetLineText(0))
-        treedb.set_item_title(treedb.find_item(self.id_), title)
-        tabtitle = editor.Editor.make_title(title)
+        tabtitle = editor.Editor.make_title(self.area.GetLineText(0))
         wx.GetApp().nb_right.set_editor_title(self.item, tabtitle)
 
         self.reset_modified()
