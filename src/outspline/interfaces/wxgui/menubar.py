@@ -34,6 +34,7 @@ enable_tree_menus_event = Event()
 enable_textarea_menus_event = Event()
 undo_tree_event = Event()
 redo_tree_event = Event()
+move_item_event = Event()
 delete_items_event = Event()
 
 
@@ -572,6 +573,8 @@ class MenuDatabase(wx.Menu):
 
                     treedb.history.refresh()
 
+                    move_item_event.signal(filename=filename)
+
         core_api.release_databases()
 
     def move_item_down(self, event):
@@ -598,6 +601,8 @@ class MenuDatabase(wx.Menu):
 
                     treedb.history.refresh()
 
+                    move_item_event.signal(filename=filename)
+
         core_api.release_databases()
 
     def move_item_to_parent(self, event):
@@ -619,6 +624,8 @@ class MenuDatabase(wx.Menu):
                     treedb.select_item(newitem)
 
                     treedb.history.refresh()
+
+                    move_item_event.signal(filename=filename)
 
         core_api.release_databases()
 

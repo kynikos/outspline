@@ -168,6 +168,10 @@ def bind_to_redo_tree(handler, bind=True):
     return menubar.redo_tree_event.bind(handler, bind)
 
 
+def bind_to_move_item(handler, bind=True):
+    return menubar.move_item_event.bind(handler, bind)
+
+
 def bind_to_delete_items(handler, bind=True):
     return menubar.delete_items_event.bind(handler, bind)
 
