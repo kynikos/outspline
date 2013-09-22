@@ -115,8 +115,7 @@ class Editor():
             self.pbox.Prepend(separator, flag=wx.EXPAND)
 
             self.fpbar = FoldPanelBar(self.panel,
-                                      agwStyle=foldpanelbar.FPB_SINGLE_FOLD |
-                                      foldpanelbar.FPB_HORIZONTAL)
+                                      agwStyle=foldpanelbar.FPB_HORIZONTAL)
             self.pbox.Prepend(self.fpbar, flag=wx.EXPAND)
 
             self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED,
