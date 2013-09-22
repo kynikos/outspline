@@ -116,12 +116,22 @@ class Database(wx.SplitterWindow):
         self.treec.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.veto_label_edit)
         self.treec.Bind(wx.EVT_TREE_ITEM_MENU, self.popup_item_menu)
 
+        core_api.bind_to_update_item(self.handle_update_item)
         core_api.bind_to_history_insert(self.handle_history_insert)
         core_api.bind_to_history_update(self.handle_history_update)
         core_api.bind_to_history_remove(self.handle_history_remove)
 
     def veto_label_edit(self, event):
         event.Veto()
+
+    def handle_update_item(self, kwargs):
+        # Don't update an item label only when editing the text area, as there
+        # may be other plugins that edit an item's text (e.g links)
+        # kwargs['text'] could be None if the query updated the position of the
+        # item and not its text
+        if kwargs['filename'] == self.filename and kwargs['text'] is not None:
+            title = self.make_item_title(kwargs['text'])
+            self.set_item_title(self.find_item(kwargs['id_']), title)
 
     def handle_history_insert(self, kwargs):
         filename = kwargs['filename']
@@ -390,6 +400,9 @@ class Database(wx.SplitterWindow):
 
     def set_item_title(self, treeitem, title):
         self.treec.SetItemText(treeitem, title)
+
+    def set_item_font(self, treeitem, wxfont):
+        self.treec.SetItemFont(treeitem, wxfont)
 
     def select_item(self, treeitem):
         self.treec.UnselectAll()

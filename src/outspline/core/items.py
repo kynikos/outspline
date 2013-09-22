@@ -23,6 +23,7 @@ import queries
 import exceptions
 
 item_insert_event = Event()
+item_update_event = Event()
 item_delete_event = Event()
 
 
@@ -123,6 +124,10 @@ class Item():
                                                 query_undo, unqtext))
 
         self.database.connection.give(qconn)
+
+        item_update_event.signal(filename=self.filename, id_=self.id_,
+                                    parent=parent, previous=previous, text=text,
+                                           group=group, description=description)
 
     def delete(self, group, description='Delete item'):
         prev = self.get_previous()

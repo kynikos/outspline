@@ -27,19 +27,17 @@ import outspline.extensions.copypaste_api as copypaste_api
 import msgboxes
 
 cut_items_event = Event()
+items_pasted_event = Event()
 
 ID_CUT = None
 mcut = None
-cmcut = None
 ID_COPY = None
 mcopy = None
-cmcopy = None
 ID_PASTE = None
 mpaste = None
-cmpaste = None
 ID_PASTE_SUB = None
 mpastesub = None
-cmpastesub = None
+cmenu = {}
 
 
 def cut_items(event, no_confirm=False):
@@ -128,6 +126,8 @@ def paste_items_as_siblings(event, no_confirm=False):
 
             treedb.history.refresh()
 
+            items_pasted_event.signal(filename=filename)
+
     core_api.release_databases()
 
 
@@ -153,33 +153,37 @@ def paste_items_as_children(event, no_confirm=False):
 
                 treedb.history.refresh()
 
+                items_pasted_event.signal(filename=filename)
+
     core_api.release_databases()
 
 
 def handle_open_database(kwargs):
-    global cmcut, cmcopy, cmpaste, cmpastesub
+    global cmenu
     filename = kwargs['filename']
+    cmenu[filename] = {}
     config = coreaux_api.get_plugin_configuration('wxcopypaste')
 
-    cmcut = wxgui_api.insert_tree_context_menu_item(filename,
+    cmenu[filename]['cut'] = wxgui_api.insert_tree_context_menu_item(filename,
                                                 config.get_int('cmenucut_pos'),
                                                 'Cu&t items', id_=ID_CUT,
                                                 help='Cut the selected items',
                                                 sep=config['cmenucut_sep'],
                                                 icon='@cut')
-    cmcopy = wxgui_api.insert_tree_context_menu_item(filename,
+    cmenu[filename]['copy'] = wxgui_api.insert_tree_context_menu_item(filename,
                                                config.get_int('cmenucopy_pos'),
                                                '&Copy items', id_=ID_COPY,
                                                help='Copy the selected items',
                                                sep=config['cmenucopy_sep'],
                                                icon='@copy')
-    cmpaste = wxgui_api.insert_tree_context_menu_item(filename,
+    cmenu[filename]['paste'] = wxgui_api.insert_tree_context_menu_item(filename,
                         config.get_int('cmenupaste_pos'),
                         '&Paste siblings',
                         id_=ID_PASTE,
                         help='Paste items as siblings after the selected item',
                         sep=config['cmenupaste_sep'], icon='@paste')
-    cmpastesub = wxgui_api.insert_tree_context_menu_item(filename,
+    cmenu[filename]['pastesub'] = wxgui_api.insert_tree_context_menu_item(
+                           filename,
                            config.get_int('cmenupastesub_pos'),
                            'P&aste sub-items',
                            id_=ID_PASTE_SUB,
@@ -192,6 +196,10 @@ def handle_open_database(kwargs):
               (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord('v'), ID_PASTE_SUB)]
 
     wxgui_api.add_database_tree_accelerators(filename, accels)
+
+
+def handle_close_database(kwargs):
+    del cmenu[kwargs['filename']]
 
 
 def handle_reset_menu_items(kwargs):
@@ -221,28 +229,30 @@ def handle_enable_tree_menus(kwargs):
 
 
 def handle_reset_tree_context_menu(kwargs):
-    cmcut.Enable(False)
-    cmcopy.Enable(False)
-    cmpaste.Enable(False)
-    cmpastesub.Enable(False)
+    cms = cmenu[kwargs['filename']]
+    cms['cut'].Enable(False)
+    cms['copy'].Enable(False)
+    cms['paste'].Enable(False)
+    cms['pastesub'].Enable(False)
 
 
 def handle_popup_tree_context_menu(kwargs):
     filename = kwargs['filename']
+    cms = cmenu[filename]
     sel = wxgui_api.get_tree_selections(filename)
 
     if len(sel) == 1:
-        cmcut.Enable()
-        cmcopy.Enable()
+        cms['cut'].Enable()
+        cms['copy'].Enable()
         if copypaste_api.has_copied_items(filename):
-            cmpaste.Enable()
-            cmpastesub.Enable()
+            cms['paste'].Enable()
+            cms['pastesub'].Enable()
     elif len(sel) > 1:
-        cmcut.Enable()
-        cmcopy.Enable()
+        cms['cut'].Enable()
+        cms['copy'].Enable()
     else:
         if copypaste_api.has_copied_items(filename):
-            cmpaste.Enable()
+            cms['paste'].Enable()
 
 
 def main():
@@ -283,6 +293,7 @@ def main():
     wxgui_api.bind_to_menu(paste_items_as_children, mpastesub)
 
     wxgui_api.bind_to_open_database(handle_open_database)
+    wxgui_api.bind_to_close_database(handle_close_database)
 
     wxgui_api.bind_to_reset_menu_items(handle_reset_menu_items)
     wxgui_api.bind_to_enable_tree_menus(handle_enable_tree_menus)

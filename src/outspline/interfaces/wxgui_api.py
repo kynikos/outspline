@@ -168,6 +168,10 @@ def bind_to_redo_tree(handler, bind=True):
     return menubar.redo_tree_event.bind(handler, bind)
 
 
+def bind_to_move_item(handler, bind=True):
+    return menubar.move_item_event.bind(handler, bind)
+
+
 def bind_to_delete_items(handler, bind=True):
     return menubar.delete_items_event.bind(handler, bind)
 
@@ -319,6 +323,15 @@ def insert_item_after(filename, baseid, id_, text):
     label = tree.dbs[filename].make_item_title(text)
     base = tree.dbs[filename].find_item(baseid)
     return tree.dbs[filename].insert_item(base, 'after', label=label, id_=id_)
+
+
+def set_item_font(filename, id_, wxfont):
+    try:
+        treeitem = tree.dbs[filename].find_item(id_)
+    except KeyError:
+        return False
+    else:
+        return tree.dbs[filename].set_item_font(treeitem, wxfont)
 
 
 def insert_tree_context_menu_item(filename, pos, item, id_=wx.ID_ANY, help='',

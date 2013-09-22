@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import sys
 import os
 import shutil
 import subprocess
@@ -16,15 +17,23 @@ PACKAGES = {
     'main': 'outspline',
     'development': 'outspline-development',
     'organism': 'outspline-organism',
+    'experimental': 'outspline-experimental',
 }
 
 def main():
-    for cfile in os.listdir(BASE_DIR):
-        cname, ext = os.path.splitext(cfile)
-
-        if ext == '.component':
+    if len(sys.argv) > 1:
+        for cname in sys.argv[1:]:
+            cfile = cname + '.component'
             make_component_package(cfile, cname)
             make_pkgbuild_package(cname)
+
+    else:
+        for cfile in os.listdir(BASE_DIR):
+            cname, ext = os.path.splitext(cfile)
+
+            if ext == '.component':
+                make_component_package(cfile, cname)
+                make_pkgbuild_package(cname)
 
 
 def make_component_package(cfile, cname):

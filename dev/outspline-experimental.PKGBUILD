@@ -1,17 +1,16 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
-pkgname='outspline-development'
-pkgver='0.2.1'
+pkgname='outspline-experimental'
+pkgver='0.1.0'
 pkgrel=1
-pkgdesc="Development component for Outspline"
+pkgdesc="Experimental addons for Outspline"
 arch=('any')
 url="https://github.com/kynikos/outspline"
 license=('GPL3')
 depends=('outspline')
-conflicts=('organism-development')
-replaces=('organism-development')
+install="$pkgname.install"
 source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
-sha256sums=('aa7b846a1d8b74221420f2e7fe5b639dfdacf30ee19cd072f40276ceb6ee4072')
+sha256sums=('d9e499f41f61c10e7b9e2e49f2724c96e1b4744f7cc9bbde1e93d8d387511337')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"

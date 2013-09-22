@@ -61,22 +61,13 @@ def compose_package_metadata(head):
 
 
 def compose_metadata():
-    meta = {'name': 'outspline',
-            'version': '0.2.1',
-            'description': 'Highly modular and extensible outliner.',
+    meta = {'name': 'outspline-experimental',
+            'version': '0.1.0',
+            'description': 'Experimental component for Outspline.',
             'author': 'Dario Giovannetti',
             'author_email': 'dev@dariogiovannetti.net',
             'url': 'https://github.com/kynikos/outspline',
             'license': 'GPLv3'}
-
-    meta['scripts'] = ('files/outspline', )
-
-    meta['data_files'] = (('/usr/share/applications',
-                           ('files/outspline.desktop', )),
-    # Currently there isn't an original icon
-    #                      ('/usr/share/icons/hicolor/##x##',
-    #                       ('files/outspline.svg', ))
-                         )
 
     meta.update(compose_package_metadata('outspline'))
 
