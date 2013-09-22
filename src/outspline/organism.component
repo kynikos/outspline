@@ -1,6 +1,6 @@
-version = 0.2.0
-release_date = 2013-09-10
-extension_1 = organism 0.2
+version = 0.2.1
+release_date = 2013-09-22
+extension_1 = organism 0.3
 extension_2 = organism_timer 0.2
 extension_3 = organism_basicrules 0.2
 extension_4 = organism_alarms 0.2
