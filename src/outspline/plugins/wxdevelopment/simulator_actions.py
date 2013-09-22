@@ -24,11 +24,13 @@ import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import log
 import outspline.interfaces.wxgui_api as wxgui_api
 organism_api = coreaux_api.import_optional_extension_api('organism')
+links_api = coreaux_api.import_optional_extension_api('links')
 wxcopypaste_api = coreaux_api.import_optional_plugin_api('wxcopypaste')
 wxscheduler_api = coreaux_api.import_optional_plugin_api('wxscheduler')
 wxscheduler_basicrules_api = coreaux_api.import_optional_plugin_api(
                                                        'wxscheduler_basicrules')
 wxalarms_api = coreaux_api.import_optional_plugin_api('wxalarms')
+wxlinks_api = coreaux_api.import_optional_plugin_api('wxlinks')
 
 
 def _select_database():
@@ -505,6 +507,26 @@ def edit_editor_rules():
         return False
 
 
+def link_item_to_selection():
+    if links_api and wxlinks_api and _select_editor():
+        filename, id_ = wxgui_api.get_active_editor()
+        _select_items(False)
+
+        if filename in links_api.get_supported_open_databases():
+            log.debug('Simulate link item to selection')
+            # Databases are blocked in simulator._do_action
+            core_api.release_databases()
+            wxlinks_api.simulate_link_to_selection(filename, id_)
+        else:
+            # Databases are blocked in simulator._do_action
+            core_api.release_databases()
+            return False
+    else:
+        # Databases are blocked in simulator._do_action
+        core_api.release_databases()
+        return False
+
+
 def apply_editor():
     if _select_editor():
         if random.randint(0, 9) < 9:
@@ -627,6 +649,7 @@ ACTIONS = (
     4 * [delete_items] +
     6 * [edit_editor_text] +
     6 * [edit_editor_rules] +
+    6 * [link_item_to_selection] +
     12 * [apply_editor] +
     8 * [close_editor] +
     8 * [snooze_alarms] +
