@@ -219,6 +219,14 @@ class MenuFile(wx.Menu):
     def update_items(self, focus):
         self.reset_items()
 
+        if tree.dbs:
+            for dbname in tuple(tree.dbs.keys()):
+                if core_api.check_pending_changes(dbname):
+                    self.saveall.Enable()
+                    break
+
+            self.closeall.Enable()
+
         while focus:
             if focus.__class__ is notebooks.LeftNotebook:
                 tab = wx.GetApp().nb_left.get_selected_tab()
@@ -230,13 +238,7 @@ class MenuFile(wx.Menu):
                 self.saveas.Enable()
                 self.backup.Enable()
 
-                for dbname in tuple(tree.dbs.keys()):
-                    if core_api.check_pending_changes(dbname):
-                        self.saveall.Enable()
-                        break
-
                 self.close_.Enable()
-                self.closeall.Enable()
 
                 # Break in order to speed up, but if an "elif focus.__class__"
                 # is added, this break must be removed or left only at the
@@ -776,6 +778,14 @@ class MenuEdit(wx.Menu):
         filename = editor.tabs[item].get_filename()
         id_ = editor.tabs[item].get_id()
 
+        if editor.tabs:
+            for i in tuple(editor.tabs.keys()):
+                if editor.tabs[i].is_modified():
+                    self.applyall.Enable()
+                    break
+
+            self.closeall.Enable()
+
         while focus:
             if focus.__class__ is editor.EditorPanel or (
                                  focus.__class__ is notebooks.RightNotebook and
@@ -794,13 +804,7 @@ class MenuEdit(wx.Menu):
                 if editor.tabs[item].is_modified():
                     self.apply.Enable()
 
-                for i in tuple(editor.tabs.keys()):
-                    if editor.tabs[i].is_modified():
-                        self.applyall.Enable()
-                        break
-
                 self.close_.Enable()
-                self.closeall.Enable()
 
                 enable_textarea_menus_event.signal(filename=filename, id_=id_,
                                                    item=item)
