@@ -68,7 +68,7 @@ class Rule():
         self.slabel = wx.StaticText(self.mpanel, label='Start day:')
         box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
-        self.startw = widgets.MonthInverseDayHourCtrl(self.mpanel)
+        self.startw = widgets.MonthInverseDayHourSafeCtrl(self.mpanel)
         self.startw.set_values(self.original_values['rstartid'],
                                self.original_values['rstartH'],
                                self.original_values['rstartM'])
@@ -314,7 +314,7 @@ class Rule():
     def _make_label(rstartid, rstartH, rstartM, rendH, rendM, ralarmH, ralarmM,\
               rendn, rendu, ralarmn, ralarmu, endtype, alarmtype, fend, palarm):
         label = 'Occur on the {} day of every month at {}:{}'.format(
-                   widgets.MonthInverseDayHourCtrl._compute_day_label(rstartid),
+                   widgets.MonthInverseDayHourSafeCtrl._compute_day_label(rstartid),
                                    str(rstartH).zfill(2), str(rstartM).zfill(2))
 
         if endtype == 1:
