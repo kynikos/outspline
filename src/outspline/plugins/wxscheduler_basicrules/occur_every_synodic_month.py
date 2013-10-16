@@ -67,7 +67,8 @@ class Rule():
         self.pbox.Add(box, flag=wx.BOTTOM, border=4)
 
         self.slabel = wx.StaticText(self.mpanel, label='Sample start date:')
-        box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
+        box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
 
         self.startw = widgets.DateHourCtrl(self.mpanel)
         self.startw.set_values(self.original_values['refstartY'],
@@ -79,13 +80,13 @@ class Rule():
 
     def _create_widgets_end(self):
         self.endchoicew = widgets.WidgetChoiceCtrl(self.mpanel,
-                                                         (('No duration', None),
-                                    ('Duration:', self._create_duration_widget),
-                            ('Sample end date:', self._create_end_date_widget)),
-                                             self.original_values['endtype'], 4)
+                                                        (('No duration', None),
+                                   ('Duration:', self._create_duration_widget),
+                           ('Sample end date:', self._create_end_date_widget)),
+                                            self.original_values['endtype'], 4)
         self.endchoicew.force_update()
         self.pbox.Add(self.endchoicew.get_main_panel(), flag=wx.BOTTOM,
-                                                                       border=4)
+                                                                      border=4)
 
     def _create_duration_widget(self):
         self.endw = widgets.TimeSpanCtrl(self.endchoicew.get_main_panel(), 1)
@@ -106,16 +107,16 @@ class Rule():
 
     def _create_widgets_alarm(self):
         self.alarmchoicew = widgets.WidgetChoiceCtrl(self.mpanel,
-                                                            (('No alarm', None),
-                          ('Alarm advance:', self._create_alarm_advance_widget),
-                        ('Sample alarm date:', self._create_alarm_date_widget)),
-                                           self.original_values['alarmtype'], 4)
+                                                           (('No alarm', None),
+                         ('Alarm advance:', self._create_alarm_advance_widget),
+                       ('Sample alarm date:', self._create_alarm_date_widget)),
+                                          self.original_values['alarmtype'], 4)
         self.alarmchoicew.force_update()
         self.pbox.Add(self.alarmchoicew.get_main_panel())
 
     def _create_alarm_advance_widget(self):
         self.alarmw = widgets.TimeSpanCtrl(self.alarmchoicew.get_main_panel(),
-                                                                              0)
+                                                                             0)
         self.alarmw.set_values(self.original_values['ralarmn'],
                                self.original_values['ralarmu'])
 
@@ -180,21 +181,21 @@ class Rule():
 
         try:
             ruled = organism_basicrules_api.make_occur_regularly_single_rule(
-                    refstart, 2551443, rend, ralarm, ('sy', endtype, alarmtype))
+                   refstart, 2551443, rend, ralarm, ('sy', endtype, alarmtype))
         except organism_basicrules_api.BadRuleError:
-            msgboxes.warn_bad_rule().ShowModal()
+            msgboxes.warn_bad_rule(msgboxes.end_time).ShowModal()
         else:
-            label = self._make_label(refstart, rend, ralarm, endtype, alarmtype,
-                                                 rendn, rendu, ralarmn, ralarmu)
+            label = self._make_label(refstart, rend, ralarm, endtype,
+                                     alarmtype, rendn, rendu, ralarmn, ralarmu)
             wxscheduler_api.apply_rule(filename, id_, ruled, label)
 
     @classmethod
     def insert_rule(cls, filename, id_, rule, rulev):
         values = cls._compute_values(rulev)
         label = cls._make_label(values['refstart'], values['rend'],
-                       values['ralarm'], values['endtype'], values['alarmtype'],
-                                               values['rendn'], values['rendu'],
-                                           values['ralarmn'], values['ralarmu'])
+                      values['ralarm'], values['endtype'], values['alarmtype'],
+                                              values['rendn'], values['rendu'],
+                                          values['ralarmn'], values['ralarmu'])
         wxscheduler_api.insert_rule(filename, id_, rule, label)
 
     @classmethod
@@ -230,19 +231,19 @@ class Rule():
         values['refstart'] = values['refmin'] + values['rstart']
 
         values['rendn'], values['rendu'] = \
-                     widgets.TimeSpanCtrl._compute_widget_values(values['rend'])
+                    widgets.TimeSpanCtrl._compute_widget_values(values['rend'])
 
         # ralarm could be negative
         values['ralarmn'], values['ralarmu'] = \
-                                    widgets.TimeSpanCtrl._compute_widget_values(
-                                                     max((0, values['ralarm'])))
+                                   widgets.TimeSpanCtrl._compute_widget_values(
+                                                    max((0, values['ralarm'])))
 
         refstart = values['refmin'] + values['rstart']
 
         localstart = _datetime.datetime.fromtimestamp(refstart)
         localend = _datetime.datetime.fromtimestamp(refstart + values['rend'])
-        localalarm = _datetime.datetime.fromtimestamp(refstart - values['ralarm'
-                                                                              ])
+        localalarm = _datetime.datetime.fromtimestamp(refstart - values[
+                                                                     'ralarm'])
 
         values.update({
             'refstartY': localstart.year,
@@ -266,21 +267,21 @@ class Rule():
 
     @staticmethod
     def _make_label(refstart, rend, ralarm, endtype, alarmtype, rendn, rendu,
-                                                              ralarmn, ralarmu):
+                                                             ralarmn, ralarmu):
         label = 'Occur every synodic month, for example on {}'.format(
-              _time.strftime('%a %d %b %Y at %H:%M', _time.localtime(refstart)))
+             _time.strftime('%a %d %b %Y at %H:%M', _time.localtime(refstart)))
 
         if endtype == 1:
             label += ' for {} {}'.format(rendn, rendu)
         elif endtype == 2:
             label += _time.strftime(' until %a %d %b %Y at %H:%M',
-                                               _time.localtime(refstart + rend))
+                                              _time.localtime(refstart + rend))
 
         if alarmtype == 1:
             label += ', activate alarm {} {} before'.format(ralarmn, ralarmu)
         elif alarmtype == 2:
             label += _time.strftime(', alarm set on %a %d %b %Y at %H:%M',
-                                             _time.localtime(refstart - ralarm))
+                                            _time.localtime(refstart - ralarm))
 
         return label
 
@@ -303,4 +304,4 @@ class Rule():
             ralarm = random.randint(0, 360) * 60
 
         return organism_basicrules_api.make_occur_regularly_single_rule(
-                    refstart, 2551443, rend, ralarm, ('sy', endtype, alarmtype))
+                   refstart, 2551443, rend, ralarm, ('sy', endtype, alarmtype))

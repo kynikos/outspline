@@ -68,7 +68,8 @@ class Rule():
         self.pbox.Add(box, flag=wx.BOTTOM, border=4)
 
         self.mlabel = wx.StaticText(self.mpanel, label='Months:')
-        box.Add(self.mlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
+        box.Add(self.mlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
 
         self.monthsw = widgets.MonthsCtrl(self.mpanel)
         self.monthsw.set_months(self.original_values['smonths'])
@@ -79,7 +80,8 @@ class Rule():
         self.pbox.Add(box, flag=wx.BOTTOM, border=4)
 
         self.slabel = wx.StaticText(self.mpanel, label='Start day:')
-        box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
+        box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
 
         self.startw = widgets.MonthWeekdayHourCtrl(self.mpanel)
         self.startw.set_values(self.original_values['rstartn'],
@@ -90,13 +92,13 @@ class Rule():
 
     def _create_widgets_end(self):
         self.endchoicew = widgets.WidgetChoiceCtrl(self.mpanel,
-                                                         (('No duration', None),
-                                    ('Duration:', self._create_duration_widget),
-                                   ('End time:', self._create_end_date_widget)),
-                                             self.original_values['endtype'], 4)
+                                                        (('No duration', None),
+                                   ('Duration:', self._create_duration_widget),
+                                  ('End time:', self._create_end_date_widget)),
+                                            self.original_values['endtype'], 4)
         self.endchoicew.force_update()
         self.pbox.Add(self.endchoicew.get_main_panel(), flag=wx.BOTTOM,
-                                                                       border=4)
+                                                                      border=4)
 
     def _create_duration_widget(self):
         self.endw = widgets.TimeSpanCtrl(self.endchoicew.get_main_panel(), 1)
@@ -114,16 +116,16 @@ class Rule():
 
     def _create_widgets_alarm(self):
         self.alarmchoicew = widgets.WidgetChoiceCtrl(self.mpanel,
-                                                            (('No alarm', None),
-                          ('Alarm advance:', self._create_alarm_advance_widget),
-                               ('Alarm time:', self._create_alarm_date_widget)),
-                                           self.original_values['alarmtype'], 4)
+                                                           (('No alarm', None),
+                         ('Alarm advance:', self._create_alarm_advance_widget),
+                              ('Alarm time:', self._create_alarm_date_widget)),
+                                          self.original_values['alarmtype'], 4)
         self.alarmchoicew.force_update()
         self.pbox.Add(self.alarmchoicew.get_main_panel())
 
     def _create_alarm_advance_widget(self):
         self.alarmw = widgets.TimeSpanCtrl(self.alarmchoicew.get_main_panel(),
-                                                                              0)
+                                                                             0)
         self.alarmw.set_values(self.original_values['ralarmn'],
                                self.original_values['ralarmu'])
 
@@ -232,28 +234,28 @@ class Rule():
 
         try:
             ruled = organism_basicrules_api.make_occur_monthly_weekday_direct_rule(
-                                smonths, weekday, rstartn, rstart, rend, ralarm,
-                                                     (None, endtype, alarmtype))
+                               smonths, weekday, rstartn, rstart, rend, ralarm,
+                                                    (None, endtype, alarmtype))
         except organism_basicrules_api.BadRuleError:
-            msgboxes.warn_bad_rule().ShowModal()
+            msgboxes.warn_bad_rule(msgboxes.generic).ShowModal()
         else:
             label = self._make_label(smonths, rstartn, rstartA, rstartH,
-                                        rstartM, rendH, rendM, ralarmH, ralarmM,
-                                                 rendn, rendu, ralarmn, ralarmu,
-                                               endtype, alarmtype, fend, palarm)
+                                       rstartM, rendH, rendM, ralarmH, ralarmM,
+                                                rendn, rendu, ralarmn, ralarmu,
+                                              endtype, alarmtype, fend, palarm)
             wxscheduler_api.apply_rule(filename, id_, ruled, label)
 
     @classmethod
     def insert_rule(cls, filename, id_, rule, rulev):
         values = cls._compute_values(rulev)
         label = cls._make_label(values['smonths'], values['rstartn'],
-                        values['rstartA'], values['rstartH'], values['rstartM'],
-                                               values['rendH'], values['rendM'],
-                                           values['ralarmH'], values['ralarmM'],
-                                               values['rendn'], values['rendu'],
-                                           values['ralarmn'], values['ralarmu'],
-                                         values['endtype'], values['alarmtype'],
-                                               values['fend'], values['palarm'])
+                       values['rstartA'], values['rstartH'], values['rstartM'],
+                                              values['rendH'], values['rendM'],
+                                          values['ralarmH'], values['ralarmM'],
+                                              values['rendn'], values['rendu'],
+                                          values['ralarmn'], values['ralarmu'],
+                                        values['endtype'], values['alarmtype'],
+                                              values['fend'], values['palarm'])
         wxscheduler_api.insert_rule(filename, id_, rule, label)
 
     @classmethod
@@ -298,12 +300,12 @@ class Rule():
             rminute = rrstart % 3600 // 60
 
         values['rendn'], values['rendu'] = \
-                     widgets.TimeSpanCtrl._compute_widget_values(values['rend'])
+                    widgets.TimeSpanCtrl._compute_widget_values(values['rend'])
 
         # ralarm could be negative
         values['ralarmn'], values['ralarmu'] = \
-                                    widgets.TimeSpanCtrl._compute_widget_values(
-                                                     max((0, values['ralarm'])))
+                                   widgets.TimeSpanCtrl._compute_widget_values(
+                                                    max((0, values['ralarm'])))
 
         rrend = rrstart + values['rend']
         values['fend'] = False
@@ -324,7 +326,7 @@ class Rule():
         values.update({
             'rstartn': wn,
             'rstartA': widgets.MonthWeekdayHourCtrl._compute_widget_weekday(
-                                                             values['weekday']),
+                                                            values['weekday']),
             'rstartH': rhour,
             'rstartM': rminute,
             'rendH': rrend // 3600,
@@ -337,20 +339,20 @@ class Rule():
 
     @staticmethod
     def _make_label(smonths, rstartn, rstartA, rstartH, rstartM, rendH, rendM,
-                               ralarmH, ralarmM, rendn, rendu, ralarmn, ralarmu,
-                                              endtype, alarmtype, fend, palarm):
+                              ralarmH, ralarmM, rendn, rendu, ralarmn, ralarmu,
+                                             endtype, alarmtype, fend, palarm):
         label = 'Occur on the {} {} of {} at {}:{}'.format(
-                     widgets.MonthWeekdayHourCtrl._compute_weekday_number_label(
-                                                              rstartn), rstartA,
-                            ', '.join([widgets.MonthsCtrl._compute_month_name(m)
-                                                             for m in smonths]),
-                                   str(rstartH).zfill(2), str(rstartM).zfill(2))
+                    widgets.MonthWeekdayHourCtrl._compute_weekday_number_label(
+                                                             rstartn), rstartA,
+                           ', '.join([widgets.MonthsCtrl._compute_month_name(m)
+                                                            for m in smonths]),
+                                  str(rstartH).zfill(2), str(rstartM).zfill(2))
 
         if endtype == 1:
             label += ' for {} {}'.format(rendn, rendu)
         elif endtype == 2:
             label += ' until {}:{}'.format(str(rendH).zfill(2),
-                                                            str(rendM).zfill(2))
+                                                           str(rendM).zfill(2))
             if fend:
                 label += ' of the following day'
 
@@ -358,7 +360,7 @@ class Rule():
             label += ', activate alarm {} {} before'.format(ralarmn, ralarmu)
         elif alarmtype == 2:
             label += ', activate alarm at {}:{}'.format(
-                                   str(ralarmH).zfill(2), str(ralarmM).zfill(2))
+                                  str(ralarmH).zfill(2), str(ralarmM).zfill(2))
             if palarm:
                 label += ' of the previous day'
 
@@ -386,5 +388,5 @@ class Rule():
             ralarm = random.randint(0, 360) * 60
 
         return organism_basicrules_api.make_occur_monthly_weekday_direct_rule(
-                                 smonths, weekday, number, rstart, rend, ralarm,
-                                                     (None, endtype, alarmtype))
+                                smonths, weekday, number, rstart, rend, ralarm,
+                                                    (None, endtype, alarmtype))
