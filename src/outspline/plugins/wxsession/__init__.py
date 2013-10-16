@@ -17,12 +17,12 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import outspline.coreaux_api as coreaux_api
-import outspline.core_api as core_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
 
 def handle_addons_loaded(kwargs):
     config = coreaux_api.get_plugin_configuration('wxsession')
+
     for o in config('Files'):
         filename = config('Files')[o]
         wxgui_api.open_database(filename, startup=True)
@@ -52,8 +52,11 @@ def handle_exit_application(kwargs):
 def refresh_session():
     config = coreaux_api.get_plugin_configuration('wxsession')
     config('Files').reset({})
-    for n, filename in enumerate(core_api.get_open_databases()):
-        config('Files')['db' + str(n)] = str(filename)
+    dbs = wxgui_api.get_open_databases()
+
+    for n in dbs:
+        config('Files')['db' + str(n)] = str(dbs[n])
+
     config('Files').export_reset(coreaux_api.get_user_config_file())
 
 

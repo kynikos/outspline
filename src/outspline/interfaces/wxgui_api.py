@@ -27,6 +27,10 @@ def open_database(filename, startup=False):
     return databases.open_database(filename, startup=startup)
 
 
+def get_open_databases():
+    return databases.get_open_databases()
+
+
 ### EDITOR ###
 
 def open_editor(filename, id_):
