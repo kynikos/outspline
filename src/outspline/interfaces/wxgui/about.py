@@ -19,6 +19,7 @@
 import wx
 from datetime import datetime
 
+from outspline.static.texturlctrl import TextUrlCtrl
 import outspline.coreaux_api as coreaux_api
 
 _SIZE = 600
@@ -95,8 +96,6 @@ class AboutWindow(wx.Frame):
 class InfoBox(wx.SplitterWindow):
     tree = None
     textw = None
-    urlstart = None
-    urlend = None
     STYLE_HEAD = None
     STYLE_NORMAL = None
     STYLE_BOLD = None
@@ -128,9 +127,8 @@ class InfoBox(wx.SplitterWindow):
         panel = wx.Panel(self, style=wx.BORDER_SUNKEN)
         psizer = wx.BoxSizer(wx.HORIZONTAL)
         panel.SetSizer(psizer)
-        self.textw = wx.TextCtrl(panel, value='', style=wx.TE_MULTILINE |
-                                 wx.TE_READONLY | wx.TE_AUTO_URL |
-                                 wx.TE_DONTWRAP | wx.BORDER_NONE)
+        self.textw = TextUrlCtrl(panel, value='', style=wx.TE_MULTILINE |
+                              wx.TE_READONLY | wx.TE_DONTWRAP | wx.BORDER_NONE)
         psizer.Add(self.textw, 1, flag=wx.EXPAND | wx.ALL, border=4)
 
         self.SplitVertically(self.tree, panel)
@@ -143,7 +141,6 @@ class InfoBox(wx.SplitterWindow):
         self.Bind(wx.EVT_SPLITTER_DCLICK, self.veto_dclick)
         self.tree.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.veto_label_edit)
         self.tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.retrieve_info)
-        self.textw.Bind(wx.EVT_TEXT_URL, self.launch_browser)
 
         self.tree.SelectItem(self.tree.GetFirstChild(self.tree.GetRootItem())[0
                                                                              ])
@@ -316,25 +313,3 @@ class InfoBox(wx.SplitterWindow):
             self.compose_addon_info(data['type_'], data['addon'])
         # Scroll back to top
         self.textw.ShowPosition(0)
-
-    def launch_browser(self, event):
-        self.urlstart = event.GetURLStart()
-        self.urlend = event.GetURLEnd()
-        if event.GetMouseEvent().LeftUp():
-            wx.LaunchDefaultBrowser(self.textw.GetRange(self.urlstart,
-                                                        self.urlend))
-        self.textw.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
-        self.textw.Bind(wx.EVT_MOTION, self.reset_cursor)
-        self.textw.Bind(wx.EVT_TEXT_URL, None)
-
-    def reset_cursor(self, event):
-        hitpos = self.textw.HitTestPos(event.GetPosition())[1]
-        if self.urlstart is not None and self.urlend is not None and \
-                              (hitpos < self.urlstart or hitpos > self.urlend):
-            self.urlstart = None
-            self.urlend = None
-            self.textw.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
-            self.textw.Bind(wx.EVT_TEXT_URL, self.launch_browser)
-            self.textw.Bind(wx.EVT_MOTION, None)
-        # Skip the event, otherwise EVT_TEXT_URL won't work
-        event.Skip()
