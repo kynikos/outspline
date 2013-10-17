@@ -64,6 +64,11 @@ class TaskList():
         self.delay = wx.CallLater(self.DELAY, int())
         self.timer = wx.CallLater(0, self.restart)
 
+        # Note that self.delay_restart is *not* bound to
+        # organism_timer_api.bind_to_get_next_occurrences which is signalled by
+        # self.refresh signal because of the call to
+        # organism_timer_api.get_next_occurrences, otherwise this would make
+        # self.refresh recur infinitely
         organism_timer_api.bind_to_search_next_occurrences(self.delay_restart)
         organism_alarms_api.bind_to_alarm_off(self.delay_restart)
 
@@ -77,6 +82,7 @@ class TaskList():
     def restart(self, kwargs=None):
         self.timer.Stop()
         delays = self.refresh()
+
         try:
             delay = min(delays)
         except ValueError:
@@ -128,7 +134,13 @@ class TaskList():
             self.insert_occurrence(i, o)
 
         next_completion = occsobj.get_next_completion_time()
+
+        # Note that this does *not* use
+        # organism_timer_api.search_next_occurrences which would signal
+        # search_next_occurrences_event, thus making this very method recur
+        # infinitely
         nextoccs = organism_timer_api.get_next_occurrences(base_time=maxt)
+
         # Note that next_occurrence could even be a time of an occurrence that's
         # already displayed in the list (e.g. if an occurrence has a start time
         # within the queried range but an end time later than the maximum end)

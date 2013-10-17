@@ -167,6 +167,9 @@ def install_rule_handler(rulename, handler):
 
 
 def get_next_occurrences(base_time=None, base_times=None):
+    # Note that this function must be kept separate from
+    # search_next_occurrences because it can be used without the latter (e.g.
+    # by wxtasklist); note also that both functions generate their own events
     occs = NextOccurrences()
 
     search_start = (_time.time(), _time.clock())
@@ -271,6 +274,10 @@ def search_old_occurrences(filename):
 
 def search_next_occurrences(kwargs=None):
     # kwargs is passed from the bindings in __init__
+
+    # Note that this function must be kept separate from
+    # get_next_occurrences because the latter can be used without this (e.g.
+    # by wxtasklist); note also that both functions generate their own events
 
     log.debug('Search next occurrences')
 
