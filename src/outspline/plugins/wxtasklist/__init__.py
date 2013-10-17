@@ -64,6 +64,7 @@ class TaskList():
         self.delay = wx.CallLater(self.DELAY, int())
         self.timer = wx.CallLater(0, self.restart)
 
+        core_api.bind_to_update_item(self.delay_restart_on_text_update)
         # Note that self.delay_restart is *not* bound to
         # organism_timer_api.bind_to_get_next_occurrences which is signalled by
         # self.refresh signal because of the call to
@@ -71,6 +72,10 @@ class TaskList():
         # self.refresh recur infinitely
         organism_timer_api.bind_to_search_next_occurrences(self.delay_restart)
         organism_alarms_api.bind_to_alarm_off(self.delay_restart)
+
+    def delay_restart_on_text_update(self, kwargs=None):
+        if kwargs['text'] is not None:
+            self.delay_restart()
 
     def delay_restart(self, kwargs=None):
         # Instead of self.restart, bind _this_ function to events that can be
