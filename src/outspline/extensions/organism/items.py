@@ -200,7 +200,17 @@ def insert_item(filename, id_, group, description='Insert item'):
 
 
 def update_item_rules(filename, id_, rules, group,
-                                 description='Update item rules', signal=True):
+                                              description='Update item rules'):
+    update_item_rules_no_event(filename, id_, rules, group,
+                                                       description=description)
+
+    # Note that update_item_rules_no_event can be called directly, thus not
+    # signalling this event
+    update_item_rules_conditional_event.signal(filename=filename, id_=id_)
+
+
+def update_item_rules_no_event(filename, id_, rules, group,
+                                              description='Update item rules'):
     if isinstance(rules, list):
         rules = rules_to_string(rules)
 
@@ -221,10 +231,6 @@ def update_item_rules(filename, id_, rules, group,
 
     core_api.insert_history(filename, group, id_, 'rules_update', description,
                             query_redo, rules, query_undo, unrules)
-
-    if signal:
-        # Do not blindly rely on this event because it's not always signalled
-        update_item_rules_conditional_event.signal(filename=filename, id_=id_)
 
 
 def copy_item_rules(filename, id_):
@@ -269,8 +275,8 @@ def paste_item_rules(filename, id_, oldid, group, description):
         # handled by organism_timer.timer.search_next_occurrences, and it would
         # slow down the pasting of items a lot; search_next_occurrences is
         # bound anyway to copypaste_api.bind_to_items_pasted
-        update_item_rules(filename, id_, curm.fetchone()['CR_rules'], group,
-                                                     description, signal=False)
+        update_item_rules_no_event(filename, id_, curm.fetchone()['CR_rules'],
+                                                            group, description)
 
 
 def delete_item_rules(filename, id_, group, description='Delete item rules'):
