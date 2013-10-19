@@ -342,6 +342,7 @@ class Alarm():
         core_api.release_databases()
 
     def open(self, event):
+        wxgui_api.show_main_window()
         wxgui_api.open_editor(self.filename, self.id_)
 
     def close(self):
