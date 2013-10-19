@@ -26,7 +26,7 @@ wxcopypaste_api = coreaux_api.import_optional_plugin_api('wxcopypaste')
 
 items = {}
 formatted_items = {}
-# **********************************************************************************
+# *********************************************************************************
 # Editor:
 #   - Remove link (disable or hide if item is not a link)
 #   - When linking to a selected item in the tree, warn if no item is selected,
@@ -35,8 +35,10 @@ formatted_items = {}
 #       the back-end
 #   - Display link target or if link broken
 #   - Display back links
-#   - When linking an item, drop any rules and synchronize the text in the
-#     editor
+#   - When linking an item, warn the all rules will be dropped and the text
+#     will be synchronized or simply remove all the rules from the scheduler
+#     and synchronize the text in the text area (this is already all done in
+#     the back-end)
 #   - Links should have the rules and text editors disabled
 #   - Keep the text of a link synchronized with its target (already done in the
 #     back-end (optional))
@@ -54,7 +56,7 @@ formatted_items = {}
 #   - Remove broken links
 #   - Manage dialogs (see above)
 #   - The simulator shouldn't edit text or rules of links and vice versa
-# **********************************************************************************
+# *********************************************************************************
 
 
 class LinkManager():
@@ -71,7 +73,7 @@ class LinkManager():
         self.id_ = id_
 
         self.fpanel = wxgui_api.add_plugin_to_editor(filename, id_,
-                                                                 'Manage links')
+                                                                'Manage links')
 
         self.lpanel = wx.Panel(self.fpanel)
 
@@ -97,15 +99,15 @@ class LinkManager():
 
     def handle_apply(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_ \
-                                                         and self.is_modified():
+                                                        and self.is_modified():
             links_api.make_link(self.filename, self.id_, self.target,
-                                         kwargs['group'], kwargs['description'])
+                                        kwargs['group'], kwargs['description'])
             self.refresh_mod_state()
             update_items_formatting(self.filename)
 
     def handle_check_editor_modified(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_ \
-                                                         and self.is_modified():
+                                                        and self.is_modified():
             wxgui_api.set_editor_modified(self.filename, self.id_)
 
     def handle_close(self, kwargs):
@@ -115,7 +117,7 @@ class LinkManager():
             # references, and the automatic unbinding won't work
             wxgui_api.bind_to_apply_editor(self.handle_apply, False)
             wxgui_api.bind_to_check_editor_modified_state(
-                                       self.handle_check_editor_modified, False)
+                                      self.handle_check_editor_modified, False)
             wxgui_api.bind_to_close_editor(self.handle_close, False)
 
     def resize_lpanel(self):
@@ -132,11 +134,11 @@ class LinkManager():
         self.origtarget = self.target
 
     def _init_buttons(self):
-        self.button_link = wx.Button(self.lpanel, label='Link to selected item',
-                                                                  size=(-1, 24))
+        self.button_link = wx.Button(self.lpanel,
+                                  label='Link to selected item', size=(-1, 24))
 
         self.lpanel.Bind(wx.EVT_BUTTON, self.link_to_selection,
-                                                               self.button_link)
+                                                              self.button_link)
 
     def link_to_selection(self, event=None):
         treedb = wxgui_api.get_active_database()
@@ -162,8 +164,8 @@ def update_items_formatting(filename):
         wxgui_api.set_item_font(filename, id_, wxfont)
         new_formatted_items.add(id_)
 
-    # Also remove italic from items that are no longer links (e.g. after undoing
-    # a linking action)
+    # Also remove italic from items that are no longer links (e.g. after
+    # undoing a linking action)
     for oldid in formatted_items[filename] - new_formatted_items:
         wxfont.SetStyle(wx.FONTSTYLE_NORMAL)
         # oldid may not exist anymore, however wxgui_api.set_item_font is
