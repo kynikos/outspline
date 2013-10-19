@@ -8,3 +8,4 @@ plugin_1 = wxscheduler 0.2
 plugin_2 = wxscheduler_basicrules 0.2
 plugin_3 = wxtasklist 0.2
 plugin_4 = wxalarms 0.2
+plugin_5 = notify 0.1

@@ -8,6 +8,8 @@ arch=('any')
 url="https://github.com/kynikos/outspline"
 license=('GPL3')
 depends=('outspline')
+optdepends=('libnotify: for desktop notifications (notify plugin)'
+            'python2-gobject: for desktop notifications (notify plugin)')
 conflicts=('organism-organizer')
 replaces=('organism-organizer')
 install="$pkgname.install"
