@@ -140,7 +140,6 @@ class MainFrame(wx.Frame):
         self.Show(True)
 
     def toggle_shown(self, event):
-        # This method can be used by plugins
         if self.IsShown():
             self.hide(event)
         else:

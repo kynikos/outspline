@@ -298,6 +298,18 @@ def get_main_icon_bundle():
     return wx.GetApp().get_main_icon_bundle()
 
 
+def show_main_window(event=None):
+    return wx.GetApp().root.show(event=event)
+
+
+def hide_main_window(event=None):
+    return wx.GetApp().root.hide(event=event)
+
+
+def toggle_main_window(event=None):
+    return wx.GetApp().root.toggle_shown(event=event)
+
+
 def is_shown():
     return wx.GetApp().root.IsShown()
 
