@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import wx
-from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin
+from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin, ColumnSorterMixin
 import sys
 import time as _time
 import os
@@ -30,18 +30,53 @@ import outspline.extensions.organism_api as organism_api
 import outspline.extensions.organism_timer_api as organism_timer_api
 import outspline.extensions.organism_alarms_api as organism_alarms_api
 
+COLUMNS = (
+    ('Database', 120),
+    ('Title', 200),
+    ('Start', 120),
+    ('End', 120),
+    ('Alarm', 120),
+)
 
-class AutoListView(wx.ListView, ListCtrlAutoWidthMixin):
+
+class AutoListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
+    imagelistsmall = None
+    imagemap = None
+
     def __init__(self, parent):
         # Note that this makes use of ListView, which is an interface for
         # ListCtrl
         wx.ListView.__init__(self, parent, style=wx.LC_REPORT)
         ListCtrlAutoWidthMixin.__init__(self)
+        ColumnSorterMixin.__init__(self, len(COLUMNS))
+
+        self.set_image_lists()
+
+    def GetListCtrl(self):
+        return self
+
+    def set_image_lists(self):
+        self.imagelistsmall = wx.ImageList(16, 16)
+        self.imagemap = {
+            'small': {}
+        }
+
+        self.imagemap['small']['sortup'] = self.imagelistsmall.Add(
+                 wx.ArtProvider.GetBitmap('@sortup', wx.ART_TOOLBAR, (16, 16)))
+        self.imagemap['small']['sortdown'] = self.imagelistsmall.Add(
+               wx.ArtProvider.GetBitmap('@sortdown', wx.ART_TOOLBAR, (16, 16)))
+
+        self.SetImageList(self.imagelistsmall, wx.IMAGE_LIST_SMALL)
+
+    def GetSortImages(self):
+        return (self.imagemap['small']['sortup'],
+                                            self.imagemap['small']['sortdown'])
 
 
 class TaskList():
     list_ = None
     occs = None
+    datamap = None
     DELAY = None
     delay = None
     timer = None
@@ -49,13 +84,8 @@ class TaskList():
     def __init__(self, parent):
         self.list_ = AutoListView(parent)
 
-        self.occs = {}
-
-        self.list_.InsertColumn(0, 'Database', width=120)
-        self.list_.InsertColumn(1, 'Title', width=200)
-        self.list_.InsertColumn(2, 'Start', width=120)
-        self.list_.InsertColumn(3, 'End', width=120)
-        self.list_.InsertColumn(4, 'Alarm', width=120)
+        for col, values in enumerate(COLUMNS):
+            self.list_.InsertColumn(col, values[0], width=values[1])
 
         # Note that columns are counted from 1 here (thus 2 is 'Title')
         self.list_.setResizeColumn(2)
@@ -136,6 +166,14 @@ class TaskList():
             occurrences = occurrences[:max_]
 
         self.occs = {}
+
+        # Defining an itemDataMap dictionary is required by ColumnSorterMixin
+        self.list_.itemDataMap = {}
+
+        # Create an alias for self.itemDataMap to save it from any future
+        # attribute renaming
+        self.datamap = self.list_.itemDataMap
+
         self.list_.DeleteAllItems()
 
         for i, o in enumerate(occurrences):
@@ -208,11 +246,18 @@ class TaskList():
         else:
             alarmdate = 'none'
 
+        # Both the key and the values of this dictionary must comply with the
+        # requirements of ColumnSorterMixin
+        self.datamap[i] = (fname, title, startdate, enddate, alarmdate)
+
         index = self.list_.InsertStringItem(sys.maxint, fname)
         self.list_.SetStringItem(index, 1, title)
         self.list_.SetStringItem(index, 2, startdate)
         self.list_.SetStringItem(index, 3, enddate)
         self.list_.SetStringItem(index, 4, alarmdate)
+        # In order for ColumnSorterMixin to work, all items must have a unique
+        # data value
+        self.list_.SetItemData(index, i)
 
 
 class ListItem():
