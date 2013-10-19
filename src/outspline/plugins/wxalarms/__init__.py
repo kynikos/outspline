@@ -258,8 +258,8 @@ class AlarmsWindow():
                 alarmsd[filename]
             except KeyError:
                 alarmsd[filename] = []
-            else:
-                alarmsd[filename].append(self.alarms[a].get_alarmid())
+
+            alarmsd[filename].append(self.alarms[a].get_alarmid())
 
         return alarmsd
 
