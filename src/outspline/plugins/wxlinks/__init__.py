@@ -26,37 +26,9 @@ wxcopypaste_api = coreaux_api.import_optional_plugin_api('wxcopypaste')
 
 items = {}
 formatted_items = {}
-# *********************************************************************************
-# Editor:
-#   - Remove link (disable or hide if item is not a link)
-#   - When linking to a selected item in the tree, warn if no item is selected,
-#       when more than one is selected, or when the edited item itself is
-#       selected (self-links are forbidden); also handle circular links, see
-#       the back-end
-#   - Display link target or if link broken
-#   - Display back links
-#   - When linking an item, warn the all rules will be dropped and the text
-#     will be synchronized or simply remove all the rules from the scheduler
-#     and synchronize the text in the text area (this is already all done in
-#     the back-end)
-#   - Links should have the rules and text editors disabled
-#   - Keep the text of a link synchronized with its target (already done in the
-#     back-end (optional))
-# Tree:
-#   - Select the target of a link
-#   - Select the back links of an item
-#   - Select any broken links (or just the next one)
-# Other dialogs:
-#   - Before deleting items, if breaking any links, ask confirmation to the user
-#   - Before undoing/redoing history, if breaking any copied links (see
-#     back-end), ask confirmation to the user
-#   - Before pasting any broken links, warn the user
-# Simulator:
-#   - Remove link
-#   - Remove broken links
-#   - Manage dialogs (see above)
-#   - The simulator shouldn't edit text or rules of links and vice versa
-# *********************************************************************************
+
+# See #214 for features left to be implemented ****************************************
+# https://github.com/kynikos/outspline/issues/214 *************************************
 
 
 class LinkManager():
