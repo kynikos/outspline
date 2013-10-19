@@ -51,11 +51,14 @@ class TaskList():
 
         self.occs = {}
 
-        self.list_.InsertColumn(0, 'Database', width=80)
+        self.list_.InsertColumn(0, 'Database', width=120)
         self.list_.InsertColumn(1, 'Title', width=200)
         self.list_.InsertColumn(2, 'Start', width=120)
         self.list_.InsertColumn(3, 'End', width=120)
         self.list_.InsertColumn(4, 'Alarm', width=120)
+
+        # Note that columns are counted from 1 here (thus 2 is 'Title')
+        self.list_.setResizeColumn(2)
 
         self.DELAY = coreaux_api.get_plugin_configuration('wxtasklist'
                                                       ).get_int('refresh_delay')
