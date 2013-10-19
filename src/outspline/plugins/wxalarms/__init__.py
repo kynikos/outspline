@@ -26,7 +26,7 @@ import outspline.extensions.organism_alarms_api as organism_alarms_api
 import outspline.interfaces.wxgui_api as wxgui_api
 wxtrayicon_api = coreaux_api.import_optional_plugin_api('wxtrayicon')
 
-_ALARMS_MIN_SIZE = (400, 140)
+_ALARMS_MIN_HEIGHT = 140
 _ALARMS_TITLE = 'Outspline - Alarms'
 _ALARMS_ICON_BUNDLE = wx.IconBundle()
 _ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms', wx.ART_TOOLBAR))
@@ -65,7 +65,6 @@ class AlarmsWindow():
 
         self.window = wx.Frame(parent, title=_ALARMS_TITLE, size=[int(s)
                           for s in self.config['initial_geometry'].split('x')])
-        self.window.SetMinSize(_ALARMS_MIN_SIZE)
 
         self.window.SetIcons(_ALARMS_ICON_BUNDLE)
 
@@ -80,13 +79,14 @@ class AlarmsWindow():
         self.panel.SetSizer(self.pbox)
         box.Add(self.panel, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
 
-        self.snooze = wx.Panel(self.window)
-        self._init_snooze(self.snooze)
-        box.Add(self.snooze, flag=wx.LEFT | wx.RIGHT, border=4)
+        self.bottom = wx.BoxSizer(wx.HORIZONTAL)
+        self._init_bottom()
+        box.Add(self.bottom, flag=wx.LEFT | wx.RIGHT | wx.EXPAND, border=4)
 
-        self.bottom = wx.Panel(self.window)
-        self._init_bottom(self.bottom)
-        box.Add(self.bottom, flag=wx.ALL, border=4)
+        # Set the minimum width so that the bottom controls can fit, and also
+        # add 20 px for the stretch spacer
+        minwidth = self.bottom.ComputeFittingWindowSize(self.window).GetWidth()
+        self.window.SetMinSize((minwidth + 20, _ALARMS_MIN_HEIGHT))
 
         self.ID_SHOW = wx.NewId()
         self.menushow = wxgui_api.insert_menu_item('View',
@@ -128,33 +128,30 @@ class AlarmsWindow():
     def handle_reset_tray_menu(self, kwargs):
         self.traymenushow.Check(check=self.window.IsShown())
 
-    def _init_snooze(self, parent):
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        self.snooze.SetSizer(box)
+    def _init_bottom(self):
+        button_s = wx.Button(self.window, label='Snooze all', size=(-1, 24))
+        self.bottom.Add(button_s, flag=wx.RIGHT, border=4)
 
-        label = wx.StaticText(parent, label='Snooze configuration:')
-        box.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
+        button_d = wx.Button(self.window, label='Dismiss all', size=(-1, 24))
+        self.bottom.Add(button_d, flag=wx.RIGHT, border=4)
 
-        self.number = wx.SpinCtrl(parent, min=1, max=999, size=(48, 21),
-                                  style=wx.SP_ARROW_KEYS)
+        self.bottom.AddStretchSpacer()
+
+        label = wx.StaticText(self.window, label='Snooze for:')
+        self.bottom.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
+
+        self.number = wx.SpinCtrl(self.window, min=1, max=999, size=(48, 21),
+                                                        style=wx.SP_ARROW_KEYS)
         self.number.SetValue(5)
-        box.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
-                border=4)
+        self.bottom.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
 
-        self.unit = wx.ComboBox(parent, value='minutes', size=(100, 21),
-                                  choices=('minutes', 'hours', 'days', 'weeks'),
-                                                           style=wx.CB_READONLY)
-        box.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
-
-    def _init_bottom(self, parent):
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        self.bottom.SetSizer(box)
-
-        button_s = wx.Button(parent, label='Snooze all', size=(-1, 24))
-        box.Add(button_s, flag=wx.RIGHT, border=4)
-
-        button_d = wx.Button(parent, label='Dismiss all', size=(-1, 24))
-        box.Add(button_d, flag=wx.RIGHT, border=4)
+        self.unit = wx.ComboBox(self.window, value='minutes', size=(100, 21),
+                                 choices=('minutes', 'hours', 'days', 'weeks'),
+                                                          style=wx.CB_READONLY)
+        self.bottom.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
 
         self.window.Bind(wx.EVT_BUTTON, self.snooze_all, button_s)
         self.window.Bind(wx.EVT_BUTTON, self.dismiss_all, button_d)
@@ -184,7 +181,7 @@ class AlarmsWindow():
         core_api.block_databases()
 
         organism_alarms_api.snooze_alarms(self.get_alarms_dictionary(),
-                                                   stime=self.get_snooze_time())
+                                                  stime=self.get_snooze_time())
         # Let the alarm off event close the alarms
 
         core_api.release_databases()
@@ -195,7 +192,7 @@ class AlarmsWindow():
             aitem = self.alarms[a].get_id()
             aid = self.alarms[a].get_alarmid()
             if filename in (afilename, None) and id_ in (aitem, None) and \
-                                                         alarmid in (aid, None):
+                                                        alarmid in (aid, None):
                 self.alarms[a].close()
 
     def handle_close_db(self, kwargs):
@@ -220,16 +217,17 @@ class AlarmsWindow():
 
     def append(self, filename, id_, alarmid, start, end, alarm):
         a = self.make_alarmid(filename, alarmid)
-        # Check whether the database is still open because this method is called
-        # with wx.CallAfter in handle_alarm, thus running in a different thread;
-        # this way it can happen that, when handle_alarm is called, a database
-        # is still open, but when this method is called, that database has been
-        # already closed; this would happen for example when closing all the
-        # databases: after each database is closed (in rapid succession), all
-        # the remaining alarms are searched and signalled again, and when this
-        # method would be run (in a different thread) the alarm's database would
-        # have already been closed, thus raising an exception later when looking
-        # information for the item (e.g. core_api.get_item_text)
+        # Check whether the database is still open because this method is
+        # called with wx.CallAfter in handle_alarm, thus running in a different
+        # thread; this way it can happen that, when handle_alarm is called, a
+        # database is still open, but when this method is called, that database
+        # has been already closed; this would happen for example when closing
+        # all the databases: after each database is closed (in rapid
+        # succession), all the remaining alarms are searched and signalled
+        # again, and when this method would be run (in a different thread) the
+        # alarm's database would have already been closed, thus raising an
+        # exception later when looking information for the item (e.g.
+        # core_api.get_item_text)
         if core_api.is_database_open(filename) and a not in self.alarms:
             self.alarms[a] = Alarm(self, filename, id_, alarmid, start, end,
                                    alarm)
@@ -330,7 +328,7 @@ class Alarm():
         core_api.block_databases()
 
         organism_alarms_api.snooze_alarms({self.filename: [self.alarmid, ]},
-                                           stime=self.awindow.get_snooze_time())
+                                          stime=self.awindow.get_snooze_time())
         # Let the alarm off event close the alarm
 
         core_api.release_databases()
@@ -352,7 +350,7 @@ class Alarm():
         self.panel.Destroy()
         self.awindow.window.Layout()
         del self.awindow.alarms[self.awindow.make_alarmid(self.filename,
-                                                                  self.alarmid)]
+                                                                 self.alarmid)]
 
         if len(self.awindow.alarms) == 0:
             self.awindow.hide()
