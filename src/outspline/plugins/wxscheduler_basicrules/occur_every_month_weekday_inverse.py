@@ -22,10 +22,12 @@ import calendar as _calendar
 import random
 import wx
 
+from outspline.static.wxclasses.widgetchoice import WidgetChoiceCtrl
+from outspline.static.wxclasses.time import (HourCtrl, MonthWeekdayHourCtrl,
+                                     MonthInverseWeekdayHourCtrl, TimeSpanCtrl)
 import outspline.extensions.organism_basicrules_api as organism_basicrules_api
 import outspline.plugins.wxscheduler_api as wxscheduler_api
 
-import widgets
 import msgboxes
 
 _RULE_DESC = 'Occur on the n-th-to-last weekday of every month'
@@ -69,7 +71,7 @@ class Rule():
         box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                       border=4)
 
-        self.startw = widgets.MonthInverseWeekdayHourCtrl(self.mpanel)
+        self.startw = MonthInverseWeekdayHourCtrl(self.mpanel)
         self.startw.set_values(self.original_values['rstartin'],
                                self.original_values['rstartA'],
                                self.original_values['rstartH'],
@@ -77,8 +79,7 @@ class Rule():
         box.Add(self.startw.get_main_panel())
 
     def _create_widgets_end(self):
-        self.endchoicew = widgets.WidgetChoiceCtrl(self.mpanel,
-                                                        (('No duration', None),
+        self.endchoicew = WidgetChoiceCtrl(self.mpanel, (('No duration', None),
                                    ('Duration:', self._create_duration_widget),
                                   ('End time:', self._create_end_date_widget)),
                                             self.original_values['endtype'], 4)
@@ -87,22 +88,21 @@ class Rule():
                                                                       border=4)
 
     def _create_duration_widget(self):
-        self.endw = widgets.TimeSpanCtrl(self.endchoicew.get_main_panel(), 1)
+        self.endw = TimeSpanCtrl(self.endchoicew.get_main_panel(), 1)
         self.endw.set_values(self.original_values['rendn'],
                              self.original_values['rendu'])
 
         return self.endw.get_main_panel()
 
     def _create_end_date_widget(self):
-        self.endw = widgets.HourCtrl(self.endchoicew.get_main_panel())
+        self.endw = HourCtrl(self.endchoicew.get_main_panel())
         self.endw.set_values(self.original_values['rendH'],
                              self.original_values['rendM'])
 
         return self.endw.get_main_panel()
 
     def _create_widgets_alarm(self):
-        self.alarmchoicew = widgets.WidgetChoiceCtrl(self.mpanel,
-                                                           (('No alarm', None),
+        self.alarmchoicew = WidgetChoiceCtrl(self.mpanel, (('No alarm', None),
                          ('Alarm advance:', self._create_alarm_advance_widget),
                               ('Alarm time:', self._create_alarm_date_widget)),
                                           self.original_values['alarmtype'], 4)
@@ -110,15 +110,14 @@ class Rule():
         self.pbox.Add(self.alarmchoicew.get_main_panel())
 
     def _create_alarm_advance_widget(self):
-        self.alarmw = widgets.TimeSpanCtrl(self.alarmchoicew.get_main_panel(),
-                                                                             0)
+        self.alarmw = TimeSpanCtrl(self.alarmchoicew.get_main_panel(), 0)
         self.alarmw.set_values(self.original_values['ralarmn'],
                                self.original_values['ralarmu'])
 
         return self.alarmw.get_main_panel()
 
     def _create_alarm_date_widget(self):
-        self.alarmw = widgets.HourCtrl(self.alarmchoicew.get_main_panel())
+        self.alarmw = HourCtrl(self.alarmchoicew.get_main_panel())
         self.alarmw.set_values(self.original_values['ralarmH'],
                                self.original_values['ralarmM'])
 
@@ -142,7 +141,7 @@ class Rule():
         rstart = self.startw.get_relative_time()
         rstartin = self.startw.get_weekday_number()
         rstartA = self.startw.get_weekday()
-        weekday = widgets.MonthWeekdayHourCtrl._compute_weekday_label(rstartA)
+        weekday = MonthWeekdayHourCtrl._compute_weekday_label(rstartA)
         rstartH = self.startw.get_hour()
         rstartM = self.startw.get_minute()
 
@@ -278,11 +277,11 @@ class Rule():
             rminute = rrstart % 3600 // 60
 
         values['rendn'], values['rendu'] = \
-                    widgets.TimeSpanCtrl._compute_widget_values(values['rend'])
+                            TimeSpanCtrl._compute_widget_values(values['rend'])
 
         # ralarm could be negative
         values['ralarmn'], values['ralarmu'] = \
-                                   widgets.TimeSpanCtrl._compute_widget_values(
+                                           TimeSpanCtrl._compute_widget_values(
                                                     max((0, values['ralarm'])))
 
         rrend = rrstart + values['rend']
@@ -303,7 +302,7 @@ class Rule():
 
         values.update({
             'rstartin': win,
-            'rstartA': widgets.MonthWeekdayHourCtrl._compute_widget_weekday(
+            'rstartA': MonthWeekdayHourCtrl._compute_widget_weekday(
                                                             values['weekday']),
             'rstartH': rhour,
             'rstartM': rminute,
@@ -320,7 +319,7 @@ class Rule():
                                        ralarmM, rendn, rendu, ralarmn, ralarmu,
                                              endtype, alarmtype, fend, palarm):
         label = 'Occur on the {} {} of every month at {}:{}'.format(
-             widgets.MonthInverseWeekdayHourCtrl._compute_weekday_number_label(
+                     MonthInverseWeekdayHourCtrl._compute_weekday_number_label(
                                                             rstartin), rstartA,
                                   str(rstartH).zfill(2), str(rstartM).zfill(2))
 

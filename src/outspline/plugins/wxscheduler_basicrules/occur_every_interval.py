@@ -21,10 +21,11 @@ import datetime as _datetime
 import random
 import wx
 
+from outspline.static.wxclasses.widgetchoice import WidgetChoiceCtrl
+from outspline.static.wxclasses.time import DateHourCtrl, TimeSpanCtrl
 import outspline.extensions.organism_basicrules_api as organism_basicrules_api
 import outspline.plugins.wxscheduler_api as wxscheduler_api
 
-import widgets
 import msgboxes
 
 _RULE_DESC = 'Occur at regular time intervals'
@@ -71,7 +72,7 @@ class Rule():
         box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                       border=4)
 
-        self.startw = widgets.DateHourCtrl(self.mpanel)
+        self.startw = DateHourCtrl(self.mpanel)
         self.startw.set_values(self.original_values['refstartY'],
                                self.original_values['refstartm'],
                                self.original_values['refstartd'],
@@ -87,14 +88,13 @@ class Rule():
         box.Add(self.ilabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                       border=4)
 
-        self.intervalw = widgets.TimeSpanCtrl(self.mpanel, 1)
+        self.intervalw = TimeSpanCtrl(self.mpanel, 1)
         self.intervalw.set_values(self.original_values['intervaln'],
                                   self.original_values['intervalu'])
         box.Add(self.intervalw.get_main_panel())
 
     def _create_widgets_end(self):
-        self.endchoicew = widgets.WidgetChoiceCtrl(self.mpanel,
-                                                        (('No duration', None),
+        self.endchoicew = WidgetChoiceCtrl(self.mpanel, (('No duration', None),
                                    ('Duration:', self._create_duration_widget),
                            ('Sample end date:', self._create_end_date_widget)),
                                             self.original_values['endtype'], 4)
@@ -103,14 +103,14 @@ class Rule():
                                                                       border=4)
 
     def _create_duration_widget(self):
-        self.endw = widgets.TimeSpanCtrl(self.endchoicew.get_main_panel(), 1)
+        self.endw = TimeSpanCtrl(self.endchoicew.get_main_panel(), 1)
         self.endw.set_values(self.original_values['rendn'],
                              self.original_values['rendu'])
 
         return self.endw.get_main_panel()
 
     def _create_end_date_widget(self):
-        self.endw = widgets.DateHourCtrl(self.endchoicew.get_main_panel())
+        self.endw = DateHourCtrl(self.endchoicew.get_main_panel())
         self.endw.set_values(self.original_values['refendY'],
                              self.original_values['refendm'],
                              self.original_values['refendd'],
@@ -120,8 +120,7 @@ class Rule():
         return self.endw.get_main_panel()
 
     def _create_widgets_alarm(self):
-        self.alarmchoicew = widgets.WidgetChoiceCtrl(self.mpanel,
-                                                           (('No alarm', None),
+        self.alarmchoicew = WidgetChoiceCtrl(self.mpanel, (('No alarm', None),
                          ('Alarm advance:', self._create_alarm_advance_widget),
                        ('Sample alarm date:', self._create_alarm_date_widget)),
                                           self.original_values['alarmtype'], 4)
@@ -129,15 +128,14 @@ class Rule():
         self.pbox.Add(self.alarmchoicew.get_main_panel())
 
     def _create_alarm_advance_widget(self):
-        self.alarmw = widgets.TimeSpanCtrl(self.alarmchoicew.get_main_panel(),
-                                                                             0)
+        self.alarmw = TimeSpanCtrl(self.alarmchoicew.get_main_panel(), 0)
         self.alarmw.set_values(self.original_values['ralarmn'],
                                self.original_values['ralarmu'])
 
         return self.alarmw.get_main_panel()
 
     def _create_alarm_date_widget(self):
-        self.alarmw = widgets.DateHourCtrl(self.alarmchoicew.get_main_panel())
+        self.alarmw = DateHourCtrl(self.alarmchoicew.get_main_panel())
         self.alarmw.set_values(self.original_values['refalarmY'],
                                self.original_values['refalarmm'],
                                self.original_values['refalarmd'],
@@ -254,14 +252,14 @@ class Rule():
         values['refstart'] = values['refmin'] + values['rstart']
 
         values['intervaln'], values['intervalu'] = \
-                widgets.TimeSpanCtrl._compute_widget_values(values['interval'])
+                        TimeSpanCtrl._compute_widget_values(values['interval'])
 
         values['rendn'], values['rendu'] = \
-                    widgets.TimeSpanCtrl._compute_widget_values(values['rend'])
+                            TimeSpanCtrl._compute_widget_values(values['rend'])
 
         # ralarm could be negative
         values['ralarmn'], values['ralarmu'] = \
-                                   widgets.TimeSpanCtrl._compute_widget_values(
+                                           TimeSpanCtrl._compute_widget_values(
                                                     max((0, values['ralarm'])))
 
         refstart = values['refmin'] + values['rstart']
