@@ -32,7 +32,7 @@ import outspline.extensions.organism_alarms_api as organism_alarms_api
 
 COLUMNS = (
     (0, 'Database', 120),
-    (1, 'Title', 200),
+    (1, 'Title', 360),
     (2, 'Start', 120),
     (3, 'End', 120),
     (4, 'Alarm', 120),
@@ -87,8 +87,8 @@ class TaskList():
         for col in COLUMNS:
             self.list_.InsertColumn(col[0], col[1], width=col[2])
 
-        # Note that columns are counted from 1 here (thus 2 is 'Title')
-        self.list_.setResizeColumn(2)
+        # Do not self.list_.setResizeColumn(2) because it gives a non-standard
+        # feeling; the last column is auto-resized by default
 
         self.DELAY = coreaux_api.get_plugin_configuration('wxtasklist'
                                                      ).get_int('refresh_delay')
@@ -245,7 +245,7 @@ class TaskList():
 
         # Both the key and the values of this dictionary must comply with the
         # requirements of ColumnSorterMixin
-        self.datamap[i] = (fname, title, startdate, enddate, alarmdate)
+        self.datamap[i] = (fname, title, start, end, alarm)
 
         index = self.list_.InsertStringItem(sys.maxint, fname)
         self.list_.SetStringItem(index, 1, title)
