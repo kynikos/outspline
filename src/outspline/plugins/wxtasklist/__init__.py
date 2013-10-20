@@ -31,11 +31,11 @@ import outspline.extensions.organism_timer_api as organism_timer_api
 import outspline.extensions.organism_alarms_api as organism_alarms_api
 
 COLUMNS = (
-    ('Database', 120),
-    ('Title', 200),
-    ('Start', 120),
-    ('End', 120),
-    ('Alarm', 120),
+    (0, 'Database', 120),
+    (1, 'Title', 200),
+    (2, 'Start', 120),
+    (3, 'End', 120),
+    (4, 'Alarm', 120),
 )
 
 
@@ -84,14 +84,14 @@ class TaskList():
     def __init__(self, parent):
         self.list_ = AutoListView(parent)
 
-        for col, values in enumerate(COLUMNS):
-            self.list_.InsertColumn(col, values[0], width=values[1])
+        for col in COLUMNS:
+            self.list_.InsertColumn(col[0], col[1], width=col[2])
 
         # Note that columns are counted from 1 here (thus 2 is 'Title')
         self.list_.setResizeColumn(2)
 
         self.DELAY = coreaux_api.get_plugin_configuration('wxtasklist'
-                                                      ).get_int('refresh_delay')
+                                                     ).get_int('refresh_delay')
 
         # Initialize self.delay with a dummy function (int())
         self.delay = wx.CallLater(self.DELAY, int())
@@ -136,7 +136,7 @@ class TaskList():
             except OverflowError:
                 self.timer.Restart(min(86400000, sys.maxint))
 
-    def refresh(self, mint=None, dt=86400, max_=60):
+    def refresh(self, mint=None, dt=86400):
         log.debug('Refresh tasklist')
 
         if not mint:
@@ -157,14 +157,6 @@ class TaskList():
         if mint <= now <= maxt:
             occurrences.extend(occsobj.get_active_list())
 
-        def compare(c):
-            return c['start']
-
-        occurrences.sort(key=compare)
-
-        if max_:
-            occurrences = occurrences[:max_]
-
         self.occs = {}
 
         # Defining an itemDataMap dictionary is required by ColumnSorterMixin
@@ -179,6 +171,10 @@ class TaskList():
         for i, o in enumerate(occurrences):
             self.insert_occurrence(i, o)
 
+        # Use SortListItems instead of occurrences.sort(), so that the heading
+        # will properly display the arrow icon
+        self.list_.SortListItems(2, 1)
+
         next_completion = occsobj.get_next_completion_time()
 
         # Note that this does *not* use
@@ -187,9 +183,10 @@ class TaskList():
         # infinitely
         nextoccs = organism_timer_api.get_next_occurrences(base_time=maxt)
 
-        # Note that next_occurrence could even be a time of an occurrence that's
-        # already displayed in the list (e.g. if an occurrence has a start time
-        # within the queried range but an end time later than the maximum end)
+        # Note that next_occurrence could even be a time of an occurrence
+        # that's already displayed in the list (e.g. if an occurrence has a
+        # start time within the queried range but an end time later than the
+        # maximum end)
         next_occurrence = nextoccs.get_next_occurrence_time()
 
         delays = []
@@ -198,12 +195,12 @@ class TaskList():
             # At completion time, because of the approximation, next_completion
             # and mint are the same, thus giving a difference of 0: this would
             # refresh the tasklist repeatedly until the following second
-            # strikes, so adding 1 here will make the previous cycle refresh the
-            # tasklist 1 second after completion time, thus giving the expected
-            # behaviour. Note that using max(((next_completion - mint), 1))
-            # would give a worse behaviour, in fact the tasklist would always be
-            # refreshed twice, the first time after 1 second, and the second
-            # time after the correct delay
+            # strikes, so adding 1 here will make the previous cycle refresh
+            # the tasklist 1 second after completion time, thus giving the
+            # expected behaviour. Note that using
+            # max(((next_completion - mint), 1)) would give a worse behaviour,
+            # in fact the tasklist would always be refreshed twice, the first
+            # time after 1 second, and the second time after the correct delay
             d1 = next_completion - mint + 1
         except TypeError:
             # next_completion could be None
