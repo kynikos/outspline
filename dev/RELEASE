@@ -14,6 +14,7 @@
   - *.PKGBUILD
   - *.install
   - release.py
+* If database structure has changed, update upgrade mechanism
 * Run release.py (inside ./dev)
   Note that it depends on the installed version of python-configfile
 * Upload the archives to SourceForge
