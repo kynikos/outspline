@@ -19,7 +19,7 @@
 import wx
 from threading import Timer
 
-from outspline.static.texturlctrl import TextUrlCtrl
+from outspline.static.wxclasses.texturl import TextUrlCtrl
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 
