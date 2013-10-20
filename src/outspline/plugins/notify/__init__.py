@@ -24,8 +24,9 @@ except ImportError:
     Notify = None
 
 import outspline.core_api as core_api
+import outspline.coreaux_api as coreaux_api
 import outspline.extensions.organism_alarms_api as organism_alarms_api
-import outspline.interfaces.wxgui_api as wxgui_api
+wxgui_api = coreaux_api.import_optional_interface_api('wxgui')
 
 
 class Notifications():
@@ -43,7 +44,9 @@ class Notifications():
 
             self.alarm = Notify.Notification.new(summary="Outspline",
                                              body=text, icon="appointment-new")
-            self.alarm.add_action("open_item", "Open", self.open_item,
+
+            if wxgui_api:
+                self.alarm.add_action("open_item", "Open", self.open_item,
                                                                [filename, id_])
             self.alarm.show()
 

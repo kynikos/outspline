@@ -7,4 +7,4 @@ provides_tables =
 provides_history_actions =
 dependency_1 = core 0
 dependency_2 = extensions.organism_alarms 0
-dependency_3 = interfaces.wxgui 0
+optional_dependency_1 = interfaces.wxgui 0
