@@ -21,7 +21,7 @@ import datetime as _datetime
 import random
 import wx
 
-from outspline.static.wxclasses.widgetchoice import WidgetChoiceCtrl
+from outspline.static.wxclasses.choices import WidgetChoiceCtrl
 from outspline.static.wxclasses.time import (HourCtrl, DateHourCtrl,
                                                                   TimeSpanCtrl)
 import outspline.extensions.organism_basicrules_api as organism_basicrules_api

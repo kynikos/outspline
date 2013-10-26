@@ -22,7 +22,7 @@ import calendar as _calendar
 import random
 import wx
 
-from outspline.static.wxclasses.widgetchoice import WidgetChoiceCtrl
+from outspline.static.wxclasses.choices import WidgetChoiceCtrl
 from outspline.static.wxclasses.time import (HourCtrl, MonthWeekdayHourCtrl,
                          MonthInverseWeekdayHourCtrl, TimeSpanCtrl, MonthsCtrl)
 import outspline.extensions.organism_basicrules_api as organism_basicrules_api

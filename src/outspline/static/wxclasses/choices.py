@@ -75,3 +75,34 @@ class WidgetChoiceCtrl():
 
     def get_choice_width(self):
         return self.choicectrl.GetSizeTuple()[0]
+
+
+class MultipleChoiceCtrl():
+    panel = None
+    cbctrls = None
+
+    def __init__(self, parent, choices):
+        self.panel = wx.Panel(parent)
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(box)
+
+        self.cbctrls = []
+
+        for i, c in enumerate(choices):
+            self.cbctrls.append(wx.CheckBox(self.panel))
+            box.Add(self.cbctrls[i], flag=wx.ALIGN_CENTER_VERTICAL)
+
+            label = wx.StaticText(self.panel, label=c)
+            box.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT |
+                                                            wx.RIGHT, border=8)
+
+    def get_main_panel(self):
+        return self.panel
+
+    def set_values(self, values):
+        for v, ctrl in enumerate(self.cbctrls):
+            ctrl.SetValue(v + 1 in values)
+
+    def get_values(self):
+        return [v + 1 for v, ctrl in enumerate(self.cbctrls) if ctrl.GetValue()
+                                                                              ]
