@@ -444,8 +444,12 @@ class TimeSpanCtrl():
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
 
+        # Note that min_number's length includes also the minus sign, if
+        # negative
+        width = 8 * max((len(str(min_number)), len(str(max_number)))) + 24
+
         self.numberctrl = wx.SpinCtrl(self.panel, min=min_number,
-                         max=max_number, size=(48, 21), style=wx.SP_ARROW_KEYS)
+                      max=max_number, size=(width, 21), style=wx.SP_ARROW_KEYS)
         box.Add(self.numberctrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.unitctrl = wx.ComboBox(self.panel, value='minutes',
