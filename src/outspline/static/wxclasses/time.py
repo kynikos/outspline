@@ -439,13 +439,13 @@ class TimeSpanCtrl():
     numberctrl = None
     unitctrl = None
 
-    def __init__(self, parent, min_number):
+    def __init__(self, parent, min_number, max_number):
         self.panel = wx.Panel(parent)
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
 
-        self.numberctrl = wx.SpinCtrl(self.panel, min=min_number, max=999,
-                                         size=(48, 21), style=wx.SP_ARROW_KEYS)
+        self.numberctrl = wx.SpinCtrl(self.panel, min=min_number,
+                         max=max_number, size=(48, 21), style=wx.SP_ARROW_KEYS)
         box.Add(self.numberctrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.unitctrl = wx.ComboBox(self.panel, value='minutes',
@@ -484,19 +484,22 @@ class TimeSpanCtrl():
 
     @staticmethod
     def _compute_widget_values(diff):
-        adiff = abs(diff)
+        if diff == 0:
+            return (0, 'minutes')
+        else:
+            adiff = abs(diff)
 
-        if adiff > 0:
+            # Same result as `1 if diff > 0 else -1`
+            neg = diff // adiff
+
             for (number, unit) in ((604800, 'weeks'),
                                    (86400, 'days'),
                                    (3600, 'hours'),
                                    (60, 'minutes')):
                 if adiff % number == 0:
-                    return (adiff // number, unit)
+                    return (adiff // number * neg, unit)
             else:
-                return (adiff // 60, 'minutes')
-        else:
-            return (0, 'minutes')
+                return (adiff // 60 * neg, 'minutes')
 
 
 class WeekdaysCtrl(MultipleChoiceCtrl):

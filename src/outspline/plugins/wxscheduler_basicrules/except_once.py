@@ -96,7 +96,7 @@ class Rule():
         return self.endw.get_main_panel()
 
     def _create_duration_widget(self):
-        self.endw = TimeSpanCtrl(self.endchoicew.get_main_panel(), 1)
+        self.endw = TimeSpanCtrl(self.endchoicew.get_main_panel(), 1, 999)
         self.endw.set_values(self.original_values['rendn'],
                              self.original_values['rendu'])
 

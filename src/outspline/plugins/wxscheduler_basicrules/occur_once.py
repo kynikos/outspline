@@ -87,7 +87,7 @@ class Rule():
                                                                       border=4)
 
     def _create_duration_widget(self):
-        self.endw = TimeSpanCtrl(self.endchoicew.get_main_panel(), 1)
+        self.endw = TimeSpanCtrl(self.endchoicew.get_main_panel(), 1, 999)
         self.endw.set_values(self.original_values['rendn'],
                              self.original_values['rendu'])
 
@@ -112,7 +112,7 @@ class Rule():
         self.pbox.Add(self.alarmchoicew.get_main_panel())
 
     def _create_alarm_advance_widget(self):
-        self.alarmw = TimeSpanCtrl(self.alarmchoicew.get_main_panel(), 0)
+        self.alarmw = TimeSpanCtrl(self.alarmchoicew.get_main_panel(), 0, 999)
         self.alarmw.set_values(self.original_values['ralarmn'],
                                self.original_values['ralarmu'])
 
@@ -222,7 +222,7 @@ class Rule():
 
         values['ralarmn'], values['ralarmu'] = \
                                            TimeSpanCtrl._compute_widget_values(
-                                             values['start'] - values['alarm'])
+                                   max((0, values['start'] - values['alarm'])))
 
         localstart = _datetime.datetime.fromtimestamp(values['start'])
         localend = _datetime.datetime.fromtimestamp(values['end'])
