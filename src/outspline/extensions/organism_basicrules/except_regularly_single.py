@@ -62,11 +62,11 @@ def make_rule(refstart, interval, rend, inclusive, guiconfig):
 def _compute_min_time(reftime, refmax, refspan, interval):
     # Always use refmax, _not_ refmin, in this algorithm, since it allows to
     # get the right occurrence more easily
-    if reftime > refmax:
+    if reftime >= refmax:
         rem = (reftime - refmax) % interval
         return reftime - rem + interval - refspan
     else:
-        # Don't use only refmin when refmin <= reftime <= refmax, because in
+        # Don't use only refmin when refmin <= reftime < refmax, because in
         # case of refspan > interval (overlapping occurrences) it wouldn't
         # always be the correct value (see the examples in
         # occur_regularly_single.py)

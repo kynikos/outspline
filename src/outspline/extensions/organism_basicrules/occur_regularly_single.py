@@ -93,6 +93,32 @@ mintime = refmin
 mintime = reftime - ((reftime - refmin) % interval)
 mintime = reftime + ((refmax - reftime) % interval) - refspan
 
+--------(  *  )--------(     )--------(     )--------|     ]--------(     )-----
+mintime = reftime
+mintime = reftime - ((reftime - refmin) % interval)
+mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+
+--------(  *  )--------(     )--------(     |--------[     ]--------(     )-----
+mintime = reftime - refspan + interval
+mintime = reftime - ((reftime - refmin) % interval) + interval
+mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+
+--------(     )--------(     )--------|     ]--------(     )--------(  *  )-----
+mintime = reftime
+mintime = reftime + ((refmin - reftime) % interval)
+mintime = reftime + ((refmax - reftime) % interval) - refspan
+
+--------(     |--------[     ]--------(     )--------(     )--------(  *  )-----
+mintime = reftime - refspan + interval
+mintime = reftime + ((refmin - reftime) % interval)
+mintime = reftime + ((refmax - reftime) % interval) - refspan + interval
+mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+
+--------(     )--------(     )--------|   * ]--------(     )--------(     )-----
+mintime = refmin = reftime
+mintime = reftime - ((reftime - refmin) % interval)
+mintime = reftime + ((refmax - reftime) % interval) - refspan
+
             *                         |
 (     (     (   ) (   ) [   ) (   ) ( | ] (   ) (   ) (   )     )     )
 0     1     2   0 3   1 4   2 5   3 6 | 4 7   5 8   6 9   7     8     9
@@ -140,17 +166,113 @@ mintime = reftime + ((refmax - reftime) % interval) - refspan
                                       |               (               )
 mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
 mintime = reftime + ((refmax - reftime) % interval) - refspan
+
+            *                       |
+(     (     (   ) (   ) [   ) (   ) |   ] (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )                   |
+      (     *         )             |
+            (               )       |
+                  (               ) |
+                        [           |   ]
+                              (     |         )
+                                    |               )
+                                    |     (               )
+                                    |           (               )
+                                    |                 (               )
+(not double checked!) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
+mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+
+            *                           |
+(     (     (   ) (   ) (   ) [   ) (   | (   ] (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )                       |
+      (     *         )                 |
+            (               )           |
+                  (               )     |
+                        (               |
+                              [         |     ]
+                                    (   |           )
+                                        | (               )
+                                        |       (               )
+                                        |             (               )
+(not double checked!) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
+mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+
+                  |                             *
+(     [     (   ) |   ] (   ) (   ) (   ) (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               ) |
+      [           |   ]
+            (     |         )
+                  |               )
+                  |     (               )
+                  |           (               )
+                  |                 (               )
+                  |                       (     *         )
+                  |                             (               )
+                  |                                   (               )
+(not double checked!) mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
+mintime = reftime + ((refmax - reftime) % interval) - refspan
+
+                      |                         *
+(     (     [   ) (   | (   ] (   ) (   ) (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )     |
+      (               |
+            [         |     ]
+                  (   |           )
+                      | (               )
+                      |       (               )
+                      |             (               )
+                      |                   (     *         )
+                      |                         (               )
+                      |                               (               )
+(not double checked!) mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
+mintime = reftime + ((refmax - reftime) % interval) - refspan
+
+                                    *
+(     (     (   ) (   ) [   ) (   ) |   ] (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )                   |
+      (               )             |
+            (               )       |
+                  (               ) |
+                        [           |   ]
+                              (     |         )
+                                    |               )
+                                    |     (               )
+                                    |           (               )
+                                    |                 (               )
+(not double checked!) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
+mintime = reftime + ((refmax - reftime) % interval) - refspan
+
+                        *               |
+(     (     (   ) (   ) (   ) [   ) (   | (   ] (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )                       |
+      (               )                 |
+            (               )           |
+                  (     *         )     |
+                        (               |
+                              [         |     ]
+                                    (   |           )
+                                        | (               )
+                                        |       (               )
+                                        |             (               )
+(not double checked!) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
+mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
 """
 
 
 def _compute_min_time(reftime, refmax, refspan, interval):
     # Always use refmax, _not_ refmin, in this algorithm, since it allows to
     # get the right occurrence more easily
-    if reftime > refmax:
+    if reftime >= refmax:
         rem = (reftime - refmax) % interval
         return reftime - rem + interval - refspan
     else:
-        # Don't use only refmin when refmin <= reftime <= refmax, because in
+        # Don't use only refmin when refmin <= reftime < refmax, because in
         # case of refspan > interval (overlapping occurrences) it wouldn't
         # always be the correct value (see the examples above)
         rem = (refmax - reftime) % interval

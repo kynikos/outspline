@@ -84,10 +84,10 @@ def make_rule(refstart, interval, rstarts, rend, ralarm, guiconfig):
 def _compute_relative_max_time(reftime, refmax, interval):
     # Always use refmax, _not_ refmin, in this algorithm, since it allows to
     # get the right group of occurrences more easily
-    if reftime > refmax:
+    if reftime >= refmax:
         return interval - (reftime - refmax) % interval
     else:
-        # Don't just return reftime - refmin when refmin <= reftime <= refmax,
+        # Don't just return reftime - refmin when refmin <= reftime < refmax,
         # because in case of refspan > interval (overlapping groups of
         # occurrences) it wouldn't always be the correct value (see the examples
         # in occur_regularly_single.py)
