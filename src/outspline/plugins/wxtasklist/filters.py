@@ -203,8 +203,10 @@ class Filters():
         if self.choice.GetCount() < 2:
             self.button_remove.Enable(False)
 
-    def update_filter_configuration(self, filter_, config):
-        self.choice.SetClientData(self.filtermap[filter_], config)
+    def update_filter_configuration(self, filter_, name, config):
+        index = self.filtermap[filter_]
+        self.choice.SetString(index, name)
+        self.choice.SetClientData(index, config)
 
     def select_filter(self, filter_):
         self.choice.SetSelection(self.filtermap[filter_])
@@ -296,7 +298,8 @@ class FilterEditor():
 
         if self.editid:
             filtersconfig(self.editid).reset(config)
-            self.filters.update_filter_configuration(self.editid, config)
+            self.filters.update_filter_configuration(self.editid,
+                                                        config['name'], config)
         else:
             newid = 0
 
