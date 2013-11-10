@@ -844,6 +844,11 @@ class FilterRelative():
             # completion minute ends; also this way the difference will never
             # be 0, which would make the tasklist refresh continuously until
             # the end of the completion minute
+            # Note that this by itself would for example prevent the state
+            # of an occurrence to be updated from future to ongoing
+            # immediately (but it would happen with 60 seconds of delay),
+            # however in that case the change of state is triggered by the
+            # search_next_occurrences event at the correct time
             d1 = next_completion - mint + 60
         except TypeError:
             # next_completion could be None
