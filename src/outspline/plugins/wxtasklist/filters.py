@@ -913,53 +913,37 @@ class FilterRegular():
     | reftime (now)
     [] target view (mintime, maxtime)
 
-    --------(  *  )--------(     )--------(     )--------[  |  ]--------(     )-----
-    mintime = reftime - ((reftime - refmin) % advance)
-    mintime = reftime - ((reftime - refmax) % advance) + advance - refspan
+    A) mintime = reftime - ((reftime - refmin) % advance)
+    B) mintime = reftime - ((reftime - refmin) % advance) + advance
+    C) mintime = reftime - ((reftime - refmin) % advance) - ((refspan // advance) * advance)
+    D) mintime = reftime - ((reftime - refmin) % advance) - ((refspan // advance) * advance) + advance
 
-    --------(  *  )--------(     )--------(     )-----|--[     ]--------(     )-----
-    mintime = reftime - ((reftime - refmin) % advance) + advance
-    mintime = reftime - ((reftime - refmax) % advance) + advance - refspan
+    G) mintime = reftime - ((reftime - refmax) % advance) - refspan
+    H) mintime = reftime - ((reftime - refmax) % advance) + advance - refspan
+    I) (!NOT VERIFIED!) mintime = reftime - ((reftime - refmax) % advance) - refspan + ((refspan // advance) * advance)
+    J) (!NOT VERIFIED!) mintime = reftime - ((reftime - refmax) % advance) - refspan + ((refspan // advance) * advance) + advance
 
-    --------(     )--------(     )-----|--[     ]--------(     )--------(  *  )-----
-    mintime = reftime + ((refmin - reftime) % advance)
-    mintime = reftime + ((refmax - reftime) % advance) - refspan
+    M) mintime = reftime + ((refmin - reftime) % advance) - advance
+    N) mintime = reftime + ((refmin - reftime) % advance)
+    O) mintime = reftime + ((refmin - reftime) % advance) - ((refspan // advance) * advance) - advance
+    P) mintime = reftime + ((refmin - reftime) % advance) - ((refspan // advance) * advance)
 
-    --------(     )--------[  |  ]--------(     )--------(     )--------(  *  )-----
-    mintime = reftime + ((refmin - reftime) % advance) - advance
-    mintime = reftime + ((refmax - reftime) % advance) - refspan
+    S) mintime = reftime + ((refmax - reftime) % advance) - refspan
+    T) mintime = reftime + ((refmax - reftime) % advance) + advance - refspan
+    U) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % advance) - refspan + ((refspan // advance) * advance)
+    V) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % advance) - refspan + ((refspan // advance) * advance) + advance
 
-    --------(     )--------(     )--------[  |* ]--------(     )--------(     )-----
-    mintime = refmin
-    mintime = reftime - ((reftime - refmin) % advance)
-    mintime = reftime + ((refmax - reftime) % advance) - refspan
+    All cases from extensions.organism_basicrules.occur_regularly_single are
+    valid, except for the following:
 
-    --------(  *  )--------(     )--------(     )--------|     ]--------(     )-----
-    mintime = reftime
-    mintime = reftime - ((reftime - refmin) % advance)
-    mintime = reftime - ((reftime - refmax) % advance) + advance - refspan
+    --------(  *  )--------(     )--------[     |--------(     )--------(     )-----
+    AGMS
 
-    --------(  *  )--------(     )--------(     |--------[     ]--------(     )-----
-    mintime = reftime - refspan + advance
-    mintime = reftime - ((reftime - refmin) % advance) + advance
-    mintime = reftime - ((reftime - refmax) % advance) + advance - refspan
+    --------[     |--------(     )--------(     )--------(     )--------(  *  )-----
+    AGMS
 
-    --------(     )--------(     )--------|     ]--------(     )--------(  *  )-----
-    mintime = reftime
-    mintime = reftime + ((refmin - reftime) % advance)
-    mintime = reftime + ((refmax - reftime) % advance) - refspan
-
-    --------(     |--------[     ]--------(     )--------(     )--------(  *  )-----
-    mintime = reftime - refspan + advance
-    mintime = reftime + ((refmin - reftime) % advance)
-    mintime = reftime + ((refmax - reftime) % advance) - refspan + advance
-    mintime = reftime - ((reftime - refmax) % advance) + advance - refspan
-
-    --------(     )--------(     )--------|   * ]--------(     )--------(     )-----
-    mintime = refmin = reftime
-    mintime = reftime - ((reftime - refmin) % advance)
-    mintime = reftime + ((refmax - reftime) % advance) - refspan
-
+    --------(     )--------[  *  |--------(     )--------(     )--------(     )-----
+    AGMS
 
                 *                         |
     (     (     (   ) (   ) (   ) (   ) [ | ) (   ) (   ] (   )     )     )
@@ -974,8 +958,7 @@ class FilterRegular():
                                           |   (               )
                                           |         (               )
                                           |               (               )
-    mintime = reftime - ((reftime - refmin) % advance)
-    (not double checked!) mintime = reftime - ((reftime - refmax) % advance) - refspan + ((refspan // advance) * advance) + advance
+    AJMU
 
                         |                           *
     (     (     (   ) [ | ) (   ) (   ] (   ) (   ) (   ) (   )     )     )
@@ -990,8 +973,7 @@ class FilterRegular():
                         |                     (     *         )
                         |                           (               )
                         |                                 (               )
-    mintime = reftime + ((refmin - reftime) % advance) - advance
-    (not double checked!) mintime = reftime + ((refmax - reftime) % advance) - refspan + ((refspan // advance) * advance) + advance
+    AJMU
 
                                         * |
     (     (     (   ) (   ) (   ) (   ) [ | ) (   ) (   ] (   )     )     )
@@ -1006,8 +988,7 @@ class FilterRegular():
                                           |   (               )
                                           |         (               )
                                           |               (               )
-    mintime = reftime - ((reftime - refmin) % advance)
-    (not double checked!) mintime = reftime + ((refmax - reftime) % advance) - refspan + ((refspan // advance) * advance) + advance
+    AJMU
 
                 *                       |
     (     (     (   ) (   ) (   ) (   ) |   ) (   ) (   ] (   )     )     )
@@ -1022,9 +1003,7 @@ class FilterRegular():
                                         |     (               )
                                         |           (               )
                                         |                 (               )
-    mintime = reftime
-    mintime = reftime - ((reftime - refmin) % advance)
-    (not double checked!) mintime = reftime - ((reftime - refmax) % advance) - refspan + ((refspan // advance) * advance) + advance
+    AJNU
 
                 *                           |
     (     (     (   ) (   ) (   ) (   ) [   | (   ) (   ] (   )     )     )
@@ -1039,8 +1018,7 @@ class FilterRegular():
                                             | (               )
                                             |       (               )
                                             |             (               )
-    mintime = reftime - ((reftime - refmin) % advance)
-    (not double checked!) mintime = reftime - ((reftime - refmax) % advance) - refspan + ((refspan // advance) * advance) + advance
+    AIMU
 
                       |                             *
     (     (     (   ) |   ) (   ) (   ] (   ) (   ) (   ) (   )     )     )
@@ -1055,11 +1033,7 @@ class FilterRegular():
                       |                       (     *         )
                       |                             (               )
                       |                                   (               )
-    mintime = reftime
-    mintime = reftime + ((refmin - reftime) % advance)
-    mintime = reftime - ((reftime - refmin) % advance)
-    (not double checked!) mintime = reftime + ((refmax - reftime) % advance) - refspan + ((refspan // advance) * advance) + advance
-
+    AJNU
 
                           |                         *
     (     (     (   ) [   | (   ) (   ] (   ) (   ) (   ) (   )     )     )
@@ -1074,8 +1048,7 @@ class FilterRegular():
                           |                   (     *         )
                           |                         (               )
                           |                               (               )
-    mintime = reftime + ((refmin - reftime) % advance) - advance
-    (not double checked!) mintime = reftime + ((refmax - reftime) % advance) - refspan + ((refspan // advance) * advance) + advance
+    AIMU
 
                                         *
     (     (     (   ) (   ) (   ) (   ) |   ) (   ) (   ] (   )     )     )
@@ -1090,9 +1063,7 @@ class FilterRegular():
                                         |     (               )
                                         |           (               )
                                         |                 (               )
-    mintime = refmin = reftime
-    mintime = reftime - ((reftime - refmin) % advance)
-    (not double checked!) mintime = reftime + ((refmax - reftime) % advance) - refspan + ((refspan // advance) * advance) + advance
+    AJNU
 
                             *               |
     (     (     (   ) (   ) (   ) (   ) [   | (   ) (   ] (   )     )     )
@@ -1107,8 +1078,7 @@ class FilterRegular():
                                             | (               )
                                             |       (               )
                                             |             (               )
-    mintime = reftime - ((reftime - refmin) % advance)
-    (not double checked!) mintime = reftime - ((reftime - refmax) % advance) - refspan + ((refspan // advance) * advance) + advance
+    AIMU
     """
 
     def compute_limits(self, now):
@@ -1118,35 +1088,30 @@ class FilterRegular():
         # See also the examples above
         # In case of overlapping spans, I want the most advanced (as opposed
         # to what e.g. happens when calculating item occurrences)
-        if self.span >= self.advance:
-            if now >= self.base:
-                mint = now - (now - self.base) % self.advance
-            else:
-                rem = (self.base - now) % self.advance
+        rem = (self.base + self.span - now) % self.advance
 
-                if rem > 0:
-                    mint = now + rem - self.advance
-                else:
-                    mint = now
+        if self.span == self.advance and rem == 0:
+            # Use formula (T), see the examples above and in
+            # extensions.organism_basicrules.occur_regularly_single
+            maxt = now + rem + self.advance
+            mint = maxt - self.span
+        elif self.span <= self.advance:
+            # Use formula (S), see the examples above and in
+            # extensions.organism_basicrules.occur_regularly_single
+            maxt = now + rem
+            mint = maxt - self.span
         else:
-            if now > self.base:
-                mint = now - (now - self.base - self.span) % self.advance + \
-                                                       self.advance - self.span
-            else:
-                rem = (self.base + self.span - now) % self.advance
+            # Use formula (A), see the examples above and in
+            # extensions.organism_basicrules.occur_regularly_single
+            mint = now - (now - self.base) % self.advance
+            maxt = mint + self.span
 
-                if rem > 0:
-                    mint = now + rem - self.span
-                else:
-                    mint = now + self.advance - self.span
-
-        maxt = mint + self.span
         return (mint, maxt)
 
     def compute_delay(self, occsobj, now, mint, maxt):
         # Note that the delay can still be further limited in
         # OccurrencesView.restart
-        return max(mint + self.advance - now, 0)
+        return max(min((mint + self.advance, maxt)) - now, 0)
 
 
 class FilterMonthStatic():
