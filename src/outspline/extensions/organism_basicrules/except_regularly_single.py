@@ -31,16 +31,16 @@ def make_rule(refstart, interval, rend, inclusive, guiconfig):
     @param rend: The positive difference in seconds between the sample start
                  time and the sample end time.
     @param inclusive: If False, only occurrences that start in the period will
-                      be excepted; if True, any occurrence whose period overlaps
-                      the except period will be excepted.
+                      be excepted; if True, any occurrence whose period
+                      overlaps the except period will be excepted.
     @param guiconfig: A place to store any configuration needed only by the
                       interface.
     """
     # Make sure this rule can only produce occurrences compliant with the
     # requirements defined in organism_api.update_item_rules
     if isinstance(refstart, int) and refstart >= 0 and \
-                                isinstance(interval, int) and interval > 0 and \
-             isinstance(rend, int) and rend > 0 and isinstance(inclusive, bool):
+                               isinstance(interval, int) and interval > 0 and \
+            isinstance(rend, int) and rend > 0 and isinstance(inclusive, bool):
         refmax = refstart + rend
         refspan = refmax - refstart
 
@@ -58,20 +58,92 @@ def make_rule(refstart, interval, rend, inclusive, guiconfig):
     else:
         raise BadRuleError()
 
+"""
+* reference occurrence
+| reftime
+[] target occurrence
+
+All cases from occur_regularly_single are valid, except for the following:
+
+--------(  *  )--------(     )--------[     |--------(     )--------(     )-----
+mintime = reftime - refspan
+mintime = reftime - ((reftime - refmin) % interval)
+mintime = reftime - ((reftime - refmax) % interval) - refspan
+
+--------[     |--------(     )--------(     )--------(     )--------(  *  )-----
+mintime = reftime - refspan
+mintime = reftime + ((refmin - reftime) % interval) - interval
+mintime = reftime + ((refmax - reftime) % interval) - refspan
+
+--------(     )--------[  *  |--------(     )--------(     )--------(     )-----
+mintime = reftime - refspan
+mintime = reftime - ((reftime - refmin) % interval)
+mintime = reftime - ((reftime - refmax) % interval) - refspan
+
+            *                           |
+(     (     (   ) (   ) [   ) (   ) (   | (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )                       |
+      (     *         )                 |
+            (               )           |
+                  (               )     |
+                        [               |
+                              (         |     )
+                                    (   |           )
+                                        | (               )
+                                        |       (               )
+                                        |             (               )
+(not double checked!) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
+mintime = reftime - ((reftime - refmax) % interval) - refspan
+
+                      |                         *
+(     [     (   ) (   | (   ) (   ) (   ) (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )     |
+      [               |
+            (         |     )
+                  (   |           )
+                      | (               )
+                      |       (               )
+                      |             (               )
+                      |                   (     *         )
+                      |                         (               )
+                      |                               (               )
+(not double checked!) mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
+mintime = reftime + ((refmax - reftime) % interval) - refspan
+
+                        *               |
+(     (     (   ) (   ) [   ) (   ) (   | (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )                       |
+      (               )                 |
+            (               )           |
+                  (     *         )     |
+                        [               |
+                              (         |     )
+                                    (   |           )
+                                        | (               )
+                                        |       (               )
+                                        |             (               )
+(not double checked!) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
+mintime = reftime - ((reftime - refmax) % interval) - refspan
+"""
+
 
 def _compute_min_time(reftime, refmax, refspan, interval):
     # Always use refmax, _not_ refmin, in this algorithm, since it allows to
     # get the right occurrence more easily
-    if reftime >= refmax:
-        rem = (reftime - refmax) % interval
-        return reftime - rem + interval - refspan
-    else:
+    # Note that some cases are different from occur_regularly_single.py, see
+    # the examples there and the ones above
+    rem = abs(reftime - refmax) % interval
+
+    if reftime < refmax or rem == 0:
         # Don't use only refmin when refmin <= reftime < refmax, because in
         # case of refspan > interval (overlapping occurrences) it wouldn't
-        # always be the correct value (see the examples in
-        # occur_regularly_single.py)
-        rem = (refmax - reftime) % interval
+        # always be the correct value
         return reftime + rem - refspan
+    else:
+        return reftime - rem + interval - refspan
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
