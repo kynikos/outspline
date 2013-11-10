@@ -79,6 +79,8 @@ D) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) 
 
 G) mintime = reftime - ((reftime - refmax) % interval) - refspan
 H) mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+I) (!NOT VERIFIED!) mintime = reftime - ((reftime - refmax) % interval) - refspan + ((refspan // interval) * interval)
+J) (!NOT VERIFIED!) mintime = reftime - ((reftime - refmax) % interval) - refspan + ((refspan // interval) * interval) + interval
 
 M) mintime = reftime + ((refmin - reftime) % interval) - interval
 N) mintime = reftime + ((refmin - reftime) % interval)
@@ -87,6 +89,8 @@ P) mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) 
 
 S) mintime = reftime + ((refmax - reftime) % interval) - refspan
 T) mintime = reftime + ((refmax - reftime) % interval) + interval - refspan
+U) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % interval) - refspan + ((refspan // interval) * interval)
+V) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % interval) - refspan + ((refspan // interval) * interval) + interval
 
 --------(  *  )--------(     )--------(     )--------[  |  ]--------(     )-----
 AHMS
