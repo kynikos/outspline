@@ -72,115 +72,87 @@ def make_rule(refstart, interval, rend, ralarm, guiconfig):
 | reftime
 [] target occurrence
 
+A) mintime = reftime - ((reftime - refmin) % interval)
+B) mintime = reftime - ((reftime - refmin) % interval) + interval
+C) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
+D) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval) + interval
+
+G) mintime = reftime - ((reftime - refmax) % interval) - refspan
+H) mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+
+M) mintime = reftime + ((refmin - reftime) % interval) - interval
+N) mintime = reftime + ((refmin - reftime) % interval)
+O) mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
+P) mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval)
+
+S) mintime = reftime + ((refmax - reftime) % interval) - refspan
+T) mintime = reftime + ((refmax - reftime) % interval) + interval - refspan
+
 --------(  *  )--------(     )--------(     )--------[  |  ]--------(     )-----
-mintime = reftime - ((reftime - refmin) % interval)
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval) - interval
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+AHMS
 
 --------(  *  )--------(     )--------(     )-----|--[     ]--------(     )-----
-mintime = reftime - ((reftime - refmin) % interval) + interval
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+BHNS
 
 --------(     )--------(     )-----|--[     ]--------(     )--------(  *  )-----
-mintime = reftime - ((reftime - refmin) % interval) + interval
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+BHNS
 
 --------(     )--------[  |  ]--------(     )--------(     )--------(  *  )-----
-mintime = reftime - ((reftime - refmin) % interval)
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval) - interval
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+AHMS
 
 --------(     )--------(     )--------[  |* ]--------(     )--------(     )-----
-mintime = refmin
-mintime = reftime - ((reftime - refmin) % interval)
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval) - interval
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+AHMS
 
 --------(  *  )--------(     )--------(     )--------|     ]--------(     )-----
-mintime = reftime
-mintime = reftime - ((reftime - refmin) % interval)
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+AHNS
 
 --------(  *  )--------(     )--------(     |--------[     ]--------(     )-----
-mintime = reftime - refspan + interval
-mintime = reftime - ((reftime - refmin) % interval) + interval
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval)
-mintime = reftime + ((refmax - reftime) % interval) + interval - refspan
+AHNT
 
 --------(     )--------(     )--------|     ]--------(     )--------(  *  )-----
-mintime = reftime
-mintime = reftime - ((reftime - refmin) % interval)
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+AHNS
 
 --------{     |--------[     ]--------(     )--------(     )--------(  *  )-----
-mintime = reftime - refspan + interval
-mintime = reftime - ((reftime - refmin) % interval) + interval
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval)
-This case would need (A), but it's ok to use (B), which will calculate a first
-occurrence that won't be added to the results; only the occurrences calculated
-from the second loop will be added
-(A) mintime = reftime - ((refmax - reftime) % interval) + interval - refspan
-(B) mintime = reftime + ((refmax - reftime) % interval) - refspan
+BHNT
 
 --------(     )--------(     )--------|  *  ]--------(     )--------(     )-----
-mintime = refmin = reftime
-mintime = reftime - ((reftime - refmin) % interval)
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+AHNS
 
 --------(     )--------(  *  |--------[     ]--------(     )--------(     )-----
-mintime = reftime - refspan + interval
-mintime = reftime - ((reftime - refmin) % interval) + interval
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval)
-mintime = reftime + ((refmax - reftime) % interval) + interval - refspan
+BHNT
 
 --------:--------*--------:--------:--------:----|---[]-------:--------:--------
-mintime = reftime - ((reftime - refmin) % interval) + interval
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+BHNS
 
 --------:--------:--------:----|---[]-------:--------:--------*--------:--------
-mintime = reftime - ((reftime - refmin) % interval) + interval
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+BHNS
 
 --------:--------*--------:--------:--------:--------|--------:--------:--------
-mintime = reftime
-mintime = reftime - ((reftime - refmin) % interval)
-mintime = reftime - ((reftime - refmax) % interval) - refspan
-mintime = reftime + ((refmin - reftime) % interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+AGNS
 
 --------:--------:--------|--------:--------:--------:--------*--------:--------
-mintime = reftime
-mintime = reftime - ((reftime - refmin) % interval)
-mintime = reftime - ((reftime - refmax) % interval) - refspan
-mintime = reftime + ((refmin - reftime) % interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+AGNS
 
 --------:--------:--------:--------|*-------:--------:--------:--------:--------
-mintime = refmin = refmax = reftime
-mintime = reftime - ((reftime - refmin) % interval)
-mintime = reftime - ((reftime - refmax) % interval) - refspan
-mintime = reftime + ((refmin - reftime) % interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+AGNS
+
+(-------)(---*---)(-------)(-------)(-------)(-------)[---|---](-------)(-------)
+AHMS
+
+(-------)[---|---](-------)(-------)(-------)(-------)(---*---)(-------)(-------)
+AHMS
+
+(-------)(-------)(-------)(-------)[--|-*--](-------)(-------)(-------)(-------)
+AHMS
+
+(-------)(---*---)(-------)(-------)(-------)(-------)|-------](-------)(-------)
+AHNT
+
+(-------)|-------](-------)(-------)(-------)(-------)(---*---)(-------)(-------)
+AHNT
+
+(-------)(-------)(-------)(-------)|---*---](-------)(-------)(-------)(-------)
+AHNT
 
             *                         |
 (     (     (   ) (   ) [   ) (   ) ( | ] (   ) (   ) (   )     )     )
@@ -195,10 +167,7 @@ mintime = reftime + ((refmax - reftime) % interval) - refspan
                                       |   (               )
                                       |         (               )
                                       |               (               )
-mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+CHOS
 
                     |                           *
 (     [     (   ) ( | ] (   ) (   ) (   ) (   ) (   ) (   )     )     )
@@ -213,10 +182,7 @@ mintime = reftime + ((refmax - reftime) % interval) - refspan
                     |                     (     *         )
                     |                           (               )
                     |                                 (               )
-mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+CHOS
 
                                     * |
 (     (     (   ) (   ) [   ) (   ) ( | ] (   ) (   ) (   )     )     )
@@ -231,10 +197,7 @@ mintime = reftime + ((refmax - reftime) % interval) - refspan
                                       |   (               )
                                       |         (               )
                                       |               (               )
-mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+CHOS
 
             *                       |
 (     (     (   ) (   ) [   ) (   ) |   ] (   ) (   ) (   )     )     )
@@ -249,10 +212,7 @@ mintime = reftime + ((refmax - reftime) % interval) - refspan
                                     |     (               )
                                     |           (               )
                                     |                 (               )
-mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+CHPS
 
             *                           |
 (     (     (   ) (   ) (   ) [   ) (   | (   ] (   ) (   )     )     )
@@ -267,10 +227,7 @@ mintime = reftime + ((refmax - reftime) % interval) - refspan
                                         | (               )
                                         |       (               )
                                         |             (               )
-mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval) + interval
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan + interval
+DHPT
 
                   |                             *
 (     [     (   ) |   ] (   ) (   ) (   ) (   ) (   ) (   )     )     )
@@ -285,10 +242,7 @@ mintime = reftime + ((refmax - reftime) % interval) - refspan + interval
                   |                       (     *         )
                   |                             (               )
                   |                                   (               )
-mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval) + interval
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+DHPS
 
                       |                         *
 (     {     [   ) (   | (   ] (   ) (   ) (   ) (   ) (   )     )     )
@@ -303,14 +257,7 @@ mintime = reftime + ((refmax - reftime) % interval) - refspan
                       |                   (     *         )
                       |                         (               )
                       |                               (               )
-mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval) + interval
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval)
-This case would need (A), but it's ok to use (B), which will calculate a first
-occurrence that won't be added to the results; only the occurrences calculated
-from the second loop will be added
-(A) mintime = reftime - ((refmax - reftime) % interval) + interval - refspan
-(B) mintime = reftime + ((refmax - reftime) % interval) - refspan
+DHPT
 
                                     *
 (     (     (   ) (   ) [   ) (   ) |   ] (   ) (   ) (   )     )     )
@@ -325,10 +272,7 @@ from the second loop will be added
                                     |     (               )
                                     |           (               )
                                     |                 (               )
-mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+CHPS
 
                         *               |
 (     (     (   ) (   ) (   ) [   ) (   | (   ] (   ) (   )     )     )
@@ -343,26 +287,20 @@ mintime = reftime + ((refmax - reftime) % interval) - refspan
                                         | (               )
                                         |       (               )
                                         |             (               )
-mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval) + interval
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
-mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan + interval
+DHPT
 """
 
 
 def _compute_min_time(reftime, refmax, refspan, interval):
-    # Always use refmax, _not_ refmin, in this algorithm, since it allows to
-    # get the right occurrence more easily
-    # See the examples above
-    rem = abs(refmax - reftime) % interval
+    rem = (refmax - reftime) % interval
+    mintime = reftime + rem - refspan
 
-    if reftime < refmax or rem == 0 == refspan:
-        # Don't use only refmin when refmin <= reftime < refmax, because in
-        # case of refspan > interval (overlapping occurrences) it wouldn't
-        # always be the correct value
-        return reftime + rem - refspan
+    if rem == 0 and refspan != 0:
+        # Use formula (T), see the examples above
+        return mintime + interval
     else:
-        return reftime - rem + interval - refspan
+        # Use formula (S), see the examples above
+        return mintime
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):

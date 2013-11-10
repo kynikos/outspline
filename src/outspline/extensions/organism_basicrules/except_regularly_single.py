@@ -63,28 +63,32 @@ def make_rule(refstart, interval, rend, inclusive, guiconfig):
 | reftime
 [] target occurrence
 
+A) mintime = reftime - ((reftime - refmin) % interval)
+B) mintime = reftime - ((reftime - refmin) % interval) + interval
+C) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
+D) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval) + interval
+
+G) mintime = reftime - ((reftime - refmax) % interval) - refspan
+H) mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+
+M) mintime = reftime + ((refmin - reftime) % interval) - interval
+N) mintime = reftime + ((refmin - reftime) % interval)
+O) mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
+P) mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval)
+
+S) mintime = reftime + ((refmax - reftime) % interval) - refspan
+T) mintime = reftime + ((refmax - reftime) % interval) + interval - refspan
+
 All cases from occur_regularly_single are valid, except for the following:
 
 --------(  *  )--------(     )--------[     |--------(     )--------(     )-----
-mintime = reftime - refspan
-mintime = reftime - ((reftime - refmin) % interval)
-mintime = reftime - ((reftime - refmax) % interval) - refspan
-mintime = reftime + ((refmin - reftime) % interval) - interval
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+AGMS
 
 --------[     |--------(     )--------(     )--------(     )--------(  *  )-----
-mintime = reftime - refspan
-mintime = reftime - ((reftime - refmin) % interval)
-mintime = reftime - ((reftime - refmax) % interval) - refspan
-mintime = reftime + ((refmin - reftime) % interval) - interval
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+AGMS
 
 --------(     )--------[  *  |--------(     )--------(     )--------(     )-----
-mintime = reftime - refspan
-mintime = reftime - ((reftime - refmin) % interval)
-mintime = reftime - ((reftime - refmax) % interval) - refspan
-mintime = reftime + ((refmin - reftime) % interval) - interval
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+AGMS
 
             *                           |
 (     (     (   ) (   ) [   ) (   ) (   | (   ) (   ) (   )     )     )
@@ -99,10 +103,7 @@ mintime = reftime + ((refmax - reftime) % interval) - refspan
                                         | (               )
                                         |       (               )
                                         |             (               )
-mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
-mintime = reftime - ((reftime - refmax) % interval) - refspan
-mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+CGOS
 
                       |                         *
 (     [     (   ) (   | (   ) (   ) (   ) (   ) (   ) (   )     )     )
@@ -117,10 +118,7 @@ mintime = reftime + ((refmax - reftime) % interval) - refspan
                       |                   (     *         )
                       |                         (               )
                       |                               (               )
-mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
-mintime = reftime - ((reftime - refmax) % interval) - refspan
-mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+CGOS
 
                         *               |
 (     (     (   ) (   ) [   ) (   ) (   | (   ) (   ) (   )     )     )
@@ -135,27 +133,13 @@ mintime = reftime + ((refmax - reftime) % interval) - refspan
                                         | (               )
                                         |       (               )
                                         |             (               )
-mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
-mintime = reftime - ((reftime - refmax) % interval) - refspan
-mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+CGOS
 """
 
 
 def _compute_min_time(reftime, refmax, refspan, interval):
-    # Always use refmax, _not_ refmin, in this algorithm, since it allows to
-    # get the right occurrence more easily
-    # Note that some cases are different from occur_regularly_single.py, see
-    # the examples there and the ones above
-    rem = abs(reftime - refmax) % interval
-
-    if reftime < refmax or rem == 0:
-        # Don't use only refmin when refmin <= reftime < refmax, because in
-        # case of refspan > interval (overlapping occurrences) it wouldn't
-        # always be the correct value
-        return reftime + rem - refspan
-    else:
-        return reftime - rem + interval - refspan
+    # Use formula (S), see the examples above and in occur_regularly_single
+    return reftime + (refmax - reftime) % interval - refspan
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):

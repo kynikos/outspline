@@ -82,18 +82,8 @@ def make_rule(refstart, interval, rstarts, rend, ralarm, guiconfig):
 
 
 def _compute_relative_max_time(reftime, refmax, interval):
-    # Always use refmax, _not_ refmin, in this algorithm, since it allows to
-    # get the right group of occurrences more easily
-    # See also the examples in occur_regularly_single.py
-    if reftime < refmax:
-        # Don't just return reftime - refmin when refmin <= reftime < refmax,
-        # because in case of refspan > interval (overlapping groups of
-        # occurrences) it wouldn't always be the correct value
-        return (refmax - reftime) % interval
-    else:
-        # Note that occur_regularly_single.py has a special rem == 0 == refspan
-        # case that doesn't apply here
-        return interval - (reftime - refmax) % interval
+    # Use formula (S), see the examples in occur_regularly_single
+    return (refmax - reftime) % interval
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
