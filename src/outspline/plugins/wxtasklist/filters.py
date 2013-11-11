@@ -1085,7 +1085,6 @@ class FilterRegular():
         # Use advance, *not* span, as the interval between two bases; this
         # allows for example to view only the 5 working days of the week and
         # still correctly advance to the next week, bypassing the weekend
-        # See also the examples above
         # In case of overlapping spans, I want the most advanced (as opposed
         # to what e.g. happens when calculating item occurrences)
         rem = (self.base + self.span - now) % self.advance
@@ -1164,31 +1163,25 @@ class FilterMonthDynamic():
         # allows for example to view only the first 2 months in an interval of
         # 3 and still correctly advance to the fourth month, bypassing the
         # third
-        # See also the examples above in FilterRegular
         # In case of overlapping spans, I want the most advanced
-        if self.span >= self.advance:
-            if nowrmonth >= rmonth:
-                minrmonth = nowrmonth - (nowrmonth - rmonth) % self.advance
-            else:
-                rem = (rmonth - nowrmonth) % self.advance
+        rem = (rmonth + self.span - nowrmonth) % self.advance
 
-                if rem > 0:
-                    minrmonth = nowrmonth + rem - self.advance
-                else:
-                    minrmonth = nowrmonth
+        if self.span == self.advance and rem == 0:
+            # Use formula (T), see the examples in FilterRegular and in
+            # extensions.organism_basicrules.occur_regularly_single
+            maxrmonth = nowrmonth + rem + self.advance
+            minrmonth = maxrmonth - self.span
+        elif self.span <= self.advance:
+            # Use formula (S), see the examples in FilterRegular and in
+            # extensions.organism_basicrules.occur_regularly_single
+            maxrmonth = nowrmonth + rem
+            minrmonth = maxrmonth - self.span
         else:
-            if nowrmonth > rmonth:
-                minrmonth = nowrmonth - (nowrmonth - rmonth - self.span) % \
-                                        self.advance + self.advance - self.span
-            else:
-                rem = (rmonth + self.span - nowrmonth) % self.advance
+            # Use formula (A), see the examples in FilterRegular and in
+            # extensions.organism_basicrules.occur_regularly_single
+            minrmonth = nowrmonth - (nowrmonth - rmonth) % self.advance
+            maxrmonth = minrmonth + self.span
 
-                if rem > 0:
-                    minrmonth = nowrmonth + rem - self.span
-                else:
-                    minrmonth = nowrmonth + self.advance - self.span
-
-        maxrmonth = minrmonth + self.span
         miny, minmonth = divmod(minrmonth, 12)
         maxy, maxmonth = divmod(maxrmonth, 12)
         maxryear = maxy - miny
