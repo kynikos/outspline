@@ -204,7 +204,10 @@ def get_item_info(filename, id_):
 
 
 def get_item_ancestors(filename, id_):
-    return databases.dbs[filename].items[id_].get_ancestors()
+    # It's necessary to initialize ancestors=[] because otherwise for some
+    # reason the ancestors list from the previous call would be used, thus
+    # appending the ancestors again, multiplicating them at every call
+    return databases.dbs[filename].items[id_].get_ancestors(ancestors=[])
 
 
 def get_item_text(filename, id_):
