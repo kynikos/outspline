@@ -17,6 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import os as _os
+import time as _time
 import wx
 
 from outspline.coreaux_api import log
@@ -265,7 +266,7 @@ class AlarmsWindow():
 class Alarm():
     awindow = None
     panel = None
-    pgrid = None
+    pbox = None
     filename = None
     id_ = None
     alarmid = None
@@ -276,9 +277,8 @@ class Alarm():
     def __init__(self, awindow, filename, id_, alarmid, start, end, alarm):
         self.awindow = awindow
         self.panel = wx.Panel(awindow.panel)
-        self.pgrid = wx.GridBagSizer(4, 4)
-        self.panel.SetSizer(self.pgrid)
-        self.pgrid.AddGrowableCol(0)
+        self.pbox = wx.BoxSizer(wx.VERTICAL)
+        self.panel.SetSizer(self.pbox)
 
         self.filename = filename
         self.id_ = id_
@@ -294,35 +294,49 @@ class Alarm():
         awindow.pbox.Add(self.panel, flag=wx.EXPAND)
 
     def _init_widgets(self, parent):
-        label1 = wx.StaticText(parent, label=_os.path.basename(self.filename))
-        label1.Wrap(_WRAP)
-        self.pgrid.Add(label1, (0, 0),
-                       flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.TOP,
-                       border=4)
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        self.pbox.Add(hbox, flag=wx.EXPAND | wx.ALL, border=4)
 
-        text = core_api.get_item_text(self.filename, self.id_)
-
-        label2 = wx.StaticText(parent, label=text.partition('\n')[0])
-        label2.Wrap(_WRAP)
-        self.pgrid.Add(label2, (1, 0), span=(1, 2),
-                       flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT, border=4)
+        startdate = wx.StaticText(parent, label=_time.strftime(
+                                '%Y.%m.%d %H:%M', _time.localtime(self.start)))
+        hbox.Add(startdate, 1, flag=wx.ALIGN_CENTER_VERTICAL)
 
         button_s = wx.Button(parent, label='Snooze', size=(-1, 24))
-        self.pgrid.Add(button_s, (0, 1), flag=wx.ALIGN_RIGHT | wx.TOP,
-                       border=4)
+        hbox.Add(button_s)
 
         button_d = wx.Button(parent, label='Dismiss', size=(-1, 24))
-        self.pgrid.Add(button_d, (0, 2), flag=wx.RIGHT | wx.TOP, border=4)
+        hbox.Add(button_d, flag=wx.LEFT, border=4)
 
         button_e = wx.Button(parent, label='Open', size=(-1, 24))
-        self.pgrid.Add(button_e, (1, 2), flag=wx.RIGHT, border=4)
+        hbox.Add(button_e, flag=wx.LEFT, border=4)
+
+        # wx.CP_NO_TLW_RESIZE in conjunction with
+        # self.panel.GetParent().SendSizeEvent() on EVT_COLLAPSIBLEPANE_CHANGED
+        # are necessary for the correct functioning
+        text = core_api.get_item_text(self.filename, self.id_)
+        pane = wx.CollapsiblePane(parent, label=text.partition('\n')[0],
+                                                     style=wx.CP_NO_TLW_RESIZE)
+        self.pbox.Add(pane, flag=wx.EXPAND | wx.BOTTOM, border=4)
+
+        cpane = pane.GetPane()
+        cbox = wx.BoxSizer(wx.VERTICAL)
+        cpane.SetSizer(cbox)
+
+        for anc in core_api.get_item_ancestors(self.filename, self.id_):
+            ancestor = wx.StaticText(cpane, label=anc.get_text().partition('\n'
+                                                                          )[0])
+            cbox.Add(ancestor, flag=wx.LEFT, border=4)
+
+        dbname = wx.StaticText(cpane, label=_os.path.basename(self.filename))
+        cbox.Add(dbname, flag=wx.LEFT, border=4)
 
         line = wx.StaticLine(parent, size=(1, 1), style=wx.LI_HORIZONTAL)
-        self.pgrid.Add(line, (2, 0), span=(1, 3), flag=wx.EXPAND)
+        self.pbox.Add(line, flag=wx.EXPAND)
 
         self.panel.Bind(wx.EVT_BUTTON, self.snooze, button_s)
         self.panel.Bind(wx.EVT_BUTTON, self.dismiss, button_d)
-        self.panel.Bind(wx.EVT_BUTTON, self.open, button_e)
+        self.panel.Bind(wx.EVT_BUTTON, self.open_, button_e)
+        self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.resize_pane)
 
     def snooze(self, event):
         core_api.block_databases()
@@ -341,7 +355,7 @@ class Alarm():
 
         core_api.release_databases()
 
-    def open(self, event):
+    def open_(self, event):
         wxgui_api.show_main_window()
         wxgui_api.open_editor(self.filename, self.id_)
 
@@ -355,6 +369,11 @@ class Alarm():
 
         if len(self.awindow.alarms) == 0:
             self.awindow.hide()
+
+    def resize_pane(self, event):
+        # This in conjunction with the wx.CP_NO_TLW_RESIZE style are necessary
+        # for the correct functioning of the collapsible pane
+        self.panel.GetParent().SendSizeEvent()
 
     def get_filename(self):
         return self.filename
