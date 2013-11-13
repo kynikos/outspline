@@ -187,6 +187,10 @@ def set_modified(filename):
     return databases.dbs[filename].set_modified()
 
 
+def is_item(filename, id_):
+    return id_ in databases.dbs[filename].items
+
+
 def get_tree_item(filename, parent, previous):
     return items.Item.get_tree_item(filename, parent, previous)
 

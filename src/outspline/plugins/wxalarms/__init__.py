@@ -229,7 +229,11 @@ class AlarmsWindow():
         # alarm's database would have already been closed, thus raising an
         # exception later when looking information for the item (e.g.
         # core_api.get_item_text)
-        if core_api.is_database_open(filename) and a not in self.alarms:
+        # Also, for the same reason, check if the item exists, as for example
+        # performing several undos/redos of the database in rapid succession
+        # (e.g. using CTRL+Z/Y) would cause the same issue
+        if core_api.is_database_open(filename) and core_api.is_item(filename,
+                                                 id_) and a not in self.alarms:
             self.alarms[a] = Alarm(self, filename, id_, alarmid, start, end,
                                    alarm)
             self.window.Layout()
