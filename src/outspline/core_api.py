@@ -203,6 +203,10 @@ def get_item_info(filename, id_):
     return databases.dbs[filename].items[id_].get_all_info()
 
 
+def get_item_ancestors(filename, id_):
+    return databases.dbs[filename].items[id_].get_ancestors()
+
+
 def get_item_text(filename, id_):
     return databases.dbs[filename].items[id_].get_text()
 
