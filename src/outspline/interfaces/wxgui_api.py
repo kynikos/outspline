@@ -247,6 +247,11 @@ def select_database_tab_index(index):
     return wx.GetApp().nb_left.select_page(index)
 
 
+def select_database_tab(filename):
+    index = wx.GetApp().nb_left.GetPageIndex(tree.dbs[filename])
+    return select_database_tab_index(index)
+
+
 def get_selected_database_tab_index():
     # Returns -1 if there's no tab
     return wx.GetApp().nb_left.get_selected_tab_index()
@@ -327,6 +332,15 @@ def bind_to_exit_application(handler, bind=True):
 def get_tree_selections(filename, none=True, many=True, descendants=None):
     return tree.dbs[filename].get_selections(none=none, many=many,
                                              descendants=descendants)
+
+
+def unselect_all_items(filename):
+    return tree.dbs[filename].unselect_all_items()
+
+
+def add_item_to_selection(filename, id_):
+    treeitem = tree.dbs[filename].find_item(id_)
+    return tree.dbs[filename].add_item_to_selection(treeitem)
 
 
 def append_item(filename, baseid, id_, text):
