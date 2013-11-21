@@ -571,6 +571,7 @@ class ContextMenu(wx.Menu):
             self.delete.Enable()
 
         elif len(sel) > 1:
+            self.edit.Enable()
             self.delete.Enable()
 
         else:

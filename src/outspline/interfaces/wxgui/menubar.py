@@ -448,6 +448,7 @@ class MenuDatabase(wx.Menu):
                     self.delete.Enable()
 
                 elif len(sel) > 1:
+                    self.edit.Enable()
                     self.delete.Enable()
 
                 else:
@@ -641,11 +642,13 @@ class MenuDatabase(wx.Menu):
     def edit_item(self, event):
         treedb = wx.GetApp().nb_left.get_selected_tab()
         if treedb:
-            selection = treedb.get_selections(none=False, many=False)
+            selection = treedb.get_selections(none=False)
             if selection:
                 filename = treedb.get_filename()
-                id_ = treedb.get_item_id(selection[0])
-                editor.Editor.open(filename, id_)
+
+                for sel in selection:
+                    id_ = treedb.get_item_id(sel)
+                    editor.Editor.open(filename, id_)
 
     def delete_items(self, event, no_confirm=False):
         core_api.block_databases()
