@@ -22,12 +22,15 @@ import sys
 import time as _time
 import os
 
+from outspline.static.wxclasses.time import TimeSpanCtrl
+
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import log
 import outspline.core_api as core_api
 import outspline.extensions.organism_api as organism_api
 import outspline.extensions.organism_timer_api as organism_timer_api
 import outspline.extensions.organism_alarms_api as organism_alarms_api
+import outspline.interfaces.wxgui_api as wxgui_api
 
 import filters
 
@@ -77,10 +80,13 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
 
 class OccurrencesView():
     listview = None
+    mainmenu = None
+    cmenu = None
     filter_ = None
     occs = None
     datamap = None
     states = None
+    activealarms = None
     DELAY = None
     delay = None
     timer = None
@@ -88,6 +94,9 @@ class OccurrencesView():
 
     def __init__(self, parent):
         self.listview = ListView(parent)
+
+        self.mainmenu = MainMenu(self)
+        self.cmenu = ContextMenu(self, self.mainmenu)
 
         # Override ColumnSorterMixin's method for sorting items that have equal
         # primary sort value
@@ -117,6 +126,7 @@ class OccurrencesView():
         # self.refresh recur infinitely
         organism_timer_api.bind_to_search_next_occurrences(self.delay_restart)
         organism_alarms_api.bind_to_alarm_off(self.delay_restart)
+        self.listview.Bind(wx.EVT_CONTEXT_MENU, self.popup_context_menu)
 
     def get_secondary_sort_values(self, col, key1, key2):
         return (self.datamap[key1][2], self.datamap[key2][2])
@@ -195,6 +205,8 @@ class OccurrencesView():
             'future': [],
         }
 
+        self.activealarms = {}
+
         # Save the scroll y for restoring it after inserting the items
         # I could instead save
         #   self.listview.GetItemData(self.listview.GetTopItem()), but in case
@@ -207,7 +219,8 @@ class OccurrencesView():
         self.listview.DeleteAllItems()
 
         for i, o in enumerate(occurrences):
-            self.occs[i] = ListItem(i, o, now, self.listview, self.autoscroll)
+            self.occs[i] = ListItem(i, o, now, self, self.listview,
+                                                               self.autoscroll)
 
             # Both the key and the values of self.datamap must comply with the
             # requirements of ColumnSorterMixin
@@ -225,6 +238,38 @@ class OccurrencesView():
         self.autoscroll.execute(yscroll, self.states)
 
         return self.filter_.compute_delay(occsobj, now, mint, maxt)
+
+    def popup_context_menu(self, event):
+        self.cmenu.update()
+        self.listview.PopupMenu(self.cmenu)
+
+    def add_active_alarm(self, filename, alarmid):
+        try:
+            self.activealarms[filename]
+        except KeyError:
+            self.activealarms[filename] = []
+
+        self.activealarms[filename].append(alarmid)
+
+    def get_selected_active_alarms(self):
+        sel = self.listview.GetFirstSelected()
+        alarmsd = {}
+
+        while sel > -1:
+            item = self.occs[self.listview.GetItemData(sel)]
+            filename = item.filename
+
+            if item.alarmid is not None:
+                try:
+                    alarmsd[filename]
+                except KeyError:
+                    alarmsd[filename] = []
+
+                alarmsd[filename].append(item.alarmid)
+
+            sel = self.listview.GetNextSelected(sel)
+
+        return alarmsd
 
 
 class Autoscroll():
@@ -278,12 +323,13 @@ class ListItem():
     start = None
     end = None
     alarm = None
+    alarmid = None
     fname = None
     title = None
     state = None
     stateid = None
 
-    def __init__(self, i, occ, now, listview, autoscroll):
+    def __init__(self, i, occ, now, occview, listview, autoscroll):
         self.filename = occ['filename']
         self.id_ = occ['id_']
         self.start = occ['start']
@@ -318,11 +364,17 @@ class ListItem():
         else:
             enddate = 'none'
 
-        if isinstance(self.alarm, int):
+        if self.alarm is None:
+            alarmdate = 'none'
+        elif self.alarm is False:
+            alarmdate = 'active'
+            self.alarmid = occ['alarmid']
+            occview.add_active_alarm(self.filename, self.alarmid)
+        # Note that testing if isinstance(self.alarm, int) *before* testing if
+        # self.alarm is False would return True also when self.alarm is False!
+        else:
             alarmdate = _time.strftime('%Y.%m.%d %H:%M', _time.localtime(
                                                                    self.alarm))
-        else:
-            alarmdate = 'none'
 
         index = listview.InsertStringItem(sys.maxint, self.fname)
 
@@ -347,3 +399,275 @@ class ListItem():
     @staticmethod
     def make_heading(text):
         return text.partition('\n')[0]
+
+
+class MainMenu(wx.Menu):
+    occview = None
+    find = None
+    edit = None
+    snooze = None
+    snooze_all = None
+    dismiss = None
+    dismiss_all = None
+
+    def __init__(self, occview):
+        wx.Menu.__init__(self)
+        self.occview = occview
+
+        self.ID_FIND = wx.NewId()
+        self.ID_EDIT = wx.NewId()
+        self.ID_SNOOZE = wx.NewId()
+        self.ID_SNOOZE_ALL = wx.NewId()
+        self.ID_DISMISS = wx.NewId()
+        self.ID_DISMISS_ALL = wx.NewId()
+
+        self.find = wx.MenuItem(self, self.ID_FIND, "&Find in tree",
+                                      "Select the database item associated to "
+                                                     "the selected occurrence")
+        self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit selected",
+                            "Open in the editor the database items associated "
+                                                 "to the selected occurrences")
+
+        self.snooze = wx.MenuItem(self, self.ID_SNOOZE, "&Snooze selected",
+                                                  "Snooze the selected alarms",
+                                subMenu=SnoozeSelectedConfigMenu(self.occview))
+        self.snooze_all = wx.MenuItem(self, self.ID_SNOOZE_ALL, "S&nooze all",
+                                                "Snooze all the active alarms",
+                                     subMenu=SnoozeAllConfigMenu(self.occview))
+
+        self.dismiss = wx.MenuItem(self, self.ID_DISMISS, "Dis&miss selected",
+                                                 "Dismiss the selected alarms")
+        self.dismiss_all = wx.MenuItem(self, self.ID_DISMISS_ALL,
+                               "&Dismiss all", "Dismiss all the active alarms")
+
+        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
+        self.edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
+        self.snooze.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
+        self.snooze_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarms',
+                                                                  wx.ART_MENU))
+        self.dismiss.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
+                                                                  wx.ART_MENU))
+        self.dismiss_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
+                                                                  wx.ART_MENU))
+
+        self.AppendItem(self.find)
+        self.AppendItem(self.edit)
+        self.AppendSeparator()
+        self.AppendItem(self.snooze)
+        self.AppendItem(self.snooze_all)
+        self.AppendItem(self.dismiss)
+        self.AppendItem(self.dismiss_all)
+
+        wxgui_api.bind_to_reset_menu_items(self.handle_reset_menu_items)
+
+        wxgui_api.bind_to_menu(self.find_in_tree, self.find)
+        wxgui_api.bind_to_menu(self.edit_items, self.edit)
+        wxgui_api.bind_to_menu(self.dismiss_selected_alarms, self.dismiss)
+        wxgui_api.bind_to_menu(self.dismiss_all_alarms, self.dismiss_all)
+
+        wxgui_api.insert_menu_main_item('&Tasklist', 'Help', self)
+
+    def handle_reset_menu_items(self, kwargs):
+        if kwargs['menu'] is self:
+            self.find.Enable(False)
+            self.edit.Enable(False)
+            self.snooze.Enable(False)
+            self.snooze_all.Enable(False)
+            self.dismiss.Enable(False)
+            self.dismiss_all.Enable(False)
+
+            if self.occview.listview.GetSelectedItemCount() > 0:
+                self.find.Enable()
+                self.edit.Enable()
+
+            sel = self.occview.listview.GetFirstSelected()
+
+            while sel > -1:
+                item = self.occview.occs[
+                                        self.occview.listview.GetItemData(sel)]
+
+                if item.alarm is False:
+                    self.snooze.Enable()
+                    self.dismiss.Enable()
+                    break
+
+                sel = self.occview.listview.GetNextSelected(sel)
+
+            # Note that "all" means all the visible active alarms; some may be
+            # hidden in the current view
+            if len(self.occview.activealarms) > 0:
+                self.snooze_all.Enable()
+                self.dismiss_all.Enable()
+
+    def find_in_tree(self, event):
+        for filename in core_api.get_open_databases():
+            wxgui_api.unselect_all_items(filename)
+
+        sel = self.occview.listview.GetFirstSelected()
+
+        # [1]: line repeated in the loop because of
+        # wxgui_api.select_database_tab
+        item = self.occview.occs[self.occview.listview.GetItemData(sel)]
+        wxgui_api.select_database_tab(item.filename)
+
+        while sel > -1:
+            # It's necessary to repeat this line (see [1]) because
+            # wxgui_api.select_database_tab must be executed only once for the
+            # first selected item
+            item = self.occview.occs[self.occview.listview.GetItemData(sel)]
+            wxgui_api.add_item_to_selection(item.filename, item.id_)
+            sel = self.occview.listview.GetNextSelected(sel)
+
+    def edit_items(self, event):
+        sel = self.occview.listview.GetFirstSelected()
+
+        while sel > -1:
+            item = self.occview.occs[self.occview.listview.GetItemData(sel)]
+            wxgui_api.open_editor(item.filename, item.id_)
+            sel = self.occview.listview.GetNextSelected(sel)
+
+    def dismiss_selected_alarms(self, event):
+        core_api.block_databases()
+
+        sel = self.occview.listview.GetFirstSelected()
+        alarmsd = self.occview.get_selected_active_alarms()
+
+        organism_alarms_api.dismiss_alarms(alarmsd)
+        # Let the alarm off event update the tasklist
+
+        core_api.release_databases()
+
+    def dismiss_all_alarms(self, event):
+        # Note that "all" means all the visible active alarms; some may be
+        # hidden in the current view
+        core_api.block_databases()
+        organism_alarms_api.dismiss_alarms(self.occview.activealarms)
+        # Let the alarm off event update the tasklist
+        core_api.release_databases()
+
+
+class ContextMenu(wx.Menu):
+    occview = None
+    mainmenu = None
+    find = None
+    edit = None
+    snooze = None
+    dismiss = None
+
+    def __init__(self, occview, mainmenu):
+        wx.Menu.__init__(self)
+        self.occview = occview
+        self.mainmenu = mainmenu
+
+        self.find = wx.MenuItem(self, self.mainmenu.ID_FIND, "&Find in tree")
+        self.edit = wx.MenuItem(self, self.mainmenu.ID_EDIT, "&Edit selected")
+        self.snooze = wx.MenuItem(self, self.mainmenu.ID_SNOOZE,
+                                                            "&Snooze selected",
+                                subMenu=SnoozeSelectedConfigMenu(self.occview))
+        self.dismiss = wx.MenuItem(self, self.mainmenu.ID_DISMISS,
+                                                           "&Dismiss selected")
+
+        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
+        self.edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
+        self.snooze.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
+        self.dismiss.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
+                                                                  wx.ART_MENU))
+
+        self.AppendItem(self.find)
+        self.AppendItem(self.edit)
+        self.AppendSeparator()
+        self.AppendItem(self.snooze)
+        self.AppendItem(self.dismiss)
+
+    def update(self):
+        self.find.Enable(False)
+        self.edit.Enable(False)
+        self.snooze.Enable(False)
+        self.dismiss.Enable(False)
+
+        if self.occview.listview.GetSelectedItemCount() > 0:
+            self.find.Enable()
+            self.edit.Enable()
+
+        sel = self.occview.listview.GetFirstSelected()
+
+        while sel > -1:
+            item = self.occview.occs[self.occview.listview.GetItemData(sel)]
+
+            if item.alarm is False:
+                self.snooze.Enable()
+                self.dismiss.Enable()
+                break
+
+            sel = self.occview.listview.GetNextSelected(sel)
+
+
+class _SnoozeConfigMenu(wx.Menu):
+    snoozetimes = None
+    snoozefor = None
+
+    def __init__(self):
+        wx.Menu.__init__(self)
+        self.snoozetimes = {}
+
+        # Using a set here to remove any duplicates would lose the order of
+        # the times
+        snooze_times = coreaux_api.get_plugin_configuration('wxtasklist')[
+                                                     'snooze_times'].split(' ')
+
+        for stime in snooze_times:
+            time = int(stime) * 60
+            number, unit = TimeSpanCtrl._compute_widget_values(time)
+            # Duplicate time values are not supported, just make sure they
+            # don't crash the application
+            self.snoozetimes[time] = self.Append(wx.NewId(), "For " +
+                                                      str(number) + ' ' + unit)
+            wxgui_api.bind_to_menu(self.snooze_for_loop(time),
+                                                        self.snoozetimes[time])
+
+        self.AppendSeparator()
+        self.snoozefor = self.Append(wx.NewId(), "For...")
+
+        wxgui_api.bind_to_menu(self.snooze_for_custom, self.snoozefor)
+
+    def snooze_for_loop(self, time):
+        return lambda event: self.snooze_for(time)
+
+    def snooze_for(self, time):
+        # Note that "all" means all the visible active alarms; some may be
+        # hidden in the current view
+        core_api.block_databases()
+        organism_alarms_api.snooze_alarms(self.get_alarms(), time)
+        # Let the alarm off event update the tasklist
+        core_api.release_databases()
+
+    def snooze_for_custom(self, event):
+        # Note that "all" means all the visible active alarms; some may be
+        # hidden in the current view
+        core_api.block_databases()
+        organism_alarms_api.snooze_alarms(self.get_alarms(), time)
+        # Let the alarm off event update the tasklist
+        core_api.release_databases()
+
+
+class SnoozeSelectedConfigMenu(_SnoozeConfigMenu):
+    occview = None
+
+    def __init__(self, occview):
+        _SnoozeConfigMenu.__init__(self)
+        self.occview = occview
+
+    def get_alarms(self):
+        return self.occview.get_selected_active_alarms()
+
+
+class SnoozeAllConfigMenu(_SnoozeConfigMenu):
+    occview = None
+
+    def __init__(self, occview):
+        _SnoozeConfigMenu.__init__(self)
+        self.occview = occview
+
+    def get_alarms(self):
+        return self.occview.activealarms
+
