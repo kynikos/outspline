@@ -40,8 +40,15 @@ tabs = {}
 
 
 class EditorPanel(wx.Panel):
-    def __init__(self, parent):
+    ctabmenu = None
+
+    def __init__(self, parent, item):
         wx.Panel.__init__(self, parent)
+        self.ctabmenu = TabContextMenu(item)
+
+    def get_tab_context_menu(self):
+        self.ctabmenu.update()
+        return self.ctabmenu
 
 
 class Editor():
@@ -61,7 +68,7 @@ class Editor():
         self.item = item
         self.modstate = False
 
-        self.panel = EditorPanel(wx.GetApp().nb_right)
+        self.panel = EditorPanel(wx.GetApp().nb_right, item)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
 
@@ -233,3 +240,36 @@ class Editor():
     def add_accelerators(self, accels):
         self.accels.extend(accels)
         self.panel.SetAcceleratorTable(wx.AcceleratorTable(self.accels))
+
+
+class TabContextMenu(wx.Menu):
+    item = None
+    find = None
+    apply_ = None
+    close = None
+
+    def __init__(self, item):
+        wx.Menu.__init__(self)
+        self.item = item
+
+        self.find = wx.MenuItem(self, wx.GetApp().menu.edit.ID_FIND,
+                                                               "&Find in tree")
+        self.apply_ = wx.MenuItem(self, wx.GetApp().menu.edit.ID_APPLY,
+                                                                      "&Apply")
+        self.close = wx.MenuItem(self, wx.GetApp().menu.edit.ID_CLOSE,
+                                                                      "Cl&ose")
+
+        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
+        self.apply_.SetBitmap(wx.ArtProvider.GetBitmap('@apply', wx.ART_MENU))
+        self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+
+        self.AppendItem(self.find)
+        self.AppendSeparator()
+        self.AppendItem(self.apply_)
+        self.AppendItem(self.close)
+
+    def update(self):
+        if tabs[self.item].is_modified():
+            self.apply_.Enable()
+        else:
+            self.apply_.Enable(False)

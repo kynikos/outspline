@@ -43,6 +43,7 @@ class Database(wx.SplitterWindow):
     root = None
     titems = None
     cmenu = None
+    ctabmenu = None
     hpanel = None
     history = None
     accels = None
@@ -63,6 +64,7 @@ class Database(wx.SplitterWindow):
         self.titems = {0: data}
 
         self.cmenu = ContextMenu(self)
+        self.ctabmenu = TabContextMenu(self.filename)
 
         self.hpanel = wx.Panel(self)
         bs = wx.BoxSizer(wx.VERTICAL)
@@ -451,6 +453,10 @@ class Database(wx.SplitterWindow):
         self.accelstree.extend(accels)
         self.treec.SetAcceleratorTable(wx.AcceleratorTable(self.accelstree))
 
+    def get_tab_context_menu(self):
+        self.ctabmenu.update()
+        return self.ctabmenu
+
 
 class ContextMenu(wx.Menu):
     parent = None
@@ -576,3 +582,57 @@ class ContextMenu(wx.Menu):
 
         else:
             self.sibling.Enable()
+
+
+class TabContextMenu(wx.Menu):
+    filename = None
+    save = None
+    saveas = None
+    backup = None
+    close = None
+
+    def __init__(self, filename):
+        wx.Menu.__init__(self)
+        self.filename = filename
+
+        self.undo = wx.MenuItem(self, wx.GetApp().menu.database.ID_UNDO,
+                                                                       "&Undo")
+        self.redo = wx.MenuItem(self, wx.GetApp().menu.database.ID_REDO,
+                                                                       "&Redo")
+        self.save = wx.MenuItem(self, wx.GetApp().menu.file.ID_SAVE, "&Save")
+        self.saveas = wx.MenuItem(self, wx.GetApp().menu.file.ID_SAVE_AS,
+                                                                 "Sav&e as...")
+        self.backup = wx.MenuItem(self, wx.GetApp().menu.file.ID_BACKUP,
+                                                             "Save &backup...")
+        self.close = wx.MenuItem(self, wx.GetApp().menu.file.ID_CLOSE_DB,
+                                                                      "&Close")
+
+        self.undo.SetBitmap(wx.ArtProvider.GetBitmap('@undodb', wx.ART_MENU))
+        self.redo.SetBitmap(wx.ArtProvider.GetBitmap('@redodb', wx.ART_MENU))
+        self.save.SetBitmap(wx.ArtProvider.GetBitmap('@save', wx.ART_MENU))
+        self.saveas.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
+        self.backup.SetBitmap(wx.ArtProvider.GetBitmap('@backup', wx.ART_MENU))
+        self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+
+        self.AppendItem(self.undo)
+        self.AppendItem(self.redo)
+        self.AppendSeparator()
+        self.AppendItem(self.save)
+        self.AppendItem(self.saveas)
+        self.AppendItem(self.backup)
+        self.AppendSeparator()
+        self.AppendItem(self.close)
+
+    def update(self):
+        self.undo.Enable(False)
+        self.redo.Enable(False)
+        self.save.Enable(False)
+
+        if core_api.preview_undo_tree(self.filename):
+            self.undo.Enable()
+
+        if core_api.preview_redo_tree(self.filename):
+            self.redo.Enable()
+
+        if core_api.check_pending_changes(self.filename):
+            self.save.Enable()

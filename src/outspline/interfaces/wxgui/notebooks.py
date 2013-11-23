@@ -37,6 +37,7 @@ class Notebook(aui.AuiNotebook):
         self.SetArtProvider(aui.FF2TabArt())
 
         self.Bind(aui.EVT_AUINOTEBOOK_END_DRAG, self.reset_focus)
+        self.Bind(aui.EVT_AUINOTEBOOK_TAB_RIGHT_DOWN, self.popup_tab_menu)
 
     def reset_focus(self, event):
         # This workaround is necessary for a bug in moving tabs
@@ -45,6 +46,14 @@ class Notebook(aui.AuiNotebook):
         # Also reset focus, otherwise for example the menus will be disabled
         # after dragging
         self.GetPage(event.GetSelection()).SetFocus()
+
+    def popup_tab_menu(self, event):
+        try:
+            cmenu = self.GetPage(event.GetSelection()).get_tab_context_menu()
+        except AttributeError:
+            pass
+        else:
+            self.PopupMenu(cmenu)
 
     def add_page(self, window, caption, select=True):
         self.AddPage(window, caption, select=select)
@@ -133,4 +142,4 @@ class RightNotebook(Notebook):
 
     def get_open_editors(self):
         return [self.GetPageIndex(editor.tabs[item].panel)
-                                                        for item in editor.tabs]
+                                                       for item in editor.tabs]

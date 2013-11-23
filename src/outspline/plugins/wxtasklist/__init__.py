@@ -24,6 +24,20 @@ import list as list_
 import filters
 
 
+class TaskListPanel(wx.Panel):
+    ctabmenu = None
+
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, style=wx.BORDER_NONE)
+
+    def _init_tab_menu(self, tasklist):
+        self.ctabmenu = TabContextMenu(tasklist)
+
+    def get_tab_context_menu(self):
+        self.ctabmenu.update()
+        return self.ctabmenu
+
+
 class TaskList():
     panel = None
     pbox = None
@@ -35,16 +49,50 @@ class TaskList():
         # border cannot be removed because it's used to highlight the sash
         # See also http://trac.wxwidgets.org/ticket/12413
         # and http://trac.wxwidgets.org/changeset/66230
-        self.panel = wx.Panel(parent, style=wx.BORDER_NONE)
+        self.panel = TaskListPanel(parent)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
 
         self.list_ = list_.OccurrencesView(self.panel)
         self.filters = filters.Filters(self.panel, self.list_)
 
+        self.panel._init_tab_menu(self)
+
         self.pbox.Add(self.filters.panel, flag=wx.EXPAND | wx.ALL, border=2)
         self.pbox.Add(self.list_.listview, 1, flag=wx.EXPAND | wx.ALL,
                                                                       border=2)
+
+
+class TabContextMenu(wx.Menu):
+    tasklist = None
+    snooze_all = None
+    dismiss_all = None
+
+    def __init__(self, tasklist):
+        wx.Menu.__init__(self)
+        self.tasklist = tasklist
+
+        self.snooze_all = wx.MenuItem(self,
+                     self.tasklist.list_.mainmenu.ID_SNOOZE_ALL, "S&nooze all",
+                        subMenu=list_.SnoozeAllConfigMenu(self.tasklist.list_))
+        self.dismiss_all = wx.MenuItem(self,
+                   self.tasklist.list_.mainmenu.ID_DISMISS_ALL, "&Dismiss all")
+
+        self.snooze_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarms',
+                                                                  wx.ART_MENU))
+        self.dismiss_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
+                                                                  wx.ART_MENU))
+
+        self.AppendItem(self.snooze_all)
+        self.AppendItem(self.dismiss_all)
+
+    def update(self):
+        if len(self.tasklist.list_.activealarms) > 0:
+            self.snooze_all.Enable()
+            self.dismiss_all.Enable()
+        else:
+            self.snooze_all.Enable(False)
+            self.dismiss_all.Enable(False)
 
 
 def main():
