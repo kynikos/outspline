@@ -692,6 +692,8 @@ class MenuEdit(wx.Menu):
     copy = None
     ID_PASTE = None
     paste = None
+    ID_FIND = None
+    find = None
     ID_APPLY = None
     apply = None
     ID_APPLY_ALL = None
@@ -708,6 +710,7 @@ class MenuEdit(wx.Menu):
         self.ID_CUT = wx.NewId()
         self.ID_COPY = wx.NewId()
         self.ID_PASTE = wx.NewId()
+        self.ID_FIND = wx.NewId()
         self.ID_APPLY = wx.NewId()
         self.ID_APPLY_ALL = wx.NewId()
         self.ID_CLOSE = wx.NewId()
@@ -721,6 +724,8 @@ class MenuEdit(wx.Menu):
                                 "Copy selected text in the editor")
         self.paste = wx.MenuItem(self, self.ID_PASTE, "&Paste",
                                  "Paste text at the cursor")
+        self.find = wx.MenuItem(self, self.ID_FIND, "&Find in tree",
+                                   "Find the edited item in the database tree")
         self.apply = wx.MenuItem(self, self.ID_APPLY, "&Apply",
                                  "Apply the focused editor")
         self.applyall = wx.MenuItem(self, self.ID_APPLY_ALL, "App&ly all",
@@ -735,6 +740,7 @@ class MenuEdit(wx.Menu):
         self.cut.SetBitmap(wx.ArtProvider.GetBitmap('@cut', wx.ART_MENU))
         self.copy.SetBitmap(wx.ArtProvider.GetBitmap('@copy', wx.ART_MENU))
         self.paste.SetBitmap(wx.ArtProvider.GetBitmap('@paste', wx.ART_MENU))
+        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
         self.apply.SetBitmap(wx.ArtProvider.GetBitmap('@apply', wx.ART_MENU))
         self.applyall.SetBitmap(wx.ArtProvider.GetBitmap('@apply',
                                                          wx.ART_MENU))
@@ -747,6 +753,8 @@ class MenuEdit(wx.Menu):
         self.AppendItem(self.copy)
         self.AppendItem(self.paste)
         self.AppendSeparator()
+        self.AppendItem(self.find)
+        self.AppendSeparator()
         self.AppendItem(self.apply)
         self.AppendItem(self.applyall)
         self.AppendSeparator()
@@ -757,6 +765,7 @@ class MenuEdit(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self.cut_text, self.cut)
         wx.GetApp().Bind(wx.EVT_MENU, self.copy_text, self.copy)
         wx.GetApp().Bind(wx.EVT_MENU, self.paste_text, self.paste)
+        wx.GetApp().Bind(wx.EVT_MENU, self.find_item, self.find)
         wx.GetApp().Bind(wx.EVT_MENU, self.apply_tab, self.apply)
         wx.GetApp().Bind(wx.EVT_MENU, self.apply_all_tabs, self.applyall)
         wx.GetApp().Bind(wx.EVT_MENU, self.close_tab, self.close_)
@@ -769,6 +778,7 @@ class MenuEdit(wx.Menu):
         self.cut.Enable(False)
         self.copy.Enable(False)
         self.paste.Enable(False)
+        self.find.Enable(False)
         self.apply.Enable(False)
         self.applyall.Enable(False)
         self.close_.Enable(False)
@@ -804,6 +814,8 @@ class MenuEdit(wx.Menu):
                 if editor.tabs[item].area.can_paste():
                     self.paste.Enable()
 
+                self.find.Enable()
+
                 if editor.tabs[item].is_modified():
                     self.apply.Enable()
 
@@ -838,6 +850,11 @@ class MenuEdit(wx.Menu):
         tab = wx.GetApp().nb_right.get_selected_editor()
         if tab:
             editor.tabs[tab].area.paste()
+
+    def find_item(self, event):
+        tab = wx.GetApp().nb_right.get_selected_editor()
+        if tab:
+            editor.tabs[tab].find_in_tree()
 
     def apply_tab(self, event):
         core_api.block_databases()

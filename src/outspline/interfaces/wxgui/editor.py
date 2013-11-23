@@ -65,7 +65,9 @@ class Editor():
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
 
-        self.accels = [(wx.wx.ACCEL_CTRL, wx.WXK_RETURN,
+        self.accels = [(wx.wx.ACCEL_CTRL, ord('f'),
+                        wx.GetApp().menu.edit.ID_FIND),
+                       (wx.wx.ACCEL_CTRL, wx.WXK_RETURN,
                         wx.GetApp().menu.edit.ID_APPLY),
                        (wx.wx.ACCEL_CTRL, wx.WXK_NUMPAD_ENTER,
                         wx.GetApp().menu.edit.ID_APPLY),
@@ -203,6 +205,12 @@ class Editor():
         del tabs[item]
 
         return True
+
+    def find_in_tree(self):
+        treedb = tree.dbs[self.filename]
+        treedb.select_item(treedb.find_item(self.id_))
+        nb = wx.GetApp().nb_left
+        nb.select_page(nb.GetPageIndex(treedb))
 
     def get_filename(self):
         return self.filename
