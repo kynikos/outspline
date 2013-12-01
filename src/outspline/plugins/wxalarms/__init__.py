@@ -28,7 +28,6 @@ import outspline.interfaces.wxgui_api as wxgui_api
 wxtrayicon_api = coreaux_api.import_optional_plugin_api('wxtrayicon')
 
 _ALARMS_MIN_HEIGHT = 140
-_ALARMS_TITLE = 'Outspline - Alarms'
 _ALARMS_ICON_BUNDLE = wx.IconBundle()
 _ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms', wx.ART_TOOLBAR))
 _ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms', wx.ART_MENU))
@@ -64,12 +63,13 @@ class AlarmsWindow():
     def __init__(self, parent):
         self.config = coreaux_api.get_plugin_configuration('wxalarms')
 
-        self.window = wx.Frame(parent, title=_ALARMS_TITLE, size=[int(s)
+        self.window = wx.Frame(parent, size=[int(s)
                           for s in self.config['initial_geometry'].split('x')])
 
         self.window.SetIcons(_ALARMS_ICON_BUNDLE)
 
         self.alarms = {}
+        self.update_title()
 
         box = wx.BoxSizer(wx.VERTICAL)
         self.window.SetSizer(box)
@@ -236,8 +236,13 @@ class AlarmsWindow():
                                                  id_) and a not in self.alarms:
             self.alarms[a] = Alarm(self, filename, id_, alarmid, start, end,
                                    alarm)
+            self.update_title()
             self.window.Layout()
             self.show()
+
+    def update_title(self):
+        self.window.SetTitle(''.join(('Outspline - ', str(len(self.alarms)),
+                                                                   ' alarms')))
 
     @staticmethod
     def make_alarmid(filename, alarmid):
@@ -370,6 +375,8 @@ class Alarm():
         self.awindow.window.Layout()
         del self.awindow.alarms[self.awindow.make_alarmid(self.filename,
                                                                  self.alarmid)]
+
+        self.awindow.update_title()
 
         if len(self.awindow.alarms) == 0:
             self.awindow.hide()
