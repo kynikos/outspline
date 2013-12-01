@@ -79,6 +79,7 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
 
 
 class OccurrencesView():
+    parent = None
     listview = None
     mainmenu = None
     cmenu = None
@@ -93,6 +94,7 @@ class OccurrencesView():
     autoscroll = None
 
     def __init__(self, parent):
+        self.parent = parent
         self.listview = ListView(parent)
 
         self.mainmenu = MainMenu(self)
@@ -476,28 +478,45 @@ class MainMenu(wx.Menu):
             self.dismiss.Enable(False)
             self.dismiss_all.Enable(False)
 
-            if self.occview.listview.GetSelectedItemCount() > 0:
-                self.find.Enable()
-                self.edit.Enable()
+            focus = wx.GetApp().root.FindFocus()
 
-            sel = self.occview.listview.GetFirstSelected()
+            # Find selected tab only once (not in the loop)
+            tab = wx.GetApp().nb_right.get_selected_tab()
 
-            while sel > -1:
-                item = self.occview.occs[
+            while focus:
+                if focus is self.occview.parent or (
+                                            focus is wx.GetApp().nb_right and \
+                                                   tab is self.occview.parent):
+                    if self.occview.listview.GetSelectedItemCount() > 0:
+                        self.find.Enable()
+                        self.edit.Enable()
+
+                    sel = self.occview.listview.GetFirstSelected()
+
+                    while sel > -1:
+                        item = self.occview.occs[
                                         self.occview.listview.GetItemData(sel)]
 
-                if item.alarm is False:
-                    self.snooze.Enable()
-                    self.dismiss.Enable()
+                        if item.alarm is False:
+                            self.snooze.Enable()
+                            self.dismiss.Enable()
+                            break
+
+                        sel = self.occview.listview.GetNextSelected(sel)
+
+                    # Note that "all" means all the visible active alarms; some may be
+                    # hidden in the current view; this is also why these actions must
+                    # be disabled if the tasklist is not focused
+                    if len(self.occview.activealarms) > 0:
+                        self.snooze_all.Enable()
+                        self.dismiss_all.Enable()
+
+                    # Break in order to speed up, but if an "elif focus.__class__"
+                    # is added, this break must be removed or left only at the
+                    # block for the most basic class
                     break
 
-                sel = self.occview.listview.GetNextSelected(sel)
-
-            # Note that "all" means all the visible active alarms; some may be
-            # hidden in the current view
-            if len(self.occview.activealarms) > 0:
-                self.snooze_all.Enable()
-                self.dismiss_all.Enable()
+                focus = focus.GetParent()
 
     def find_in_tree(self, event):
         for filename in core_api.get_open_databases():
