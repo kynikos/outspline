@@ -201,29 +201,17 @@ class MenuFile(wx.Menu):
                     self.saveall.Enable()
                     break
 
+            tab = wx.GetApp().nb_left.get_selected_tab()
+            filename = tab.get_filename()
+
+            if core_api.check_pending_changes(filename):
+                self.save.Enable()
+
+            self.saveas.Enable()
+            self.backup.Enable()
+
+            self.close_.Enable()
             self.closeall.Enable()
-
-        focus = wx.GetApp().root.FindFocus()
-
-        while focus:
-            if focus.__class__ is notebooks.LeftNotebook:
-                tab = wx.GetApp().nb_left.get_selected_tab()
-                filename = tab.get_filename()
-
-                if core_api.check_pending_changes(filename):
-                    self.save.Enable()
-
-                self.saveas.Enable()
-                self.backup.Enable()
-
-                self.close_.Enable()
-
-                # Break in order to speed up, but if an "elif focus.__class__"
-                # is added, this break must be removed or left only at the
-                # block for the most basic class
-                break
-
-            focus = focus.GetParent()
 
     def new_database(self, event, filename=None):
         core_api.block_databases()
@@ -396,51 +384,42 @@ class MenuDatabase(wx.Menu):
     def update_items(self):
         self.reset_items()
 
-        focus = wx.GetApp().root.FindFocus()
         tab = wx.GetApp().nb_left.get_selected_tab()
-        filename = tab.get_filename()
 
-        while focus:
-            if focus.__class__ is notebooks.LeftNotebook:
-                sel = tab.get_selections()
+        if tab:
+            filename = tab.get_filename()
+            sel = tab.get_selections()
 
-                if core_api.preview_undo_tree(filename):
-                    self.undo.Enable()
+            if core_api.preview_undo_tree(filename):
+                self.undo.Enable()
 
-                if core_api.preview_redo_tree(filename):
-                    self.redo.Enable()
+            if core_api.preview_redo_tree(filename):
+                self.redo.Enable()
 
-                if len(sel) == 1:
-                    self.sibling.Enable()
-                    self.child.Enable()
+            if len(sel) == 1:
+                self.sibling.Enable()
+                self.child.Enable()
 
-                    if tab.get_item_previous(sel[0]).IsOk():
-                        self.moveup.Enable()
+                if tab.get_item_previous(sel[0]).IsOk():
+                    self.moveup.Enable()
 
-                    if tab.get_item_next(sel[0]).IsOk():
-                        self.movedn.Enable()
+                if tab.get_item_next(sel[0]).IsOk():
+                    self.movedn.Enable()
 
-                    if not tab.is_database_root(sel[0]):
-                        self.movept.Enable()
+                if not tab.is_database_root(sel[0]):
+                    self.movept.Enable()
 
-                    self.edit.Enable()
-                    self.delete.Enable()
+                self.edit.Enable()
+                self.delete.Enable()
 
-                elif len(sel) > 1:
-                    self.edit.Enable()
-                    self.delete.Enable()
+            elif len(sel) > 1:
+                self.edit.Enable()
+                self.delete.Enable()
 
-                else:
-                    self.sibling.Enable()
+            else:
+                self.sibling.Enable()
 
-                enable_tree_menus_event.signal(filename=filename)
-
-                # Break in order to speed up, but if an "elif focus.__class__"
-                # is added, this break must be removed or left only at the
-                # block for the most basic class
-                break
-
-            focus = focus.GetParent()
+            enable_tree_menus_event.signal(filename=filename)
 
     def undo_tree(self, event, no_confirm=False):
         core_api.block_databases()
@@ -774,15 +753,9 @@ class MenuEdit(wx.Menu):
 
             self.closeall.Enable()
 
-        focus = wx.GetApp().root.FindFocus()
+            item = wx.GetApp().nb_right.get_selected_editor()
 
-        # Find selected editor only once (not in the loop)
-        item = wx.GetApp().nb_right.get_selected_editor()
-
-        while focus:
-            # Check 'item', as a non-editor tab could be selected
-            if focus.__class__ is editor.EditorPanel or (
-                          focus.__class__ is notebooks.RightNotebook and item):
+            if item:
                 filename = editor.tabs[item].get_filename()
                 id_ = editor.tabs[item].get_id()
 
@@ -806,13 +779,6 @@ class MenuEdit(wx.Menu):
 
                 enable_textarea_menus_event.signal(filename=filename, id_=id_,
                                                    item=item)
-
-                # Break in order to speed up, but if an "elif focus.__class__"
-                # is added, this break must be removed or left only at the
-                # block for the most basic class
-                break
-
-            focus = focus.GetParent()
 
     def select_all_text(self, event):
         tab = wx.GetApp().nb_right.get_selected_editor()
