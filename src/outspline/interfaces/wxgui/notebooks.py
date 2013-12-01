@@ -48,6 +48,12 @@ class Notebook(aui.AuiNotebook):
         self.GetPage(event.GetSelection()).SetFocus()
 
     def popup_tab_menu(self, event):
+        # Select the clicked tab, as many actions are executed on the
+        # "selected" tab, which may not be the "right-clicked" one
+        # Of course the selection must be set *before* enabling/disabling the
+        # actions in the context menu
+        self.SetSelection(event.GetSelection())
+
         try:
             cmenu = self.GetPage(event.GetSelection()).get_tab_context_menu()
         except AttributeError:
