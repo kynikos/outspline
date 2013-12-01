@@ -63,8 +63,6 @@ class RootMenu(wx.MenuBar):
         self.Append(self.dev, "&Dev")
         self.Append(self.help, "&Help")
 
-        self.set_top_menus()
-
     def insert_item(self, menu, pos, text, id_=wx.ID_ANY, help='', sep='none',
                     kind='normal', sub=None, icon=None):
         menuw = self.GetMenu(self.FindMenu(menu))
@@ -94,39 +92,17 @@ class RootMenu(wx.MenuBar):
                 menuw.InsertSeparator(pos)
         return item
 
-    def set_top_menus(self):
-        self.EnableTop(self.FindMenu('Database'), False)
-        self.EnableTop(self.FindMenu('Editor'), False)
-
-        focus = self.FindFocus()
-
-        while focus:
-            if focus.__class__ is notebooks.LeftNotebook:
-                self.EnableTop(self.FindMenu('Database'), True)
-                break
-            elif focus.__class__ is editor.EditorPanel or (
-                                 focus.__class__ is notebooks.RightNotebook and
-                                   wx.GetApp().nb_right.get_selected_editor()):
-                self.EnableTop(self.FindMenu('Editor'), True)
-                break
-
-            focus = focus.GetParent()
-
     def update_menus(self, menu):
         reset_menu_items_event.signal(menu=menu)
 
-        focus = self.FindFocus()
-
         if menu is self.file:
-            self.file.update_items(focus)
+            self.file.update_items()
         elif menu is self.database:
-            self.database.update_items(focus)
+            self.database.update_items()
         elif menu is self.edit:
-            self.edit.update_items(focus)
+            self.edit.update_items()
         elif menu is self.view:
             self.view.reset_items()
-
-        self.set_top_menus()
 
 
 class MenuFile(wx.Menu):
@@ -216,7 +192,7 @@ class MenuFile(wx.Menu):
         self.close_.Enable(False)
         self.closeall.Enable(False)
 
-    def update_items(self, focus):
+    def update_items(self):
         self.reset_items()
 
         if tree.dbs:
@@ -226,6 +202,8 @@ class MenuFile(wx.Menu):
                     break
 
             self.closeall.Enable()
+
+        focus = wx.GetApp().root.FindFocus()
 
         while focus:
             if focus.__class__ is notebooks.LeftNotebook:
@@ -415,9 +393,10 @@ class MenuDatabase(wx.Menu):
         self.edit.Enable(False)
         self.delete.Enable(False)
 
-    def update_items(self, focus):
+    def update_items(self):
         self.reset_items()
 
+        focus = wx.GetApp().root.FindFocus()
         tab = wx.GetApp().nb_left.get_selected_tab()
         filename = tab.get_filename()
 
@@ -784,12 +763,8 @@ class MenuEdit(wx.Menu):
         self.close_.Enable(False)
         self.closeall.Enable(False)
 
-    def update_items(self, focus):
+    def update_items(self):
         self.reset_items()
-
-        item = wx.GetApp().nb_right.get_selected_editor()
-        filename = editor.tabs[item].get_filename()
-        id_ = editor.tabs[item].get_id()
 
         if editor.tabs:
             for i in tuple(editor.tabs.keys()):
@@ -799,10 +774,18 @@ class MenuEdit(wx.Menu):
 
             self.closeall.Enable()
 
+        focus = wx.GetApp().root.FindFocus()
+
+        # Find selected editor only once (not in the loop)
+        item = wx.GetApp().nb_right.get_selected_editor()
+
         while focus:
+            # Check 'item', as a non-editor tab could be selected
             if focus.__class__ is editor.EditorPanel or (
-                                 focus.__class__ is notebooks.RightNotebook and
-                                   wx.GetApp().nb_right.get_selected_editor()):
+                          focus.__class__ is notebooks.RightNotebook and item):
+                filename = editor.tabs[item].get_filename()
+                id_ = editor.tabs[item].get_id()
+
                 self.select.Enable()
 
                 if editor.tabs[item].area.can_cut():
