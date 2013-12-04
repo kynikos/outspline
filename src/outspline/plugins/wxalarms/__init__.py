@@ -282,6 +282,9 @@ class Alarm():
     start = None
     end = None
     alarm = None
+    pane = None
+    cpane = None
+    cbox = None
 
     def __init__(self, awindow, filename, id_, alarmid, start, end, alarm):
         self.awindow = awindow
@@ -322,30 +325,81 @@ class Alarm():
         # wx.CP_NO_TLW_RESIZE in conjunction with
         # self.panel.GetParent().SendSizeEvent() on EVT_COLLAPSIBLEPANE_CHANGED
         # are necessary for the correct functioning
-        text = core_api.get_item_text(self.filename, self.id_)
-        pane = wx.CollapsiblePane(parent, label=text.partition('\n')[0],
-                                                     style=wx.CP_NO_TLW_RESIZE)
-        self.pbox.Add(pane, flag=wx.EXPAND | wx.BOTTOM, border=4)
+        self.pane = wx.CollapsiblePane(parent, style=wx.CP_NO_TLW_RESIZE)
+        # Setting the label directly when instantiating CollapsiblePane through
+        # the 'label' parameter would make it parse '&' characters to form
+        # mnemonic shortcuts, like in menus
+        self.set_pane_label()
+        self.pbox.Add(self.pane, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        cpane = pane.GetPane()
-        cbox = wx.BoxSizer(wx.VERTICAL)
-        cpane.SetSizer(cbox)
+        self.cpane = self.pane.GetPane()
+        self.cbox = wx.BoxSizer(wx.VERTICAL)
+        self.cpane.SetSizer(self.cbox)
 
-        for anc in core_api.get_item_ancestors(self.filename, self.id_):
-            ancestor = wx.StaticText(cpane, label=anc.get_text().partition('\n'
-                                                                          )[0])
-            cbox.Add(ancestor, flag=wx.LEFT, border=4)
-
-        dbname = wx.StaticText(cpane, label=_os.path.basename(self.filename))
-        cbox.Add(dbname, flag=wx.LEFT, border=4)
 
         line = wx.StaticLine(parent, size=(1, 1), style=wx.LI_HORIZONTAL)
         self.pbox.Add(line, flag=wx.EXPAND)
 
+        core_api.bind_to_update_item(self.update_info)
+
+        self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED,
+                                                    self.update_pane_ancestors)
         self.panel.Bind(wx.EVT_BUTTON, self.snooze, button_s)
         self.panel.Bind(wx.EVT_BUTTON, self.dismiss, button_d)
         self.panel.Bind(wx.EVT_BUTTON, self.open_, button_e)
-        self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.resize_pane)
+
+    def update_info(self, kwargs):
+        if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_:
+            self.set_pane_label()
+
+    def set_pane_label(self):
+        text = core_api.get_item_text(self.filename, self.id_)
+        self.pane.SetLabel(text.partition('\n')[0])
+
+    def update_pane_ancestors(self, event):
+        # Reset ancestors with EVT_COLLAPSIBLEPANE_CHANGED, otherwise they
+        # should be reset everytime one of them is updated
+        # This way if an ancestor is updated while the collapsible pane is
+        # expanded, it will have to be collapsed and expanded again to be
+        # reset, but that is a reasonable compromise
+
+        if not event.GetCollapsed():
+            # Get the size of the panel *before* adding or destroying any
+            # children
+            psize = self.pane.GetSize()
+
+            self.cpane.DestroyChildren()
+
+            for anc in core_api.get_item_ancestors(self.filename, self.id_):
+                ancestor = wx.StaticText(self.cpane)
+                # Setting the label directly when instantiating StaticText
+                # through the 'label' parameter would make it parse '&'
+                # characters to form mnemonic shortcuts, like in menus
+                # Note that in this case the '&' characters have to be escaped
+                # explicitly
+                ancestor.SetLabel(anc.get_text().partition('\n')[0].replace(
+                                                                    '&', '&&'))
+                self.cbox.Add(ancestor, flag=wx.LEFT, border=4)
+
+            dbname = wx.StaticText(self.cpane)
+            # Setting the label directly when instantiating StaticText through
+            # the 'label' parameter would make it parse '&' characters to form
+            # mnemonic shortcuts, like in menus
+            dbname.SetLabel(_os.path.basename(self.filename).replace('&',
+                                                                         '&&'))
+            self.cbox.Add(dbname, flag=wx.LEFT, border=4)
+
+            # Without these operations, the panel's expanded height would
+            # always be the one of its previous state (0 at the first expansion
+            # attempt)
+            self.cpane.Fit()
+            csize = self.cpane.GetSize()
+            psize.SetHeight(psize.GetHeight() + csize.GetHeight())
+            self.pane.SetMinSize(psize)
+
+        # This in conjunction with the wx.CP_NO_TLW_RESIZE style are necessary
+        # for the correct functioning of the collapsible pane
+        self.panel.GetParent().SendSizeEvent()
 
     def snooze(self, event):
         core_api.block_databases()
@@ -376,15 +430,14 @@ class Alarm():
         del self.awindow.alarms[self.awindow.make_alarmid(self.filename,
                                                                  self.alarmid)]
 
+        # It's necessary to explicitly unbind the handler, otherwise this
+        # object will not be garbage-collected
+        core_api.bind_to_update_item(self.update_info, False)
+
         self.awindow.update_title()
 
         if len(self.awindow.alarms) == 0:
             self.awindow.hide()
-
-    def resize_pane(self, event):
-        # This in conjunction with the wx.CP_NO_TLW_RESIZE style are necessary
-        # for the correct functioning of the collapsible pane
-        self.panel.GetParent().SendSizeEvent()
 
     def get_filename(self):
         return self.filename
