@@ -164,13 +164,16 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
     rend = rule['#'][3]
     inclusive = rule['#'][4]
 
+    limits = occs.get_time_span()
+    minstart = limits[0]
+    maxend = limits[1]
+
     while True:
         end = start + rend
 
-        if start > maxt:
+        if start > maxend:
             break
-
-        if start <= maxt and end >= mint:
+        elif end >= minstart:
             # The rule is checked in make_rule, no need to use occs.except_
             occs.except_safe(filename, id_, start, end, inclusive)
 

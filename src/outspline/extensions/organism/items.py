@@ -180,6 +180,20 @@ class OccurrencesRange():
                         ctime = t
         return ctime
 
+    def get_time_span(self):
+        # Note that this method ignores self.actd _deliberately_
+        minstart = None
+        maxend = None
+        for filename in self.d:
+            for id_ in self.d[filename]:
+                for occ in self.d[filename][id_]:
+                    # This assumes that start <= end
+                    if minstart is None or occ['start'] < minstart:
+                        minstart = occ['start']
+                    if maxend is None or occ['end'] > maxend:
+                        maxend = occ['end']
+        return (minstart, maxend)
+
 
 def install_rule_handler(rulename, handler):
     global rule_handlers
