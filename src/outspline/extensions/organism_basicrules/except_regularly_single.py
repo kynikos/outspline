@@ -159,47 +159,57 @@ def _compute_min_time(reftime, refmax, refspan, interval):
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
-    interval = rule['#'][2]
-    start = _compute_min_time(mint, rule['#'][0], rule['#'][1], interval)
-    rend = rule['#'][3]
-    inclusive = rule['#'][4]
+    limits = occs.get_item_time_span(filename, id_)
 
-    limits = occs.get_time_span()
-    minstart = limits[0]
-    maxend = limits[1]
+    if limits:
+        minstart, maxend = limits
 
-    while True:
-        end = start + rend
+        interval = rule['#'][2]
+        rend = rule['#'][3]
+        inclusive = rule['#'][4]
 
-        if start > maxend:
-            break
-        elif end >= minstart:
-            # The rule is checked in make_rule, no need to use occs.except_
-            occs.except_safe(filename, id_, start, end, inclusive)
+        # start can't be based on mint, in fact an except rule can affect an
+        # occurrence even if its start and end times are out of the time range
+        start = _compute_min_time(minstart, rule['#'][0], rule['#'][1],
+                                                                      interval)
+        while True:
+            end = start + rend
 
-        start += interval
+            if start > maxend:
+                break
+            elif end >= minstart:
+                # The rule is checked in make_rule, no need to use occs.except_
+                occs.except_safe(filename, id_, start, end, inclusive)
+
+            start += interval
 
 
 def get_next_item_occurrences(base_time, filename, id_, rule, occs):
-    interval = rule['#'][2]
-    start = _compute_min_time(base_time, rule['#'][0], rule['#'][1], interval)
-    rend = rule['#'][3]
-    inclusive = rule['#'][4]
+    limits = occs.get_item_time_span(filename, id_)
 
-    limits = occs.get_time_span()
-    minstart = limits[0]
-    maxend = limits[1]
+    if limits:
+        minstart, maxend = limits
 
-    while True:
-        end = start + rend
+        interval = rule['#'][2]
+        rend = rule['#'][3]
+        inclusive = rule['#'][4]
 
-        next_occ = occs.get_next_occurrence_time()
+        # start can't be based on base_time, in fact an except rule can affect
+        # an occurrence even if its start and end times are out of the time
+        # range
+        start = _compute_min_time(minstart, rule['#'][0], rule['#'][1],
+                                                                      interval)
 
-        if not next_occ or start > next_occ:
-            break
+        while True:
+            end = start + rend
 
-        if start <= maxend and end >= minstart:
-            # The rule is checked in make_rule, no need to use occs.except_
-            occs.except_safe(filename, id_, start, end, inclusive)
+            next_occ = occs.get_next_occurrence_time()
 
-        start += interval
+            if not next_occ or start > next_occ:
+                break
+
+            if start <= maxend and end >= minstart:
+                # The rule is checked in make_rule, no need to use occs.except_
+                occs.except_safe(filename, id_, start, end, inclusive)
+
+            start += interval
