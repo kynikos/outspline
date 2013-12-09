@@ -83,6 +83,7 @@ class OccurrencesView():
     listview = None
     mainmenu = None
     cmenu = None
+    colors = None
     filter_ = None
     occs = None
     datamap = None
@@ -103,6 +104,8 @@ class OccurrencesView():
         # Override ColumnSorterMixin's method for sorting items that have equal
         # primary sort value
         self.listview.GetSecondarySortValues = self.get_secondary_sort_values
+
+        self.set_colors()
 
         for col in COLUMNS:
             self.listview.InsertColumn(col[0], col[1], width=col[2])
@@ -132,6 +135,53 @@ class OccurrencesView():
 
     def get_secondary_sort_values(self, col, key1, key2):
         return (self.datamap[key1][2], self.datamap[key2][2])
+
+    def set_colors(self):
+        system = self.listview.GetTextColour()
+        config = coreaux_api.get_plugin_configuration('wxtasklist')
+        colpast = config['color_past']
+        colongoing = config['color_ongoing']
+        colfuture = config['color_future']
+        colactive = config['color_active']
+        self.colors = {}
+
+        if colpast == 'system':
+            self.colors['past'] = system
+        elif colpast == 'auto':
+            DIFF = 64
+            avg = system.Red() + system.Green() + system.Blue() // 3
+
+            if avg > 127:
+                self.colors['past'] = wx.Colour(
+                                              max((system.Red() - DIFF, 0)),
+                                              max((system.Green() - DIFF, 0)),
+                                              max((system.Blue() - DIFF, 0)))
+            else:
+                self.colors['past'] = wx.Colour(
+                                            min((system.Red() + DIFF, 255)),
+                                            min((system.Green() + DIFF, 255)),
+                                            min((system.Blue() + DIFF, 255)))
+        else:
+            self.colors['past'] = wx.Colour()
+            self.colors['past'].SetFromString(colpast)
+
+        if colongoing == 'system':
+            self.colors['ongoing'] = system
+        else:
+            self.colors['ongoing'] = wx.Colour()
+            self.colors['ongoing'].SetFromString(colongoing)
+
+        if colfuture == 'system':
+            self.colors['future'] = system
+        else:
+            self.colors['future'] = wx.Colour()
+            self.colors['future'].SetFromString(colfuture)
+
+        if colactive == 'system':
+            self.colors['active'] = system
+        else:
+            self.colors['active'] = wx.Colour()
+            self.colors['active'].SetFromString(colactive)
 
     def delay_restart_on_text_update(self, kwargs=None):
         if kwargs['text'] is not None:
@@ -338,22 +388,27 @@ class ListItem():
         self.end = occ['end']
         self.alarm = occ['alarm']
 
+        self.fname = os.path.basename(self.filename)
+        index = listview.InsertStringItem(sys.maxint, self.fname)
+
         mnow = now // 60 * 60
 
         if mnow < self.start:
             self.state = 'future'
             self.stateid = 2
+            listview.SetItemTextColour(index, occview.colors['future'])
         # self.start == mnow and self.start < mnow must be treated separately
         # in order to take into account that self.end can be None
         # If an occurrence has self.end == mnow it means that it's finished
         elif self.start == mnow or self.start < mnow < self.end:
             self.state = 'ongoing'
             self.stateid = 1
+            listview.SetItemTextColour(index, occview.colors['ongoing'])
         else:
             self.state = 'past'
             self.stateid = 0
+            listview.SetItemTextColour(index, occview.colors['past'])
 
-        self.fname = os.path.basename(self.filename)
         text = core_api.get_item_text(self.filename, self.id_)
         self.title = self.make_heading(text)
 
@@ -372,13 +427,17 @@ class ListItem():
             alarmdate = 'active'
             self.alarmid = occ['alarmid']
             occview.add_active_alarm(self.filename, self.alarmid)
+            # Note that the assignment of the active color must come after any
+            # previous color assignment, in order to override them
+            listview.SetItemTextColour(index, occview.colors['active'])
+            listview.SetItemFont(index, wx.Font(
+                      listview.GetFont().GetPointSize(), wx.FONTFAMILY_DEFAULT,
+                                      wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
         # Note that testing if isinstance(self.alarm, int) *before* testing if
         # self.alarm is False would return True also when self.alarm is False!
         else:
             alarmdate = _time.strftime('%Y.%m.%d %H:%M', _time.localtime(
                                                                    self.alarm))
-
-        index = listview.InsertStringItem(sys.maxint, self.fname)
 
         listview.SetStringItem(index, 1, self.title)
         listview.SetStringItem(index, 2, startdate)
