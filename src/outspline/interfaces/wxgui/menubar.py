@@ -318,10 +318,10 @@ class MenuDatabase(wx.Menu):
         self.child = wx.MenuItem(self, self.ID_CHILD, "Create &sub-item",
                                  "Create a child for the selected item")
         self.moveup = wx.MenuItem(self, self.ID_MOVE_UP, "&Move item up",
-                                  "Switch the selected item with the one above")
+                                  "Swap the selected item with the one above")
         self.movedn = wx.MenuItem(self, self.ID_MOVE_DOWN,
                                   "Mo&ve item down",
-                                  "Switch the selected item with the one below")
+                                  "Swap the selected item with the one below")
         self.movept = wx.MenuItem(self, self.ID_MOVE_PARENT,
                                   "M&ove item to parent",
                             "Move the selected item as a sibling of its parent")

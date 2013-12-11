@@ -481,10 +481,10 @@ class ContextMenu(wx.Menu):
                                  "Create a child for the selected item")
         self.moveup = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_UP,
                                   "&Move item up",
-                                 "Switch the selected item with the one above")
+                                  "Swap the selected item with the one above")
         self.movedn = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_DOWN,
                                   "Mo&ve item down",
-                                 "Switch the selected item with the one below")
+                                  "Swap the selected item with the one below")
         self.movept = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_PARENT,
                                   "M&ove item to parent",
                            "Move the selected item as a sibling of its parent")
