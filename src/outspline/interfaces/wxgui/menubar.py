@@ -50,6 +50,9 @@ class RootMenu(wx.MenuBar):
     help = None
 
     def __init__(self):
+        # Note that the menu can be accessed through F10, which is an
+        # accelerator that doesn't seem to be overridable neither through
+        # menu shortcuts nor through accelerators
         wx.MenuBar.__init__(self)
 
         self.file = MenuFile()
