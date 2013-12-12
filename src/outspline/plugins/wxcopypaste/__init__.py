@@ -211,20 +211,22 @@ def handle_enable_tree_menus(kwargs):
     mpaste.Enable(False)
     mpastesub.Enable(False)
 
-    sel = wxgui_api.get_tree_selections(filename)
+    # filename is None is no database is open
+    if filename:
+        sel = wxgui_api.get_tree_selections(filename)
 
-    if len(sel) == 1:
-        mcut.Enable()
-        mcopy.Enable()
-        if copypaste_api.has_copied_items(filename):
-            mpaste.Enable()
-            mpastesub.Enable()
-    elif len(sel) > 1:
-        mcut.Enable()
-        mcopy.Enable()
-    else:
-        if copypaste_api.has_copied_items(filename):
-            mpaste.Enable()
+        if len(sel) == 1:
+            mcut.Enable()
+            mcopy.Enable()
+            if copypaste_api.has_copied_items(filename):
+                mpaste.Enable()
+                mpastesub.Enable()
+        elif len(sel) > 1:
+            mcut.Enable()
+            mcopy.Enable()
+        else:
+            if copypaste_api.has_copied_items(filename):
+                mpaste.Enable()
 
 
 def handle_reset_tree_context_menu(kwargs):

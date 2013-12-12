@@ -67,10 +67,12 @@ def handle_enable_textarea_menus(kwargs):
     mundo.Enable(False)
     mredo.Enable(False)
 
-    if areas[item].can_undo():
-        mundo.Enable()
-    if areas[item].can_redo():
-        mredo.Enable()
+    # item is None is no editor is open
+    if item:
+        if areas[item].can_undo():
+            mundo.Enable()
+        if areas[item].can_redo():
+            mredo.Enable()
 
 
 def main():

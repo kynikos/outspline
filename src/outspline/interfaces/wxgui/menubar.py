@@ -439,6 +439,10 @@ class MenuDatabase(wx.Menu):
                 self.sibling.Enable()
 
             menu_database_update_event.signal(filename=filename)
+        else:
+            # Signal the event even if there are no databases (tabs) open
+            menu_database_update_event.signal(filename=None)
+
 
     def reset_items(self):
         # Re-enable all the actions so they are available for their
@@ -807,7 +811,14 @@ class MenuEdit(wx.Menu):
                 self.close_.Enable()
 
                 menu_edit_update_event.signal(filename=filename, id_=id_,
-                                                                item=item)
+                                                                    item=item)
+            else:
+                # Signal the event even if there are no editor tabs open
+                menu_edit_update_event.signal(filename=None, id_=None,
+                                                                    item=None)
+        else:
+            # Signal the event even if there are no tabs open
+            menu_edit_update_event.signal(filename=None, id_=None, item=None)
 
     def reset_items(self):
         # Re-enable all the actions so they are available for their
