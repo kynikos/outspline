@@ -60,7 +60,6 @@ class Editor():
     area = None
     fpbar = None
     modstate = None
-    accels = None
 
     def __init__(self, filename, id_, item):
         self.filename = filename
@@ -71,23 +70,6 @@ class Editor():
         self.panel = EditorPanel(wx.GetApp().nb_right, item)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
-
-        self.accels = [(wx.wx.ACCEL_CTRL, ord('f'),
-                        wx.GetApp().menu.edit.ID_FIND),
-                       (wx.wx.ACCEL_CTRL, wx.WXK_RETURN,
-                        wx.GetApp().menu.edit.ID_APPLY),
-                       (wx.wx.ACCEL_CTRL, wx.WXK_NUMPAD_ENTER,
-                        wx.GetApp().menu.edit.ID_APPLY),
-                       (wx.ACCEL_SHIFT | wx.wx.ACCEL_CTRL, wx.WXK_RETURN,
-                        wx.GetApp().menu.edit.ID_APPLY_ALL),
-                       (wx.ACCEL_SHIFT | wx.wx.ACCEL_CTRL, wx.WXK_NUMPAD_ENTER,
-                        wx.GetApp().menu.edit.ID_APPLY_ALL),
-                       (wx.wx.ACCEL_CTRL, ord('w'),
-                        wx.GetApp().menu.edit.ID_CLOSE),
-                       (wx.ACCEL_SHIFT | wx.wx.ACCEL_CTRL, ord('w'),
-                        wx.GetApp().menu.edit.ID_CLOSE_ALL)]
-
-        self.panel.SetAcceleratorTable(wx.AcceleratorTable(self.accels))
 
     def _post_init(self):
         filename = self.filename
@@ -236,10 +218,6 @@ class Editor():
     @staticmethod
     def make_tabid(filename, id_):
         return '_'.join((filename, str(id_)))
-
-    def add_accelerators(self, accels):
-        self.accels.extend(accels)
-        self.panel.SetAcceleratorTable(wx.AcceleratorTable(self.accels))
 
 
 class TabContextMenu(wx.Menu):

@@ -77,11 +77,6 @@ def set_editor_modified(filename, id_):
     return editor.tabs[editor.Editor.make_tabid(filename, id_)].set_modified()
 
 
-def add_editor_accelerators(filename, id_, accels):
-    return editor.tabs[editor.Editor.make_tabid(filename, id_)
-                       ].add_accelerators(accels)
-
-
 def bind_to_open_editor(handler, bind=True):
     return editor.open_editor_event.bind(handler, bind)
 
@@ -373,14 +368,6 @@ def insert_tree_context_menu_item(filename, pos, item, id_=wx.ID_ANY, help='',
 
 def refresh_history(filename):
     return tree.dbs[filename].history.refresh()
-
-
-def add_database_accelerators(filename, accels):
-    return tree.dbs[filename].add_accelerators(accels)
-
-
-def add_database_tree_accelerators(filename, accels):
-    return tree.dbs[filename].add_tree_accelerators(accels)
 
 
 def bind_to_reset_tree_context_menu(handler, bind=True):

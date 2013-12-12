@@ -190,13 +190,6 @@ def handle_open_database(kwargs):
                            help='Paste items as children of the selected item',
                            sep=config['cmenupastesub_sep'], icon='@paste')
 
-    accels = [(wx.ACCEL_CTRL, ord('x'), ID_CUT),
-              (wx.ACCEL_CTRL, ord('c'), ID_COPY),
-              (wx.ACCEL_CTRL, ord('v'), ID_PASTE),
-              (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord('v'), ID_PASTE_SUB)]
-
-    wxgui_api.add_database_tree_accelerators(filename, accels)
-
 
 def handle_close_database(kwargs):
     del cmenu[kwargs['filename']]
