@@ -260,23 +260,22 @@ def main():
 
     mcut = wxgui_api.insert_menu_item('Database',
                                       config.get_int('menucut_pos'),
-                                      'Cu&t items', id_=ID_CUT,
+                                      'Cu&t items\tCTRL+SHIFT+x', id_=ID_CUT,
                                       help='Cut the selected items',
                                       sep=config['menucut_sep'], icon='@cut')
     mcopy = wxgui_api.insert_menu_item('Database',
-                                       config.get_int('menucopy_pos'),
-                                       '&Copy items', id_=ID_COPY,
-                                       help='Copy the selected items',
-                                       sep=config['menucopy_sep'],
-                                       icon='@copy')
+                                   config.get_int('menucopy_pos'),
+                                   '&Copy items\tCTRL+SHIFT+c', id_=ID_COPY,
+                                   help='Copy the selected items',
+                                   sep=config['menucopy_sep'], icon='@copy')
     mpaste = wxgui_api.insert_menu_item('Database',
                         config.get_int('menupaste_pos'),
-                        '&Paste items', id_=ID_PASTE,
+                        '&Paste items\tCTRL+SHIFT+v', id_=ID_PASTE,
                         help='Paste items as siblings after the selected item',
                         sep=config['menupaste_sep'], icon='@paste')
     mpastesub = wxgui_api.insert_menu_item('Database',
                            config.get_int('menupastesub_pos'),
-                           'P&aste sub-items', id_=ID_PASTE_SUB,
+                           'P&aste sub-items\tCTRL+SHIFT+b', id_=ID_PASTE_SUB,
                            help='Paste items as children of the selected item',
                            sep=config['menupastesub_sep'], icon='@paste')
 

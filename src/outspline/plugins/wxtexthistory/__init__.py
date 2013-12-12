@@ -78,13 +78,13 @@ def main():
     global mundo, mredo
     mundo = wxgui_api.insert_menu_item('Editor',
                                        config.get_int('menuundo_pos'),
-                                       '&Undo', id_=ID_UNDO,
+                                       '&Undo\tCTRL+z', id_=ID_UNDO,
                                        help='Undo the previous text edit',
                                        sep=config['menuundo_sep'],
                                        icon='@undo')
     mredo = wxgui_api.insert_menu_item('Editor',
                                        config.get_int('menuredo_pos'),
-                                       '&Redo', id_=ID_REDO,
+                                       '&Redo\tCTRL+y', id_=ID_REDO,
                                        help='Redo the next text edit',
                                        sep=config['menuredo_sep'],
                                        icon='@redo')

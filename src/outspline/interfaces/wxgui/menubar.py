@@ -132,33 +132,33 @@ class MenuFile(wx.Menu):
         self.ID_CLOSE_DB = wx.NewId()
         self.ID_CLOSE_DB_ALL = wx.NewId()
 
-        self.new_ = wx.MenuItem(self, wx.ID_NEW, "&New...\tCtrl+N",
+        self.new_ = wx.MenuItem(self, wx.ID_NEW, "&New...\tCTRL+n",
                                 "Create a new database")
-        self.open_ = wx.MenuItem(self, wx.ID_OPEN, "&Open...\tCtrl+O",
-                                 "Open a database")
-        self.save = wx.MenuItem(self, self.ID_SAVE, "&Save",
+        self.open_ = wx.MenuItem(self, wx.ID_OPEN, "&Open...\tCTRL+o",
+                                "Open a database")
+        self.save = wx.MenuItem(self, self.ID_SAVE, "&Save\tCTRL+s",
                                 "Save the selected database")
         self.saveas = wx.MenuItem(self, self.ID_SAVE_AS, "Sav&e as...",
-                                 "Save the selected database with another name")
+                                "Save the selected database with another name")
         self.backup = wx.MenuItem(self, self.ID_BACKUP, "Save &backup...",
-                                  "Create a backup of the selected database")
-        self.saveall = wx.MenuItem(self, self.ID_SAVE_ALL, "Save &all",
-                                   "Save all open databases")
-        self.close_ = wx.MenuItem(self, self.ID_CLOSE_DB, "&Close",
-                                  "Close the selected database")
-        self.closeall = wx.MenuItem(self, self.ID_CLOSE_DB_ALL, "C&lose all",
-                                    "Close all databases")
-        self.exit_ = wx.MenuItem(self, wx.ID_EXIT, "E&xit\tCtrl+Q",
-                                 "Terminate the program")
+                                "Create a backup of the selected database")
+        self.saveall = wx.MenuItem(self, self.ID_SAVE_ALL,
+                        "Save &all\tCTRL+SHIFT+s", "Save all open databases")
+        self.close_ = wx.MenuItem(self, self.ID_CLOSE_DB, "&Close\tCTRL+w",
+                                "Close the selected database")
+        self.closeall = wx.MenuItem(self, self.ID_CLOSE_DB_ALL,
+                            "C&lose all\tCTRL+SHIFT+w", "Close all databases")
+        self.exit_ = wx.MenuItem(self, wx.ID_EXIT, "E&xit\tCTRL+q",
+                                "Terminate the program")
 
         self.save.SetBitmap(wx.ArtProvider.GetBitmap('@save', wx.ART_MENU))
         self.saveas.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
         self.backup.SetBitmap(wx.ArtProvider.GetBitmap('@backup', wx.ART_MENU))
         self.saveall.SetBitmap(wx.ArtProvider.GetBitmap('@saveall',
-                                                        wx.ART_MENU))
+                                                                wx.ART_MENU))
         self.close_.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
         self.closeall.SetBitmap(wx.ArtProvider.GetBitmap('@closeall',
-                                                         wx.ART_MENU))
+                                                                wx.ART_MENU))
 
         self.AppendItem(self.new_)
         self.AppendItem(self.open_)
@@ -261,14 +261,14 @@ class MenuFile(wx.Menu):
         treedb = wx.GetApp().nb_left.get_selected_tab()
         if treedb:
             databases.close_database(treedb.get_filename(),
-                                                          no_confirm=no_confirm)
+                                                        no_confirm=no_confirm)
         core_api.release_databases()
 
     def close_all_databases(self, event, no_confirm=False, exit_=False):
         core_api.block_databases()
         for filename in tuple(tree.dbs.keys()):
             if databases.close_database(filename, no_confirm=no_confirm,
-                                                          exit_=exit_) == False:
+                                                        exit_=exit_) == False:
                 core_api.release_databases()
                 return False
         else:
@@ -309,26 +309,30 @@ class MenuDatabase(wx.Menu):
         self.ID_EDIT = wx.NewId()
         self.ID_DELETE = wx.NewId()
 
-        self.undo = wx.MenuItem(self, self.ID_UNDO, "&Undo",
+        self.undo = wx.MenuItem(self, self.ID_UNDO, "&Undo\tCTRL+SHIFT+z",
                                 "Undo the previous database edit in history")
-        self.redo = wx.MenuItem(self, self.ID_REDO, "&Redo",
-                                "Redo the next database edit in history")
-        self.sibling = wx.MenuItem(self, self.ID_SIBLING, "Create &item",
-                                   "Create a sibling after the selected item")
-        self.child = wx.MenuItem(self, self.ID_CHILD, "Create &sub-item",
-                                 "Create a child for the selected item")
-        self.moveup = wx.MenuItem(self, self.ID_MOVE_UP, "&Move item up",
-                                  "Swap the selected item with the one above")
+        self.redo = wx.MenuItem(self, self.ID_REDO, "&Redo\tCTRL+SHIFT+y",
+                                    "Redo the next database edit in history")
+        self.sibling = wx.MenuItem(self, self.ID_SIBLING,
+                                    "Create &item\tCTRL+INSERT",
+                                    "Create a sibling after the selected item")
+        self.child = wx.MenuItem(self, self.ID_CHILD,
+                                        "Create &sub-item\tCTRL+SHIFT+INSERT",
+                                        "Create a child for the selected item")
+        self.moveup = wx.MenuItem(self, self.ID_MOVE_UP,
+                                "&Move item up\tCTRL+k",
+                                "Swap the selected item with the one above")
         self.movedn = wx.MenuItem(self, self.ID_MOVE_DOWN,
-                                  "Mo&ve item down",
+                                  "Mo&ve item down\tCTRL+j",
                                   "Swap the selected item with the one below")
         self.movept = wx.MenuItem(self, self.ID_MOVE_PARENT,
-                                  "M&ove item to parent",
-                            "Move the selected item as a sibling of its parent")
-        self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit item",
+                        "M&ove item to parent\tCTRL+h",
+                        "Move the selected item as a sibling of its parent")
+        self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit item\tCTRL+ENTER",
                                 "Open the selected item in the editor")
-        self.delete = wx.MenuItem(self, self.ID_DELETE, "&Delete items",
-                                  "Delete the selected items")
+        self.delete = wx.MenuItem(self, self.ID_DELETE,
+                                                "&Delete items\tCTRL+DELETE",
+                                                "Delete the selected items")
 
         self.undo.SetBitmap(wx.ArtProvider.GetBitmap('@undodb', wx.ART_MENU))
         self.redo.SetBitmap(wx.ArtProvider.GetBitmap('@redodb', wx.ART_MENU))
@@ -431,7 +435,7 @@ class MenuDatabase(wx.Menu):
                 for id_ in read:
                     item = editor.Editor.make_tabid(tab.get_filename(), id_)
                     if item in editor.tabs and not editor.tabs[item].close(
-                                      ask='quiet' if no_confirm else 'discard'):
+                                    ask='quiet' if no_confirm else 'discard'):
                         break
                 else:
                     filename = tab.get_filename()
@@ -451,7 +455,7 @@ class MenuDatabase(wx.Menu):
                 for id_ in read:
                     item = editor.Editor.make_tabid(tab.get_filename(), id_)
                     if item in editor.tabs and not editor.tabs[item].close(
-                                      ask='quiet' if no_confirm else 'discard'):
+                                    ask='quiet' if no_confirm else 'discard'):
                         break
                 else:
                     filename = tab.get_filename()
@@ -532,10 +536,10 @@ class MenuDatabase(wx.Menu):
                 id_ = treedb.get_item_id(item)
 
                 if core_api.move_item_up(filename, id_,
-                                                    description='Move item up'):
+                                                description='Move item up'):
                     newitem = treedb.move_item(item,
-                                                   treedb.get_item_parent(item),
-                                           mode=treedb.get_item_index(item) - 1)
+                                                treedb.get_item_parent(item),
+                                        mode=treedb.get_item_index(item) - 1)
 
                     treedb.select_item(newitem)
 
@@ -558,12 +562,13 @@ class MenuDatabase(wx.Menu):
                 id_ = treedb.get_item_id(item)
 
                 if core_api.move_item_down(filename, id_,
-                                                  description='Move item down'):
-                    # When moving down, increase the index by 2, because the move
-                    # method first copies the item, and only afterwards deletes it
+                                                description='Move item down'):
+                    # When moving down, increase the index by 2, because the
+                    # move method first copies the item, and only afterwards
+                    # deletes it
                     newitem = treedb.move_item(item,
-                                                   treedb.get_item_parent(item),
-                                           mode=treedb.get_item_index(item) + 2)
+                                                treedb.get_item_parent(item),
+                                        mode=treedb.get_item_index(item) + 2)
 
                     treedb.select_item(newitem)
 
@@ -585,9 +590,9 @@ class MenuDatabase(wx.Menu):
                 id_ = treedb.get_item_id(item)
 
                 if core_api.move_item_to_parent(filename, id_,
-                                             description='Move item to parent'):
+                                            description='Move item to parent'):
                     newitem = treedb.move_item(item, treedb.get_item_parent(
-                                                  treedb.get_item_parent(item)))
+                                                treedb.get_item_parent(item)))
 
                     treedb.select_item(newitem)
 
@@ -615,13 +620,13 @@ class MenuDatabase(wx.Menu):
         if treedb:
             selection = treedb.get_selections(none=False, descendants=True)
             if selection and (no_confirm or msgboxes.delete_items_confirm(
-                                       len(selection)).ShowModal() == wx.ID_OK):
+                                    len(selection)).ShowModal() == wx.ID_OK):
                 filename = treedb.get_filename()
                 for item in selection:
                     id_ = treedb.get_item_id(item)
                     tab = editor.Editor.make_tabid(filename, id_)
                     if tab in editor.tabs and not editor.tabs[tab].close(
-                                          'quiet' if no_confirm else 'discard'):
+                                        'quiet' if no_confirm else 'discard'):
                         core_api.release_databases()
                         return False
 
@@ -674,24 +679,25 @@ class MenuEdit(wx.Menu):
         self.ID_CLOSE = wx.NewId()
         self.ID_CLOSE_ALL = wx.NewId()
 
-        self.select = wx.MenuItem(self, self.ID_SELECT_ALL, "&Select all",
-                                  "Select all text in the editor")
-        self.cut = wx.MenuItem(self, self.ID_CUT, "Cu&t",
-                               "Cut selected text in the editor")
-        self.copy = wx.MenuItem(self, self.ID_COPY, "&Copy",
-                                "Copy selected text in the editor")
-        self.paste = wx.MenuItem(self, self.ID_PASTE, "&Paste",
-                                 "Paste text at the cursor")
-        self.find = wx.MenuItem(self, self.ID_FIND, "&Find in tree",
-                                   "Find the edited item in the database tree")
-        self.apply = wx.MenuItem(self, self.ID_APPLY, "&Apply",
+        self.select = wx.MenuItem(self, self.ID_SELECT_ALL,
+                        "&Select all\tCTRL+a", "Select all text in the editor")
+        self.cut = wx.MenuItem(self, self.ID_CUT, "Cu&t\tCTRL+x",
+                                            "Cut selected text in the editor")
+        self.copy = wx.MenuItem(self, self.ID_COPY, "&Copy\tCTRL+c",
+                                            "Copy selected text in the editor")
+        self.paste = wx.MenuItem(self, self.ID_PASTE, "&Paste\tCTRL+v",
+                                                    "Paste text at the cursor")
+        self.find = wx.MenuItem(self, self.ID_FIND,
+                                "&Find in tree\tF2",
+                                "Find the edited item in the database tree")
+        self.apply = wx.MenuItem(self, self.ID_APPLY, "&Apply\tF3",
                                  "Apply the focused editor")
-        self.applyall = wx.MenuItem(self, self.ID_APPLY_ALL, "App&ly all",
-                                    "Apply all open editors")
-        self.close_ = wx.MenuItem(self, self.ID_CLOSE, "Cl&ose",
+        self.applyall = wx.MenuItem(self, self.ID_APPLY_ALL,
+                            "App&ly all\tCTRL+F3", "Apply all open editors")
+        self.close_ = wx.MenuItem(self, self.ID_CLOSE, "Cl&ose\tF4",
                                   "Close the focused editor")
-        self.closeall = wx.MenuItem(self, self.ID_CLOSE_ALL, "Clos&e all",
-                                    "Close all editors")
+        self.closeall = wx.MenuItem(self, self.ID_CLOSE_ALL,
+                                    "Clos&e all\tCTRL+F4", "Close all editors")
 
         self.select.SetBitmap(wx.ArtProvider.GetBitmap('@selectall',
                                                        wx.ART_MENU))
@@ -850,7 +856,7 @@ class MenuView(wx.Menu):
         self.ID_HISTORY = wx.NewId()
 
         self.history = self.AppendCheckItem(self.ID_HISTORY,
-                                            "Show &history\tCtrl+H",
+                                            "Show &history\tCTRL+h",
                                             "Show history frame")
 
         wx.GetApp().Bind(wx.EVT_MENU, self.toggle_history, self.history)

@@ -45,7 +45,7 @@ class TrayIcon(wx.TaskBarIcon):
 
         menumin = wxgui_api.insert_menu_item('File',
                                   config.get_int('menu_pos'),
-                                  '&Minimize to tray\tCtrl+M',
+                                  '&Minimize to tray\tCTRL+m',
                                   id_=self.ID_MINIMIZE,
                                   help='Minimize the main window to tray icon',
                                   sep=config['menu_sep'], icon='@tray')
@@ -84,7 +84,7 @@ class TrayMenu(wx.Menu):
 
         self.restore = self.AppendCheckItem(self.ID_RESTORE, "&Show Outspline")
         self.AppendSeparator()
-        self.exit_ = self.Append(wx.ID_EXIT, "E&xit\tCtrl+Q")
+        self.exit_ = self.Append(wx.ID_EXIT, "E&xit\tCTRL+q")
 
         parent.Bind(wx.EVT_MENU, wxgui_api.toggle_main_window, self.restore)
         parent.Bind(wx.EVT_MENU, wx.GetApp().exit_app, self.exit_)

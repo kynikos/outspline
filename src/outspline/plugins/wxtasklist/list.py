@@ -482,24 +482,23 @@ class MainMenu(wx.Menu):
         self.ID_DISMISS = wx.NewId()
         self.ID_DISMISS_ALL = wx.NewId()
 
-        self.find = wx.MenuItem(self, self.ID_FIND, "&Find in tree",
-                                      "Select the database item associated to "
-                                                     "the selected occurrence")
-        self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit selected",
+        self.find = wx.MenuItem(self, self.ID_FIND, "&Find in tree\tF5",
+            "Select the database item associated to the selected occurrence")
+        self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit selected\tF6",
                             "Open in the editor the database items associated "
-                                                 "to the selected occurrences")
+                            "to the selected occurrences")
 
-        self.snooze = wx.MenuItem(self, self.ID_SNOOZE, "&Snooze selected",
-                                                  "Snooze the selected alarms",
+        self.snooze = wx.MenuItem(self, self.ID_SNOOZE, "&Snooze selected\tF7",
+                                "Snooze the selected alarms",
                                 subMenu=SnoozeSelectedConfigMenu(self.occview))
-        self.snooze_all = wx.MenuItem(self, self.ID_SNOOZE_ALL, "S&nooze all",
-                                                "Snooze all the active alarms",
-                                     subMenu=SnoozeAllConfigMenu(self.occview))
+        self.snooze_all = wx.MenuItem(self, self.ID_SNOOZE_ALL,
+                                "S&nooze all", "Snooze all the active alarms",
+                                subMenu=SnoozeAllConfigMenu(self.occview))
 
-        self.dismiss = wx.MenuItem(self, self.ID_DISMISS, "Dis&miss selected",
-                                                 "Dismiss the selected alarms")
+        self.dismiss = wx.MenuItem(self, self.ID_DISMISS,
+                        "Dis&miss selected\tF8", "Dismiss the selected alarms")
         self.dismiss_all = wx.MenuItem(self, self.ID_DISMISS_ALL,
-                               "&Dismiss all", "Dismiss all the active alarms")
+                    "&Dismiss all\tCTRL+F8", "Dismiss all the active alarms")
 
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
         self.edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
@@ -731,6 +730,7 @@ class SnoozeAllConfigMenu(_SnoozeConfigMenu):
 
     def __init__(self, occview):
         _SnoozeConfigMenu.__init__(self)
+        self.snoozefor.SetText(self.snoozefor.GetText() + "\tCTRL+F7")
         self.occview = occview
 
     def get_alarms(self):
