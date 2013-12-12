@@ -94,8 +94,8 @@ class RootMenu(wx.MenuBar):
                 menuw.InsertSeparator(pos)
         return item
 
-    def update_menus(self, menu):
-        reset_menu_items_event.signal(menu=menu)
+    def update_menus(self, event):
+        menu = event.GetMenu()
 
         if menu is self.file:
             self.file.update_items()
@@ -104,7 +104,20 @@ class RootMenu(wx.MenuBar):
         elif menu is self.edit:
             self.edit.update_items()
         elif menu is self.view:
-            self.view.reset_items()
+            self.view.update_items()
+        else:
+            update_menu_items_event.signal(menu=menu)
+
+    def reset_menus(self, event):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        # EVT_MENU_CLOSE is signalled only for the last-closed menu, but since
+        # all the others opened have been updated, all the menus have to be
+        # reset (don't check event.GetMenu() is menu)
+        self.file.reset_items()
+        self.database.reset_items()
+        self.edit.reset_items()
+        reset_menu_items_event.signal()
 
 
 class MenuFile(wx.Menu):
@@ -184,18 +197,13 @@ class MenuFile(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self.close_all_databases, self.closeall)
         wx.GetApp().Bind(wx.EVT_MENU, wx.GetApp().exit_app, self.exit_)
 
-        self.reset_items()
-
-    def reset_items(self):
+    def update_items(self):
         self.save.Enable(False)
         self.saveas.Enable(False)
         self.backup.Enable(False)
         self.saveall.Enable(False)
         self.close_.Enable(False)
         self.closeall.Enable(False)
-
-    def update_items(self):
-        self.reset_items()
 
         if tree.dbs:
             for dbname in tuple(tree.dbs.keys()):
@@ -214,6 +222,16 @@ class MenuFile(wx.Menu):
 
             self.close_.Enable()
             self.closeall.Enable()
+
+    def reset_items(self):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.save.Enable()
+        self.saveas.Enable()
+        self.backup.Enable()
+        self.saveall.Enable()
+        self.close_.Enable()
+        self.closeall.Enable()
 
     def new_database(self, event, filename=None):
         core_api.block_databases()
@@ -374,9 +392,7 @@ class MenuDatabase(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self.edit_item, self.edit)
         wx.GetApp().Bind(wx.EVT_MENU, self.delete_items, self.delete)
 
-        self.reset_items()
-
-    def reset_items(self):
+    def update_items(self):
         self.undo.Enable(False)
         self.redo.Enable(False)
         self.sibling.Enable(False)
@@ -386,9 +402,6 @@ class MenuDatabase(wx.Menu):
         self.movept.Enable(False)
         self.edit.Enable(False)
         self.delete.Enable(False)
-
-    def update_items(self):
-        self.reset_items()
 
         tab = wx.GetApp().nb_left.get_selected_tab()
 
@@ -425,7 +438,20 @@ class MenuDatabase(wx.Menu):
             else:
                 self.sibling.Enable()
 
-            enable_tree_menus_event.signal(filename=filename)
+            menu_database_update_event.signal(filename=filename)
+
+    def reset_items(self):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.undo.Enable()
+        self.redo.Enable()
+        self.sibling.Enable()
+        self.child.Enable()
+        self.moveup.Enable()
+        self.movedn.Enable()
+        self.movept.Enable()
+        self.edit.Enable()
+        self.delete.Enable()
 
     def undo_tree(self, event, no_confirm=False):
         core_api.block_databases()
@@ -737,9 +763,7 @@ class MenuEdit(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self.close_tab, self.close_)
         wx.GetApp().Bind(wx.EVT_MENU, self.close_all_tabs, self.closeall)
 
-        self.reset_items()
-
-    def reset_items(self):
+    def update_items(self):
         self.select.Enable(False)
         self.cut.Enable(False)
         self.copy.Enable(False)
@@ -749,9 +773,6 @@ class MenuEdit(wx.Menu):
         self.applyall.Enable(False)
         self.close_.Enable(False)
         self.closeall.Enable(False)
-
-    def update_items(self):
-        self.reset_items()
 
         if editor.tabs:
             for i in tuple(editor.tabs.keys()):
@@ -785,8 +806,21 @@ class MenuEdit(wx.Menu):
 
                 self.close_.Enable()
 
-                enable_textarea_menus_event.signal(filename=filename, id_=id_,
-                                                   item=item)
+                menu_edit_update_event.signal(filename=filename, id_=id_,
+                                                                item=item)
+
+    def reset_items(self):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.select.Enable()
+        self.cut.Enable()
+        self.copy.Enable()
+        self.paste.Enable()
+        self.find.Enable()
+        self.apply.Enable()
+        self.applyall.Enable()
+        self.close_.Enable()
+        self.closeall.Enable()
 
     def select_all_text(self, event):
         tab = wx.GetApp().nb_right.get_selected_editor()
@@ -863,10 +897,9 @@ class MenuView(wx.Menu):
 
         wx.GetApp().Bind(wx.EVT_MENU, self.toggle_history, self.history)
 
-        self.reset_items()
-
-    def reset_items(self):
+    def update_items(self):
         self.history.Check(check=history.is_shown())
+        menu_view_update_event.signal()
 
     def toggle_history(self, event):
         # Set history.set_shown() here, and not in each

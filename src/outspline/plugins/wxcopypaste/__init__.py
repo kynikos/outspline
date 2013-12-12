@@ -196,15 +196,21 @@ def handle_close_database(kwargs):
 
 
 def handle_reset_menu_items(kwargs):
-    if kwargs['menu'] is wxgui_api.get_menu().database:
-        mcut.Enable(False)
-        mcopy.Enable(False)
-        mpaste.Enable(False)
-        mpastesub.Enable(False)
+    # Re-enable all the actions so they are available for their accelerators
+    mcut.Enable()
+    mcopy.Enable()
+    mpaste.Enable()
+    mpastesub.Enable()
 
 
 def handle_enable_tree_menus(kwargs):
     filename = kwargs['filename']
+
+    mcut.Enable(False)
+    mcopy.Enable(False)
+    mpaste.Enable(False)
+    mpastesub.Enable(False)
+
     sel = wxgui_api.get_tree_selections(filename)
 
     if len(sel) == 1:

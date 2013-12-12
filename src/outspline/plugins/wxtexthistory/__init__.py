@@ -56,13 +56,16 @@ def handle_open_textctrl(kwargs):
 
 
 def handle_reset_menu_items(kwargs):
-    if kwargs['menu'] is wxgui_api.get_menu().edit:
-        mundo.Enable(False)
-        mredo.Enable(False)
+    # Re-enable all the actions so they are available for their accelerators
+    mundo.Enable()
+    mredo.Enable()
 
 
 def handle_enable_textarea_menus(kwargs):
     item = kwargs['item']
+
+    mundo.Enable(False)
+    mredo.Enable(False)
 
     if areas[item].can_undo():
         mundo.Enable()

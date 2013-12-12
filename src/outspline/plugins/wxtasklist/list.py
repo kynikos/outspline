@@ -524,6 +524,7 @@ class MainMenu(wx.Menu):
         wxgui_api.bind_to_menu(self.dismiss_all_alarms, self.dismiss_all)
 
         wxgui_api.bind_to_update_menu_items(self.update_items)
+        wxgui_api.bind_to_reset_menu_items(self.reset_items)
 
         wxgui_api.insert_menu_main_item('&Tasklist', 'Help', self)
 
@@ -562,6 +563,16 @@ class MainMenu(wx.Menu):
                 if len(self.occview.activealarms) > 0:
                     self.snooze_all.Enable()
                     self.dismiss_all.Enable()
+
+    def reset_items(self, kwargs):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.find.Enable()
+        self.edit.Enable()
+        self.snooze.Enable()
+        self.snooze_all.Enable()
+        self.dismiss.Enable()
+        self.dismiss_all.Enable()
 
     def find_in_tree(self, event):
         for filename in core_api.get_open_databases():
