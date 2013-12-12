@@ -288,6 +288,6 @@ def main():
     wxgui_api.bind_to_close_database(handle_close_database)
 
     wxgui_api.bind_to_reset_menu_items(handle_reset_menu_items)
-    wxgui_api.bind_to_enable_tree_menus(handle_enable_tree_menus)
+    wxgui_api.bind_to_menu_database_update(handle_enable_tree_menus)
     wxgui_api.bind_to_reset_tree_context_menu(handle_reset_tree_context_menu)
     wxgui_api.bind_to_popup_tree_context_menu(handle_popup_tree_context_menu)

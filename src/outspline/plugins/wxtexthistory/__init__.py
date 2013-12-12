@@ -93,4 +93,4 @@ def main():
     wxgui_api.bind_to_menu(redo_text, mredo)
     wxgui_api.bind_to_open_textctrl(handle_open_textctrl)
     wxgui_api.bind_to_reset_menu_items(handle_reset_menu_items)
-    wxgui_api.bind_to_enable_textarea_menus(handle_enable_textarea_menus)
+    wxgui_api.bind_to_menu_edit_update(handle_enable_textarea_menus)

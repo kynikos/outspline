@@ -56,9 +56,9 @@ class MenuDev(wx.Menu):
         wxgui_api.bind_to_menu(self.populate_tree, self.populate)
         wxgui_api.bind_to_menu(self.toggle_simulator, self.simulator)
 
-        wxgui_api.bind_to_reset_menu_items(self.handle_reset_menu_items)
+        wxgui_api.bind_to_update_menu_items(self.update_items)
 
-    def handle_reset_menu_items(self, kwargs):
+    def update_items(self, kwargs):
         if kwargs['menu'] is self:
             self.reset_print_menu()
             self.reset_simulator_item()

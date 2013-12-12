@@ -30,9 +30,11 @@ import history
 import tree
 import about
 
+update_menu_items_event = Event()
 reset_menu_items_event = Event()
-enable_tree_menus_event = Event()
-enable_textarea_menus_event = Event()
+menu_database_update_event = Event()
+menu_edit_update_event = Event()
+menu_view_update_event = Event()
 undo_tree_event = Event()
 redo_tree_event = Event()
 move_item_event = Event()

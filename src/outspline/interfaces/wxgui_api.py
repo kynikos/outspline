@@ -139,16 +139,24 @@ def insert_menu_item(menu, pos, item, id_=wx.ID_ANY, help='', sep='none',
                                         sub, icon)
 
 
+def bind_to_update_menu_items(handler, bind=True):
+    return menubar.update_menu_items_event.bind(handler, bind)
+
+
 def bind_to_reset_menu_items(handler, bind=True):
     return menubar.reset_menu_items_event.bind(handler, bind)
 
 
-def bind_to_enable_tree_menus(handler, bind=True):
-    return menubar.enable_tree_menus_event.bind(handler, bind)
+def bind_to_menu_database_update(handler, bind=True):
+    return menubar.menu_database_update_event.bind(handler, bind)
 
 
-def bind_to_enable_textarea_menus(handler, bind=True):
-    return menubar.enable_textarea_menus_event.bind(handler, bind)
+def bind_to_menu_edit_update(handler, bind=True):
+    return menubar.menu_edit_update_event.bind(handler, bind)
+
+
+def bind_to_menu_view_update(handler, bind=True):
+    return menubar.menu_view_update_event.bind(handler, bind)
 
 
 def bind_to_open_database(handler, bind=True):

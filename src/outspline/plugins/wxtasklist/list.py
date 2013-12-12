@@ -518,16 +518,16 @@ class MainMenu(wx.Menu):
         self.AppendItem(self.dismiss)
         self.AppendItem(self.dismiss_all)
 
-        wxgui_api.bind_to_reset_menu_items(self.handle_reset_menu_items)
-
         wxgui_api.bind_to_menu(self.find_in_tree, self.find)
         wxgui_api.bind_to_menu(self.edit_items, self.edit)
         wxgui_api.bind_to_menu(self.dismiss_selected_alarms, self.dismiss)
         wxgui_api.bind_to_menu(self.dismiss_all_alarms, self.dismiss_all)
 
+        wxgui_api.bind_to_update_menu_items(self.update_items)
+
         wxgui_api.insert_menu_main_item('&Tasklist', 'Help', self)
 
-    def handle_reset_menu_items(self, kwargs):
+    def update_items(self, kwargs):
         if kwargs['menu'] is self:
             self.find.Enable(False)
             self.edit.Enable(False)

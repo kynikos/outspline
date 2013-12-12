@@ -107,15 +107,14 @@ class AlarmsWindow():
         organism_alarms_api.bind_to_alarm(self.handle_alarm)
         organism_alarms_api.bind_to_alarm_off(self.handle_alarm_off)
         wxgui_api.bind_to_close_database(self.handle_close_db)
-        wxgui_api.bind_to_reset_menu_items(self.handle_reset_menu_items)
+        wxgui_api.bind_to_menu_view_update(self.update_menu_items)
 
         if wxtrayicon_api:
             wxtrayicon_api.bind_to_create_menu(self.handle_create_tray_menu)
             wxtrayicon_api.bind_to_reset_menu(self.handle_reset_tray_menu)
 
-    def handle_reset_menu_items(self, kwargs):
-        if kwargs['menu'] is self.menushow.GetMenu():
-            self.menushow.Check(check=self.window.IsShown())
+    def update_menu_items(self, event):
+        self.menushow.Check(check=self.window.IsShown())
 
     def handle_create_tray_menu(self, kwargs):
         self.traymenushow = wxtrayicon_api.insert_menu_item(
