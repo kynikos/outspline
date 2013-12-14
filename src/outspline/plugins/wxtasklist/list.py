@@ -397,10 +397,16 @@ class ListItem():
             self.state = 'future'
             self.stateid = 2
             listview.SetItemTextColour(index, occview.colors['future'])
-        # self.start == mnow and self.start < mnow must be treated separately
-        # in order to take into account that self.end can be None
-        # If an occurrence has self.end == mnow it means that it's finished
-        elif self.start == mnow or self.start < mnow < self.end:
+        # If self.end is None, as soon as the start time arrives, the
+        # occurrence is finished, so it can't have an 'ongoing' state and has
+        # to be be immediately marked as 'past'
+        # Besides, if an 'ongoing' state was set, e.g. for 1 minute from the
+        # start, the dynamic filter should be able to calculate the time to
+        # refresh the list in order to mark the occurrence as 'past', which
+        # wouldn't happen with the current implementation
+        # There's no need to test if self.end is None here, as mnow can be <
+        # self.end only if self.end is not None
+        elif self.start <= mnow < self.end:
             self.state = 'ongoing'
             self.stateid = 1
             listview.SetItemTextColour(index, occview.colors['ongoing'])
