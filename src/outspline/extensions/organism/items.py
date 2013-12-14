@@ -146,6 +146,10 @@ class OccurrencesRange():
                 if start <= o['start'] <= end or \
                                 (inclusive and o['start'] <= start < o['end']):
                     self.d[filename][id_].remove(o)
+                    if not self.d[filename][id_]:
+                        del self.d[filename][id_]
+                        if not self.d[filename]:
+                            del self.d[filename]
 
     def get_dict(self):
         return self.d

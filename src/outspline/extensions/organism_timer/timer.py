@@ -113,6 +113,10 @@ class NextOccurrences():
                 if start <= occ['start'] <= end or (inclusive and
                                            occ['start'] <= start < occ['end']):
                     self.occs[filename][id_].remove(occ)
+                    if not self.occs[filename][id_]:
+                        del self.occs[filename][id_]
+                        if not self.occs[filename]:
+                            del self.occs[filename]
         # Do not try to update self.next (even in case there are no occurrences
         # left): this lets search_next_occurrences reset the last search time
         # to this value, thus ignoring the excepted occurrences at the
@@ -130,8 +134,8 @@ class NextOccurrences():
                     self.occs[filename][id_].remove(occd)
                     if not self.occs[filename][id_]:
                         del self.occs[filename][id_]
-                    if not self.occs[filename]:
-                        del self.occs[filename]
+                        if not self.occs[filename]:
+                            del self.occs[filename]
                     # Delete only one occurrence, hence the name try_delete_one
                     return True
 
