@@ -81,6 +81,9 @@ def get_snoozed_alarms(last_search, filename, occs):
 
 
 def activate_alarms_range(filename, mint, maxt, occsd):
+    # Unlike activate_old_alarms and activate_alarms, this function shouldn't
+    # be subject to race conditions, as it's run in the main thread, so
+    # existence checks should be superfluous
     for id_ in occsd:
         for occ in occsd[id_]:
             # occ may have alarm == mint, or start or end in the interval, but
@@ -91,18 +94,34 @@ def activate_alarms_range(filename, mint, maxt, occsd):
 
 def activate_old_alarms(occsd):
     for filename in occsd:
-        for id_ in occsd[filename]:
-            for occ in occsd[filename][id_]:
-                activate_alarm(occ)
+        # Due to race conditions, filename could have been closed meanwhile
+        # (e.g. if the modal dialog for closing the database was open in the
+        # interface)
+        if core_api.is_database_open(filename):
+            for id_ in occsd[filename]:
+                # Due to race conditions, id_ could have been deleted meanwhile
+                # (e.g. if the modal dialog for deleting the item was open in
+                # the interface)
+                if core_api.is_item(filename, id_):
+                    for occ in occsd[filename][id_]:
+                        activate_alarm(occ)
 
 
 def activate_alarms(time, occsd):
     for filename in occsd:
-        for id_ in occsd[filename]:
-            for occ in occsd[filename][id_]:
-                # occ may have start or end == time
-                if occ['alarm'] == time:
-                    activate_alarm(occ)
+        # Due to race conditions, filename could have been closed meanwhile
+        # (e.g. if the modal dialog for closing the database was open in the
+        # interface)
+        if core_api.is_database_open(filename):
+            for id_ in occsd[filename]:
+                # Due to race conditions, id_ could have been deleted meanwhile
+                # (e.g. if the modal dialog for deleting the item was open in
+                # the interface)
+                if core_api.is_item(filename, id_):
+                    for occ in occsd[filename][id_]:
+                        # occ may have start or end == time
+                        if occ['alarm'] == time:
+                            activate_alarm(occ)
 
 
 def activate_alarm(alarm):
@@ -166,7 +185,6 @@ def get_alarms(mint, maxt, filename, occs):
             # the new snooze time stored in alarmd
             if not occs.update(alarmd, origalarm) and snooze is False:
                 occs.move_active(alarmd, origalarm)
-
 
 
 def snooze_alarms(alarmsd, stime):

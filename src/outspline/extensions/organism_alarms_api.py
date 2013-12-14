@@ -33,6 +33,7 @@ def dismiss_alarms(alarmsd):
 
 def bind_to_alarm(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
+    # (Check for race conditions)
     return alarmsmod.alarm_event.bind(handler, bind)
 
 
