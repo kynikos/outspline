@@ -121,23 +121,11 @@ def find_addons(component):
 def make_pkgbuild_package(cname):
     pkgname = PACKAGES[cname]
     pkgbuild = os.path.join(DEST_DIR, pkgname + '.PKGBUILD')
+
+    subprocess.call(["updpkgsums", pkgbuild])
+
     tmppkgbuild = os.path.join(DEST_DIR, 'PKGBUILD')
-
     shutil.copy2(pkgbuild, tmppkgbuild)
-
-    p = subprocess.Popen(["makepkg", "--geninteg", "--clean"],
-                                                         stdout=subprocess.PIPE)
-    out = p.communicate()[0].decode("utf-8")
-
-    with open(pkgbuild, 'r') as f:
-        r = f.read()
-        ur = re.sub('sha256sums\=\(\'[a-z0-9]+\'\)\n', out, r)
-
-    with open(pkgbuild, 'w') as f:
-        f.write(ur)
-
-    with open(tmppkgbuild, 'w') as f:
-        f.write(ur)
 
     subprocess.call(["makepkg", "--source", "--clean"])
 
