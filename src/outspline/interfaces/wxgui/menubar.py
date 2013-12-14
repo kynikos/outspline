@@ -251,10 +251,11 @@ class MenuFile(wx.Menu):
     def save_database(self, event):
         core_api.block_databases()
         treedb = wx.GetApp().nb_left.get_selected_tab()
-        filename = treedb.get_filename()
-        if treedb and core_api.check_pending_changes(filename):
-            core_api.save_database(filename)
-            treedb.history.refresh()
+        if treedb:
+            filename = treedb.get_filename()
+            if core_api.check_pending_changes(filename):
+                core_api.save_database(filename)
+                treedb.history.refresh()
         core_api.release_databases()
 
     def save_all_databases(self, event):
@@ -510,28 +511,33 @@ class MenuDatabase(wx.Menu):
             # Do not use none=False in order to allow the creation of the first
             # item
             selection = treedb.get_selections(many=False)
-            if selection:
-                base = selection[0]
-                baseid = treedb.get_item_id(base)
 
-                id_ = core_api.create_sibling(filename=filename, baseid=baseid,
-                                              text='New item',
-                                              description='Insert item')
+            # If multiple items are selected, selection will be bool (False)
+            if isinstance(selection, list):
+                if len(selection) > 0:
+                    base = selection[0]
+                    baseid = treedb.get_item_id(base)
 
-                item = treedb.insert_item(base, 'after', id_=id_)
-            else:
-                base = treedb.get_root()
-                baseid = None
+                    id_ = core_api.create_sibling(filename=filename,
+                                                    baseid=baseid,
+                                                    text='New item',
+                                                    description='Insert item')
 
-                id_ = core_api.create_child(filename=filename, baseid=baseid,
-                                            text='New item',
-                                            description='Insert item')
+                    item = treedb.insert_item(base, 'after', id_=id_)
+                else:
+                    base = treedb.get_root()
+                    baseid = None
 
-                item = treedb.insert_item(base, 'append', id_=id_)
+                    id_ = core_api.create_child(filename=filename,
+                                                    baseid=baseid,
+                                                    text='New item',
+                                                    description='Insert item')
 
-            treedb.select_item(item)
+                    item = treedb.insert_item(base, 'append', id_=id_)
 
-            treedb.history.refresh()
+                treedb.select_item(item)
+
+                treedb.history.refresh()
 
         core_api.release_databases()
 
@@ -906,7 +912,7 @@ class MenuView(wx.Menu):
         self.ID_HISTORY = wx.NewId()
 
         self.history = self.AppendCheckItem(self.ID_HISTORY,
-                                            "Show &history\tCTRL+h",
+                                            "Show &history\tCTRL+SHIFT+h",
                                             "Show history frame")
 
         wx.GetApp().Bind(wx.EVT_MENU, self.toggle_history, self.history)

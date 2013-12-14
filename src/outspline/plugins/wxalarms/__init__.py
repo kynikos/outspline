@@ -92,7 +92,7 @@ class AlarmsWindow():
         self.ID_SHOW = wx.NewId()
         self.menushow = wxgui_api.insert_menu_item('View',
                                                self.config.get_int('menu_pos'),
-                                               'Show &alarms\tCTRL+r',
+                                               'Show &alarms\tCTRL+SHIFT+r',
                                                id_=self.ID_SHOW,
                                                help='Open the alarms window',
                                                kind='check',

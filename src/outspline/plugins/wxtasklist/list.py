@@ -488,7 +488,7 @@ class MainMenu(wx.Menu):
                             "Open in the editor the database items associated "
                             "to the selected occurrences")
 
-        self.snooze = wx.MenuItem(self, self.ID_SNOOZE, "&Snooze selected\tF7",
+        self.snooze = wx.MenuItem(self, self.ID_SNOOZE, "&Snooze selected",
                                 "Snooze the selected alarms",
                                 subMenu=SnoozeSelectedConfigMenu(self.occview))
         self.snooze_all = wx.MenuItem(self, self.ID_SNOOZE_ALL,
@@ -540,22 +540,25 @@ class MainMenu(wx.Menu):
             tab = wx.GetApp().nb_right.get_selected_tab()
 
             if tab is self.occview.parent:
-                if self.occview.listview.GetSelectedItemCount() > 0:
+                sel = self.occview.listview.GetFirstSelected()
+
+                if sel > -1:
                     self.find.Enable()
                     self.edit.Enable()
 
-                sel = self.occview.listview.GetFirstSelected()
+                    while True:
+                        item = self.occview.occs[
+                                        self.occview.listview.GetItemData(sel)]
 
-                while sel > -1:
-                    item = self.occview.occs[
-                                    self.occview.listview.GetItemData(sel)]
+                        if item.alarm is False:
+                            self.snooze.Enable()
+                            self.dismiss.Enable()
+                            break
 
-                    if item.alarm is False:
-                        self.snooze.Enable()
-                        self.dismiss.Enable()
-                        break
+                        sel = self.occview.listview.GetNextSelected(sel)
 
-                    sel = self.occview.listview.GetNextSelected(sel)
+                        if sel < 0:
+                            break
 
                 # Note that "all" means all the visible active alarms; some
                 # may be hidden in the current view; this is also why these
@@ -575,40 +578,56 @@ class MainMenu(wx.Menu):
         self.dismiss_all.Enable()
 
     def find_in_tree(self, event):
-        for filename in core_api.get_open_databases():
-            wxgui_api.unselect_all_items(filename)
+        tab = wx.GetApp().nb_right.get_selected_tab()
 
-        sel = self.occview.listview.GetFirstSelected()
+        if tab is self.occview.parent:
+            sel = self.occview.listview.GetFirstSelected()
 
-        # [1]: line repeated in the loop because of
-        # wxgui_api.select_database_tab
-        item = self.occview.occs[self.occview.listview.GetItemData(sel)]
-        wxgui_api.select_database_tab(item.filename)
+            if sel > -1:
+                for filename in core_api.get_open_databases():
+                    wxgui_api.unselect_all_items(filename)
 
-        while sel > -1:
-            # It's necessary to repeat this line (see [1]) because
-            # wxgui_api.select_database_tab must be executed only once for the
-            # first selected item
-            item = self.occview.occs[self.occview.listview.GetItemData(sel)]
-            wxgui_api.add_item_to_selection(item.filename, item.id_)
-            sel = self.occview.listview.GetNextSelected(sel)
+                # [1]: line repeated in the loop because of
+                # wxgui_api.select_database_tab
+                item = self.occview.occs[self.occview.listview.GetItemData(
+                                                                        sel)]
+                wxgui_api.select_database_tab(item.filename)
+
+                while True:
+                    # It's necessary to repeat this line (see [1]) because
+                    # wxgui_api.select_database_tab must be executed only once
+                    # for the first selected item
+                    item = self.occview.occs[self.occview.listview.GetItemData(
+                                                                        sel)]
+                    wxgui_api.add_item_to_selection(item.filename, item.id_)
+                    sel = self.occview.listview.GetNextSelected(sel)
+
+                    if sel < 0:
+                        break
 
     def edit_items(self, event):
-        sel = self.occview.listview.GetFirstSelected()
+        tab = wx.GetApp().nb_right.get_selected_tab()
 
-        while sel > -1:
-            item = self.occview.occs[self.occview.listview.GetItemData(sel)]
-            wxgui_api.open_editor(item.filename, item.id_)
-            sel = self.occview.listview.GetNextSelected(sel)
+        if tab is self.occview.parent:
+            sel = self.occview.listview.GetFirstSelected()
+
+            while sel > -1:
+                item = self.occview.occs[self.occview.listview.GetItemData(
+                                                                        sel)]
+                wxgui_api.open_editor(item.filename, item.id_)
+                sel = self.occview.listview.GetNextSelected(sel)
 
     def dismiss_selected_alarms(self, event):
         core_api.block_databases()
 
-        sel = self.occview.listview.GetFirstSelected()
-        alarmsd = self.occview.get_selected_active_alarms()
+        tab = wx.GetApp().nb_right.get_selected_tab()
 
-        organism_alarms_api.dismiss_alarms(alarmsd)
-        # Let the alarm off event update the tasklist
+        if tab is self.occview.parent:
+            alarmsd = self.occview.get_selected_active_alarms()
+
+            if len(alarmsd) > 0:
+                organism_alarms_api.dismiss_alarms(alarmsd)
+                # Let the alarm off event update the tasklist
 
         core_api.release_databases()
 
@@ -616,8 +635,16 @@ class MainMenu(wx.Menu):
         # Note that "all" means all the visible active alarms; some may be
         # hidden in the current view
         core_api.block_databases()
-        organism_alarms_api.dismiss_alarms(self.occview.activealarms)
-        # Let the alarm off event update the tasklist
+
+        tab = wx.GetApp().nb_right.get_selected_tab()
+
+        if tab is self.occview.parent:
+            alarmsd = self.occview.activealarms
+
+            if len(alarmsd) > 0:
+                organism_alarms_api.dismiss_alarms(alarmsd)
+                # Let the alarm off event update the tasklist
+
         core_api.release_databases()
 
 
@@ -637,8 +664,9 @@ class ContextMenu(wx.Menu):
         self.find = wx.MenuItem(self, self.mainmenu.ID_FIND, "&Find in tree")
         self.edit = wx.MenuItem(self, self.mainmenu.ID_EDIT, "&Edit selected")
         self.snooze = wx.MenuItem(self, self.mainmenu.ID_SNOOZE,
-                                                            "&Snooze selected",
-                                subMenu=SnoozeSelectedConfigMenu(self.occview))
+                                            "&Snooze selected",
+                                            subMenu=SnoozeSelectedConfigMenu(
+                                            self.occview, accelerator=False))
         self.dismiss = wx.MenuItem(self, self.mainmenu.ID_DISMISS,
                                                            "&Dismiss selected")
 
@@ -678,11 +706,13 @@ class ContextMenu(wx.Menu):
 
 
 class _SnoozeConfigMenu(wx.Menu):
+    occview = None
     snoozetimes = None
     snoozefor = None
 
-    def __init__(self):
+    def __init__(self, occview):
         wx.Menu.__init__(self)
+        self.occview = occview
         self.snoozetimes = {}
 
         # Using a set here to remove any duplicates would lose the order of

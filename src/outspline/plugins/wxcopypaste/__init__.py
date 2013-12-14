@@ -53,7 +53,7 @@ def cut_items(event, no_confirm=False):
             for item in selection:
                 id_ = treedb.get_item_id(item)
                 if not wxgui_api.close_editor(filename, id_,
-                                      ask='quiet' if no_confirm else 'discard'):
+                                    ask='quiet' if no_confirm else 'discard'):
                     core_api.release_databases()
                     return False
 
@@ -98,35 +98,38 @@ def paste_items_as_siblings(event, no_confirm=False):
         filename = treedb.get_filename()
 
         if no_confirm or copypaste_api.can_paste_safely(filename) or \
-                        msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK:
+                    msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK:
             # Do not use none=False in order to allow pasting in an empty
             # database
             selection = treedb.get_selections(many=False)
 
-            if selection:
-                base = selection[0]
-                baseid = treedb.get_item_id(base)
+            # If multiple items are selected, selection will be bool (False)
+            if isinstance(selection, list):
+                if len(selection) > 0:
+                    base = selection[0]
+                    baseid = treedb.get_item_id(base)
 
-                roots = copypaste_api.paste_items_as_siblings(filename, baseid,
-                                                      description='Paste items')
+                    roots = copypaste_api.paste_items_as_siblings(filename,
+                                            baseid, description='Paste items')
 
-                for r in roots:
-                    treeroot = treedb.insert_item(selection[0], 'after', id_=r)
-                    treedb.create(base=treeroot)
-            else:
-                base = treedb.get_root()
-                baseid = treedb.get_item_id(base)
+                    for r in roots:
+                        treeroot = treedb.insert_item(selection[0], 'after',
+                                                                        id_=r)
+                        treedb.create(base=treeroot)
+                else:
+                    base = treedb.get_root()
+                    baseid = treedb.get_item_id(base)
 
-                roots = copypaste_api.paste_items_as_children(filename, baseid,
-                                                      description='Paste items')
+                    roots = copypaste_api.paste_items_as_children(filename,
+                                            baseid, description='Paste items')
 
-                for r in roots:
-                    treeroot = treedb.insert_item(base, 'append', id_=r)
-                    treedb.create(base=treeroot)
+                    for r in roots:
+                        treeroot = treedb.insert_item(base, 'append', id_=r)
+                        treedb.create(base=treeroot)
 
-            treedb.history.refresh()
+                treedb.history.refresh()
 
-            items_pasted_event.signal(filename=filename)
+                items_pasted_event.signal(filename=filename)
 
     core_api.release_databases()
 
@@ -141,14 +144,15 @@ def paste_items_as_children(event, no_confirm=False):
             filename = treedb.get_filename()
 
             if no_confirm or copypaste_api.can_paste_safely(filename) or \
-                        msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK:
+                    msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK:
                 baseid = treedb.get_item_id(selection[0])
 
                 roots = copypaste_api.paste_items_as_children(filename, baseid,
-                                                  description='Paste sub-items')
+                                                description='Paste sub-items')
 
                 for r in roots:
-                    treeroot = treedb.insert_item(selection[0], 'append', id_=r)
+                    treeroot = treedb.insert_item(selection[0], 'append',
+                                                                        id_=r)
                     treedb.create(base=treeroot)
 
                 treedb.history.refresh()
@@ -176,7 +180,8 @@ def handle_open_database(kwargs):
                                                help='Copy the selected items',
                                                sep=config['cmenucopy_sep'],
                                                icon='@copy')
-    cmenu[filename]['paste'] = wxgui_api.insert_tree_context_menu_item(filename,
+    cmenu[filename]['paste'] = wxgui_api.insert_tree_context_menu_item(
+                        filename,
                         config.get_int('cmenupaste_pos'),
                         '&Paste siblings',
                         id_=ID_PASTE,
