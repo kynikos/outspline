@@ -526,7 +526,7 @@ class MainMenu(wx.Menu):
         wxgui_api.bind_to_update_menu_items(self.update_items)
         wxgui_api.bind_to_reset_menu_items(self.reset_items)
 
-        wxgui_api.insert_menu_main_item('&Tasklist', 'View', self)
+        wxgui_api.insert_menu_main_item('&Occurrences', 'View', self)
 
     def update_items(self, kwargs):
         if kwargs['menu'] is self:
