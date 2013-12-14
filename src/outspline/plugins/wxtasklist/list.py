@@ -526,7 +526,7 @@ class MainMenu(wx.Menu):
         wxgui_api.bind_to_update_menu_items(self.update_items)
         wxgui_api.bind_to_reset_menu_items(self.reset_items)
 
-        wxgui_api.insert_menu_main_item('&Tasklist', 'Help', self)
+        wxgui_api.insert_menu_main_item('&Tasklist', 'View', self)
 
     def update_items(self, kwargs):
         if kwargs['menu'] is self:
@@ -739,41 +739,107 @@ class _SnoozeConfigMenu(wx.Menu):
         return lambda event: self.snooze_for(time)
 
     def snooze_for(self, time):
-        # Note that "all" means all the visible active alarms; some may be
-        # hidden in the current view
         core_api.block_databases()
-        organism_alarms_api.snooze_alarms(self.get_alarms(), time)
-        # Let the alarm off event update the tasklist
+
+        tab = wx.GetApp().nb_right.get_selected_tab()
+
+        if tab is self.occview.parent:
+            alarmsd = self.get_alarms()
+
+            if len(alarmsd) > 0:
+                organism_alarms_api.snooze_alarms(alarmsd, time)
+                # Let the alarm off event update the tasklist
+
         core_api.release_databases()
 
     def snooze_for_custom(self, event):
-        # Note that "all" means all the visible active alarms; some may be
-        # hidden in the current view
         core_api.block_databases()
-        organism_alarms_api.snooze_alarms(self.get_alarms(), time)
-        # Let the alarm off event update the tasklist
+
+        tab = wx.GetApp().nb_right.get_selected_tab()
+
+        if tab is self.occview.parent:
+            alarmsd = self.get_alarms()
+
+            if len(alarmsd) > 0:
+                dlg = SnoozeDialog()
+
+                if dlg.ShowModal() == wx.ID_OK:
+                    organism_alarms_api.snooze_alarms(alarmsd, dlg.get_time())
+                    # Let the alarm off event update the tasklist
+
         core_api.release_databases()
 
 
-class SnoozeSelectedConfigMenu(_SnoozeConfigMenu):
-    occview = None
+class SnoozeDialog(wx.Dialog):
+    number = None
+    unit = None
 
-    def __init__(self, occview):
-        _SnoozeConfigMenu.__init__(self)
-        self.occview = occview
+    def __init__(self):
+        wx.Dialog.__init__(self, parent=wx.GetApp().root,
+                                                title="Snooze configuration")
+
+        vsizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(vsizer)
+
+        hsizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        icon = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
+                                        'appointment-soon', wx.ART_CMN_DIALOG))
+        hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
+
+        ssizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        label = wx.StaticText(self, label='Snooze for:')
+        ssizer.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
+
+        self.number = wx.SpinCtrl(self, min=1, max=999, size=(48, 21),
+                                                        style=wx.SP_ARROW_KEYS)
+        self.number.SetValue(5)
+        ssizer.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                    border=4)
+
+        self.unit = wx.ComboBox(self, value='minutes', size=(100, 21),
+                                choices=('minutes', 'hours', 'days', 'weeks'),
+                                style=wx.CB_READONLY)
+        ssizer.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL)
+
+        hsizer.Add(ssizer, flag=wx.ALIGN_TOP)
+
+        vsizer.Add(hsizer, flag=wx.ALIGN_CENTER | wx.ALL, border=12)
+
+        buttons = self.CreateButtonSizer(wx.OK | wx.CANCEL)
+        vsizer.Add(buttons,
+                        flag=wx.ALIGN_RIGHT | wx.LEFT | wx.RIGHT | wx.BOTTOM,
+                        border=12)
+
+        self.Fit()
+
+    def get_time(self):
+        mult = {'minutes': 60,
+                'hours': 3600,
+                'days': 86400,
+                'weeks': 604800}
+        return self.number.GetValue() * mult[self.unit.GetValue()]
+
+
+class SnoozeSelectedConfigMenu(_SnoozeConfigMenu):
+    def __init__(self, occview, accelerator=True):
+        _SnoozeConfigMenu.__init__(self, occview)
+        accel = "\tF7" if accelerator else ""
+        self.snoozefor.SetText(self.snoozefor.GetText() + accel)
 
     def get_alarms(self):
         return self.occview.get_selected_active_alarms()
 
 
 class SnoozeAllConfigMenu(_SnoozeConfigMenu):
-    occview = None
-
-    def __init__(self, occview):
-        _SnoozeConfigMenu.__init__(self)
-        self.snoozefor.SetText(self.snoozefor.GetText() + "\tCTRL+F7")
-        self.occview = occview
+    def __init__(self, occview, accelerator=True):
+        _SnoozeConfigMenu.__init__(self, occview)
+        accel = "\tCTRL+F7" if accelerator else ""
+        self.snoozefor.SetText(self.snoozefor.GetText() + accel)
 
     def get_alarms(self):
+        # Note that "all" means all the visible active alarms; some may be
+        # hidden in the current view
         return self.occview.activealarms
 
