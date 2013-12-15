@@ -172,3 +172,28 @@ def load_user_config(cliargs):
 
 def export_configuration():
     config.export_add(user_config_file)
+
+
+def compose_debug_message():
+    import logger
+
+    message = 'Log file: {} (level {})\n'.format(logger.logfile,
+                                                            logger.loglevel)
+    message += 'Core {}\n'.format(info('Core')['version'])
+    message += 'Components:\n'
+
+    for c in components('Components').get_sections():
+        message += '    {} {}\n'.format(c,
+                                        components('Components')(c)['version'])
+
+    for type_ in ('Extensions', 'Interfaces', 'Plugins'):
+        message += "{}:\n".format(type_)
+
+        for addon in info(type_).get_sections():
+            message += "    {} {} ({})\n".format(addon,
+                            info(type_)(addon)['version'],
+                            'enabled' \
+                            if config(type_)(addon).get_bool('enabled') else \
+                            'disabled')
+
+    return message

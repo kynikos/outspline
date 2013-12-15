@@ -32,6 +32,10 @@ def handle_uncaught_exception(type, value, traceback):
 
     uncaught_exception_event.signal(exc_info=(type, value, traceback))
 
+    # Log important information about the configuration because it could have
+    # been removed from the log file due to its rotation
+    logger.log.debug(configuration.compose_debug_message())
+
     # Force exit, since sys.exit() may just hang the application waiting for
     # the process to respond
     os._exit(1)

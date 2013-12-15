@@ -23,6 +23,8 @@ import logging.config
 from configuration import components, info, config, _USER_FOLDER_PERMISSIONS
 
 log = None
+logfile = None
+loglevel = None
 
 
 class LevelFilter():
@@ -38,10 +40,14 @@ class LevelFilter():
 
 
 def set_logger(cliargs):
+    global loglevel
+
     if cliargs.loglevel != None:
         loglevel = cliargs.loglevel
     else:
         loglevel = config('Log')['log_level']
+
+    global logfile
 
     if cliargs.logfile != None:
         logfile = os.path.expanduser(cliargs.logfile)
@@ -184,6 +190,6 @@ def set_logger(cliargs):
     log = logging.getLogger('outspline')
 
     log.info('Start logging (level {}, file {})'.format(loglevel, logfile))
-    log.info('{} version {} ({})'.format('Outspline',
-                        components('Components')(components['core'])['version'],
-                  components('Components')(components['core'])['release_date']))
+    log.info('Outspline version {} ({})'.format(
+                components('Components')(components['core'])['version'],
+                components('Components')(components['core'])['release_date']))
