@@ -102,8 +102,6 @@ class AlarmsWindow():
 
         self.window.Bind(wx.EVT_CLOSE, self.hide)
 
-        core_api.bind_to_delete_item(self.handle_remove_item)
-        core_api.bind_to_history_remove(self.handle_remove_item)
         organism_alarms_api.bind_to_alarm(self.handle_alarm)
         organism_alarms_api.bind_to_alarm_off(self.handle_alarm_off)
         wxgui_api.bind_to_close_database(self.handle_close_db)
@@ -197,9 +195,6 @@ class AlarmsWindow():
 
     def handle_close_db(self, kwargs):
         self.close_alarms(filename=kwargs['filename'])
-
-    def handle_remove_item(self, kwargs):
-        self.close_alarms(filename=kwargs['filename'], id_=kwargs['id_'])
 
     def handle_alarm(self, kwargs):
         # Using CallAfter can cause (minor) bugs if the core timer is refreshed
