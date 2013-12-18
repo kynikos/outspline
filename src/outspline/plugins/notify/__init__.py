@@ -104,6 +104,7 @@ class BlinkingTrayIcon():
         organism_alarms_api.bind_to_alarm(self._blink_later)
         organism_alarms_api.bind_to_alarm_off(self._stop_later)
         wxgui_api.bind_to_close_database(self._stop_later)
+        core_api.bind_to_exit_app_2(self._exit)
 
     def _blink_later(self, kwargs):
         # Instead of self.blink, bind _this_ function to events that can be
@@ -120,8 +121,6 @@ class BlinkingTrayIcon():
         # Instead of self.stop, bind _this_ function to events that can be
         # signalled many times in a loop, so that self.stop is executed only
         # once after the last signal
-        # Using wx.CallLater here seems not to create problems if Outspline is
-        # closed before the action is called
         self.sdelay.Stop()
         self.sdelay = wx.CallLater(self.SDELAY, self._stop)
 
@@ -139,6 +138,14 @@ class BlinkingTrayIcon():
         tooltip = 'Active alarms: {}'.format(str(nalarms))
         wxtrayicon_api.set_tooltip_value(self.ref_id, tooltip)
         return nalarms
+
+    def _exit(self, event):
+        # Unbind the handlers whose timers could race with the application
+        # closure
+        organism_alarms_api.bind_to_alarm_off(self._stop_later, False)
+        wxgui_api.bind_to_close_database(self._stop_later, False)
+        self.delay.Stop()
+        self.sdelay.Stop()
 
 
 def main():
