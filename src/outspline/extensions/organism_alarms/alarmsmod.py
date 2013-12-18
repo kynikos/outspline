@@ -187,6 +187,21 @@ def get_alarms(mint, maxt, filename, occs):
                 occs.move_active(alarmd, origalarm)
 
 
+def get_number_of_active_alarms():
+    count = 0
+
+    for filename in cdbs:
+        conn = core_api.get_connection(filename)
+        cur = conn.cursor()
+        cur.execute(queries.alarms_select_count)
+        core_api.give_connection(filename, conn)
+
+        row = cur.fetchone()
+        count += row['A_active_alarms']
+
+    return count
+
+
 def snooze_alarms(alarmsd, stime):
     newalarm = ((int(_time.time()) + stime) // 60 + 1) * 60
 

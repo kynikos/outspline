@@ -23,6 +23,10 @@ def get_supported_open_databases():
     return alarmsmod.cdbs
 
 
+def get_number_of_active_alarms():
+    return alarmsmod.get_number_of_active_alarms()
+
+
 def snooze_alarms(alarmsd, stime):
     alarmsmod.snooze_alarms(alarmsd, stime)
 
