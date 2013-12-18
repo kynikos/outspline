@@ -488,7 +488,7 @@ class MainMenu(wx.Menu):
         self.ID_DISMISS = wx.NewId()
         self.ID_DISMISS_ALL = wx.NewId()
 
-        self.find = wx.MenuItem(self, self.ID_FIND, "&Find in tree\tF5",
+        self.find = wx.MenuItem(self, self.ID_FIND, "&Find in database\tF5",
             "Select the database item associated to the selected occurrence")
         self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit selected\tF6",
                             "Open in the editor the database items associated "
@@ -667,7 +667,8 @@ class ContextMenu(wx.Menu):
         self.occview = occview
         self.mainmenu = mainmenu
 
-        self.find = wx.MenuItem(self, self.mainmenu.ID_FIND, "&Find in tree")
+        self.find = wx.MenuItem(self, self.mainmenu.ID_FIND,
+                                                        "&Find in database")
         self.edit = wx.MenuItem(self, self.mainmenu.ID_EDIT, "&Edit selected")
         self.snooze = wx.MenuItem(self, self.mainmenu.ID_SNOOZE,
                                             "&Snooze selected",

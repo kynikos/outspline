@@ -231,11 +231,11 @@ class TabContextMenu(wx.Menu):
         self.item = item
 
         self.find = wx.MenuItem(self, wx.GetApp().menu.edit.ID_FIND,
-                                                               "&Find in tree")
+                                                        "&Find in database")
         self.apply_ = wx.MenuItem(self, wx.GetApp().menu.edit.ID_APPLY,
-                                                                      "&Apply")
+                                                                    "&Apply")
         self.close = wx.MenuItem(self, wx.GetApp().menu.edit.ID_CLOSE,
-                                                                      "Cl&ose")
+                                                                    "Cl&ose")
 
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
         self.apply_.SetBitmap(wx.ArtProvider.GetBitmap('@apply', wx.ART_MENU))

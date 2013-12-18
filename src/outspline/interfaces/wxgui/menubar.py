@@ -729,7 +729,7 @@ class MenuEdit(wx.Menu):
         self.paste = wx.MenuItem(self, self.ID_PASTE, "&Paste\tCTRL+v",
                                                     "Paste text at the cursor")
         self.find = wx.MenuItem(self, self.ID_FIND,
-                                "&Find in tree\tF2",
+                                "&Find in database\tF2",
                                 "Find the edited item in the database tree")
         self.apply = wx.MenuItem(self, self.ID_APPLY, "&Apply\tF3",
                                  "Apply the focused editor")
