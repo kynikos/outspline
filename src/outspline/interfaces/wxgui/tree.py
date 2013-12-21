@@ -97,8 +97,9 @@ class Database(wx.SplitterWindow):
         # kwargs['text'] could be None if the query updated the position of the
         # item and not its text
         if kwargs['filename'] == self.filename and kwargs['text'] is not None:
+            treeitem = self.find_item(kwargs['id_'])
             title = self.make_item_title(kwargs['text'])
-            self.set_item_title(self.find_item(kwargs['id_']), title)
+            self.set_item_title(treeitem, title)
 
     def handle_history_insert(self, kwargs):
         filename = kwargs['filename']

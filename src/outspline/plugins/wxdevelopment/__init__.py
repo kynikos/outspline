@@ -25,8 +25,10 @@ import outspline.core_api as core_api
 import outspline.extensions.development_api as development_api
 import outspline.interfaces.wxgui_api as wxgui_api
 organism_api = coreaux_api.import_optional_extension_api('organism')
+links_api = coreaux_api.import_optional_extension_api('links')
 wxscheduler_basicrules_api = coreaux_api.import_optional_plugin_api(
-                                                       'wxscheduler_basicrules')
+                                                    'wxscheduler_basicrules')
+wxlinks_api = coreaux_api.import_optional_plugin_api('wxlinks')
 
 import simulator
 import tests
@@ -87,7 +89,7 @@ class MenuDev(wx.Menu):
                                     self.databases[filename]['menu'])
 
             self.databases[filename]['all_'] = self.databases[filename][
-                                        'menu'].Append(wx.NewId(), 'All tables')
+                                    'menu'].Append(wx.NewId(), 'All tables')
             wxgui_api.bind_to_menu(self.print_all_tables_loop(filename),
                                    self.databases[filename]['all_'])
 
@@ -95,10 +97,11 @@ class MenuDev(wx.Menu):
 
             for table in core_api.select_all_table_names(filename):
                 self.databases[filename]['tables'][table[0]] = \
-                                        self.databases[filename]['menu'].Append(
-                                                           wx.NewId(), table[0])
+                                    self.databases[filename]['menu'].Append(
+                                    wx.NewId(), table[0])
                 wxgui_api.bind_to_menu(self.print_table_loop(filename,
-                        table[0]), self.databases[filename]['tables'][table[0]])
+                                table[0]),
+                                self.databases[filename]['tables'][table[0]])
 
         if self.databases:
             self.printtb.AppendSeparator()
@@ -112,15 +115,15 @@ class MenuDev(wx.Menu):
         self.printtb.AppendMenu(wx.NewId(), ':memory:', self.memory['menu'])
 
         self.memory['all_'] = self.memory['menu'].Append(wx.NewId(),
-                                                                   'All tables')
+                                                                'All tables')
         wxgui_api.bind_to_menu(self.print_all_memory_tables,
-                                                            self.memory['all_'])
+                                                        self.memory['all_'])
 
         self.memory['menu'].AppendSeparator()
 
         for table in core_api.select_all_memory_table_names():
             self.memory['tables'][table[0]] = self.memory['menu'].Append(
-                                                           wx.NewId(), table[0])
+                                                        wx.NewId(), table[0])
             wxgui_api.bind_to_menu(self.print_memory_table_loop(table[0]),
                                    self.memory['tables'][table[0]])
 
@@ -187,15 +190,21 @@ class MenuDev(wx.Menu):
                     text = self._populate_tree_text()
 
                     id_ = self._populate_tree_item(mode, filename, itemid,
-                                                       group, text, description)
+                                                    group, text, description)
 
                     if organism_api and wxscheduler_basicrules_api and \
-                                                                   filename in \
-                                    organism_api.get_supported_open_databases():
+                            filename in \
+                            organism_api.get_supported_open_databases():
                         self._populate_tree_rules(filename, id_, group,
-                                                                    description)
+                                                            description)
 
                     self._populate_tree_gui(mode, filename, itemid, id_, text)
+
+                    # Links must be created *after* self._populate_tree_gui
+                    if links_api and wxlinks_api and filename in \
+                                    links_api.get_supported_open_databases():
+                            self._populate_tree_link(filename, id_, dbitems,
+                                                            group, description)
 
                 wxgui_api.refresh_history(filename)
         core_api.release_databases()
@@ -212,13 +221,13 @@ class MenuDev(wx.Menu):
         return ''.join((text, random.choice(words))).capitalize()
 
     def _populate_tree_item(self, mode, filename, itemid, group, text,
-                                                                   description):
+                                                                description):
         if mode == 'child':
             return core_api.append_item(filename, itemid, group, text=text,
-                                                        description=description)
+                                                    description=description)
         elif mode == 'sibling':
             return core_api.insert_item_after(filename, itemid, group,
-                                             text=text, description=description)
+                                            text=text, description=description)
 
     def _populate_tree_rules(self, filename, id_, group, description):
         rules = []
@@ -281,7 +290,15 @@ class MenuDev(wx.Menu):
             rules.append(rule)
 
         organism_api.update_item_rules(filename, id_, rules, group,
-                                                        description=description)
+                                                    description=description)
+
+    def _populate_tree_link(self, filename, id_, dbitems, group, description):
+        if random.randint(0, 8) == 0:
+            # This gives a chance that target will be the same as id_, but it's
+            # negligible, especially with large numbers of items
+            target = random.choice(dbitems)
+            links_api.make_link(filename, id_, target, group, description)
+            wxlinks_api.update_items_formatting(filename)
 
     def _populate_tree_gui(self, mode, filename, itemid, id_, text):
         if mode == 'child':
