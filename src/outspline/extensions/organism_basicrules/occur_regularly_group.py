@@ -45,10 +45,10 @@ def make_rule(refstart, interval, rstarts, rend, ralarm, guiconfig):
     # Make sure this rule can only produce occurrences compliant with the
     # requirements defined in organism_api.update_item_rules
     if isinstance(refstart, int) and refstart >= 0 and \
-                                isinstance(interval, int) and interval > 0 and \
-                                isinstance(rstarts, list) and 0 in rstarts and \
-                    (rend is None or (isinstance(rend, int) and rend > 0)) and \
-                                    (ralarm is None or isinstance(ralarm, int)):
+                               isinstance(interval, int) and interval > 0 and \
+                               isinstance(rstarts, list) and 0 in rstarts and \
+                   (rend is None or (isinstance(rend, int) and rend > 0)) and \
+                                   (ralarm is None or isinstance(ralarm, int)):
         mrstart = max(rstarts)
         irmaxs = []
 
@@ -82,16 +82,8 @@ def make_rule(refstart, interval, rstarts, rend, ralarm, guiconfig):
 
 
 def _compute_relative_max_time(reftime, refmax, interval):
-    # Always use refmax, _not_ refmin, in this algorithm, since it allows to
-    # get the right group of occurrences more easily
-    if reftime > refmax:
-        return interval - (reftime - refmax) % interval
-    else:
-        # Don't just return reftime - refmin when refmin <= reftime <= refmax,
-        # because in case of refspan > interval (overlapping groups of
-        # occurrences) it wouldn't always be the correct value (see the examples
-        # in occur_regularly_single.py)
-        return (refmax - reftime) % interval
+    # Use formula (S), see the examples in occur_regularly_single
+    return (refmax - reftime) % interval
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
@@ -175,7 +167,7 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
 
         # The rule is checked in make_rule, no need to use occs.add
         if occs.add_safe(base_time, occd) or (next_occ and start > next_occ and
-                                           (alarm is None or alarm > next_occ)):
+                                          (alarm is None or alarm > next_occ)):
             break
 
         if i > 0:

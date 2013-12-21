@@ -26,9 +26,12 @@ class ArtProvider(wx.ArtProvider):
     def __init__(self):
         wx.ArtProvider.__init__(self)
 
+        # Find standard icon names at http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
         # Use ids prefixed with '@' so that they're not mistaken as GTK icons
         self.gtk = {'@alarms': ('appointment-soon', 'appointment',
                                 'appointment-new', 'stock_new-appointment'),
+                    '@alarmoff': ('appointment-missed', 'appointment-soon',
+                                  'appointment'),
                     '@apply': ('emblem-ok', 'dialog-apply', 'dialog-ok',
                                'dialog-yes', 'gtk-apply', 'gtk-ok', 'gtk-yes',
                                'stock_yes', 'stock_mark', 'emblem-default'),
@@ -52,6 +55,8 @@ class ArtProvider(wx.ArtProvider):
                     '@exporttxt': ('document-export', 'gnome-stock-export',
                                    'document-save-as', 'gtk-save-as',
                                    'filesaveas', 'stock_save-as'),
+                    '@find': ('search', 'find' 'edit-find', 'gtk-find',
+                              'filefind', 'stock_search'),
                     '@languages': ('locale', 'preferences-desktop-locale',
                                    'config-language'),
                     '@movedown': ('go-down', 'gtk-go-down', 'down',
@@ -72,6 +77,9 @@ class ArtProvider(wx.ArtProvider):
                                 'stock_save'),
                     '@selectall': ('edit-select-all', 'gtk-select-all',
                                    'stock_select-all'),
+                    '@sortdown': ('go-down', 'gtk-go-down', 'down',
+                                  'stock_down'),
+                    '@sortup': ('go-up', 'gtk-go-up', 'up', 'stock_up'),
                     '@redo': ('redo', 'edit-redo', 'gtk-redo-ltr',
                                 'stock_redo'),
                     '@redodb': ('redo', 'edit-redo', 'gtk-redo-ltr',

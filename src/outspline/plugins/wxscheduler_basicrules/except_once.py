@@ -21,10 +21,11 @@ import datetime as _datetime
 import random
 import wx
 
+from outspline.static.wxclasses.choices import WidgetChoiceCtrl
+from outspline.static.wxclasses.time import DateHourCtrl, TimeSpanCtrl
 import outspline.extensions.organism_basicrules_api as organism_basicrules_api
 import outspline.plugins.wxscheduler_api as wxscheduler_api
 
-import widgets
 import msgboxes
 
 _RULE_DESC = 'Except once'
@@ -67,7 +68,7 @@ class Rule():
         box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                       border=4)
 
-        self.startw = widgets.DateHourCtrl(self.mpanel)
+        self.startw = DateHourCtrl(self.mpanel)
         self.startw.set_values(self.original_values['startY'],
                                self.original_values['startm'],
                                self.original_values['startd'],
@@ -76,7 +77,7 @@ class Rule():
         box.Add(self.startw.get_main_panel())
 
     def _create_widgets_end(self):
-        self.endchoicew = widgets.WidgetChoiceCtrl(self.mpanel,
+        self.endchoicew = WidgetChoiceCtrl(self.mpanel,
                                   (('End date:', self._create_end_date_widget),
                                   ('Duration:', self._create_duration_widget)),
                                             self.original_values['endtype'], 4)
@@ -85,7 +86,7 @@ class Rule():
                                                                       border=4)
 
     def _create_end_date_widget(self):
-        self.endw = widgets.DateHourCtrl(self.endchoicew.get_main_panel())
+        self.endw = DateHourCtrl(self.endchoicew.get_main_panel())
         self.endw.set_values(self.original_values['endY'],
                              self.original_values['endm'],
                              self.original_values['endd'],
@@ -95,7 +96,7 @@ class Rule():
         return self.endw.get_main_panel()
 
     def _create_duration_widget(self):
-        self.endw = widgets.TimeSpanCtrl(self.endchoicew.get_main_panel(), 1)
+        self.endw = TimeSpanCtrl(self.endchoicew.get_main_panel(), 1, 999)
         self.endw.set_values(self.original_values['rendn'],
                              self.original_values['rendu'])
 
@@ -178,7 +179,7 @@ class Rule():
             }
 
         values['rendn'], values['rendu'] = \
-                                   widgets.TimeSpanCtrl._compute_widget_values(
+                                           TimeSpanCtrl._compute_widget_values(
                                                values['end'] - values['start'])
 
         localstart = _datetime.datetime.fromtimestamp(values['start'])

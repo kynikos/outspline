@@ -25,7 +25,7 @@ import outspline.extensions.organism_api as organism_api
 
 import queries
 from exceptions import (BadOccurrenceError, BadExceptRuleError,
-                                                    ConflictingRuleHandlerError)
+                                                   ConflictingRuleHandlerError)
 
 get_next_occurrences_event = Event()
 search_next_occurrences_event = Event()
@@ -108,13 +108,15 @@ class NextOccurrences():
             pass
         else:
             for occ in occsc:
+                # Occurrences with start == o['end'] shouldn't be excepted, as
+                # they're not considered part of the end minute
                 if start <= occ['start'] <= end or (inclusive and
-                                           occ['start'] <= start <= occ['end']):
+                                           occ['start'] <= start < occ['end']):
                     self.occs[filename][id_].remove(occ)
         # Do not try to update self.next (even in case there are no occurrences
-        # left): this lets search_next_occurrences reset the last search time to
-        # this value, thus ignoring the excepted occurrences at the following
-        # search
+        # left): this lets search_next_occurrences reset the last search time
+        # to this value, thus ignoring the excepted occurrences at the
+        # following search
 
     def try_delete_one(self, filename, id_, start, end, alarm):
         try:
@@ -124,7 +126,7 @@ class NextOccurrences():
         else:
             for occd in occsc:
                 if (start, end, alarm) == (occd['start'], occd['end'],
-                                                                 occd['alarm']):
+                                                                occd['alarm']):
                     self.occs[filename][id_].remove(occd)
                     if not self.occs[filename][id_]:
                         del self.occs[filename][id_]
@@ -183,13 +185,13 @@ def get_next_occurrences(base_time=None, base_times=None):
 
             for rule in rules:
                 rule_handlers[rule['rule']](base_time, filename, id_, rule,
-                                                                           occs)
+                                                                          occs)
 
         get_next_occurrences_event.signal(base_time=base_time,
-                                                   filename=filename, occs=occs)
+                                                  filename=filename, occs=occs)
 
     log.debug('Next occurrences found in {} (time) / {} (clock) s'.format(
-               _time.time() - search_start[0], _time.clock() - search_start[1]))
+              _time.time() - search_start[0], _time.clock() - search_start[1]))
 
     return occs
 
@@ -231,8 +233,8 @@ def set_last_search_all_safe(tstamp):
         # when a database has just been opened while others were already open:
         # it would have a lower last_search than the other databases, and when
         # the next occurrences are searched, all the databases' last_search
-        # values would be updated to the lower value, thus possibly reactivating
-        # old alarms
+        # values would be updated to the lower value, thus possibly
+        # reactivating old alarms
         if tstamp > last_search:
             cur.execute(queries.timerproperties_update, (tstamp, ))
 
@@ -257,7 +259,7 @@ def search_old_occurrences(filename):
         log.debug('Search old occurrences')
 
         occs = organism_api.get_occurrences_range(mint=last_search,
-                                                                  maxt=whileago)
+                                                                 maxt=whileago)
         occsd = occs.get_dict()
         # Executing occs.get_active_dict here wouldn't make sense; let
         # search_next_occurrences deal with snoozed and active alarms
@@ -269,7 +271,7 @@ def search_old_occurrences(filename):
             # last_search: these must be excluded because last_search is the
             # time that was last already activated
             activate_occurrences_range_event.signal(filename=filename,
-                         mint=last_search, maxt=whileago, occsd=occsd[filename])
+                        mint=last_search, maxt=whileago, occsd=occsd[filename])
 
 
 def search_next_occurrences(kwargs=None):
@@ -298,14 +300,14 @@ def search_next_occurrences(kwargs=None):
             activate_occurrences(next_occurrence, occsd)
         else:
             # Reset last search time in every open database, so that if a rule
-            # is created with an alarm time between the last search and now, the
-            # alarm won't be activated
+            # is created with an alarm time between the last search and now,
+            # the alarm won't be activated
             set_last_search_all(now)
 
             next_loop = next_occurrence - now
             global timer
             timer = Timer(next_loop, activate_occurrences_block,
-                                                       (next_occurrence, occsd))
+                                                      (next_occurrence, occsd))
             timer.start()
 
             log.debug('Next occurrence in {} seconds'.format(next_loop))
@@ -314,8 +316,8 @@ def search_next_occurrences(kwargs=None):
         # database, so that:
         # 1) this will let the next get_next_occurrences ignore the occurrences
         # excepted in the previous search
-        # 2) if a rule is created with an alarm time between the last search and
-        # now, the alarm won't be activated
+        # 2) if a rule is created with an alarm time between the last search
+        # and now, the alarm won't be activated
         set_last_search_all(now)
 
     search_next_occurrences_event.signal()

@@ -31,13 +31,11 @@ trayicon = None
 
 
 class TrayIcon(wx.TaskBarIcon):
-    rootw = None
     ID_MINIMIZE = None
     menu = None
 
     def __init__(self, rootw):
         wx.TaskBarIcon.__init__(self)
-        self.rootw = rootw
         self.ID_MINIMIZE = wx.NewId()
 
         self.SetIcon(wx.ArtProvider.GetIcon('text-editor', wx.ART_FRAME_ICON),
@@ -52,9 +50,9 @@ class TrayIcon(wx.TaskBarIcon):
                                   help='Minimize the main window to tray icon',
                                   sep=config['menu_sep'], icon='@tray')
 
-        self.rootw.Bind(wx.EVT_CLOSE, self.rootw.hide)
-        wxgui_api.bind_to_menu(self.rootw.hide, menumin)
-        self.Bind(wx.EVT_TASKBAR_LEFT_UP, self.rootw.toggle_shown)
+        rootw.Bind(wx.EVT_CLOSE, wxgui_api.hide_main_window)
+        wxgui_api.bind_to_menu(wxgui_api.hide_main_window, menumin)
+        self.Bind(wx.EVT_TASKBAR_LEFT_UP, wxgui_api.toggle_main_window)
         core_api.bind_to_exit_app_2(self.remove)
 
     def CreatePopupMenu(self):
@@ -88,7 +86,7 @@ class TrayMenu(wx.Menu):
         self.AppendSeparator()
         self.exit_ = self.Append(wx.ID_EXIT, "E&xit\tCtrl+Q")
 
-        parent.Bind(wx.EVT_MENU, parent.rootw.toggle_shown, self.restore)
+        parent.Bind(wx.EVT_MENU, wxgui_api.toggle_main_window, self.restore)
         parent.Bind(wx.EVT_MENU, wx.GetApp().exit_app, self.exit_)
 
     def insert_item(self, pos, text, id_=wx.ID_ANY, help='', sep='none',

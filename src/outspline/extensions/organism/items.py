@@ -24,7 +24,7 @@ import outspline.core_api as core_api
 
 import queries
 from exceptions import (BadOccurrenceError, BadExceptRuleError,
-                                                    ConflictingRuleHandlerError)
+                                                   ConflictingRuleHandlerError)
 
 update_item_rules_conditional_event = Event()
 get_alarms_event = Event()
@@ -42,11 +42,11 @@ class OccurrencesRange():
 
     def update(self, occ, origalarm):
         return self._update(self.d, self.add_safe, self._replace, occ,
-                                                                      origalarm)
+                                                                     origalarm)
 
     def move_active(self, occ, origalarm):
         return self._update(self.actd, self.add_active, self._move, occ,
-                                                                      origalarm)
+                                                                     origalarm)
 
     def add(self, occ):
         # Make sure this occurrence is compliant with the requirements defined
@@ -58,9 +58,11 @@ class OccurrencesRange():
 
     def add_safe(self, occ):
         # This method must accept the same arguments as self.add_active
+        # Occurrences with self.mint == occ['end'] shouldn't be added, as
+        # they're not considered part of the end minute
         if self.mint <= occ['start'] <= self.maxt or \
-                   (occ['end'] and occ['start'] <= self.mint <= occ['end']) or \
-                      (occ['alarm'] and self.mint <= occ['alarm'] <= self.maxt):
+                   (occ['end'] and occ['start'] <= self.mint < occ['end']) or \
+                     (occ['alarm'] and self.mint <= occ['alarm'] <= self.maxt):
             self._add(self.d, occ)
             return True
         else:
@@ -126,8 +128,8 @@ class OccurrencesRange():
 
     def except_safe(self, filename, id_, start, end, inclusive):
         # If an except rule is put at the start of the rules list for an item,
-        # self.d[filename][id_] wouldn't exist yet; note that if the item is the
-        # first one being processed in the database, even self.d[filename]
+        # self.d[filename][id_] wouldn't exist yet; note that if the item is
+        # the first one being processed in the database, even self.d[filename]
         # wouldn't exist
         # This way the except rule is of course completely useless, however if
         # the user has to be warned at all, it must be done in the interface
@@ -139,8 +141,10 @@ class OccurrencesRange():
             pass
         else:
             for o in dc:
+                # Occurrences with start == o['end'] shouldn't be excepted, as
+                # they're not considered part of the end minute
                 if start <= o['start'] <= end or \
-                                (inclusive and o['start'] <= start <= o['end']):
+                                (inclusive and o['start'] <= start < o['end']):
                     self.d[filename][id_].remove(o)
 
     def get_dict(self):
@@ -196,7 +200,7 @@ def insert_item(filename, id_, group, description='Insert item'):
         core_api.give_connection(filename, qconn)
 
         core_api.insert_history(filename, group, id_, 'rules_insert',
-                 description, query_redo, rules_to_string([]), query_undo, None)
+                description, query_redo, rules_to_string([]), query_undo, None)
 
 
 def update_item_rules(filename, id_, rules, group,
@@ -298,7 +302,7 @@ def delete_item_rules(filename, id_, group, description='Delete item rules'):
         core_api.give_connection(filename, qconn)
 
         return core_api.insert_history(filename, group, id_, 'rules_delete',
-                       description, query_redo, None, query_undo, current_rules)
+                      description, query_redo, None, query_undo, current_rules)
 
 
 def get_item_rules(filename, id_):
@@ -333,14 +337,14 @@ def get_occurrences_range(mint, maxt):
             rules = get_item_rules(filename, id_)
             for rule in rules:
                 rule_handlers[rule['rule']](mint, maxt, filename, id_, rule,
-                                                                           occs)
+                                                                          occs)
 
         # Get active alarms *after* all occurrences, to avoid except rules
         get_alarms_event.signal(mint=mint, maxt=maxt, filename=filename,
-                                                                      occs=occs)
+                                                                     occs=occs)
 
     log.debug('Occurrences range found in {} (time) / {} (clock) s'.format(
-               _time.time() - search_start[0], _time.clock() - search_start[1]))
+              _time.time() - search_start[0], _time.clock() - search_start[1]))
 
     # Note that the list is practically unsorted: sorting its items is a duty
     # of the interface

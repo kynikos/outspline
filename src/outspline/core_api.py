@@ -187,6 +187,10 @@ def set_modified(filename):
     return databases.dbs[filename].set_modified()
 
 
+def is_item(filename, id_):
+    return id_ in databases.dbs[filename].items
+
+
 def get_tree_item(filename, parent, previous):
     return items.Item.get_tree_item(filename, parent, previous)
 
@@ -201,6 +205,13 @@ def get_items_count(filename):
 
 def get_item_info(filename, id_):
     return databases.dbs[filename].items[id_].get_all_info()
+
+
+def get_item_ancestors(filename, id_):
+    # It's necessary to initialize ancestors=[] because otherwise for some
+    # reason the ancestors list from the previous call would be used, thus
+    # appending the ancestors again, multiplicating them at every call
+    return databases.dbs[filename].items[id_].get_ancestors(ancestors=[])
 
 
 def get_item_text(filename, id_):

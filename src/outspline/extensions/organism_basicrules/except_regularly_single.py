@@ -31,16 +31,16 @@ def make_rule(refstart, interval, rend, inclusive, guiconfig):
     @param rend: The positive difference in seconds between the sample start
                  time and the sample end time.
     @param inclusive: If False, only occurrences that start in the period will
-                      be excepted; if True, any occurrence whose period overlaps
-                      the except period will be excepted.
+                      be excepted; if True, any occurrence whose period
+                      overlaps the except period will be excepted.
     @param guiconfig: A place to store any configuration needed only by the
                       interface.
     """
     # Make sure this rule can only produce occurrences compliant with the
     # requirements defined in organism_api.update_item_rules
     if isinstance(refstart, int) and refstart >= 0 and \
-                                isinstance(interval, int) and interval > 0 and \
-             isinstance(rend, int) and rend > 0 and isinstance(inclusive, bool):
+                               isinstance(interval, int) and interval > 0 and \
+            isinstance(rend, int) and rend > 0 and isinstance(inclusive, bool):
         refmax = refstart + rend
         refspan = refmax - refstart
 
@@ -58,20 +58,104 @@ def make_rule(refstart, interval, rend, inclusive, guiconfig):
     else:
         raise BadRuleError()
 
+"""
+* reference occurrence
+| reftime
+[] target occurrence
+
+A) mintime = reftime - ((reftime - refmin) % interval)
+B) mintime = reftime - ((reftime - refmin) % interval) + interval
+C) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
+D) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval) + interval
+
+G) mintime = reftime - ((reftime - refmax) % interval) - refspan
+H) mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+I) (!NOT VERIFIED!) mintime = reftime - ((reftime - refmax) % interval) - refspan + ((refspan // interval) * interval)
+J) (!NOT VERIFIED!) mintime = reftime - ((reftime - refmax) % interval) - refspan + ((refspan // interval) * interval) + interval
+
+M) mintime = reftime + ((refmin - reftime) % interval) - interval
+N) mintime = reftime + ((refmin - reftime) % interval)
+O) mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
+P) mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval)
+
+S) mintime = reftime + ((refmax - reftime) % interval) - refspan
+T) mintime = reftime + ((refmax - reftime) % interval) + interval - refspan
+U) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % interval) - refspan + ((refspan // interval) * interval)
+V) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % interval) - refspan + ((refspan // interval) * interval) + interval
+
+All cases from occur_regularly_single are valid, except for the following:
+
+--------(  *  )--------(     )--------[     |--------(     )--------(     )-----
+AGMS
+
+--------[     |--------(     )--------(     )--------(     )--------(  *  )-----
+AGMS
+
+--------(     )--------[  *  |--------(     )--------(     )--------(     )-----
+AGMS
+
+(-------)(---*---)(-------)(-------)(-------){-------}|-------](-------)(-------)
+This case should use AHNT but can also use AHNS: the first calculated
+occurrence is useless but safe
+
+{-------}|-------](-------)(-------)(-------)(-------)(---*---)(-------)(-------)
+This case should use AHNT but can also use AHNS: the first calculated
+occurrence is useless but safe
+
+(-------)(-------)(-------){-------}|---*---](-------)(-------)(-------)(-------)
+This case should use AHNT but can also use AHNS: the first calculated
+occurrence is useless but safe
+
+            *                           |
+(     (     (   ) (   ) [   ) (   ) (   | (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )                       |
+      (     *         )                 |
+            (               )           |
+                  (               )     |
+                        [               |
+                              (         |     )
+                                    (   |           )
+                                        | (               )
+                                        |       (               )
+                                        |             (               )
+CGOS
+
+                      |                         *
+(     [     (   ) (   | (   ) (   ) (   ) (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )     |
+      [               |
+            (         |     )
+                  (   |           )
+                      | (               )
+                      |       (               )
+                      |             (               )
+                      |                   (     *         )
+                      |                         (               )
+                      |                               (               )
+CGOS
+
+                        *               |
+(     (     (   ) (   ) [   ) (   ) (   | (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )                       |
+      (               )                 |
+            (               )           |
+                  (     *         )     |
+                        [               |
+                              (         |     )
+                                    (   |           )
+                                        | (               )
+                                        |       (               )
+                                        |             (               )
+CGOS
+"""
+
 
 def _compute_min_time(reftime, refmax, refspan, interval):
-    # Always use refmax, _not_ refmin, in this algorithm, since it allows to
-    # get the right occurrence more easily
-    if reftime > refmax:
-        rem = (reftime - refmax) % interval
-        return reftime - rem + interval - refspan
-    else:
-        # Don't use only refmin when refmin <= reftime <= refmax, because in
-        # case of refspan > interval (overlapping occurrences) it wouldn't
-        # always be the correct value (see the examples in
-        # occur_regularly_single.py)
-        rem = (refmax - reftime) % interval
-        return reftime + rem - refspan
+    # Use formula (S), see the examples above and in occur_regularly_single
+    return reftime + (refmax - reftime) % interval - refspan
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):

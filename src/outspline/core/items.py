@@ -278,6 +278,15 @@ class Item():
         else:
             return False
 
+    def get_ancestors(self, ancestors=[]):
+        parent = self.get_parent()
+
+        if parent:
+            ancestors.append(parent)
+            ancestors = parent.get_ancestors(ancestors)
+
+        return ancestors
+
     def get_descendants(self):
         items = self.database.items
         descendants = []

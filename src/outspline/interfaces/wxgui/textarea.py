@@ -19,7 +19,7 @@
 import wx
 from threading import Timer
 
-from outspline.static.texturlctrl import TextUrlCtrl
+from outspline.static.wxclasses.texturl import TextUrlCtrl
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 
@@ -44,9 +44,20 @@ class TextArea():
         self.item = item
         self.original = text
         self.tmrunning = False
-        self.area = TextUrlCtrl(editor.tabs[item].panel, text,
+        # Do not set the text now, otherwise for example URLs won't be
+        # highlighted in blue
+        self.area = TextUrlCtrl(editor.tabs[item].panel, '',
                    style=wx.BORDER_NONE | wx.TE_PROCESS_TAB | wx.TE_MULTILINE |
                                               wx.TE_NOHIDESEL | wx.TE_DONTWRAP)
+
+        font = self.area.GetFont()
+        font = wx.Font(font.GetPointSize(), wx.FONTFAMILY_TELETYPE,
+                       font.GetStyle(), font.GetWeight(), font.GetUnderlined())
+        self.area.SetFont(font)
+
+        # Set the text after setting the font, so for example URLs will be
+        # correctly highlighted in blue
+        self.area.SetValue(text)
 
         self.area.Bind(wx.EVT_TEXT, self._on_text)
         editor.apply_editor_event.bind(self.handle_apply)

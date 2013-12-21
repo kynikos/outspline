@@ -19,7 +19,7 @@
 import wx
 from datetime import datetime
 
-from outspline.static.texturlctrl import TextUrlCtrl
+from outspline.static.wxclasses.texturl import TextUrlCtrl
 import outspline.coreaux_api as coreaux_api
 
 _SIZE = 600
