@@ -19,6 +19,10 @@
 import wxlinks
 
 
+def update_items_formatting(filename):
+    return wxlinks.update_items_formatting(filename)
+
+
 def simulate_link_to_selection(filename, id_):
     int_ = wxlinks.items[wxlinks.LinkManager.make_itemid(filename, id_)]
     int_.link_to_selection()
