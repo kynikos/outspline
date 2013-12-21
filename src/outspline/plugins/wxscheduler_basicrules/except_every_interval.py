@@ -67,7 +67,8 @@ class Rule():
         self.pbox.Add(box, flag=wx.BOTTOM, border=4)
 
         self.slabel = wx.StaticText(self.mpanel, label='Sample start date:')
-        box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
+        box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
 
         self.startw = widgets.DateHourCtrl(self.mpanel)
         self.startw.set_values(self.original_values['refstartY'],
@@ -79,12 +80,12 @@ class Rule():
 
     def _create_widgets_end(self):
         self.endchoicew = widgets.WidgetChoiceCtrl(self.mpanel,
-                                   (('End date:', self._create_end_date_widget),
-                                   ('Duration:', self._create_duration_widget)),
-                                             self.original_values['endtype'], 4)
+                                  (('End date:', self._create_end_date_widget),
+                                  ('Duration:', self._create_duration_widget)),
+                                            self.original_values['endtype'], 4)
         self.endchoicew.force_update()
         self.pbox.Add(self.endchoicew.get_main_panel(), flag=wx.BOTTOM,
-                                                                       border=4)
+                                                                      border=4)
 
     def _create_end_date_widget(self):
         self.endw = widgets.DateHourCtrl(self.endchoicew.get_main_panel())
@@ -108,7 +109,8 @@ class Rule():
         self.pbox.Add(box, flag=wx.BOTTOM, border=4)
 
         self.ilabel = wx.StaticText(self.mpanel, label='Interval time:')
-        box.Add(self.ilabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
+        box.Add(self.ilabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
 
         self.intervalw = widgets.TimeSpanCtrl(self.mpanel, 1)
         self.intervalw.set_values(self.original_values['intervaln'],
@@ -163,20 +165,20 @@ class Rule():
 
         try:
             ruled = organism_basicrules_api.make_except_regularly_single_rule(
-                               refstart, interval, rend, inclusive, (endtype, ))
+                              refstart, interval, rend, inclusive, (endtype, ))
         except organism_basicrules_api.BadRuleError:
-            msgboxes.warn_bad_rule().ShowModal()
+            msgboxes.warn_bad_rule(msgboxes.end_time).ShowModal()
         else:
             label = self._make_label(intervaln, intervalu, refstart, rend,
-                                               inclusive, endtype, rendn, rendu)
+                                              inclusive, endtype, rendn, rendu)
             wxscheduler_api.apply_rule(filename, id_, ruled, label)
 
     @classmethod
     def insert_rule(cls, filename, id_, rule, rulev):
         values = cls._compute_values(rulev)
         label = cls._make_label(values['intervaln'], values['intervalu'],
-                        values['refstart'], values['rend'], values['inclusive'],
-                            values['endtype'], values['rendn'], values['rendu'])
+                       values['refstart'], values['rend'], values['inclusive'],
+                           values['endtype'], values['rendn'], values['rendu'])
         wxscheduler_api.insert_rule(filename, id_, rule, label)
 
     @classmethod
@@ -207,14 +209,14 @@ class Rule():
             values['refstart'] = values['refmax'] - values['refspan']
 
         values['intervaln'], values['intervalu'] = \
-                 widgets.TimeSpanCtrl._compute_widget_values(values['interval'])
+                widgets.TimeSpanCtrl._compute_widget_values(values['interval'])
 
         values['rendn'], values['rendu'] = \
-                     widgets.TimeSpanCtrl._compute_widget_values(values['rend'])
+                    widgets.TimeSpanCtrl._compute_widget_values(values['rend'])
 
         localstart = _datetime.datetime.fromtimestamp(values['refstart'])
         localend = _datetime.datetime.fromtimestamp(values['refstart'] +
-                                                                 values['rend'])
+                                                                values['rend'])
 
         values.update({
             'refstartY': localstart.year,
@@ -233,17 +235,17 @@ class Rule():
 
     @staticmethod
     def _make_label(intervaln, intervalu, refstart, rend, inclusive, endtype,
-                                                                  rendn, rendu):
+                                                                 rendn, rendu):
         label = 'Except every {} {}'.format(intervaln, intervalu)
 
         label += ', for example on {}'.format(_time.strftime(
-                             '%a %d %b %Y at %H:%M', _time.localtime(refstart)))
+                            '%a %d %b %Y at %H:%M', _time.localtime(refstart)))
 
         if endtype == 1:
             label += ' for {} {}'.format(rendn, rendu)
         else:
             label += _time.strftime(' until %a %d %b %Y at %H:%M',
-                                               _time.localtime(refstart + rend))
+                                              _time.localtime(refstart + rend))
 
         if inclusive:
             label += ', inclusive'
@@ -263,4 +265,4 @@ class Rule():
         inclusive = random.choice((True, False))
 
         return organism_basicrules_api.make_except_regularly_single_rule(
-                               refstart, interval, rend, inclusive, (endtype, ))
+                              refstart, interval, rend, inclusive, (endtype, ))

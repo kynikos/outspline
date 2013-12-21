@@ -6,4 +6,4 @@ Exec=outspline
 Icon=text-editor
 Terminal=false
 Type=Application
-Categories=Office;TextTools;Calendar;
+Categories=Utility;Office;TextTools;Calendar;

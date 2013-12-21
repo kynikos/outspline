@@ -1,5 +1,5 @@
 author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.2
+version = 0.3
 description = A wxPython user interface for Outspline.
 website = https://github.com/kynikos/outspline/
 affects_database = no

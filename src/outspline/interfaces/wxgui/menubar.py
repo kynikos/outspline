@@ -22,6 +22,7 @@ from outspline.coreaux_api import Event
 import outspline.core_api as core_api
 
 import databases
+import notebooks
 import editor
 import textarea
 import msgboxes
@@ -100,10 +101,14 @@ class RootMenu(wx.MenuBar):
         focus = self.FindFocus()
 
         while focus:
-            if focus.__class__ is tree.Database:
+            if focus.__class__ is notebooks.LeftNotebook:
                 self.EnableTop(self.FindMenu('Database'), True)
-            elif focus.__class__ is editor.EditorPanel:
+                break
+            elif focus.__class__ is editor.EditorPanel or (
+                                 focus.__class__ is notebooks.RightNotebook and
+                                   wx.GetApp().nb_right.get_selected_editor()):
                 self.EnableTop(self.FindMenu('Editor'), True)
+                break
 
             focus = focus.GetParent()
 
@@ -214,8 +219,16 @@ class MenuFile(wx.Menu):
     def update_items(self, focus):
         self.reset_items()
 
+        if tree.dbs:
+            for dbname in tuple(tree.dbs.keys()):
+                if core_api.check_pending_changes(dbname):
+                    self.saveall.Enable()
+                    break
+
+            self.closeall.Enable()
+
         while focus:
-            if focus.__class__ is tree.Database:
+            if focus.__class__ is notebooks.LeftNotebook:
                 tab = wx.GetApp().nb_left.get_selected_tab()
                 filename = tab.get_filename()
 
@@ -225,13 +238,7 @@ class MenuFile(wx.Menu):
                 self.saveas.Enable()
                 self.backup.Enable()
 
-                for dbname in tuple(tree.dbs.keys()):
-                    if core_api.check_pending_changes(dbname):
-                        self.saveall.Enable()
-                        break
-
                 self.close_.Enable()
-                self.closeall.Enable()
 
                 # Break in order to speed up, but if an "elif focus.__class__"
                 # is added, this break must be removed or left only at the
@@ -415,17 +422,14 @@ class MenuDatabase(wx.Menu):
         filename = tab.get_filename()
 
         while focus:
-            if focus.__class__ is tree.Database:
+            if focus.__class__ is notebooks.LeftNotebook:
+                sel = tab.get_selections()
 
                 if core_api.preview_undo_tree(filename):
                     self.undo.Enable()
 
                 if core_api.preview_redo_tree(filename):
                     self.redo.Enable()
-
-            elif focus.__class__ is tree.Tree:
-
-                sel = tab.get_selections()
 
                 if len(sel) == 1:
                     self.sibling.Enable()
@@ -450,6 +454,11 @@ class MenuDatabase(wx.Menu):
                     self.sibling.Enable()
 
                 enable_tree_menus_event.signal(filename=filename)
+
+                # Break in order to speed up, but if an "elif focus.__class__"
+                # is added, this break must be removed or left only at the
+                # block for the most basic class
+                break
 
             focus = focus.GetParent()
 
@@ -769,22 +778,18 @@ class MenuEdit(wx.Menu):
         filename = editor.tabs[item].get_filename()
         id_ = editor.tabs[item].get_id()
 
+        if editor.tabs:
+            for i in tuple(editor.tabs.keys()):
+                if editor.tabs[i].is_modified():
+                    self.applyall.Enable()
+                    break
+
+            self.closeall.Enable()
+
         while focus:
-            if focus.__class__ is editor.EditorPanel:
-
-                if editor.tabs[item].is_modified():
-                    self.apply.Enable()
-
-                for i in tuple(editor.tabs.keys()):
-                    if editor.tabs[i].is_modified():
-                        self.applyall.Enable()
-                        break
-
-                self.close_.Enable()
-                self.closeall.Enable()
-
-            elif focus.__class__ is textarea.TextCtrl:
-
+            if focus.__class__ is editor.EditorPanel or (
+                                 focus.__class__ is notebooks.RightNotebook and
+                                   wx.GetApp().nb_right.get_selected_editor()):
                 self.select.Enable()
 
                 if editor.tabs[item].area.can_cut():
@@ -796,8 +801,18 @@ class MenuEdit(wx.Menu):
                 if editor.tabs[item].area.can_paste():
                     self.paste.Enable()
 
+                if editor.tabs[item].is_modified():
+                    self.apply.Enable()
+
+                self.close_.Enable()
+
                 enable_textarea_menus_event.signal(filename=filename, id_=id_,
                                                    item=item)
+
+                # Break in order to speed up, but if an "elif focus.__class__"
+                # is added, this break must be removed or left only at the
+                # block for the most basic class
+                break
 
             focus = focus.GetParent()
 

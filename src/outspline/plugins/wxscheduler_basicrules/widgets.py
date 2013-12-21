@@ -30,14 +30,14 @@ class HourCtrl():
         self.panel.SetSizer(box)
 
         self.hourctrl = wx.SpinCtrl(self.panel, min=0, max=23, size=(40, 21),
-                                            style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
+                                           style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
         box.Add(self.hourctrl, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
 
         slabel = wx.StaticText(self.panel, label=':')
         box.Add(slabel, flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.minutectrl = wx.SpinCtrl(self.panel, min=0, max=59, size=(40, 21),
-                                            style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
+                                           style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
         box.Add(self.minutectrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
     def set_values(self, hour, minute):
@@ -62,7 +62,7 @@ class HourCtrl():
 
 class WeekDayCtrl():
     choices = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
-                                                           'Saturday', 'Sunday')
+                                                          'Saturday', 'Sunday')
     panel = None
     dayctrl = None
 
@@ -70,7 +70,7 @@ class WeekDayCtrl():
         self.panel = wx.Panel(parent)
 
         self.dayctrl = wx.ComboBox(self.panel, value='Monday', size=(100, 21),
-                                     choices=self.choices, style=wx.CB_READONLY)
+                                    choices=self.choices, style=wx.CB_READONLY)
 
     def set_day(self, day):
         self.dayctrl.Select(self.dayctrl.FindString(day))
@@ -118,8 +118,8 @@ class MonthDayCtrl():
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
 
-        self.dayctrl = wx.ComboBox(self.panel, value=self.value, size=self.size,
-                                     choices=self.choices, style=wx.CB_READONLY)
+        self.dayctrl = wx.ComboBox(self.panel, value=self.value,
+                    size=self.size, choices=self.choices, style=wx.CB_READONLY)
 
     def set_day(self, day):
         self.dayctrl.Select(day - 1)
@@ -139,11 +139,11 @@ class MonthDayCtrl():
 
 
 class MonthInverseDayCtrl(MonthDayCtrl):
-    choices = ['last', ] + [d + ' to last' for d in ('2nd', '3rd', '4th', '5th',
-               '6th', '7th', '8th', '9th', '10th', '11th', '12th', '13th',
-               '14th', '15th', '16th', '17th', '18th', '19th', '20th', '21st',
-               '22nd', '23rd', '24th', '25th', '26th', '27th', '28th', '29th',
-               '30th', '31st')]
+    choices = ['last', ] + [d + ' to last' for d in ('2nd', '3rd', '4th',
+               '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th',
+               '13th', '14th', '15th', '16th', '17th', '18th', '19th', '20th',
+               '21st', '22nd', '23rd', '24th', '25th', '26th', '27th', '28th',
+               '29th', '30th', '31st')]
     value = 'last'
     size = (110, 21)
 
@@ -158,13 +158,27 @@ class MonthInverseDayCtrl(MonthDayCtrl):
         return cls.choices[day - 1].replace(' ', '-')
 
 
+class MonthDaySafeCtrl(MonthDayCtrl):
+    choices = ('1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th',
+               '10th', '11th', '12th', '13th', '14th', '15th', '16th', '17th',
+               '18th', '19th', '20th', '21st', '22nd', '23rd', '24th', '25th',
+               '26th', '27th', '28th')
+
+
+class MonthInverseDaySafeCtrl(MonthInverseDayCtrl):
+    choices = ['last', ] + [d + ' to last' for d in ('2nd', '3rd', '4th',
+               '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th',
+               '13th', '14th', '15th', '16th', '17th', '18th', '19th', '20th',
+               '21st', '22nd', '23rd', '24th', '25th', '26th', '27th', '28th')]
+
+
 class MonthWeekdayNumberCtrl(MonthDayCtrl):
     choices = ('1st', '2nd', '3rd', '4th', '5th')
 
 
 class MonthInverseWeekdayNumberCtrl(MonthInverseDayCtrl):
-    choices = ['last', ] + [d + ' to last' for d in ('2nd', '3rd', '4th', '5th')
-                                                                               ]
+    choices = ['last', ] + [d + ' to last' for d in ('2nd', '3rd', '4th',
+                                                                        '5th')]
 
 
 class MonthWeekdayCtrl():
@@ -179,11 +193,12 @@ class MonthWeekdayCtrl():
         self.panel.SetSizer(box)
 
         self.numberctrl = self.mwnctrl(self.panel)
-        box.Add(self.numberctrl.get_main_panel(), flag=wx.ALIGN_CENTER_VERTICAL)
+        box.Add(self.numberctrl.get_main_panel(),
+                                                 flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.dayctrl = WeekDayCtrl(self.panel)
         box.Add(self.dayctrl.get_main_panel(), flag=wx.ALIGN_CENTER_VERTICAL |
-                                            wx.ALIGN_RIGHT | wx.LEFT, border=12)
+                                           wx.ALIGN_RIGHT | wx.LEFT, border=12)
 
     def set_values(self, number, day):
         self.numberctrl.set_day(number)
@@ -231,7 +246,7 @@ class DateHourCtrl():
 
         self.hourctrl = HourCtrl(self.panel)
         box.Add(self.hourctrl.get_main_panel(), flag=wx.ALIGN_CENTER_VERTICAL |
-                                            wx.ALIGN_RIGHT | wx.LEFT, border=12)
+                                           wx.ALIGN_RIGHT | wx.LEFT, border=12)
 
     def set_values(self, year, month, day, hour, minute):
         sdate = wx.DateTime()
@@ -267,10 +282,11 @@ class DateHourCtrl():
 
     @staticmethod
     def _compute_month_label(month):
-        # Hardcode the names since only English is supported for the moment anyway
+        # Hardcode the names since only English is supported for the moment
+        # anyway
         return ('January', 'February', 'March', 'April', 'May', 'June', 'July',
                 'August', 'September', 'October', 'November', 'December')[
-                                                                      month - 1]
+                                                                     month - 1]
 
 
 class WeekDayHourCtrl():
@@ -288,7 +304,7 @@ class WeekDayHourCtrl():
 
         self.hourctrl = HourCtrl(self.panel)
         box.Add(self.hourctrl.get_main_panel(), flag=wx.ALIGN_CENTER_VERTICAL |
-                                            wx.ALIGN_RIGHT | wx.LEFT, border=12)
+                                           wx.ALIGN_RIGHT | wx.LEFT, border=12)
 
     def set_values(self, day, hour, minute):
         self.dayctrl.set_day(day)
@@ -337,7 +353,7 @@ class MonthDayHourCtrl():
 
         self.hourctrl = HourCtrl(self.panel)
         box.Add(self.hourctrl.get_main_panel(), flag=wx.ALIGN_CENTER_VERTICAL |
-                                            wx.ALIGN_RIGHT | wx.LEFT, border=12)
+                                           wx.ALIGN_RIGHT | wx.LEFT, border=12)
 
     def set_values(self, day, hour, minute):
         self.dayctrl.set_day(day)
@@ -366,6 +382,10 @@ class MonthDayHourCtrl():
         return cls.mdctrl._compute_day_label(day)
 
 
+class MonthDayHourSafeCtrl(MonthDayHourCtrl):
+    mdctrl = MonthDaySafeCtrl
+
+
 class MonthInverseDayHourCtrl(MonthDayHourCtrl):
     mdctrl = MonthInverseDayCtrl
 
@@ -374,6 +394,10 @@ class MonthInverseDayHourCtrl(MonthDayHourCtrl):
         rhour = self.hourctrl.get_relative_time()
 
         return rday + 86400 - rhour
+
+
+class MonthInverseDayHourSafeCtrl(MonthInverseDayHourCtrl):
+    mdctrl = MonthInverseDaySafeCtrl
 
 
 class MonthWeekdayHourCtrl(MonthDayHourCtrl):
@@ -420,14 +444,14 @@ class TimeSpanCtrl():
         self.panel.SetSizer(box)
 
         self.numberctrl = wx.SpinCtrl(self.panel, min=min_number, max=999,
-                                          size=(48, 21), style=wx.SP_ARROW_KEYS)
+                                         size=(48, 21), style=wx.SP_ARROW_KEYS)
         box.Add(self.numberctrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        self.unitctrl = wx.ComboBox(self.panel, value='minutes', size=(100, 21),
-                                  choices=('minutes', 'hours', 'days', 'weeks'),
-                                                           style=wx.CB_READONLY)
+        self.unitctrl = wx.ComboBox(self.panel, value='minutes',
+                 size=(100, 21), choices=('minutes', 'hours', 'days', 'weeks'),
+                                                          style=wx.CB_READONLY)
         box.Add(self.unitctrl, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT |
-                                                             wx.LEFT, border=12)
+                                                            wx.LEFT, border=12)
 
     def set_values(self, number, unit):
         self.numberctrl.SetValue(number)
@@ -491,7 +515,7 @@ class MultipleChoiceCtrl():
 
             label = wx.StaticText(self.panel, label=c)
             box.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT |
-                                                             wx.RIGHT, border=8)
+                                                            wx.RIGHT, border=8)
 
     def get_main_panel(self):
         return self.panel
@@ -501,7 +525,8 @@ class MultipleChoiceCtrl():
             ctrl.SetValue(v + 1 in values)
 
     def get_values(self):
-        return [v + 1 for v, ctrl in enumerate(self.cbctrls) if ctrl.GetValue()]
+        return [v + 1 for v, ctrl in enumerate(self.cbctrls) if ctrl.GetValue()
+                                                                              ]
 
 
 class WeekdaysCtrl(MultipleChoiceCtrl):
@@ -525,7 +550,7 @@ class WeekdaysCtrl(MultipleChoiceCtrl):
 class MonthsCtrl(MultipleChoiceCtrl):
     # Hardcode the names since only English is supported for the moment anyway
     mnames = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-                                                            'Oct', 'Nov', 'Dec')
+                                                           'Oct', 'Nov', 'Dec')
 
     def __init__(self, parent):
         MultipleChoiceCtrl.__init__(self, parent, self.mnames)
@@ -555,10 +580,10 @@ class WidgetChoiceCtrl():
         self.choices = choices
 
         self.choicectrl = wx.Choice(self.panel, size=(-1, 21),
-                                      choices=[choice[0] for choice in choices])
+                                     choices=[choice[0] for choice in choices])
         self.choicectrl.Select(initchoice)
         self.box.Add(self.choicectrl, flag=wx.ALIGN_CENTER_VERTICAL |
-                                           wx.EXPAND | wx.RIGHT, border=rborder)
+                                          wx.EXPAND | wx.RIGHT, border=rborder)
         # Do not call self._update here, in fact classcall will very likely have
         # to use this very object, which at this stage hasn;'t been instantiated
         # yet; call self.force_update after the object is created, instead

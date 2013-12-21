@@ -27,7 +27,7 @@ import outspline.plugins.wxscheduler_api as wxscheduler_api
 import widgets
 import msgboxes
 
-_RULE_DESC = 'Except interval'
+_RULE_DESC = 'Except once'
 
 
 class Rule():
@@ -64,7 +64,8 @@ class Rule():
         self.pbox.Add(box, flag=wx.BOTTOM, border=4)
 
         self.slabel = wx.StaticText(self.mpanel, label='Start date:')
-        box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
+        box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
 
         self.startw = widgets.DateHourCtrl(self.mpanel)
         self.startw.set_values(self.original_values['startY'],
@@ -76,12 +77,12 @@ class Rule():
 
     def _create_widgets_end(self):
         self.endchoicew = widgets.WidgetChoiceCtrl(self.mpanel,
-                                   (('End date:', self._create_end_date_widget),
-                                   ('Duration:', self._create_duration_widget)),
-                                             self.original_values['endtype'], 4)
+                                  (('End date:', self._create_end_date_widget),
+                                  ('Duration:', self._create_duration_widget)),
+                                            self.original_values['endtype'], 4)
         self.endchoicew.force_update()
         self.pbox.Add(self.endchoicew.get_main_panel(), flag=wx.BOTTOM,
-                                                                       border=4)
+                                                                      border=4)
 
     def _create_end_date_widget(self):
         self.endw = widgets.DateHourCtrl(self.endchoicew.get_main_panel())
@@ -140,20 +141,20 @@ class Rule():
 
         try:
             ruled = organism_basicrules_api.make_except_once_rule(start, end,
-                                                         inclusive, (endtype, ))
+                                                        inclusive, (endtype, ))
         except organism_basicrules_api.BadRuleError:
-            msgboxes.warn_bad_rule().ShowModal()
+            msgboxes.warn_bad_rule(msgboxes.end_time).ShowModal()
         else:
             label = self._make_label(start, end, inclusive, endtype, rendn,
-                                                                          rendu)
+                                                                         rendu)
             wxscheduler_api.apply_rule(filename, id_, ruled, label)
 
     @classmethod
     def insert_rule(cls, filename, id_, rule, rulev):
         values = cls._compute_values(rulev)
         label = cls._make_label(values['start'], values['end'],
-                                         values['inclusive'], values['endtype'],
-                                         values['rendn'], values['rendu'])
+                                        values['inclusive'], values['endtype'],
+                                              values['rendn'], values['rendu'])
         wxscheduler_api.insert_rule(filename, id_, rule, label)
 
     @classmethod
@@ -177,8 +178,8 @@ class Rule():
             }
 
         values['rendn'], values['rendu'] = \
-                                    widgets.TimeSpanCtrl._compute_widget_values(
-                                                values['end'] - values['start'])
+                                   widgets.TimeSpanCtrl._compute_widget_values(
+                                               values['end'] - values['start'])
 
         localstart = _datetime.datetime.fromtimestamp(values['start'])
         localend = _datetime.datetime.fromtimestamp(values['end'])
@@ -201,13 +202,13 @@ class Rule():
     @staticmethod
     def _make_label(start, end, inclusive, endtype, rendn, rendu):
         label = ' '.join(('Except', _time.strftime('from %a %d %b %Y at %H:%M',
-                                                       _time.localtime(start))))
+                                                      _time.localtime(start))))
 
         if endtype == 1:
             label += ' for {} {}'.format(rendn, rendu)
         else:
             label += _time.strftime(' until %a %d %b %Y at %H:%M',
-                                                           _time.localtime(end))
+                                                          _time.localtime(end))
 
         if inclusive:
             label += ', inclusive'
@@ -225,4 +226,4 @@ class Rule():
         inclusive = random.choice((True, False))
 
         return organism_basicrules_api.make_except_once_rule(start, end,
-                                                         inclusive, (endtype, ))
+                                                        inclusive, (endtype, ))

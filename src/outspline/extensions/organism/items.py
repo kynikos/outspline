@@ -26,7 +26,7 @@ import queries
 from exceptions import (BadOccurrenceError, BadExceptRuleError,
                                                     ConflictingRuleHandlerError)
 
-update_item_rules_event = Event()
+update_item_rules_conditional_event = Event()
 get_alarms_event = Event()
 
 rule_handlers = {}
@@ -200,7 +200,17 @@ def insert_item(filename, id_, group, description='Insert item'):
 
 
 def update_item_rules(filename, id_, rules, group,
-                      description='Update item rules'):
+                                              description='Update item rules'):
+    update_item_rules_no_event(filename, id_, rules, group,
+                                                       description=description)
+
+    # Note that update_item_rules_no_event can be called directly, thus not
+    # signalling this event
+    update_item_rules_conditional_event.signal(filename=filename, id_=id_)
+
+
+def update_item_rules_no_event(filename, id_, rules, group,
+                                              description='Update item rules'):
     if isinstance(rules, list):
         rules = rules_to_string(rules)
 
@@ -221,8 +231,6 @@ def update_item_rules(filename, id_, rules, group,
 
     core_api.insert_history(filename, group, id_, 'rules_update', description,
                             query_redo, rules, query_undo, unrules)
-
-    update_item_rules_event.signal(filename=filename, id_=id_)
 
 
 def copy_item_rules(filename, id_):
@@ -263,8 +271,12 @@ def paste_item_rules(filename, id_, oldid, group, description):
         curm.execute(queries.copyrules_select_id, (oldid, ))
         core_api.give_memory_connection(mem)
 
-        update_item_rules(filename, id_, curm.fetchone()['CR_rules'], group,
-                                                                    description)
+        # Do not signal update_item_rules_conditional_event because it's
+        # handled by organism_timer.timer.search_next_occurrences, and it would
+        # slow down the pasting of items a lot; search_next_occurrences is
+        # bound anyway to copypaste_api.bind_to_items_pasted
+        update_item_rules_no_event(filename, id_, curm.fetchone()['CR_rules'],
+                                                            group, description)
 
 
 def delete_item_rules(filename, id_, group, description='Delete item rules'):

@@ -1,5 +1,5 @@
 author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.2
+version = 0.3
 description = Development tools.
 website = https://github.com/kynikos/outspline/
 affects_database = no
