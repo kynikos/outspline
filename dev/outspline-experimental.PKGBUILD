@@ -10,7 +10,7 @@ license=('GPL3')
 depends=('outspline')
 install="$pkgname.install"
 source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
-sha256sums=('d9e499f41f61c10e7b9e2e49f2724c96e1b4744f7cc9bbde1e93d8d387511337')
+sha256sums=('bc1a6fdd96b6f525e210331618eb46b064ad111ecb8a31aa162886204a528e75')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"
