@@ -1,9 +1,16 @@
 * Test with the simulator for several hours
   Test with only some components enabled
   Test with only some addons enabled
+  Test with different values of critical configuration options
+  If backward compatibility has to be kept, also test with databases created
+  with the previous release
+  Test interfaces with various GTK themes
+* Check code with the pep8 tool
 * Update and release any library that is maintained in external repos
 * Checkout the develop branch
 * Update any library statically included in the project
+  Make sure that none of them was modified in this project and not in its
+  main repository
 * Update files:
   - *.component
   - *.info
@@ -26,6 +33,7 @@
   Use --no-ff
 * Tag release merge commit
 * Push commits to GitHub
+* Check milestone is closed on GitHub
 * Update documentation:
   - Changelog
   - New features
@@ -35,3 +43,7 @@
   - Wiki
   - GitHub page
 * Upload PKGBUILD archives to AUR
+
+NOTES:
+* To delete a remote branch: `git push origin :tmpbranch`
+  or `git push origin :refs/heads/tmpbranch`
