@@ -30,7 +30,7 @@ def get_existing_links(filename):
 def make_link(filename, id_, target, group, description='Make link'):
     try:
         return links.upsert_link(filename, id_, target, group,
-                                                        description=description)
+                                                       description=description)
     except exceptions.CircularLinksError:
         return False
 

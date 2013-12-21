@@ -19,6 +19,7 @@
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
+organism_api = coreaux_api.import_optional_extension_api('organism')
 
 import queries
 import exceptions
@@ -36,39 +37,62 @@ def select_links(filename):
 
 
 def upsert_link(filename, id_, target, group, description='Insert link'):
-    # Forbid circular links (including links to self), as it could generate
-    # unexpected infinite recursions (e.g. with synchronize_links_text)
-    if id_ not in find_links_chain(filename, target):
-        qconn = core_api.get_connection(filename)
-        cursor = qconn.cursor()
-
-        cursor.execute(queries.links_select_id, (id_, ))
-        res = cursor.fetchone()
-
-        # Do not allow creating more than one link per item
-        if res:
-            oldtarget = res['L_target']
-
-            query_redo = queries.links_update_id.format(target
-                                         if target is not None else 'NULL', id_)
-            query_undo = queries.links_update_id.format(oldtarget
-                                      if oldtarget is not None else 'NULL', id_)
-
-            cursor.execute(query_redo)
+    # target could be None (creating a broken link) or could be a no-longer
+    # existing item
+    if core_api.is_item(filename, target):
+        # Forbid circular links (including links to self), as it could generate
+        # unexpected infinite recursions (e.g. with synchronize_links_text)
+        if id_ in find_links_chain(filename, target):
+            raise exceptions.CircularLinksError()
         else:
-            # Allow the creation of a broken link
-            query_redo = queries.links_insert.format(id_, target
-                                              if target is not None else 'NULL')
-            query_undo = queries.links_delete_id.format(id_)
+            # Sync text
+            tgttext = core_api.get_item_text(filename, target)
+            core_api.update_item_text(filename, id_, tgttext, group=group,
+                                                       description=description)
 
-            cursor.execute(query_redo)
-
-        core_api.give_connection(filename, qconn)
-
-        core_api.insert_history(filename, group, id_, 'link_upsert',
-                                description, query_redo, None, query_undo, None)
+            # Drop any rules
+            if organism_api:
+                organism_api.update_item_rules(filename, id_, [], group=group,
+                                                       description=description)
     else:
-        raise exceptions.CircularLinksError()
+        # Force target = None if the given target no longer exists
+        target = None
+
+        # Drop any rules
+        if organism_api:
+            organism_api.update_item_rules(filename, id_, [], group=group,
+                                                       description=description)
+
+    # Note that exceptions.CircularLinksError could be raised before getting
+    # here
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+
+    cursor.execute(queries.links_select_id, (id_, ))
+    res = cursor.fetchone()
+
+    # Do not allow creating more than one link per item
+    if res:
+        oldtarget = res['L_target']
+
+        query_redo = queries.links_update_id.format(target
+                                        if target is not None else 'NULL', id_)
+        query_undo = queries.links_update_id.format(oldtarget
+                                     if oldtarget is not None else 'NULL', id_)
+
+        cursor.execute(query_redo)
+    else:
+        # Allow the creation of a broken link
+        query_redo = queries.links_insert.format(id_, target
+                                             if target is not None else 'NULL')
+        query_undo = queries.links_delete_id.format(id_)
+
+        cursor.execute(query_redo)
+
+    core_api.give_connection(filename, qconn)
+
+    core_api.insert_history(filename, group, id_, 'link_upsert', description,
+                                            query_redo, None, query_undo, None)
 
 
 def synchronize_links_text(filename, target, text, group, description):
@@ -89,7 +113,7 @@ def delete_link(filename, id_, group, description='Delete link'):
 
         query_redo = queries.links_delete_id.format(id_)
         query_undo = queries.links_insert.format(id_, target
-                                              if target is not None else 'NULL')
+                                             if target is not None else 'NULL')
 
         cursor.execute(query_redo)
 
@@ -247,8 +271,8 @@ def paste_link(filename, id_, oldid, group, description):
         if row:
             # Item is a link
             if copypaste_api.get_copy_origin_filename() == filename:
-                # Pasting on the same database is always safe, although the link
-                # could have been broken by a deletion or a history change
+                # Pasting on the same database is always safe, although the
+                # link could have been broken by a deletion or a history change
                 target = row['CL_target']
             else:
                 # If pasting on a different database, the link must be broken,
