@@ -436,9 +436,6 @@ class ListItem():
             # Note that the assignment of the active color must come after any
             # previous color assignment, in order to override them
             listview.SetItemTextColour(index, occview.colors['active'])
-            listview.SetItemFont(index, wx.Font(
-                      listview.GetFont().GetPointSize(), wx.FONTFAMILY_DEFAULT,
-                                      wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
         # Note that testing if isinstance(self.alarm, int) *before* testing if
         # self.alarm is False would return True also when self.alarm is False!
         else:

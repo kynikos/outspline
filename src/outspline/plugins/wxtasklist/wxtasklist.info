@@ -1,5 +1,5 @@
 author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.2
+version = 0.3
 description = Adds a panel that displays the items occurrences.
 website = https://github.com/kynikos/outspline/
 affects_database = no
