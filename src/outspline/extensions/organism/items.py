@@ -146,6 +146,10 @@ class OccurrencesRange():
                 if start <= o['start'] <= end or \
                                 (inclusive and o['start'] <= start < o['end']):
                     self.d[filename][id_].remove(o)
+                    if not self.d[filename][id_]:
+                        del self.d[filename][id_]
+                        if not self.d[filename]:
+                            del self.d[filename]
 
     def get_dict(self):
         return self.d
@@ -179,6 +183,26 @@ class OccurrencesRange():
                     if t and (not ctime or t < ctime):
                         ctime = t
         return ctime
+
+    def get_item_time_span(self, filename, id_):
+        # Note that this method ignores self.actd _deliberately_
+        try:
+            occs = self.d[filename][id_]
+        except KeyError:
+            return False
+        else:
+            # The final minstart and maxend should never end up being None
+            minstart = occs[0]['start']
+            # Initialize maxend to minstart, which is surely != None
+            maxend = minstart
+
+            for occ in occs:
+                # This assumes that start <= end
+                minstart = min((minstart, occ['start']))
+                # occ['end'] could be None
+                maxend = max((occ['start'], occ['end'], maxend))
+
+            return (minstart, maxend)
 
 
 def install_rule_handler(rulename, handler):

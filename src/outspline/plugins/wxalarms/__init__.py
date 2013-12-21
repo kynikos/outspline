@@ -28,7 +28,6 @@ import outspline.interfaces.wxgui_api as wxgui_api
 wxtrayicon_api = coreaux_api.import_optional_plugin_api('wxtrayicon')
 
 _ALARMS_MIN_HEIGHT = 140
-_ALARMS_TITLE = 'Outspline - Alarms'
 _ALARMS_ICON_BUNDLE = wx.IconBundle()
 _ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms', wx.ART_TOOLBAR))
 _ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms', wx.ART_MENU))
@@ -64,12 +63,13 @@ class AlarmsWindow():
     def __init__(self, parent):
         self.config = coreaux_api.get_plugin_configuration('wxalarms')
 
-        self.window = wx.Frame(parent, title=_ALARMS_TITLE, size=[int(s)
+        self.window = wx.Frame(parent, size=[int(s)
                           for s in self.config['initial_geometry'].split('x')])
 
         self.window.SetIcons(_ALARMS_ICON_BUNDLE)
 
         self.alarms = {}
+        self.update_title()
 
         box = wx.BoxSizer(wx.VERTICAL)
         self.window.SetSizer(box)
@@ -92,7 +92,7 @@ class AlarmsWindow():
         self.ID_SHOW = wx.NewId()
         self.menushow = wxgui_api.insert_menu_item('View',
                                                self.config.get_int('menu_pos'),
-                                               'Show &alarms\tCtrl+R',
+                                               'Show &alarms\tCTRL+SHIFT+r',
                                                id_=self.ID_SHOW,
                                                help='Open the alarms window',
                                                kind='check',
@@ -102,20 +102,17 @@ class AlarmsWindow():
 
         self.window.Bind(wx.EVT_CLOSE, self.hide)
 
-        core_api.bind_to_delete_item(self.handle_remove_item)
-        core_api.bind_to_history_remove(self.handle_remove_item)
         organism_alarms_api.bind_to_alarm(self.handle_alarm)
         organism_alarms_api.bind_to_alarm_off(self.handle_alarm_off)
         wxgui_api.bind_to_close_database(self.handle_close_db)
-        wxgui_api.bind_to_reset_menu_items(self.handle_reset_menu_items)
+        wxgui_api.bind_to_menu_view_update(self.update_menu_items)
 
         if wxtrayicon_api:
             wxtrayicon_api.bind_to_create_menu(self.handle_create_tray_menu)
             wxtrayicon_api.bind_to_reset_menu(self.handle_reset_tray_menu)
 
-    def handle_reset_menu_items(self, kwargs):
-        if kwargs['menu'] is self.menushow.GetMenu():
-            self.menushow.Check(check=self.window.IsShown())
+    def update_menu_items(self, event):
+        self.menushow.Check(check=self.window.IsShown())
 
     def handle_create_tray_menu(self, kwargs):
         self.traymenushow = wxtrayicon_api.insert_menu_item(
@@ -199,9 +196,6 @@ class AlarmsWindow():
     def handle_close_db(self, kwargs):
         self.close_alarms(filename=kwargs['filename'])
 
-    def handle_remove_item(self, kwargs):
-        self.close_alarms(filename=kwargs['filename'], id_=kwargs['id_'])
-
     def handle_alarm(self, kwargs):
         # Using CallAfter can cause (minor) bugs if the core timer is refreshed
         # in a loop (events could be displayed when not necessary...)
@@ -236,8 +230,13 @@ class AlarmsWindow():
                                                  id_) and a not in self.alarms:
             self.alarms[a] = Alarm(self, filename, id_, alarmid, start, end,
                                    alarm)
+            self.update_title()
             self.window.Layout()
             self.show()
+
+    def update_title(self):
+        self.window.SetTitle(''.join(('Outspline - ', str(len(self.alarms)),
+                                                                   ' alarms')))
 
     @staticmethod
     def make_alarmid(filename, alarmid):
@@ -277,6 +276,9 @@ class Alarm():
     start = None
     end = None
     alarm = None
+    pane = None
+    cpane = None
+    cbox = None
 
     def __init__(self, awindow, filename, id_, alarmid, start, end, alarm):
         self.awindow = awindow
@@ -317,30 +319,81 @@ class Alarm():
         # wx.CP_NO_TLW_RESIZE in conjunction with
         # self.panel.GetParent().SendSizeEvent() on EVT_COLLAPSIBLEPANE_CHANGED
         # are necessary for the correct functioning
-        text = core_api.get_item_text(self.filename, self.id_)
-        pane = wx.CollapsiblePane(parent, label=text.partition('\n')[0],
-                                                     style=wx.CP_NO_TLW_RESIZE)
-        self.pbox.Add(pane, flag=wx.EXPAND | wx.BOTTOM, border=4)
+        self.pane = wx.CollapsiblePane(parent, style=wx.CP_NO_TLW_RESIZE)
+        # Setting the label directly when instantiating CollapsiblePane through
+        # the 'label' parameter would make it parse '&' characters to form
+        # mnemonic shortcuts, like in menus
+        self.set_pane_label()
+        self.pbox.Add(self.pane, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        cpane = pane.GetPane()
-        cbox = wx.BoxSizer(wx.VERTICAL)
-        cpane.SetSizer(cbox)
+        self.cpane = self.pane.GetPane()
+        self.cbox = wx.BoxSizer(wx.VERTICAL)
+        self.cpane.SetSizer(self.cbox)
 
-        for anc in core_api.get_item_ancestors(self.filename, self.id_):
-            ancestor = wx.StaticText(cpane, label=anc.get_text().partition('\n'
-                                                                          )[0])
-            cbox.Add(ancestor, flag=wx.LEFT, border=4)
-
-        dbname = wx.StaticText(cpane, label=_os.path.basename(self.filename))
-        cbox.Add(dbname, flag=wx.LEFT, border=4)
 
         line = wx.StaticLine(parent, size=(1, 1), style=wx.LI_HORIZONTAL)
         self.pbox.Add(line, flag=wx.EXPAND)
 
+        core_api.bind_to_update_item(self.update_info)
+
+        self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED,
+                                                    self.update_pane_ancestors)
         self.panel.Bind(wx.EVT_BUTTON, self.snooze, button_s)
         self.panel.Bind(wx.EVT_BUTTON, self.dismiss, button_d)
         self.panel.Bind(wx.EVT_BUTTON, self.open_, button_e)
-        self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED, self.resize_pane)
+
+    def update_info(self, kwargs):
+        if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_:
+            self.set_pane_label()
+
+    def set_pane_label(self):
+        text = core_api.get_item_text(self.filename, self.id_)
+        self.pane.SetLabel(text.partition('\n')[0])
+
+    def update_pane_ancestors(self, event):
+        # Reset ancestors with EVT_COLLAPSIBLEPANE_CHANGED, otherwise they
+        # should be reset everytime one of them is updated
+        # This way if an ancestor is updated while the collapsible pane is
+        # expanded, it will have to be collapsed and expanded again to be
+        # reset, but that is a reasonable compromise
+
+        if not event.GetCollapsed():
+            # Get the size of the panel *before* adding or destroying any
+            # children
+            psize = self.pane.GetSize()
+
+            self.cpane.DestroyChildren()
+
+            for anc in core_api.get_item_ancestors(self.filename, self.id_):
+                ancestor = wx.StaticText(self.cpane)
+                # Setting the label directly when instantiating StaticText
+                # through the 'label' parameter would make it parse '&'
+                # characters to form mnemonic shortcuts, like in menus
+                # Note that in this case the '&' characters have to be escaped
+                # explicitly
+                ancestor.SetLabel(anc.get_text().partition('\n')[0].replace(
+                                                                    '&', '&&'))
+                self.cbox.Add(ancestor, flag=wx.LEFT, border=4)
+
+            dbname = wx.StaticText(self.cpane)
+            # Setting the label directly when instantiating StaticText through
+            # the 'label' parameter would make it parse '&' characters to form
+            # mnemonic shortcuts, like in menus
+            dbname.SetLabel(_os.path.basename(self.filename).replace('&',
+                                                                         '&&'))
+            self.cbox.Add(dbname, flag=wx.LEFT, border=4)
+
+            # Without these operations, the panel's expanded height would
+            # always be the one of its previous state (0 at the first expansion
+            # attempt)
+            self.cpane.Fit()
+            csize = self.cpane.GetSize()
+            psize.SetHeight(psize.GetHeight() + csize.GetHeight())
+            self.pane.SetMinSize(psize)
+
+        # This in conjunction with the wx.CP_NO_TLW_RESIZE style are necessary
+        # for the correct functioning of the collapsible pane
+        self.panel.GetParent().SendSizeEvent()
 
     def snooze(self, event):
         core_api.block_databases()
@@ -371,13 +424,14 @@ class Alarm():
         del self.awindow.alarms[self.awindow.make_alarmid(self.filename,
                                                                  self.alarmid)]
 
+        # It's necessary to explicitly unbind the handler, otherwise this
+        # object will not be garbage-collected
+        core_api.bind_to_update_item(self.update_info, False)
+
+        self.awindow.update_title()
+
         if len(self.awindow.alarms) == 0:
             self.awindow.hide()
-
-    def resize_pane(self, event):
-        # This in conjunction with the wx.CP_NO_TLW_RESIZE style are necessary
-        # for the correct functioning of the collapsible pane
-        self.panel.GetParent().SendSizeEvent()
 
     def get_filename(self):
         return self.filename

@@ -37,6 +37,8 @@ class ArtProvider(wx.ArtProvider):
                                'stock_yes', 'stock_mark', 'emblem-default'),
                     '@backup': ('document-save-as', 'gtk-save-as',
                                 'filesaveas', 'stock_save-as'),
+                    '@blinkicon': ('dialog-warning', 'gtk-dialog-warning',
+                                   'stock_dialog-warning', 'important'),
                     '@bugreport': ('stock_terminal-reportbug',
                                    'dialog-warning', 'gtk-dialog-warning',
                                    'stock_dialog-warning'),

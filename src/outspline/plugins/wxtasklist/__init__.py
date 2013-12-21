@@ -97,5 +97,5 @@ class TabContextMenu(wx.Menu):
 
 def main():
     nb = wxgui_api.get_right_nb()
-    wxgui_api.add_plugin_to_right_nb(TaskList(nb).panel, 'List view',
+    wxgui_api.add_plugin_to_right_nb(TaskList(nb).panel, 'Occurrences',
                                                                    close=False)

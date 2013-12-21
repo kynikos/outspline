@@ -32,6 +32,9 @@ alarms_select_alarms = ('SELECT A_id, A_item, A_start, A_end, A_alarm, '
 alarms_select_item = ('SELECT A_id, A_start, A_end, A_alarm, A_snooze '
                       'FROM Alarms WHERE A_item=? AND A_del_id IS NULL')
 
+alarms_select_count = ('SELECT COUNT(*) AS A_active_alarms FROM Alarms '
+                                'WHERE A_del_id IS NULL AND A_snooze IS NULL')
+
 alarms_insert = ('INSERT INTO Alarms (A_id, A_del_id, A_item, A_start, A_end, '
                  'A_alarm, A_snooze) VALUES (NULL, NULL, ?, ?, ?, ?, ?)')
 

@@ -53,7 +53,7 @@ def cut_items(event, no_confirm=False):
             for item in selection:
                 id_ = treedb.get_item_id(item)
                 if not wxgui_api.close_editor(filename, id_,
-                                      ask='quiet' if no_confirm else 'discard'):
+                                    ask='quiet' if no_confirm else 'discard'):
                     core_api.release_databases()
                     return False
 
@@ -98,35 +98,38 @@ def paste_items_as_siblings(event, no_confirm=False):
         filename = treedb.get_filename()
 
         if no_confirm or copypaste_api.can_paste_safely(filename) or \
-                        msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK:
+                    msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK:
             # Do not use none=False in order to allow pasting in an empty
             # database
             selection = treedb.get_selections(many=False)
 
-            if selection:
-                base = selection[0]
-                baseid = treedb.get_item_id(base)
+            # If multiple items are selected, selection will be bool (False)
+            if isinstance(selection, list):
+                if len(selection) > 0:
+                    base = selection[0]
+                    baseid = treedb.get_item_id(base)
 
-                roots = copypaste_api.paste_items_as_siblings(filename, baseid,
-                                                      description='Paste items')
+                    roots = copypaste_api.paste_items_as_siblings(filename,
+                                            baseid, description='Paste items')
 
-                for r in roots:
-                    treeroot = treedb.insert_item(selection[0], 'after', id_=r)
-                    treedb.create(base=treeroot)
-            else:
-                base = treedb.get_root()
-                baseid = treedb.get_item_id(base)
+                    for r in roots:
+                        treeroot = treedb.insert_item(selection[0], 'after',
+                                                                        id_=r)
+                        treedb.create(base=treeroot)
+                else:
+                    base = treedb.get_root()
+                    baseid = treedb.get_item_id(base)
 
-                roots = copypaste_api.paste_items_as_children(filename, baseid,
-                                                      description='Paste items')
+                    roots = copypaste_api.paste_items_as_children(filename,
+                                            baseid, description='Paste items')
 
-                for r in roots:
-                    treeroot = treedb.insert_item(base, 'append', id_=r)
-                    treedb.create(base=treeroot)
+                    for r in roots:
+                        treeroot = treedb.insert_item(base, 'append', id_=r)
+                        treedb.create(base=treeroot)
 
-            treedb.history.refresh()
+                treedb.history.refresh()
 
-            items_pasted_event.signal(filename=filename)
+                items_pasted_event.signal(filename=filename)
 
     core_api.release_databases()
 
@@ -141,14 +144,15 @@ def paste_items_as_children(event, no_confirm=False):
             filename = treedb.get_filename()
 
             if no_confirm or copypaste_api.can_paste_safely(filename) or \
-                        msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK:
+                    msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK:
                 baseid = treedb.get_item_id(selection[0])
 
                 roots = copypaste_api.paste_items_as_children(filename, baseid,
-                                                  description='Paste sub-items')
+                                                description='Paste sub-items')
 
                 for r in roots:
-                    treeroot = treedb.insert_item(selection[0], 'append', id_=r)
+                    treeroot = treedb.insert_item(selection[0], 'append',
+                                                                        id_=r)
                     treedb.create(base=treeroot)
 
                 treedb.history.refresh()
@@ -176,7 +180,8 @@ def handle_open_database(kwargs):
                                                help='Copy the selected items',
                                                sep=config['cmenucopy_sep'],
                                                icon='@copy')
-    cmenu[filename]['paste'] = wxgui_api.insert_tree_context_menu_item(filename,
+    cmenu[filename]['paste'] = wxgui_api.insert_tree_context_menu_item(
+                        filename,
                         config.get_int('cmenupaste_pos'),
                         '&Paste siblings',
                         id_=ID_PASTE,
@@ -190,42 +195,43 @@ def handle_open_database(kwargs):
                            help='Paste items as children of the selected item',
                            sep=config['cmenupastesub_sep'], icon='@paste')
 
-    accels = [(wx.ACCEL_CTRL, ord('x'), ID_CUT),
-              (wx.ACCEL_CTRL, ord('c'), ID_COPY),
-              (wx.ACCEL_CTRL, ord('v'), ID_PASTE),
-              (wx.ACCEL_CTRL | wx.ACCEL_SHIFT, ord('v'), ID_PASTE_SUB)]
-
-    wxgui_api.add_database_tree_accelerators(filename, accels)
-
 
 def handle_close_database(kwargs):
     del cmenu[kwargs['filename']]
 
 
 def handle_reset_menu_items(kwargs):
-    if kwargs['menu'] is wxgui_api.get_menu().database:
-        mcut.Enable(False)
-        mcopy.Enable(False)
-        mpaste.Enable(False)
-        mpastesub.Enable(False)
+    # Re-enable all the actions so they are available for their accelerators
+    mcut.Enable()
+    mcopy.Enable()
+    mpaste.Enable()
+    mpastesub.Enable()
 
 
 def handle_enable_tree_menus(kwargs):
     filename = kwargs['filename']
-    sel = wxgui_api.get_tree_selections(filename)
 
-    if len(sel) == 1:
-        mcut.Enable()
-        mcopy.Enable()
-        if copypaste_api.has_copied_items(filename):
-            mpaste.Enable()
-            mpastesub.Enable()
-    elif len(sel) > 1:
-        mcut.Enable()
-        mcopy.Enable()
-    else:
-        if copypaste_api.has_copied_items(filename):
-            mpaste.Enable()
+    mcut.Enable(False)
+    mcopy.Enable(False)
+    mpaste.Enable(False)
+    mpastesub.Enable(False)
+
+    # filename is None is no database is open
+    if filename:
+        sel = wxgui_api.get_tree_selections(filename)
+
+        if len(sel) == 1:
+            mcut.Enable()
+            mcopy.Enable()
+            if copypaste_api.has_copied_items(filename):
+                mpaste.Enable()
+                mpastesub.Enable()
+        elif len(sel) > 1:
+            mcut.Enable()
+            mcopy.Enable()
+        else:
+            if copypaste_api.has_copied_items(filename):
+                mpaste.Enable()
 
 
 def handle_reset_tree_context_menu(kwargs):
@@ -267,23 +273,22 @@ def main():
 
     mcut = wxgui_api.insert_menu_item('Database',
                                       config.get_int('menucut_pos'),
-                                      'Cu&t items', id_=ID_CUT,
+                                      'Cu&t items\tCTRL+SHIFT+x', id_=ID_CUT,
                                       help='Cut the selected items',
                                       sep=config['menucut_sep'], icon='@cut')
     mcopy = wxgui_api.insert_menu_item('Database',
-                                       config.get_int('menucopy_pos'),
-                                       '&Copy items', id_=ID_COPY,
-                                       help='Copy the selected items',
-                                       sep=config['menucopy_sep'],
-                                       icon='@copy')
+                                   config.get_int('menucopy_pos'),
+                                   '&Copy items\tCTRL+SHIFT+c', id_=ID_COPY,
+                                   help='Copy the selected items',
+                                   sep=config['menucopy_sep'], icon='@copy')
     mpaste = wxgui_api.insert_menu_item('Database',
                         config.get_int('menupaste_pos'),
-                        '&Paste items', id_=ID_PASTE,
+                        '&Paste items\tCTRL+SHIFT+v', id_=ID_PASTE,
                         help='Paste items as siblings after the selected item',
                         sep=config['menupaste_sep'], icon='@paste')
     mpastesub = wxgui_api.insert_menu_item('Database',
                            config.get_int('menupastesub_pos'),
-                           'P&aste sub-items', id_=ID_PASTE_SUB,
+                           'P&aste sub-items\tCTRL+SHIFT+b', id_=ID_PASTE_SUB,
                            help='Paste items as children of the selected item',
                            sep=config['menupastesub_sep'], icon='@paste')
 
@@ -296,6 +301,6 @@ def main():
     wxgui_api.bind_to_close_database(handle_close_database)
 
     wxgui_api.bind_to_reset_menu_items(handle_reset_menu_items)
-    wxgui_api.bind_to_enable_tree_menus(handle_enable_tree_menus)
+    wxgui_api.bind_to_menu_database_update(handle_enable_tree_menus)
     wxgui_api.bind_to_reset_tree_context_menu(handle_reset_tree_context_menu)
     wxgui_api.bind_to_popup_tree_context_menu(handle_popup_tree_context_menu)

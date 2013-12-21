@@ -32,28 +32,43 @@ trayicon = None
 
 class TrayIcon(wx.TaskBarIcon):
     ID_MINIMIZE = None
+    icon = None
     menu = None
 
     def __init__(self, rootw):
         wx.TaskBarIcon.__init__(self)
         self.ID_MINIMIZE = wx.NewId()
 
-        self.SetIcon(wx.ArtProvider.GetIcon('text-editor', wx.ART_FRAME_ICON),
-                     tooltip='Outspline')
-
         config = coreaux_api.get_plugin_configuration('wxtrayicon')
+
+        self.icon = BlinkingIcon(self)
 
         menumin = wxgui_api.insert_menu_item('File',
                                   config.get_int('menu_pos'),
-                                  '&Minimize to tray\tCtrl+M',
+                                  '&Minimize to tray\tCTRL+m',
                                   id_=self.ID_MINIMIZE,
                                   help='Minimize the main window to tray icon',
                                   sep=config['menu_sep'], icon='@tray')
 
+        self.Bind(wx.EVT_TASKBAR_LEFT_DOWN, self._handle_left_click)
+        self.Bind(wx.EVT_TASKBAR_RIGHT_DOWN, self._handle_right_click)
         rootw.Bind(wx.EVT_CLOSE, wxgui_api.hide_main_window)
         wxgui_api.bind_to_menu(wxgui_api.hide_main_window, menumin)
-        self.Bind(wx.EVT_TASKBAR_LEFT_UP, wxgui_api.toggle_main_window)
         core_api.bind_to_exit_app_2(self.remove)
+
+    def _handle_left_click(self, event):
+        # If the icon is blinking, a left click shouldn't toggle the main
+        # window's shown state
+        if self.icon.is_blinking():
+            self.icon.force_stop()
+        else:
+            wxgui_api.toggle_main_window()
+
+    def _handle_right_click(self, event):
+        self.icon.force_stop()
+
+        # Skipping the event will let the click also popup the context menu
+        event.Skip()
 
     def CreatePopupMenu(self):
         # TrayMenu must be instantiated here, everytime CreatePopupMenu is
@@ -67,7 +82,92 @@ class TrayIcon(wx.TaskBarIcon):
         return self.menu
 
     def remove(self, kwargs):
+        self.icon.force_stop()
         self.RemoveIcon()
+
+
+class BlinkingIcon():
+    TOOLTIP = None
+    DELAY = None
+    trayicon = None
+    main_icon = None
+    default_alternative_icon = None
+    current_icon = None
+    current_tooltip = None
+    timer = None
+    start_id = None
+    blinking_icons = None
+    tooltips = None
+
+    def __init__(self, trayicon):
+        self.DELAY = 1000
+
+        self.trayicon = trayicon
+
+        self.main_icon = wx.ArtProvider.GetIcon('text-editor',
+                                                            wx.ART_FRAME_ICON)
+        self.default_alternative_icon = wx.ArtProvider.GetIcon('@blinkicon',
+                                                            wx.ART_FRAME_ICON)
+
+        self.current_tooltip = 'Outspline'
+        self.tooltips = {}
+        self._reset(self.main_icon)
+
+        # Initialize self.timer with a dummy function (int)
+        self.timer = wx.CallLater(1, int)
+
+    def _reset(self, icon):
+        # Don't set self.current_tooltip here, in order to avoid race
+        # conditions with the blinking timer
+        self.current_icon = icon
+        self.trayicon.SetIcon(icon, tooltip=self.current_tooltip)
+
+    def start(self, start_id, alt_icon=None):
+        self.timer.Stop()
+        self.start_id = start_id
+
+        if not alt_icon:
+            alt_icon = self.default_alternative_icon
+
+        self.blinking_icons = [self.main_icon, alt_icon]
+        self._reset(alt_icon)
+        self.timer = wx.CallLater(self.DELAY, self._restart)
+
+    def _restart(self):
+        self._reset(self.blinking_icons[0])
+        self.blinking_icons.reverse()
+        self.timer.Restart()
+
+    def stop(self, start_id):
+        if start_id == self.start_id:
+            self.force_stop()
+
+    def force_stop(self):
+        self.timer.Stop()
+        self._reset(self.main_icon)
+
+    def is_blinking(self):
+        return self.timer.IsRunning()
+
+    def set_tooltip_value(self, tooltip_id, value):
+        self.tooltips[tooltip_id] = value
+        self._refresh_tooltip()
+
+    def unset_tooltip_value(self, tooltip_id):
+        del self.tooltips[tooltip_id]
+        self._refresh_tooltip()
+
+    def _refresh_tooltip(self):
+        tooltip = "Outspline"
+
+        for id_ in self.tooltips:
+            tooltip += "\n" + self.tooltips[id_]
+
+        # Set self.current_tooltip here, in order to avoid race conditions with
+        # the blinking timer
+        self.current_tooltip = tooltip
+
+        self._reset(self.current_icon)
 
 
 class TrayMenu(wx.Menu):
@@ -84,7 +184,7 @@ class TrayMenu(wx.Menu):
 
         self.restore = self.AppendCheckItem(self.ID_RESTORE, "&Show Outspline")
         self.AppendSeparator()
-        self.exit_ = self.Append(wx.ID_EXIT, "E&xit\tCtrl+Q")
+        self.exit_ = self.Append(wx.ID_EXIT, "E&xit\tCTRL+q")
 
         parent.Bind(wx.EVT_MENU, wxgui_api.toggle_main_window, self.restore)
         parent.Bind(wx.EVT_MENU, wx.GetApp().exit_app, self.exit_)

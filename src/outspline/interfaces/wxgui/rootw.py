@@ -123,7 +123,8 @@ class MainFrame(wx.Frame):
 
         self.CreateStatusBar()
 
-        self.Bind(wx.EVT_MENU_OPEN, self.handle_menu_open)
+        self.Bind(wx.EVT_MENU_OPEN, self.menu.update_menus)
+        self.Bind(wx.EVT_MENU_CLOSE, self.menu.reset_menus)
         self.Bind(wx.EVT_CLOSE, wx.GetApp().exit_app)
 
         self.Centre()
@@ -140,9 +141,6 @@ class MainFrame(wx.Frame):
             self.hide(event)
         else:
             self.show(event)
-
-    def handle_menu_open(self, event):
-        self.menu.update_menus(event.GetMenu())
 
 
 class MainPanes(wx.SplitterWindow):

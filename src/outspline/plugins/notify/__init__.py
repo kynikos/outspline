@@ -23,19 +23,36 @@ try:
 except ImportError:
     Notify = None
 
+try:
+    import wx
+except ImportError:
+    wx = None
+
 import outspline.core_api as core_api
 import outspline.coreaux_api as coreaux_api
 import outspline.extensions.organism_alarms_api as organism_alarms_api
 wxgui_api = coreaux_api.import_optional_interface_api('wxgui')
+wxtrayicon_api = coreaux_api.import_optional_plugin_api('wxtrayicon')
 
 
 class Notifications():
     alarm = None
+    trayicon_id = None
 
-    def __init__(self):
+    def __init__(self, trayicon_id):
         Notify.init("Outspline")
 
-    def handle_alarm(self, kwargs):
+        self.trayicon_id = trayicon_id
+
+        organism_alarms_api.bind_to_alarm(self._handle_alarm)
+
+    def _handle_alarm(self, kwargs):
+        # Don't notify for old alarms to avoid filling the screen with
+        # notifications
+        # Of course this check will prevent a valid notification if Outspline
+        # takes more than 1 minute from the activation of the alarm to get
+        # here, but in case of such serious slowness, a missed notification is
+        # probably just a minor problem
         if kwargs['alarm'] == int(time.time()) // 60 * 60:
             filename = kwargs['filename']
             id_ = kwargs['id_']
@@ -46,18 +63,97 @@ class Notifications():
                                              body=text, icon="appointment-new")
 
             if wxgui_api:
-                self.alarm.add_action("open_item", "Open", self.open_item,
+                self.alarm.add_action("open_item", "Open", self._open_item,
                                                                [filename, id_])
             self.alarm.show()
 
-    def open_item(self, alarm, action, user_data):
+    def _open_item(self, alarm, action, user_data):
         # In order for actions to work, a notification must be a proper object
         # (i.e., they do *not* work if these are plain functions of this
         # module, without this Notifications class)
         wxgui_api.show_main_window()
         wxgui_api.open_editor(user_data[0], user_data[1])
 
+        if self.trayicon_id:
+            wxtrayicon_api.stop_blinking(self.trayicon_id)
+
+
+class BlinkingTrayIcon():
+    ref_id = None
+    icon = None
+    DELAY = None
+    SDELAY = None
+    delay = None
+    sdelay = None
+
+    def __init__(self):
+        self.ref_id = wx.NewId()
+        self.icon = wx.ArtProvider.GetIcon('@alarms', wx.ART_FRAME_ICON)
+        self.DELAY = 50
+        # Set SDELAY shorter than DELAY, so that if an alarm is activated at
+        # the same time an alarm is dismissed, there's a better chance that
+        # the icon starts blinking
+        self.SDELAY = 30
+
+        # Initialize self.delay and self.sdelay with a dummy function (int)
+        self.delay = wx.CallLater(1, int)
+        self.sdelay = wx.CallLater(1, int)
+
+        self._update_tooltip()
+
+        organism_alarms_api.bind_to_alarm(self._blink_later)
+        organism_alarms_api.bind_to_alarm_off(self._stop_later)
+        wxgui_api.bind_to_close_database(self._stop_later)
+        core_api.bind_to_exit_app_2(self._exit)
+
+    def _blink_later(self, kwargs):
+        # Instead of self.blink, bind _this_ function to events that can be
+        # signalled many times in a loop, so that self.blink is executed only
+        # once after the last signal
+        self.delay.Stop()
+        self.delay = wx.CallLater(self.DELAY, self._blink)
+
+    def _blink(self):
+        wxtrayicon_api.start_blinking(self.ref_id, self.icon)
+        self._update_tooltip()
+
+    def _stop_later(self, kwargs):
+        # Instead of self.stop, bind _this_ function to events that can be
+        # signalled many times in a loop, so that self.stop is executed only
+        # once after the last signal
+        self.sdelay.Stop()
+        self.sdelay = wx.CallLater(self.SDELAY, self._stop)
+
+    def _stop(self):
+        nalarms = self._update_tooltip()
+
+        if nalarms == 0:
+            wxtrayicon_api.stop_blinking(self.ref_id)
+
+    def _update_tooltip(self):
+        # Don't rely on counts from wxtasklist or wxalarms, as they aren't
+        # accurate because of race conditions
+        nalarms = organism_alarms_api.get_number_of_active_alarms()
+
+        tooltip = 'Active alarms: {}'.format(str(nalarms))
+        wxtrayicon_api.set_tooltip_value(self.ref_id, tooltip)
+        return nalarms
+
+    def _exit(self, event):
+        # Unbind the handlers whose timers could race with the application
+        # closure
+        organism_alarms_api.bind_to_alarm_off(self._stop_later, False)
+        wxgui_api.bind_to_close_database(self._stop_later, False)
+        self.delay.Stop()
+        self.sdelay.Stop()
+
 
 def main():
+    if wxtrayicon_api:
+        trayicon = BlinkingTrayIcon()
+        trayicon_id = trayicon.ref_id
+    else:
+        trayicon_id = False
+
     if Notify:
-        organism_alarms_api.bind_to_alarm(Notifications().handle_alarm)
+        Notifications(trayicon_id)

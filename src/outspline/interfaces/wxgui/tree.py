@@ -46,8 +46,6 @@ class Database(wx.SplitterWindow):
     ctabmenu = None
     hpanel = None
     history = None
-    accels = None
-    accelstree = None
 
     def __init__(self, filename, parent):
         wx.SplitterWindow.__init__(self, parent, style=wx.SP_LIVE_UPDATE)
@@ -81,39 +79,6 @@ class Database(wx.SplitterWindow):
         self.Initialize(self.treec)
 
         self.create()
-
-        self.accels = [(wx.ACCEL_SHIFT | wx.ACCEL_CTRL, ord('s'),
-                        wx.GetApp().menu.file.ID_SAVE),
-                       (wx.ACCEL_SHIFT | wx.ACCEL_CTRL, ord('a'),
-                        wx.GetApp().menu.file.ID_SAVE_ALL),
-                       (wx.ACCEL_CTRL, ord('w'),
-                        wx.GetApp().menu.file.ID_CLOSE_DB),
-                       (wx.ACCEL_SHIFT | wx.ACCEL_CTRL, ord('w'),
-                        wx.GetApp().menu.file.ID_CLOSE_DB_ALL),
-                       (wx.ACCEL_CTRL, ord('z'),
-                        wx.GetApp().menu.database.ID_UNDO),
-                       (wx.ACCEL_CTRL, ord('y'),
-                        wx.GetApp().menu.database.ID_REDO)]
-
-        self.accelstree = [(wx.ACCEL_NORMAL, wx.WXK_INSERT,
-                            wx.GetApp().menu.database.ID_SIBLING),
-                           (wx.ACCEL_SHIFT, wx.WXK_INSERT,
-                            wx.GetApp().menu.database.ID_CHILD),
-                           (wx.ACCEL_SHIFT, wx.WXK_UP,
-                            wx.GetApp().menu.database.ID_MOVE_UP),
-                           (wx.ACCEL_SHIFT, wx.WXK_DOWN,
-                            wx.GetApp().menu.database.ID_MOVE_DOWN),
-                           (wx.ACCEL_SHIFT, wx.WXK_LEFT,
-                            wx.GetApp().menu.database.ID_MOVE_PARENT),
-                           (wx.ACCEL_NORMAL, wx.WXK_RETURN,
-                            wx.GetApp().menu.database.ID_EDIT),
-                           (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_ENTER,
-                            wx.GetApp().menu.database.ID_EDIT),
-                           (wx.ACCEL_NORMAL, wx.WXK_DELETE,
-                            wx.GetApp().menu.database.ID_DELETE)]
-
-        self.SetAcceleratorTable(wx.AcceleratorTable(self.accels))
-        self.treec.SetAcceleratorTable(wx.AcceleratorTable(self.accelstree))
 
         self.treec.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.veto_label_edit)
         self.treec.Bind(wx.EVT_TREE_ITEM_MENU, self.popup_item_menu)
@@ -445,14 +410,6 @@ class Database(wx.SplitterWindow):
 
         self.treec.PopupMenu(self.cmenu, event.GetPoint())
 
-    def add_accelerators(self, accels):
-        self.accels.extend(accels)
-        self.SetAcceleratorTable(wx.AcceleratorTable(self.accels))
-
-    def add_tree_accelerators(self, accels):
-        self.accelstree.extend(accels)
-        self.treec.SetAcceleratorTable(wx.AcceleratorTable(self.accelstree))
-
     def get_tab_context_menu(self):
         self.ctabmenu.update()
         return self.ctabmenu
@@ -481,10 +438,10 @@ class ContextMenu(wx.Menu):
                                  "Create a child for the selected item")
         self.moveup = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_UP,
                                   "&Move item up",
-                                 "Switch the selected item with the one above")
+                                  "Swap the selected item with the one above")
         self.movedn = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_DOWN,
                                   "Mo&ve item down",
-                                 "Switch the selected item with the one below")
+                                  "Swap the selected item with the one below")
         self.movept = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_PARENT,
                                   "M&ove item to parent",
                            "Move the selected item as a sibling of its parent")
