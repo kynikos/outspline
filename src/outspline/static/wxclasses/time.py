@@ -18,7 +18,7 @@
 
 import wx
 
-from outspline.static.wxclasses.choices import MultipleChoiceCtrl
+from choices import MultipleChoiceCtrl
 
 
 class HourCtrl():
