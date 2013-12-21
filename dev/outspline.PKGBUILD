@@ -1,7 +1,7 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='outspline'
-pkgver='0.2.1'
+pkgver='0.3.0'
 pkgrel=1
 pkgdesc="Highly modular and extensible outliner for managing your notes"
 arch=('any')

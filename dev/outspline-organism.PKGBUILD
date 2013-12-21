@@ -1,7 +1,7 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='outspline-organism'
-pkgver='0.2.1'
+pkgver='0.3.0'
 pkgrel=1
 pkgdesc="Organizer component for Outspline, adding advanced time management abilities"
 arch=('any')

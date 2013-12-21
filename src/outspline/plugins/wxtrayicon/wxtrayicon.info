@@ -1,5 +1,5 @@
 author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.2
+version = 0.3
 description = Adds an icon in the system tray and lets the user hide and show the main window.
 website = https://github.com/kynikos/outspline/
 affects_database = no
