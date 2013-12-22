@@ -96,7 +96,7 @@ def move_item_up(filename, id_, description='Move item up'):
     group = databases.dbs[filename].get_next_history_group()
     try:
         return databases.dbs[filename].items[id_].shift(mode='up', group=group,
-                                                        description=description)
+                                                    description=description)
     except CannotMoveItemError:
         return False
 
@@ -105,7 +105,7 @@ def move_item_down(filename, id_, description='Move item down'):
     group = databases.dbs[filename].get_next_history_group()
     try:
         return databases.dbs[filename].items[id_].shift(mode='down',
-                                           group=group, description=description)
+                                        group=group, description=description)
     except CannotMoveItemError:
         return False
 
@@ -114,7 +114,7 @@ def move_item_to_parent(filename, id_, description='Move item to parent'):
     group = databases.dbs[filename].get_next_history_group()
     try:
         return databases.dbs[filename].items[id_].shift(mode='parent',
-                                           group=group, description=description)
+                                        group=group, description=description)
     except CannotMoveItemError:
         return False
 
@@ -124,7 +124,15 @@ def update_item_text(filename, id_, text, group=None,
     if group == None:
         group = databases.dbs[filename].get_next_history_group()
     return databases.dbs[filename].items[id_].update(group,
-                                             description=description, text=text)
+                                            description=description, text=text)
+
+
+def update_item_text_no_event(filename, id_, text, group=None,
+                                            description='Update item text'):
+    if group == None:
+        group = databases.dbs[filename].get_next_history_group()
+    return databases.dbs[filename].items[id_].update_no_event(group,
+                                            description=description, text=text)
 
 
 def insert_history(filename, group, id_, type, description, query_redo,
@@ -187,6 +195,10 @@ def set_modified(filename):
     return databases.dbs[filename].set_modified()
 
 
+def is_item(filename, id_):
+    return id_ in databases.dbs[filename].items
+
+
 def get_tree_item(filename, parent, previous):
     return items.Item.get_tree_item(filename, parent, previous)
 
@@ -201,6 +213,13 @@ def get_items_count(filename):
 
 def get_item_info(filename, id_):
     return databases.dbs[filename].items[id_].get_all_info()
+
+
+def get_item_ancestors(filename, id_):
+    # It's necessary to initialize ancestors=[] because otherwise for some
+    # reason the ancestors list from the previous call would be used, thus
+    # appending the ancestors again, multiplicating them at every call
+    return databases.dbs[filename].items[id_].get_ancestors(ancestors=[])
 
 
 def get_item_text(filename, id_):

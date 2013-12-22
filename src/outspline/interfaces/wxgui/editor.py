@@ -40,8 +40,15 @@ tabs = {}
 
 
 class EditorPanel(wx.Panel):
-    def __init__(self, parent):
+    ctabmenu = None
+
+    def __init__(self, parent, item):
         wx.Panel.__init__(self, parent)
+        self.ctabmenu = TabContextMenu(item)
+
+    def get_tab_context_menu(self):
+        self.ctabmenu.update()
+        return self.ctabmenu
 
 
 class Editor():
@@ -53,7 +60,6 @@ class Editor():
     area = None
     fpbar = None
     modstate = None
-    accels = None
 
     def __init__(self, filename, id_, item):
         self.filename = filename
@@ -61,24 +67,9 @@ class Editor():
         self.item = item
         self.modstate = False
 
-        self.panel = EditorPanel(wx.GetApp().nb_right)
+        self.panel = EditorPanel(wx.GetApp().nb_right, item)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
-
-        self.accels = [(wx.wx.ACCEL_CTRL, wx.WXK_RETURN,
-                        wx.GetApp().menu.edit.ID_APPLY),
-                       (wx.wx.ACCEL_CTRL, wx.WXK_NUMPAD_ENTER,
-                        wx.GetApp().menu.edit.ID_APPLY),
-                       (wx.ACCEL_SHIFT | wx.wx.ACCEL_CTRL, wx.WXK_RETURN,
-                        wx.GetApp().menu.edit.ID_APPLY_ALL),
-                       (wx.ACCEL_SHIFT | wx.wx.ACCEL_CTRL, wx.WXK_NUMPAD_ENTER,
-                        wx.GetApp().menu.edit.ID_APPLY_ALL),
-                       (wx.wx.ACCEL_CTRL, ord('w'),
-                        wx.GetApp().menu.edit.ID_CLOSE),
-                       (wx.ACCEL_SHIFT | wx.wx.ACCEL_CTRL, ord('w'),
-                        wx.GetApp().menu.edit.ID_CLOSE_ALL)]
-
-        self.panel.SetAcceleratorTable(wx.AcceleratorTable(self.accels))
 
     def _post_init(self):
         filename = self.filename
@@ -204,6 +195,12 @@ class Editor():
 
         return True
 
+    def find_in_tree(self):
+        treedb = tree.dbs[self.filename]
+        treedb.select_item(treedb.find_item(self.id_))
+        nb = wx.GetApp().nb_left
+        nb.select_page(nb.GetPageIndex(treedb))
+
     def get_filename(self):
         return self.filename
 
@@ -222,6 +219,35 @@ class Editor():
     def make_tabid(filename, id_):
         return '_'.join((filename, str(id_)))
 
-    def add_accelerators(self, accels):
-        self.accels.extend(accels)
-        self.panel.SetAcceleratorTable(wx.AcceleratorTable(self.accels))
+
+class TabContextMenu(wx.Menu):
+    item = None
+    find = None
+    apply_ = None
+    close = None
+
+    def __init__(self, item):
+        wx.Menu.__init__(self)
+        self.item = item
+
+        self.find = wx.MenuItem(self, wx.GetApp().menu.edit.ID_FIND,
+                                                        "&Find in database")
+        self.apply_ = wx.MenuItem(self, wx.GetApp().menu.edit.ID_APPLY,
+                                                                    "&Apply")
+        self.close = wx.MenuItem(self, wx.GetApp().menu.edit.ID_CLOSE,
+                                                                    "Cl&ose")
+
+        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
+        self.apply_.SetBitmap(wx.ArtProvider.GetBitmap('@apply', wx.ART_MENU))
+        self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+
+        self.AppendItem(self.find)
+        self.AppendSeparator()
+        self.AppendItem(self.apply_)
+        self.AppendItem(self.close)
+
+    def update(self):
+        if tabs[self.item].is_modified():
+            self.apply_.Enable()
+        else:
+            self.apply_.Enable(False)

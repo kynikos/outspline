@@ -47,11 +47,11 @@ def make_rule(months, weekday, number, rstart, rend, ralarm, guiconfig):
     # Make sure this rule can only produce occurrences compliant with the
     # requirements defined in organism_api.update_item_rules
     if isinstance(months, list) and len(months) > 0 and \
-                             isinstance(weekday, int) and -1 < weekday < 7 and \
-                                    isinstance(number, int) and number > 0 and \
-                           isinstance(rstart, int) and -1 < rstart < 86400 and \
-                    (rend is None or (isinstance(rend, int) and rend > 0)) and \
-                                    (ralarm is None or isinstance(ralarm, int)):
+                            isinstance(weekday, int) and -1 < weekday < 7 and \
+                                   isinstance(number, int) and number > 0 and \
+                          isinstance(rstart, int) and -1 < rstart < 86400 and \
+                   (rend is None or (isinstance(rend, int) and rend > 0)) and \
+                                   (ralarm is None or isinstance(ralarm, int)):
         nmonths = []
 
         for n in range(1, 13):
@@ -113,8 +113,8 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
 
     while True:
         first_month_weekday = calendar.monthrange(year, month)[0]
-        selected_day_number = (weekday - first_month_weekday + 8) % 7 + \
-                                                                      number * 7
+        selected_day_number = (weekday - first_month_weekday + 7) % 7 + 1 + \
+                                                                     number * 7
 
         try:
             sdate = _datetime.datetime(year, month, selected_day_number)
@@ -178,8 +178,8 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
 
     while True:
         first_month_weekday = calendar.monthrange(year, month)[0]
-        selected_day_number = (weekday - first_month_weekday + 8) % 7 + \
-                                                                      number * 7
+        selected_day_number = (weekday - first_month_weekday + 7) % 7 + 1 + \
+                                                                     number * 7
 
         try:
             sdate = _datetime.datetime(year, month, selected_day_number)
@@ -216,8 +216,8 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
             next_occ = occs.get_next_occurrence_time()
 
             # The rule is checked in make_rule, no need to use occs.add
-            if occs.add_safe(base_time, occd) or (next_occ and start > next_occ and
-                                               (alarm is None or alarm > next_occ)):
+            if occs.add_safe(base_time, occd) or (next_occ and
+                     start > next_occ and (alarm is None or alarm > next_occ)):
                 break
 
         try:

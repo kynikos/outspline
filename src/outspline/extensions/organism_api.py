@@ -58,8 +58,8 @@ def get_occurrences_range(mint, maxt):
     return items.get_occurrences_range(mint, maxt)
 
 
-def bind_to_update_item_rules(handler, bind=True):
-    return items.update_item_rules_event.bind(handler, bind)
+def bind_to_update_item_rules_conditional(handler, bind=True):
+    return items.update_item_rules_conditional_event.bind(handler, bind)
 
 
 def bind_to_get_alarms(handler, bind=True):

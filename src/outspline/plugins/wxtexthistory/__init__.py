@@ -55,29 +55,24 @@ def handle_open_textctrl(kwargs):
                                          config.get_int('min_update_interval'))
 
 
-def handle_open_editor(kwargs):
-    filename = kwargs['filename']
-    id_ = kwargs['id_']
-
-    accels = [(wx.ACCEL_CTRL, ord('z'), ID_UNDO),
-              (wx.ACCEL_CTRL, ord('y'), ID_REDO)]
-
-    wxgui_api.add_editor_accelerators(filename, id_, accels)
-
-
 def handle_reset_menu_items(kwargs):
-    if kwargs['menu'] is wxgui_api.get_menu().edit:
-        mundo.Enable(False)
-        mredo.Enable(False)
+    # Re-enable all the actions so they are available for their accelerators
+    mundo.Enable()
+    mredo.Enable()
 
 
 def handle_enable_textarea_menus(kwargs):
     item = kwargs['item']
 
-    if areas[item].can_undo():
-        mundo.Enable()
-    if areas[item].can_redo():
-        mredo.Enable()
+    mundo.Enable(False)
+    mredo.Enable(False)
+
+    # item is None is no editor is open
+    if item:
+        if areas[item].can_undo():
+            mundo.Enable()
+        if areas[item].can_redo():
+            mredo.Enable()
 
 
 def main():
@@ -88,13 +83,13 @@ def main():
     global mundo, mredo
     mundo = wxgui_api.insert_menu_item('Editor',
                                        config.get_int('menuundo_pos'),
-                                       '&Undo', id_=ID_UNDO,
+                                       '&Undo\tCTRL+z', id_=ID_UNDO,
                                        help='Undo the previous text edit',
                                        sep=config['menuundo_sep'],
                                        icon='@undo')
     mredo = wxgui_api.insert_menu_item('Editor',
                                        config.get_int('menuredo_pos'),
-                                       '&Redo', id_=ID_REDO,
+                                       '&Redo\tCTRL+y', id_=ID_REDO,
                                        help='Redo the next text edit',
                                        sep=config['menuredo_sep'],
                                        icon='@redo')
@@ -102,6 +97,5 @@ def main():
     wxgui_api.bind_to_menu(undo_text, mundo)
     wxgui_api.bind_to_menu(redo_text, mredo)
     wxgui_api.bind_to_open_textctrl(handle_open_textctrl)
-    wxgui_api.bind_to_open_editor(handle_open_editor)
     wxgui_api.bind_to_reset_menu_items(handle_reset_menu_items)
-    wxgui_api.bind_to_enable_textarea_menus(handle_enable_textarea_menus)
+    wxgui_api.bind_to_menu_edit_update(handle_enable_textarea_menus)

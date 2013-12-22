@@ -27,6 +27,10 @@ def open_database(filename, startup=False):
     return databases.open_database(filename, startup=startup)
 
 
+def get_open_databases():
+    return databases.get_open_databases()
+
+
 ### EDITOR ###
 
 def open_editor(filename, id_):
@@ -71,11 +75,6 @@ def expand_panel(filename, id_, fpanel):
 
 def set_editor_modified(filename, id_):
     return editor.tabs[editor.Editor.make_tabid(filename, id_)].set_modified()
-
-
-def add_editor_accelerators(filename, id_, accels):
-    return editor.tabs[editor.Editor.make_tabid(filename, id_)
-                       ].add_accelerators(accels)
 
 
 def bind_to_open_editor(handler, bind=True):
@@ -140,16 +139,24 @@ def insert_menu_item(menu, pos, item, id_=wx.ID_ANY, help='', sep='none',
                                         sub, icon)
 
 
+def bind_to_update_menu_items(handler, bind=True):
+    return menubar.update_menu_items_event.bind(handler, bind)
+
+
 def bind_to_reset_menu_items(handler, bind=True):
     return menubar.reset_menu_items_event.bind(handler, bind)
 
 
-def bind_to_enable_tree_menus(handler, bind=True):
-    return menubar.enable_tree_menus_event.bind(handler, bind)
+def bind_to_menu_database_update(handler, bind=True):
+    return menubar.menu_database_update_event.bind(handler, bind)
 
 
-def bind_to_enable_textarea_menus(handler, bind=True):
-    return menubar.enable_textarea_menus_event.bind(handler, bind)
+def bind_to_menu_edit_update(handler, bind=True):
+    return menubar.menu_edit_update_event.bind(handler, bind)
+
+
+def bind_to_menu_view_update(handler, bind=True):
+    return menubar.menu_view_update_event.bind(handler, bind)
 
 
 def bind_to_open_database(handler, bind=True):
@@ -243,6 +250,11 @@ def select_database_tab_index(index):
     return wx.GetApp().nb_left.select_page(index)
 
 
+def select_database_tab(filename):
+    index = wx.GetApp().nb_left.GetPageIndex(tree.dbs[filename])
+    return select_database_tab_index(index)
+
+
 def get_selected_database_tab_index():
     # Returns -1 if there's no tab
     return wx.GetApp().nb_left.get_selected_tab_index()
@@ -294,6 +306,18 @@ def get_main_icon_bundle():
     return wx.GetApp().get_main_icon_bundle()
 
 
+def show_main_window(event=None):
+    return wx.GetApp().root.show(event=event)
+
+
+def hide_main_window(event=None):
+    return wx.GetApp().root.hide(event=event)
+
+
+def toggle_main_window(event=None):
+    return wx.GetApp().root.toggle_shown(event=event)
+
+
 def is_shown():
     return wx.GetApp().root.IsShown()
 
@@ -311,6 +335,15 @@ def bind_to_exit_application(handler, bind=True):
 def get_tree_selections(filename, none=True, many=True, descendants=None):
     return tree.dbs[filename].get_selections(none=none, many=many,
                                              descendants=descendants)
+
+
+def unselect_all_items(filename):
+    return tree.dbs[filename].unselect_all_items()
+
+
+def add_item_to_selection(filename, id_):
+    treeitem = tree.dbs[filename].find_item(id_)
+    return tree.dbs[filename].add_item_to_selection(treeitem)
 
 
 def append_item(filename, baseid, id_, text):
@@ -343,14 +376,6 @@ def insert_tree_context_menu_item(filename, pos, item, id_=wx.ID_ANY, help='',
 
 def refresh_history(filename):
     return tree.dbs[filename].history.refresh()
-
-
-def add_database_accelerators(filename, accels):
-    return tree.dbs[filename].add_accelerators(accels)
-
-
-def add_database_tree_accelerators(filename, accels):
-    return tree.dbs[filename].add_tree_accelerators(accels)
 
 
 def bind_to_reset_tree_context_menu(handler, bind=True):

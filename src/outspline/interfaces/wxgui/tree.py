@@ -43,10 +43,9 @@ class Database(wx.SplitterWindow):
     root = None
     titems = None
     cmenu = None
+    ctabmenu = None
     hpanel = None
     history = None
-    accels = None
-    accelstree = None
 
     def __init__(self, filename, parent):
         wx.SplitterWindow.__init__(self, parent, style=wx.SP_LIVE_UPDATE)
@@ -63,6 +62,7 @@ class Database(wx.SplitterWindow):
         self.titems = {0: data}
 
         self.cmenu = ContextMenu(self)
+        self.ctabmenu = TabContextMenu(self.filename)
 
         self.hpanel = wx.Panel(self)
         bs = wx.BoxSizer(wx.VERTICAL)
@@ -79,39 +79,6 @@ class Database(wx.SplitterWindow):
         self.Initialize(self.treec)
 
         self.create()
-
-        self.accels = [(wx.ACCEL_SHIFT | wx.ACCEL_CTRL, ord('s'),
-                        wx.GetApp().menu.file.ID_SAVE),
-                       (wx.ACCEL_SHIFT | wx.ACCEL_CTRL, ord('a'),
-                        wx.GetApp().menu.file.ID_SAVE_ALL),
-                       (wx.ACCEL_CTRL, ord('w'),
-                        wx.GetApp().menu.file.ID_CLOSE_DB),
-                       (wx.ACCEL_SHIFT | wx.ACCEL_CTRL, ord('w'),
-                        wx.GetApp().menu.file.ID_CLOSE_DB_ALL),
-                       (wx.ACCEL_CTRL, ord('z'),
-                        wx.GetApp().menu.database.ID_UNDO),
-                       (wx.ACCEL_CTRL, ord('y'),
-                        wx.GetApp().menu.database.ID_REDO)]
-
-        self.accelstree = [(wx.ACCEL_NORMAL, wx.WXK_INSERT,
-                            wx.GetApp().menu.database.ID_SIBLING),
-                           (wx.ACCEL_SHIFT, wx.WXK_INSERT,
-                            wx.GetApp().menu.database.ID_CHILD),
-                           (wx.ACCEL_SHIFT, wx.WXK_UP,
-                            wx.GetApp().menu.database.ID_MOVE_UP),
-                           (wx.ACCEL_SHIFT, wx.WXK_DOWN,
-                            wx.GetApp().menu.database.ID_MOVE_DOWN),
-                           (wx.ACCEL_SHIFT, wx.WXK_LEFT,
-                            wx.GetApp().menu.database.ID_MOVE_PARENT),
-                           (wx.ACCEL_NORMAL, wx.WXK_RETURN,
-                            wx.GetApp().menu.database.ID_EDIT),
-                           (wx.ACCEL_NORMAL, wx.WXK_NUMPAD_ENTER,
-                            wx.GetApp().menu.database.ID_EDIT),
-                           (wx.ACCEL_NORMAL, wx.WXK_DELETE,
-                            wx.GetApp().menu.database.ID_DELETE)]
-
-        self.SetAcceleratorTable(wx.AcceleratorTable(self.accels))
-        self.treec.SetAcceleratorTable(wx.AcceleratorTable(self.accelstree))
 
         self.treec.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.veto_label_edit)
         self.treec.Bind(wx.EVT_TREE_ITEM_MENU, self.popup_item_menu)
@@ -130,8 +97,9 @@ class Database(wx.SplitterWindow):
         # kwargs['text'] could be None if the query updated the position of the
         # item and not its text
         if kwargs['filename'] == self.filename and kwargs['text'] is not None:
+            treeitem = self.find_item(kwargs['id_'])
             title = self.make_item_title(kwargs['text'])
-            self.set_item_title(self.find_item(kwargs['id_']), title)
+            self.set_item_title(treeitem, title)
 
     def handle_history_insert(self, kwargs):
         filename = kwargs['filename']
@@ -443,13 +411,9 @@ class Database(wx.SplitterWindow):
 
         self.treec.PopupMenu(self.cmenu, event.GetPoint())
 
-    def add_accelerators(self, accels):
-        self.accels.extend(accels)
-        self.SetAcceleratorTable(wx.AcceleratorTable(self.accels))
-
-    def add_tree_accelerators(self, accels):
-        self.accelstree.extend(accels)
-        self.treec.SetAcceleratorTable(wx.AcceleratorTable(self.accelstree))
+    def get_tab_context_menu(self):
+        self.ctabmenu.update()
+        return self.ctabmenu
 
 
 class ContextMenu(wx.Menu):
@@ -475,10 +439,10 @@ class ContextMenu(wx.Menu):
                                  "Create a child for the selected item")
         self.moveup = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_UP,
                                   "&Move item up",
-                                 "Switch the selected item with the one above")
+                                  "Swap the selected item with the one above")
         self.movedn = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_DOWN,
                                   "Mo&ve item down",
-                                 "Switch the selected item with the one below")
+                                  "Swap the selected item with the one below")
         self.movept = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_PARENT,
                                   "M&ove item to parent",
                            "Move the selected item as a sibling of its parent")
@@ -571,7 +535,62 @@ class ContextMenu(wx.Menu):
             self.delete.Enable()
 
         elif len(sel) > 1:
+            self.edit.Enable()
             self.delete.Enable()
 
         else:
             self.sibling.Enable()
+
+
+class TabContextMenu(wx.Menu):
+    filename = None
+    save = None
+    saveas = None
+    backup = None
+    close = None
+
+    def __init__(self, filename):
+        wx.Menu.__init__(self)
+        self.filename = filename
+
+        self.undo = wx.MenuItem(self, wx.GetApp().menu.database.ID_UNDO,
+                                                                       "&Undo")
+        self.redo = wx.MenuItem(self, wx.GetApp().menu.database.ID_REDO,
+                                                                       "&Redo")
+        self.save = wx.MenuItem(self, wx.GetApp().menu.file.ID_SAVE, "&Save")
+        self.saveas = wx.MenuItem(self, wx.GetApp().menu.file.ID_SAVE_AS,
+                                                                 "Sav&e as...")
+        self.backup = wx.MenuItem(self, wx.GetApp().menu.file.ID_BACKUP,
+                                                             "Save &backup...")
+        self.close = wx.MenuItem(self, wx.GetApp().menu.file.ID_CLOSE_DB,
+                                                                      "&Close")
+
+        self.undo.SetBitmap(wx.ArtProvider.GetBitmap('@undodb', wx.ART_MENU))
+        self.redo.SetBitmap(wx.ArtProvider.GetBitmap('@redodb', wx.ART_MENU))
+        self.save.SetBitmap(wx.ArtProvider.GetBitmap('@save', wx.ART_MENU))
+        self.saveas.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
+        self.backup.SetBitmap(wx.ArtProvider.GetBitmap('@backup', wx.ART_MENU))
+        self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+
+        self.AppendItem(self.undo)
+        self.AppendItem(self.redo)
+        self.AppendSeparator()
+        self.AppendItem(self.save)
+        self.AppendItem(self.saveas)
+        self.AppendItem(self.backup)
+        self.AppendSeparator()
+        self.AppendItem(self.close)
+
+    def update(self):
+        self.undo.Enable(False)
+        self.redo.Enable(False)
+        self.save.Enable(False)
+
+        if core_api.preview_undo_tree(self.filename):
+            self.undo.Enable()
+
+        if core_api.preview_redo_tree(self.filename):
+            self.redo.Enable()
+
+        if core_api.check_pending_changes(self.filename):
+            self.save.Enable()

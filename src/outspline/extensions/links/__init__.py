@@ -48,7 +48,7 @@ def handle_create_database(kwargs):
 def handle_open_database_dirty(kwargs):
     info = coreaux_api.get_addons_info()
     dependencies = info(_ADDON_NAME[0])(_ADDON_NAME[1]
-                                     )['database_dependency_group_1'].split(' ')
+                                    )['database_dependency_group_1'].split(' ')
 
     if not set(dependencies) - set(kwargs['dependencies']):
         links.cdbs.add(kwargs['filename'])
@@ -76,11 +76,11 @@ def handle_close_database(kwargs):
 
 
 def handle_update_item(kwargs):
-    # kwargs['text'] could be None if the query updated the position of the item
-    # and not its text
+    # kwargs['text'] could be None if the query updated the position of the
+    # item and not its text
     if kwargs['text'] is not None:
         links.synchronize_links_text(kwargs['filename'], kwargs['id_'],
-                         kwargs['text'], kwargs['group'], kwargs['description'])
+                        kwargs['text'], kwargs['group'], kwargs['description'])
 
 
 def handle_delete_item(kwargs):
@@ -101,8 +101,8 @@ def handle_delete_item(kwargs):
 
 
 def handle_history(kwargs):
-    # Break all the links in the CopyLinks table because it cannot be kept up to
-    # date with history changes
+    # Break all the links in the CopyLinks table because it cannot be kept up
+    # to date with history changes
     if kwargs['filename'] in links.cdbs:
         links.break_all_copied_links(kwargs['filename'])
 
@@ -122,7 +122,7 @@ def handle_copy_item(kwargs):
 
 def handle_paste_item(kwargs):
     links.paste_link(kwargs['filename'], kwargs['id_'], kwargs['oldid'],
-                                         kwargs['group'], kwargs['description'])
+                                        kwargs['group'], kwargs['description'])
 
 
 def handle_safe_paste_check(kwargs):

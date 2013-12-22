@@ -44,7 +44,12 @@ def get_snoozed_alarms(last_search, filename, occs):
             itemid = row['A_item']
             start = row['A_start']
             end = row['A_end']
-            snooze = row['A_snooze']
+            # Do not assign None here so that it's possible to distinguish
+            # between occurrences without alarm and occurrences with active
+            # alarm when they're mixed together
+            # Storing False ensures consistent behaviour with None when doing
+            # generic boolean tests
+            snooze = False if row['A_snooze'] is None else row['A_snooze']
 
             # Check whether the snoozed alarm has a duplicate among the alarms
             # found using the alarm rules, and in that case delete the latter;
@@ -61,14 +66,14 @@ def get_snoozed_alarms(last_search, filename, occs):
                       'end': end,
                       'alarm': snooze}
 
-            # For safety, also check that there aren't any alarms with snooze <=
-            # last_search left (for example this may happen if an alarm is
+            # For safety, also check that there aren't any alarms with snooze
+            # <= last_search left (for example this may happen if an alarm is
             # temporarily undone together with its item, and then it's restored
             # with a redo)
             # Note that whatever the value of last_search is, it doesn't really
-            # have the possibility to prevent the activation of a snoozed alarm,
-            # be it immediately or later (last_search can't be set on a future
-            # time)
+            # have the possibility to prevent the activation of a snoozed
+            # alarm, be it immediately or later (last_search can't be set on a
+            # future time)
             if snooze and snooze > last_search:
                 occs.add_safe(last_search, alarmd)
             else:
@@ -76,6 +81,9 @@ def get_snoozed_alarms(last_search, filename, occs):
 
 
 def activate_alarms_range(filename, mint, maxt, occsd):
+    # Unlike activate_old_alarms and activate_alarms, this function shouldn't
+    # be subject to race conditions, as it's run in the main thread, so
+    # existence checks should be superfluous
     for id_ in occsd:
         for occ in occsd[id_]:
             # occ may have alarm == mint, or start or end in the interval, but
@@ -86,18 +94,34 @@ def activate_alarms_range(filename, mint, maxt, occsd):
 
 def activate_old_alarms(occsd):
     for filename in occsd:
-        for id_ in occsd[filename]:
-            for occ in occsd[filename][id_]:
-                activate_alarm(occ)
+        # Due to race conditions, filename could have been closed meanwhile
+        # (e.g. if the modal dialog for closing the database was open in the
+        # interface)
+        if core_api.is_database_open(filename):
+            for id_ in occsd[filename]:
+                # Due to race conditions, id_ could have been deleted meanwhile
+                # (e.g. if the modal dialog for deleting the item was open in
+                # the interface)
+                if core_api.is_item(filename, id_):
+                    for occ in occsd[filename][id_]:
+                        activate_alarm(occ)
 
 
 def activate_alarms(time, occsd):
     for filename in occsd:
-        for id_ in occsd[filename]:
-            for occ in occsd[filename][id_]:
-                # occ may have start or end == time
-                if occ['alarm'] == time:
-                    activate_alarm(occ)
+        # Due to race conditions, filename could have been closed meanwhile
+        # (e.g. if the modal dialog for closing the database was open in the
+        # interface)
+        if core_api.is_database_open(filename):
+            for id_ in occsd[filename]:
+                # Due to race conditions, id_ could have been deleted meanwhile
+                # (e.g. if the modal dialog for deleting the item was open in
+                # the interface)
+                if core_api.is_item(filename, id_):
+                    for occ in occsd[filename][id_]:
+                        # occ may have start or end == time
+                        if occ['alarm'] == time:
+                            activate_alarm(occ)
 
 
 def activate_alarm(alarm):
@@ -107,12 +131,17 @@ def activate_alarm(alarm):
                                start=alarm['start'],
                                end=alarm['end'],
                                origalarm=alarm['alarm'],
+                               # Note that here passing None is correct (do not
+                               # pass False)
                                snooze=None)
     else:
         alarmid = alarm['alarmid']
-        if alarm['alarm'] != None:
+        # Occurrence dictionaries store active alarms with False, not None
+        if alarm['alarm']:
             update_alarm(filename=alarm['filename'],
                          alarmid=alarmid,
+                         # Note that here passing None is correct (do not pass
+                         # False)
                          newalarm=None)
 
     alarm_event.signal(filename=alarm['filename'],
@@ -132,7 +161,12 @@ def get_alarms(mint, maxt, filename, occs):
 
         for row in cur:
             origalarm = row['A_alarm']
-            snooze = row['A_snooze']
+            # Do not assign None here so that it's possible to distinguish
+            # between occurrences without alarm and occurrences with active
+            # alarm when they're mixed together
+            # Storing False ensures consistent behaviour with None when doing
+            # generic boolean tests
+            snooze = False if row['A_snooze'] is None else row['A_snooze']
 
             alarmd = {'filename': filename,
                       'id_': row['A_item'],
@@ -141,17 +175,31 @@ def get_alarms(mint, maxt, filename, occs):
                       'end': row['A_end'],
                       'alarm': snooze}
 
-            # If the alarm is not added to occs, add it to the active dictionary
-            # if it's active (but not snoozed)
+            # If the alarm is not added to occs, add it to the active
+            # dictionary if it's active (but not snoozed)
             # Note that if the alarm is active but its time values are included
             # between mint and maxt, the alarm is added to the main dictionary,
             # not the active one
             # Also note that the second argument must be origalarm, not snooze,
             # in fact it's used to *update* the occurrence (if present) using
             # the new snooze time stored in alarmd
-            if not occs.update(alarmd, origalarm) and snooze == None:
+            if not occs.update(alarmd, origalarm) and snooze is False:
                 occs.move_active(alarmd, origalarm)
 
+
+def get_number_of_active_alarms():
+    count = 0
+
+    for filename in cdbs:
+        conn = core_api.get_connection(filename)
+        cur = conn.cursor()
+        cur.execute(queries.alarms_select_count)
+        core_api.give_connection(filename, conn)
+
+        row = cur.fetchone()
+        count += row['A_active_alarms']
+
+    return count
 
 
 def snooze_alarms(alarmsd, stime):
@@ -165,9 +213,9 @@ def snooze_alarms(alarmsd, stime):
             # the tasklist can be correctly updated
             alarm_off_event.signal(filename=filename, alarmid=alarmid)
 
-    # Do not search occurrences (thus restarting the timer) inside the for loop,
-    # otherwise it messes up with the wx.CallAfter() that manages the activated
-    # alarms in the interface
+    # Do not search occurrences (thus restarting the timer) inside the for
+    # loop, otherwise it messes up with the wx.CallAfter() that manages the
+    # activated alarms in the interface
     organism_timer_api.search_next_occurrences()
 
 
@@ -223,7 +271,7 @@ def copy_alarms(filename, id_):
         curm = mem.cursor()
         for o in occs:
             curm.execute(queries.copyalarms_insert, (o['A_id'], id_,
-                         o['A_start'], o['A_end'], o['A_alarm'], o['A_snooze']))
+                        o['A_start'], o['A_end'], o['A_alarm'], o['A_snooze']))
         core_api.give_memory_connection(mem)
 
 

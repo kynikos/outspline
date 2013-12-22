@@ -103,7 +103,6 @@ class GUI(wx.App):
 class MainFrame(wx.Frame):
     menu = None
     mainpanes = None
-    focus = None
 
     def __init__(self):
         confsize = [int(s) for s in config['initial_geometry'].split('x')]
@@ -124,10 +123,8 @@ class MainFrame(wx.Frame):
 
         self.CreateStatusBar()
 
-        self.focus = self.FindFocus()
-
-        self.Bind(wx.EVT_MENU_OPEN, self.handle_menu_open)
-        self.Bind(wx.EVT_UPDATE_UI, self.handle_update_ui)
+        self.Bind(wx.EVT_MENU_OPEN, self.menu.update_menus)
+        self.Bind(wx.EVT_MENU_CLOSE, self.menu.reset_menus)
         self.Bind(wx.EVT_CLOSE, wx.GetApp().exit_app)
 
         self.Centre()
@@ -140,20 +137,10 @@ class MainFrame(wx.Frame):
         self.Show(True)
 
     def toggle_shown(self, event):
-        # This method can be used by plugins
         if self.IsShown():
             self.hide(event)
         else:
             self.show(event)
-
-    def handle_menu_open(self, event):
-        self.menu.update_menus(event.GetMenu())
-
-    def handle_update_ui(self, event):
-        cfocus = self.FindFocus()
-        if cfocus != self.focus:
-            self.focus = cfocus
-            self.menu.set_top_menus()
 
 
 class MainPanes(wx.SplitterWindow):
