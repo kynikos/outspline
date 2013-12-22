@@ -85,6 +85,7 @@ class BlinkingTrayIcon():
     SDELAY = None
     delay = None
     sdelay = None
+    active_alarms = None
 
     def __init__(self):
         self.ref_id = wx.NewId()
@@ -99,6 +100,8 @@ class BlinkingTrayIcon():
         self.delay = wx.CallLater(1, int)
         self.sdelay = wx.CallLater(1, int)
 
+        self.active_alarms = {}
+
         self._update_tooltip()
 
         organism_alarms_api.bind_to_alarm(self._blink_later)
@@ -110,6 +113,22 @@ class BlinkingTrayIcon():
         # Instead of self.blink, bind _this_ function to events that can be
         # signalled many times in a loop, so that self.blink is executed only
         # once after the last signal
+        filename = kwargs['filename']
+        alarmid = kwargs['alarmid']
+
+        # Keep track of the active alarms because the alarm event is signalled
+        # every time occurrences are searched and old alarms are found, so not
+        # doing this check would blink the tray icon every time occurrences
+        # are searched if there are already-open alarms
+        # Do this check here and not in self._blink, otherwise only the last
+        # handled alarm would be checked
+        if filename not in self.active_alarms:
+            self.active_alarms[filename] = [alarmid, ]
+        elif alarmid not in self.active_alarms[filename]:
+            self.active_alarms[filename].append(alarmid)
+        else:
+            return False
+
         self.delay.Stop()
         self.delay = wx.CallLater(self.DELAY, self._blink)
 
@@ -121,6 +140,29 @@ class BlinkingTrayIcon():
         # Instead of self.stop, bind _this_ function to events that can be
         # signalled many times in a loop, so that self.stop is executed only
         # once after the last signal
+        filename = kwargs['filename']
+
+        # Do this check here and not in self._stop, otherwise only the last
+        # handled alarm would be checked
+        # Try-except should be more performing in this case
+        try:
+            self.active_alarms[filename]
+        except KeyError:
+            pass
+        else:
+            try:
+                alarmid = kwargs['alarmid']
+            except KeyError:
+                # alarmid is not present when handling the database close event
+                del self.active_alarms[filename]
+            else:
+                self.active_alarms[filename].remove(alarmid)
+
+                if len(self.active_alarms[filename]) == 0:
+                    del self.active_alarms[filename]
+
+        # Always stop blinking when handling an alarm off event, even in the
+        # remote case that no alarm was found in self.active_alarms above
         self.sdelay.Stop()
         self.sdelay = wx.CallLater(self.SDELAY, self._stop)
 
