@@ -137,6 +137,11 @@ class NextOccurrences():
                             del self.occs[filename]
                     # Delete only one occurrence, hence the name try_delete_one
                     return True
+        # Do not try to update self.next (even in case there are no occurrences
+        # left): this would let search_next_occurrences reset the last search
+        # time to this value, thus avoiding repeating this same procedure
+        # This function is however designed to be used just before adding a
+        # very similar occurrence, so self.next will be updated by that anyway
 
     def get_dict(self):
         return self.occs
