@@ -54,11 +54,24 @@ class NextOccurrences():
             raise BadOccurrenceError()
 
     def add_safe(self, base_time, occ):
-        if self.next and self.next in (occ['alarm'], occ['start'], occ['end']):
-            self._add(self.occs, occ)
-            return True
+        tl = [occ['alarm'], occ['start'], occ['end']]
+        # When sorting, None values are put first
+        tl.sort()
+
+        for t in tl:
+            # Note that "base_time < t" is always False if t is None
+            if base_time < t:
+                if not self.next or t < self.next:
+                    self.next = t
+                    self.occs = {occ['filename']: {occ['id_']: [occ]}}
+                    return True
+                elif t == self.next:
+                    self._add(self.occs, occ)
+                    return True
+                else:
+                    return False
         else:
-            return self._update_next(base_time, occ)
+            return False
 
     def add_old(self, occ):
         self._add(self.oldoccs, occ)
@@ -76,20 +89,6 @@ class NextOccurrences():
                 occsd[filename] = {}
             occsd[filename][id_] = []
         occsd[filename][id_].append(occ)
-
-    def _update_next(self, base_time, occ):
-        tl = [occ['alarm'], occ['start'], occ['end']]
-        # When sorting, None values are put first
-        tl.sort()
-
-        for t in tl:
-            # Note that "base_time < t" is always False if t is None
-            if base_time < t and (not self.next or t < self.next):
-                self.next = t
-                self.occs = {occ['filename']: {occ['id_']: [occ]}}
-                return True
-        else:
-            return False
 
     def except_(self, filename, id_, start, end, inclusive):
         # Make sure this call is compliant with the requirements defined in
