@@ -23,6 +23,10 @@ def get_supported_open_databases():
     return alarmsmod.cdbs
 
 
+def get_number_of_active_alarms():
+    return alarmsmod.get_number_of_active_alarms()
+
+
 def snooze_alarms(alarmsd, stime):
     alarmsmod.snooze_alarms(alarmsd, stime)
 
@@ -33,6 +37,7 @@ def dismiss_alarms(alarmsd):
 
 def bind_to_alarm(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
+    # (Check for race conditions)
     return alarmsmod.alarm_event.bind(handler, bind)
 
 

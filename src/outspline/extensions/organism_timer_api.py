@@ -21,25 +21,32 @@ from organism_timer import timer
 
 def install_rule_handler(rulename, handler):
     # Warning, the handler will be executed on a separate thread!!!
+    # (Check for race conditions)
     return timer.install_rule_handler(rulename, handler)
 
 
 def get_next_occurrences(base_time=None, base_times=None):
+    # Compare to search_next_occurrences
     return timer.get_next_occurrences(base_time=base_time,
                                                           base_times=base_times)
 
 
 def search_next_occurrences():
+    # Compare to get_next_occurrences
     return timer.search_next_occurrences()
 
 
 def bind_to_get_next_occurrences(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
+    # (Check for race conditions)
+    # Compare to bind_to_search_next_occurrences
     return timer.get_next_occurrences_event.bind(handler, bind)
 
 
 def bind_to_search_next_occurrences(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
+    # (Check for race conditions)
+    # Compare to bind_to_get_next_occurrences
     return timer.search_next_occurrences_event.bind(handler, bind)
 
 
@@ -49,9 +56,11 @@ def bind_to_activate_occurrences_range(handler, bind=True):
 
 def bind_to_activate_old_occurrences(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
+    # (Check for race conditions)
     return timer.activate_old_occurrences_event.bind(handler, bind)
 
 
 def bind_to_activate_occurrences(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
+    # (Check for race conditions)
     return timer.activate_occurrences_event.bind(handler, bind)

@@ -37,7 +37,7 @@ def create_database(deffname=None, filename=None):
         dlg = msgboxes.create_db_ask()
         if not deffname:
             deffname = '.'.join(('new_database',
-                                          coreaux_api.get_standard_extension()))
+                                         coreaux_api.get_standard_extension()))
         dlg.SetFilename(deffname)
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
@@ -90,7 +90,7 @@ def open_database(filename=None, startup=False):
 def save_database_as(origin):
     for tab in tuple(editor.tabs.copy()):
         if editor.tabs[tab].get_filename() == origin and \
-                                                   not editor.tabs[tab].close():
+                                                  not editor.tabs[tab].close():
             break
     else:
         currname = os.path.basename(origin).rpartition('.')
@@ -115,12 +115,11 @@ def save_database_backup(origin):
 def close_database(filename, no_confirm=False, exit_=False):
     # Do not use nb_left.select_tab() to get the tree, use tree.dbs
     nbl = wx.GetApp().nb_left
-    nbr = wx.GetApp().nb_right
 
     for item in tuple(editor.tabs.keys()):
         if editor.tabs[item].get_filename() == filename:
             if editor.tabs[item].close(ask='quiet' if no_confirm else 'apply'
-                                                                     ) == False:
+                                                                    ) == False:
                 return False
 
     if not no_confirm and core_api.check_pending_changes(filename):
@@ -137,3 +136,8 @@ def close_database(filename, no_confirm=False, exit_=False):
     core_api.close_database(filename)
 
     close_database_event.signal(filename=filename, exit_=exit_)
+
+
+def get_open_databases():
+    nbl = wx.GetApp().nb_left
+    return {nbl.GetPageIndex(tree.dbs[db]): db for db in tree.dbs}

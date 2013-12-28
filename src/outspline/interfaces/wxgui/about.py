@@ -19,6 +19,7 @@
 import wx
 from datetime import datetime
 
+from outspline.static.wxclasses.texturl import TextUrlCtrl
 import outspline.coreaux_api as coreaux_api
 
 _SIZE = 600
@@ -95,8 +96,6 @@ class AboutWindow(wx.Frame):
 class InfoBox(wx.SplitterWindow):
     tree = None
     textw = None
-    urlstart = None
-    urlend = None
     STYLE_HEAD = None
     STYLE_NORMAL = None
     STYLE_BOLD = None
@@ -128,9 +127,8 @@ class InfoBox(wx.SplitterWindow):
         panel = wx.Panel(self, style=wx.BORDER_SUNKEN)
         psizer = wx.BoxSizer(wx.HORIZONTAL)
         panel.SetSizer(psizer)
-        self.textw = wx.TextCtrl(panel, value='', style=wx.TE_MULTILINE |
-                                 wx.TE_READONLY | wx.TE_AUTO_URL |
-                                 wx.TE_DONTWRAP | wx.BORDER_NONE)
+        self.textw = TextUrlCtrl(panel, value='', style=wx.TE_MULTILINE |
+                              wx.TE_READONLY | wx.TE_DONTWRAP | wx.BORDER_NONE)
         psizer.Add(self.textw, 1, flag=wx.EXPAND | wx.ALL, border=4)
 
         self.SplitVertically(self.tree, panel)
@@ -143,7 +141,6 @@ class InfoBox(wx.SplitterWindow):
         self.Bind(wx.EVT_SPLITTER_DCLICK, self.veto_dclick)
         self.tree.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.veto_label_edit)
         self.tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.retrieve_info)
-        self.textw.Bind(wx.EVT_TEXT_URL, self.launch_browser)
 
         self.tree.SelectItem(self.tree.GetFirstChild(self.tree.GetRootItem())[0
                                                                              ])
@@ -155,20 +152,16 @@ class InfoBox(wx.SplitterWindow):
         self.tree.AppendItem(self.tree.GetRootItem(), text='Info',
                              data=wx.TreeItemData({'req': 'cor'}))
 
-        config = coreaux_api.get_configuration()
+        # Do not use the configuration because it could have entries about
+        # addons that aren't actually installed
+        info = coreaux_api.get_addons_info()
 
-        for type_ in config.get_sections():
-            if type_ in ('Extensions', 'Interfaces', 'Plugins'):
-                typeitem = self.tree.AppendItem(self.tree.GetRootItem(),
-                                                text=type_,
-                                                data=wx.TreeItemData({
-                                                              'req': 'lst',
-                                                              'type_': type_}))
-                for addon in config(type_).get_sections():
-                    self.tree.AppendItem(typeitem, text=addon,
-                                         data=wx.TreeItemData({'req': 'inf',
-                                                              'type_': type_,
-                                                              'addon': addon}))
+        for type_ in ('Extensions', 'Interfaces', 'Plugins'):
+            typeitem = self.tree.AppendItem(self.tree.GetRootItem(), text=type_,
+                           data=wx.TreeItemData({'req': 'lst', 'type_': type_}))
+            for addon in info(type_).get_sections():
+                self.tree.AppendItem(typeitem, text=addon, data=wx.TreeItemData(
+                                {'req': 'inf', 'type_': type_, 'addon': addon}))
 
     def compose_license(self):
         self.textw.AppendText('{}\n{}\n\n{}'.format(
@@ -208,44 +201,44 @@ class InfoBox(wx.SplitterWindow):
                                         cinfo('Components')(c)['release_date']))
 
     def compose_addon_info(self, type_, addon):
-        info = coreaux_api.get_addons_info()
-        config = coreaux_api.get_configuration()
+        info = coreaux_api.get_addons_info()(type_)(addon)
+        config = coreaux_api.get_configuration()(type_)(addon)
 
         self.textw.SetDefaultStyle(self.STYLE_HEAD)
         self.textw.AppendText('{}\n'.format(addon))
 
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        self.textw.AppendText('{}\n'.format(info(type_)(addon)['description']))
+
+        self.textw.AppendText('{}\n'.format(info['description']))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nEnabled: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        self.textw.AppendText('yes' if config(type_)(addon).get_bool('enabled')
-                              else 'no')
+        self.textw.AppendText('yes' if config.get_bool('enabled') else 'no')
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nVersion: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        self.textw.AppendText(info(type_)(addon)['version'])
+        self.textw.AppendText(info['version'])
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nWebsite: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        self.textw.AppendText(info(type_)(addon)['website'])
+        self.textw.AppendText(info['website'])
 
         authors = []
         contributors = []
         dependencies = []
         optionaldependencies = []
-        for o in info(type_)(addon).get_options():
+        for o in info.get_options():
             if o[:6] == 'author':
-                authors.append(info(type_)(addon)[o])
+                authors.append(info[o])
             elif o[:11] == 'contributor':
-                contributors.append(info(type_)(addon)[o])
+                contributors.append(info[o])
             elif o[:10] == 'dependency':
-                dependencies.append(info(type_)(addon)[o])
+                dependencies.append(info[o])
             elif o[:19] == 'optional_dependency':
-                optionaldependencies.append(info(type_)(addon)[o])
+                optionaldependencies.append(info[o])
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         if len(authors) > 1:
@@ -268,7 +261,7 @@ class InfoBox(wx.SplitterWindow):
         self.textw.AppendText('\nComponent: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
         cinfo = coreaux_api.get_components_info()
-        component = cinfo(type_)(addon)[info(type_)(addon)['version']]
+        component = cinfo(type_)(addon)[info['version']]
         self.textw.AppendText('{} {} ({})'.format(component,
                                       cinfo('Components')(component)['version'],
                                 cinfo('Components')(component)['release_date']))
@@ -286,11 +279,14 @@ class InfoBox(wx.SplitterWindow):
             self.textw.AppendText('\n\t{}.x'.format(o))
 
     def compose_list(self, type_):
-        config = coreaux_api.get_configuration()
+        # Do not use the configuration because it could have entries about
+        # addons that aren't actually installed
+        info = coreaux_api.get_addons_info()
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('{}:\n'.format(type_))
-        for addon in config(type_).get_sections():
-            if config(type_)(addon).get_bool('enabled'):
+        for addon in info(type_).get_sections():
+            config = coreaux_api.get_configuration()(type_)(addon)
+            if config.get_bool('enabled'):
                 self.textw.SetDefaultStyle(self.STYLE_NORMAL)
                 self.textw.AppendText('\t{}\n'.format(addon))
             else:
@@ -317,25 +313,3 @@ class InfoBox(wx.SplitterWindow):
             self.compose_addon_info(data['type_'], data['addon'])
         # Scroll back to top
         self.textw.ShowPosition(0)
-
-    def launch_browser(self, event):
-        self.urlstart = event.GetURLStart()
-        self.urlend = event.GetURLEnd()
-        if event.GetMouseEvent().LeftUp():
-            wx.LaunchDefaultBrowser(self.textw.GetRange(self.urlstart,
-                                                        self.urlend))
-        self.textw.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
-        self.textw.Bind(wx.EVT_MOTION, self.reset_cursor)
-        self.textw.Bind(wx.EVT_TEXT_URL, None)
-
-    def reset_cursor(self, event):
-        hitpos = self.textw.HitTestPos(event.GetPosition())[1]
-        if self.urlstart is not None and self.urlend is not None and \
-                              (hitpos < self.urlstart or hitpos > self.urlend):
-            self.urlstart = None
-            self.urlend = None
-            self.textw.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
-            self.textw.Bind(wx.EVT_TEXT_URL, self.launch_browser)
-            self.textw.Bind(wx.EVT_MOTION, None)
-        # Skip the event, otherwise EVT_TEXT_URL won't work
-        event.Skip()

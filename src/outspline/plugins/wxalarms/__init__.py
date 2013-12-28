@@ -17,6 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import os as _os
+import time as _time
 import wx
 
 from outspline.coreaux_api import log
@@ -26,8 +27,7 @@ import outspline.extensions.organism_alarms_api as organism_alarms_api
 import outspline.interfaces.wxgui_api as wxgui_api
 wxtrayicon_api = coreaux_api.import_optional_plugin_api('wxtrayicon')
 
-_ALARMS_MIN_SIZE = (400, 140)
-_ALARMS_TITLE = 'Outspline - Alarms'
+_ALARMS_MIN_HEIGHT = 140
 _ALARMS_ICON_BUNDLE = wx.IconBundle()
 _ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms', wx.ART_TOOLBAR))
 _ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms', wx.ART_MENU))
@@ -63,13 +63,13 @@ class AlarmsWindow():
     def __init__(self, parent):
         self.config = coreaux_api.get_plugin_configuration('wxalarms')
 
-        self.window = wx.Frame(parent, title=_ALARMS_TITLE, size=[int(s)
+        self.window = wx.Frame(parent, size=[int(s)
                           for s in self.config['initial_geometry'].split('x')])
-        self.window.SetMinSize(_ALARMS_MIN_SIZE)
 
         self.window.SetIcons(_ALARMS_ICON_BUNDLE)
 
         self.alarms = {}
+        self.update_title()
 
         box = wx.BoxSizer(wx.VERTICAL)
         self.window.SetSizer(box)
@@ -80,18 +80,19 @@ class AlarmsWindow():
         self.panel.SetSizer(self.pbox)
         box.Add(self.panel, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
 
-        self.snooze = wx.Panel(self.window)
-        self._init_snooze(self.snooze)
-        box.Add(self.snooze, flag=wx.LEFT | wx.RIGHT, border=4)
+        self.bottom = wx.BoxSizer(wx.HORIZONTAL)
+        self._init_bottom()
+        box.Add(self.bottom, flag=wx.LEFT | wx.RIGHT | wx.EXPAND, border=4)
 
-        self.bottom = wx.Panel(self.window)
-        self._init_bottom(self.bottom)
-        box.Add(self.bottom, flag=wx.ALL, border=4)
+        # Set the minimum width so that the bottom controls can fit, and also
+        # add 20 px for the stretch spacer
+        minwidth = self.bottom.ComputeFittingWindowSize(self.window).GetWidth()
+        self.window.SetMinSize((minwidth + 20, _ALARMS_MIN_HEIGHT))
 
         self.ID_SHOW = wx.NewId()
         self.menushow = wxgui_api.insert_menu_item('View',
                                                self.config.get_int('menu_pos'),
-                                               'Show &alarms\tCtrl+R',
+                                               'Show &alarms\tCTRL+SHIFT+r',
                                                id_=self.ID_SHOW,
                                                help='Open the alarms window',
                                                kind='check',
@@ -101,20 +102,17 @@ class AlarmsWindow():
 
         self.window.Bind(wx.EVT_CLOSE, self.hide)
 
-        core_api.bind_to_delete_item(self.handle_remove_item)
-        core_api.bind_to_history_remove(self.handle_remove_item)
         organism_alarms_api.bind_to_alarm(self.handle_alarm)
         organism_alarms_api.bind_to_alarm_off(self.handle_alarm_off)
         wxgui_api.bind_to_close_database(self.handle_close_db)
-        wxgui_api.bind_to_reset_menu_items(self.handle_reset_menu_items)
+        wxgui_api.bind_to_menu_view_update(self.update_menu_items)
 
         if wxtrayicon_api:
             wxtrayicon_api.bind_to_create_menu(self.handle_create_tray_menu)
             wxtrayicon_api.bind_to_reset_menu(self.handle_reset_tray_menu)
 
-    def handle_reset_menu_items(self, kwargs):
-        if kwargs['menu'] is self.menushow.GetMenu():
-            self.menushow.Check(check=self.window.IsShown())
+    def update_menu_items(self, event):
+        self.menushow.Check(check=self.window.IsShown())
 
     def handle_create_tray_menu(self, kwargs):
         self.traymenushow = wxtrayicon_api.insert_menu_item(
@@ -128,33 +126,30 @@ class AlarmsWindow():
     def handle_reset_tray_menu(self, kwargs):
         self.traymenushow.Check(check=self.window.IsShown())
 
-    def _init_snooze(self, parent):
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        self.snooze.SetSizer(box)
+    def _init_bottom(self):
+        button_s = wx.Button(self.window, label='Snooze all', size=(-1, 24))
+        self.bottom.Add(button_s, flag=wx.RIGHT, border=4)
 
-        label = wx.StaticText(parent, label='Snooze configuration:')
-        box.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
+        button_d = wx.Button(self.window, label='Dismiss all', size=(-1, 24))
+        self.bottom.Add(button_d, flag=wx.RIGHT, border=4)
 
-        self.number = wx.SpinCtrl(parent, min=1, max=999, size=(48, 21),
-                                  style=wx.SP_ARROW_KEYS)
+        self.bottom.AddStretchSpacer()
+
+        label = wx.StaticText(self.window, label='Snooze for:')
+        self.bottom.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
+
+        self.number = wx.SpinCtrl(self.window, min=1, max=999, size=(48, 21),
+                                                        style=wx.SP_ARROW_KEYS)
         self.number.SetValue(5)
-        box.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
-                border=4)
+        self.bottom.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
 
-        self.unit = wx.ComboBox(parent, value='minutes', size=(100, 21),
-                                  choices=('minutes', 'hours', 'days', 'weeks'),
-                                                           style=wx.CB_READONLY)
-        box.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
-
-    def _init_bottom(self, parent):
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        self.bottom.SetSizer(box)
-
-        button_s = wx.Button(parent, label='Snooze all', size=(-1, 24))
-        box.Add(button_s, flag=wx.RIGHT, border=4)
-
-        button_d = wx.Button(parent, label='Dismiss all', size=(-1, 24))
-        box.Add(button_d, flag=wx.RIGHT, border=4)
+        self.unit = wx.ComboBox(self.window, value='minutes', size=(100, 21),
+                                 choices=('minutes', 'hours', 'days', 'weeks'),
+                                                          style=wx.CB_READONLY)
+        self.bottom.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
 
         self.window.Bind(wx.EVT_BUTTON, self.snooze_all, button_s)
         self.window.Bind(wx.EVT_BUTTON, self.dismiss_all, button_d)
@@ -184,7 +179,7 @@ class AlarmsWindow():
         core_api.block_databases()
 
         organism_alarms_api.snooze_alarms(self.get_alarms_dictionary(),
-                                                   stime=self.get_snooze_time())
+                                                  stime=self.get_snooze_time())
         # Let the alarm off event close the alarms
 
         core_api.release_databases()
@@ -195,14 +190,11 @@ class AlarmsWindow():
             aitem = self.alarms[a].get_id()
             aid = self.alarms[a].get_alarmid()
             if filename in (afilename, None) and id_ in (aitem, None) and \
-                                                         alarmid in (aid, None):
+                                                        alarmid in (aid, None):
                 self.alarms[a].close()
 
     def handle_close_db(self, kwargs):
         self.close_alarms(filename=kwargs['filename'])
-
-    def handle_remove_item(self, kwargs):
-        self.close_alarms(filename=kwargs['filename'], id_=kwargs['id_'])
 
     def handle_alarm(self, kwargs):
         # Using CallAfter can cause (minor) bugs if the core timer is refreshed
@@ -220,21 +212,31 @@ class AlarmsWindow():
 
     def append(self, filename, id_, alarmid, start, end, alarm):
         a = self.make_alarmid(filename, alarmid)
-        # Check whether the database is still open because this method is called
-        # with wx.CallAfter in handle_alarm, thus running in a different thread;
-        # this way it can happen that, when handle_alarm is called, a database
-        # is still open, but when this method is called, that database has been
-        # already closed; this would happen for example when closing all the
-        # databases: after each database is closed (in rapid succession), all
-        # the remaining alarms are searched and signalled again, and when this
-        # method would be run (in a different thread) the alarm's database would
-        # have already been closed, thus raising an exception later when looking
-        # information for the item (e.g. core_api.get_item_text)
-        if core_api.is_database_open(filename) and a not in self.alarms:
+        # Check whether the database is still open because this method is
+        # called with wx.CallAfter in handle_alarm, thus running in a different
+        # thread; this way it can happen that, when handle_alarm is called, a
+        # database is still open, but when this method is called, that database
+        # has been already closed; this would happen for example when closing
+        # all the databases: after each database is closed (in rapid
+        # succession), all the remaining alarms are searched and signalled
+        # again, and when this method would be run (in a different thread) the
+        # alarm's database would have already been closed, thus raising an
+        # exception later when looking information for the item (e.g.
+        # core_api.get_item_text)
+        # Also, for the same reason, check if the item exists, as for example
+        # performing several undos/redos of the database in rapid succession
+        # (e.g. using CTRL+Z/Y) would cause the same issue
+        if core_api.is_database_open(filename) and core_api.is_item(filename,
+                                                 id_) and a not in self.alarms:
             self.alarms[a] = Alarm(self, filename, id_, alarmid, start, end,
                                    alarm)
+            self.update_title()
             self.window.Layout()
             self.show()
+
+    def update_title(self):
+        self.window.SetTitle(''.join(('Outspline - ', str(len(self.alarms)),
+                                                                   ' alarms')))
 
     @staticmethod
     def make_alarmid(filename, alarmid):
@@ -258,8 +260,8 @@ class AlarmsWindow():
                 alarmsd[filename]
             except KeyError:
                 alarmsd[filename] = []
-            else:
-                alarmsd[filename].append(self.alarms[a].get_alarmid())
+
+            alarmsd[filename].append(self.alarms[a].get_alarmid())
 
         return alarmsd
 
@@ -267,20 +269,22 @@ class AlarmsWindow():
 class Alarm():
     awindow = None
     panel = None
-    pgrid = None
+    pbox = None
     filename = None
     id_ = None
     alarmid = None
     start = None
     end = None
     alarm = None
+    pane = None
+    cpane = None
+    cbox = None
 
     def __init__(self, awindow, filename, id_, alarmid, start, end, alarm):
         self.awindow = awindow
         self.panel = wx.Panel(awindow.panel)
-        self.pgrid = wx.GridBagSizer(4, 4)
-        self.panel.SetSizer(self.pgrid)
-        self.pgrid.AddGrowableCol(0)
+        self.pbox = wx.BoxSizer(wx.VERTICAL)
+        self.panel.SetSizer(self.pbox)
 
         self.filename = filename
         self.id_ = id_
@@ -296,41 +300,106 @@ class Alarm():
         awindow.pbox.Add(self.panel, flag=wx.EXPAND)
 
     def _init_widgets(self, parent):
-        label1 = wx.StaticText(parent, label=_os.path.basename(self.filename))
-        label1.Wrap(_WRAP)
-        self.pgrid.Add(label1, (0, 0),
-                       flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT | wx.TOP,
-                       border=4)
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        self.pbox.Add(hbox, flag=wx.EXPAND | wx.ALL, border=4)
 
-        text = core_api.get_item_text(self.filename, self.id_)
-
-        label2 = wx.StaticText(parent, label=text.partition('\n')[0])
-        label2.Wrap(_WRAP)
-        self.pgrid.Add(label2, (1, 0), span=(1, 2),
-                       flag=wx.ALIGN_CENTER_VERTICAL | wx.LEFT, border=4)
+        startdate = wx.StaticText(parent, label=_time.strftime(
+                                '%Y.%m.%d %H:%M', _time.localtime(self.start)))
+        hbox.Add(startdate, 1, flag=wx.ALIGN_CENTER_VERTICAL)
 
         button_s = wx.Button(parent, label='Snooze', size=(-1, 24))
-        self.pgrid.Add(button_s, (0, 1), flag=wx.ALIGN_RIGHT | wx.TOP,
-                       border=4)
+        hbox.Add(button_s)
 
         button_d = wx.Button(parent, label='Dismiss', size=(-1, 24))
-        self.pgrid.Add(button_d, (0, 2), flag=wx.RIGHT | wx.TOP, border=4)
+        hbox.Add(button_d, flag=wx.LEFT, border=4)
 
         button_e = wx.Button(parent, label='Open', size=(-1, 24))
-        self.pgrid.Add(button_e, (1, 2), flag=wx.RIGHT, border=4)
+        hbox.Add(button_e, flag=wx.LEFT, border=4)
+
+        # wx.CP_NO_TLW_RESIZE in conjunction with
+        # self.panel.GetParent().SendSizeEvent() on EVT_COLLAPSIBLEPANE_CHANGED
+        # are necessary for the correct functioning
+        self.pane = wx.CollapsiblePane(parent, style=wx.CP_NO_TLW_RESIZE)
+        # Setting the label directly when instantiating CollapsiblePane through
+        # the 'label' parameter would make it parse '&' characters to form
+        # mnemonic shortcuts, like in menus
+        self.set_pane_label()
+        self.pbox.Add(self.pane, flag=wx.EXPAND | wx.BOTTOM, border=4)
+
+        self.cpane = self.pane.GetPane()
+        self.cbox = wx.BoxSizer(wx.VERTICAL)
+        self.cpane.SetSizer(self.cbox)
+
 
         line = wx.StaticLine(parent, size=(1, 1), style=wx.LI_HORIZONTAL)
-        self.pgrid.Add(line, (2, 0), span=(1, 3), flag=wx.EXPAND)
+        self.pbox.Add(line, flag=wx.EXPAND)
 
+        core_api.bind_to_update_item(self.update_info)
+
+        self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED,
+                                                    self.update_pane_ancestors)
         self.panel.Bind(wx.EVT_BUTTON, self.snooze, button_s)
         self.panel.Bind(wx.EVT_BUTTON, self.dismiss, button_d)
-        self.panel.Bind(wx.EVT_BUTTON, self.open, button_e)
+        self.panel.Bind(wx.EVT_BUTTON, self.open_, button_e)
+
+    def update_info(self, kwargs):
+        if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_:
+            self.set_pane_label()
+
+    def set_pane_label(self):
+        text = core_api.get_item_text(self.filename, self.id_)
+        self.pane.SetLabel(text.partition('\n')[0])
+
+    def update_pane_ancestors(self, event):
+        # Reset ancestors with EVT_COLLAPSIBLEPANE_CHANGED, otherwise they
+        # should be reset everytime one of them is updated
+        # This way if an ancestor is updated while the collapsible pane is
+        # expanded, it will have to be collapsed and expanded again to be
+        # reset, but that is a reasonable compromise
+
+        if not event.GetCollapsed():
+            # Get the size of the panel *before* adding or destroying any
+            # children
+            psize = self.pane.GetSize()
+
+            self.cpane.DestroyChildren()
+
+            for anc in core_api.get_item_ancestors(self.filename, self.id_):
+                ancestor = wx.StaticText(self.cpane)
+                # Setting the label directly when instantiating StaticText
+                # through the 'label' parameter would make it parse '&'
+                # characters to form mnemonic shortcuts, like in menus
+                # Note that in this case the '&' characters have to be escaped
+                # explicitly
+                ancestor.SetLabel(anc.get_text().partition('\n')[0].replace(
+                                                                    '&', '&&'))
+                self.cbox.Add(ancestor, flag=wx.LEFT, border=4)
+
+            dbname = wx.StaticText(self.cpane)
+            # Setting the label directly when instantiating StaticText through
+            # the 'label' parameter would make it parse '&' characters to form
+            # mnemonic shortcuts, like in menus
+            dbname.SetLabel(_os.path.basename(self.filename).replace('&',
+                                                                         '&&'))
+            self.cbox.Add(dbname, flag=wx.LEFT, border=4)
+
+            # Without these operations, the panel's expanded height would
+            # always be the one of its previous state (0 at the first expansion
+            # attempt)
+            self.cpane.Fit()
+            csize = self.cpane.GetSize()
+            psize.SetHeight(psize.GetHeight() + csize.GetHeight())
+            self.pane.SetMinSize(psize)
+
+        # This in conjunction with the wx.CP_NO_TLW_RESIZE style are necessary
+        # for the correct functioning of the collapsible pane
+        self.panel.GetParent().SendSizeEvent()
 
     def snooze(self, event):
         core_api.block_databases()
 
         organism_alarms_api.snooze_alarms({self.filename: [self.alarmid, ]},
-                                           stime=self.awindow.get_snooze_time())
+                                          stime=self.awindow.get_snooze_time())
         # Let the alarm off event close the alarm
 
         core_api.release_databases()
@@ -343,7 +412,8 @@ class Alarm():
 
         core_api.release_databases()
 
-    def open(self, event):
+    def open_(self, event):
+        wxgui_api.show_main_window()
         wxgui_api.open_editor(self.filename, self.id_)
 
     def close(self):
@@ -352,7 +422,13 @@ class Alarm():
         self.panel.Destroy()
         self.awindow.window.Layout()
         del self.awindow.alarms[self.awindow.make_alarmid(self.filename,
-                                                                  self.alarmid)]
+                                                                 self.alarmid)]
+
+        # It's necessary to explicitly unbind the handler, otherwise this
+        # object will not be garbage-collected
+        core_api.bind_to_update_item(self.update_info, False)
+
+        self.awindow.update_title()
 
         if len(self.awindow.alarms) == 0:
             self.awindow.hide()

@@ -48,6 +48,10 @@ def can_paste_safely(filename):
     return copypaste.can_paste_safely(filename)
 
 
+def get_copy_origin_filename():
+    return copypaste.origin_filename
+
+
 def has_copied_items(filename):
     return copypaste.has_copied_items(filename)
 

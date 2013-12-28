@@ -19,6 +19,7 @@
 import wx
 from threading import Timer
 
+from outspline.static.wxclasses.texturl import TextUrlCtrl
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 
@@ -26,39 +27,6 @@ import editor
 import tree
 
 config = coreaux_api.get_interface_configuration('wxgui')
-
-
-class TextCtrl(wx.TextCtrl):
-    urlstart = None
-    urlend = None
-
-    def __init__(self, parent, text):
-        wx.TextCtrl.__init__(self, parent, value=text, style=wx.BORDER_NONE |
-                             wx.TE_PROCESS_TAB | wx.TE_MULTILINE |
-                             wx.TE_AUTO_URL | wx.TE_NOHIDESEL | wx.TE_DONTWRAP)
-
-        self.Bind(wx.EVT_TEXT_URL, self.launch_browser)
-
-    def launch_browser(self, event):
-        self.urlstart = event.GetURLStart()
-        self.urlend = event.GetURLEnd()
-        if event.GetMouseEvent().LeftUp():
-            wx.LaunchDefaultBrowser(self.GetRange(self.urlstart, self.urlend))
-        self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
-        self.Bind(wx.EVT_MOTION, self.reset_cursor)
-        self.Bind(wx.EVT_TEXT_URL, None)
-
-    def reset_cursor(self, event):
-        hitpos = self.HitTestPos(event.GetPosition())[1]
-        if self.urlstart is not None and self.urlend is not None and \
-                              (hitpos < self.urlstart or hitpos > self.urlend):
-            self.urlstart = None
-            self.urlend = None
-            self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
-            self.Bind(wx.EVT_TEXT_URL, self.launch_browser)
-            self.Bind(wx.EVT_MOTION, None)
-        # Skip the event, otherwise EVT_TEXT_URL won't work
-        event.Skip()
 
 
 class TextArea():
@@ -76,7 +44,20 @@ class TextArea():
         self.item = item
         self.original = text
         self.tmrunning = False
-        self.area = TextCtrl(editor.tabs[item].panel, text)
+        # Do not set the text now, otherwise for example URLs won't be
+        # highlighted in blue
+        self.area = TextUrlCtrl(editor.tabs[item].panel, '',
+                   style=wx.BORDER_NONE | wx.TE_PROCESS_TAB | wx.TE_MULTILINE |
+                                              wx.TE_NOHIDESEL | wx.TE_DONTWRAP)
+
+        font = self.area.GetFont()
+        font = wx.Font(font.GetPointSize(), wx.FONTFAMILY_TELETYPE,
+                       font.GetStyle(), font.GetWeight(), font.GetUnderlined())
+        self.area.SetFont(font)
+
+        # Set the text after setting the font, so for example URLs will be
+        # correctly highlighted in blue
+        self.area.SetValue(text)
 
         self.area.Bind(wx.EVT_TEXT, self._on_text)
         editor.apply_editor_event.bind(self.handle_apply)
@@ -130,9 +111,7 @@ class TextArea():
 
     def refresh_mod_state(self):
         treedb = tree.dbs[self.filename]
-        title = treedb.make_item_title(self.area.GetLineText(0))
-        treedb.set_item_title(treedb.find_item(self.id_), title)
-        tabtitle = editor.Editor.make_title(title)
+        tabtitle = editor.Editor.make_title(self.area.GetLineText(0))
         wx.GetApp().nb_right.set_editor_title(self.item, tabtitle)
 
         self.reset_modified()

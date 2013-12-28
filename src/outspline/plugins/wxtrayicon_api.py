@@ -27,6 +27,22 @@ def insert_menu_item(pos, item, id_=wx.ID_ANY, help='', sep='none',
                                                 kind, sub, icon)
 
 
+def start_blinking(start_id, alt_icon=None):
+    return wxtrayicon.trayicon.icon.start(start_id, alt_icon=alt_icon)
+
+
+def stop_blinking(start_id):
+    return wxtrayicon.trayicon.icon.stop(start_id)
+
+
+def set_tooltip_value(tooltip_id, value):
+    return wxtrayicon.trayicon.icon.set_tooltip_value(tooltip_id, value)
+
+
+def unset_tooltip_value(tooltip_id):
+    return wxtrayicon.trayicon.icon.unset_tooltip_value(tooltip_id)
+
+
 def bind_to_tray_menu(handler, button):
     return wxtrayicon.trayicon.Bind(wx.EVT_MENU, handler, button)
 

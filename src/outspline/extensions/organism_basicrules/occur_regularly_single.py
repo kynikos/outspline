@@ -72,26 +72,91 @@ def make_rule(refstart, interval, rend, ralarm, guiconfig):
 | reftime
 [] target occurrence
 
+A) mintime = reftime - ((reftime - refmin) % interval)
+B) mintime = reftime - ((reftime - refmin) % interval) + interval
+C) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
+D) mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval) + interval
+
+G) mintime = reftime - ((reftime - refmax) % interval) - refspan
+H) mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+I) (!NOT VERIFIED!) mintime = reftime - ((reftime - refmax) % interval) - refspan + ((refspan // interval) * interval)
+J) (!NOT VERIFIED!) mintime = reftime - ((reftime - refmax) % interval) - refspan + ((refspan // interval) * interval) + interval
+
+M) mintime = reftime + ((refmin - reftime) % interval) - interval
+N) mintime = reftime + ((refmin - reftime) % interval)
+O) mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
+P) mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval)
+
+S) mintime = reftime + ((refmax - reftime) % interval) - refspan
+T) mintime = reftime + ((refmax - reftime) % interval) + interval - refspan
+U) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % interval) - refspan + ((refspan // interval) * interval)
+V) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % interval) - refspan + ((refspan // interval) * interval) + interval
+
 --------(  *  )--------(     )--------(     )--------[  |  ]--------(     )-----
-mintime = reftime - ((reftime - refmin) % interval)
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+AHMS
 
 --------(  *  )--------(     )--------(     )-----|--[     ]--------(     )-----
-mintime = reftime - ((reftime - refmin) % interval) + interval
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+BHNS
 
 --------(     )--------(     )-----|--[     ]--------(     )--------(  *  )-----
-mintime = reftime + ((refmin - reftime) % interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+BHNS
 
 --------(     )--------[  |  ]--------(     )--------(     )--------(  *  )-----
-mintime = reftime + ((refmin - reftime) % interval) - interval
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+AHMS
 
 --------(     )--------(     )--------[  |* ]--------(     )--------(     )-----
-mintime = refmin
-mintime = reftime - ((reftime - refmin) % interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+AHMS
+
+--------(  *  )--------(     )--------(     )--------|     ]--------(     )-----
+AHNS
+
+--------(  *  )--------(     )--------(     |--------[     ]--------(     )-----
+AHNT
+
+--------(     )--------(     )--------|     ]--------(     )--------(  *  )-----
+AHNS
+
+--------{     |--------[     ]--------(     )--------(     )--------(  *  )-----
+BHNT
+
+--------(     )--------(     )--------|  *  ]--------(     )--------(     )-----
+AHNS
+
+--------(     )--------(  *  |--------[     ]--------(     )--------(     )-----
+BHNT
+
+--------:--------*--------:--------:--------:----|---[]-------:--------:--------
+BHNS
+
+--------:--------:--------:----|---[]-------:--------:--------*--------:--------
+BHNS
+
+--------:--------*--------:--------:--------:--------|--------:--------:--------
+AGNS
+
+--------:--------:--------|--------:--------:--------:--------*--------:--------
+AGNS
+
+--------:--------:--------:--------|*-------:--------:--------:--------:--------
+AGNS
+
+(-------)(---*---)(-------)(-------)(-------)(-------)[---|---](-------)(-------)
+AHMS
+
+(-------)[---|---](-------)(-------)(-------)(-------)(---*---)(-------)(-------)
+AHMS
+
+(-------)(-------)(-------)(-------)[--|-*--](-------)(-------)(-------)(-------)
+AHMS
+
+(-------)(---*---)(-------)(-------)(-------)(-------)|-------](-------)(-------)
+AHNT
+
+(-------)|-------](-------)(-------)(-------)(-------)(---*---)(-------)(-------)
+AHNT
+
+(-------)(-------)(-------)(-------)|---*---](-------)(-------)(-------)(-------)
+AHNT
 
             *                         |
 (     (     (   ) (   ) [   ) (   ) ( | ] (   ) (   ) (   )     )     )
@@ -106,8 +171,7 @@ mintime = reftime + ((refmax - reftime) % interval) - refspan
                                       |   (               )
                                       |         (               )
                                       |               (               )
-mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
-mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
+CHOS
 
                     |                           *
 (     [     (   ) ( | ] (   ) (   ) (   ) (   ) (   ) (   )     )     )
@@ -122,8 +186,7 @@ mintime = reftime - ((reftime - refmax) % interval) + interval - refspan
                     |                     (     *         )
                     |                           (               )
                     |                                 (               )
-mintime = reftime + ((refmin - reftime) % interval) - ((refspan // interval) * interval) - interval
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+CHOS
 
                                     * |
 (     (     (   ) (   ) [   ) (   ) ( | ] (   ) (   ) (   )     )     )
@@ -138,23 +201,110 @@ mintime = reftime + ((refmax - reftime) % interval) - refspan
                                       |   (               )
                                       |         (               )
                                       |               (               )
-mintime = reftime - ((reftime - refmin) % interval) - ((refspan // interval) * interval)
-mintime = reftime + ((refmax - reftime) % interval) - refspan
+CHOS
+
+            *                       |
+(     (     (   ) (   ) [   ) (   ) |   ] (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )                   |
+      (     *         )             |
+            (               )       |
+                  (               ) |
+                        [           |   ]
+                              (     |         )
+                                    |               )
+                                    |     (               )
+                                    |           (               )
+                                    |                 (               )
+CHPS
+
+            *                           |
+(     (     (   ) (   ) (   ) [   ) (   | (   ] (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )                       |
+      (     *         )                 |
+            (               )           |
+                  (               )     |
+                        (               |
+                              [         |     ]
+                                    (   |           )
+                                        | (               )
+                                        |       (               )
+                                        |             (               )
+DHPT
+
+                  |                             *
+(     [     (   ) |   ] (   ) (   ) (   ) (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               ) |
+      [           |   ]
+            (     |         )
+                  |               )
+                  |     (               )
+                  |           (               )
+                  |                 (               )
+                  |                       (     *         )
+                  |                             (               )
+                  |                                   (               )
+DHPS
+
+                      |                         *
+(     {     [   ) (   | (   ] (   ) (   ) (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )     |
+      {               |
+            [         |     ]
+                  (   |           )
+                      | (               )
+                      |       (               )
+                      |             (               )
+                      |                   (     *         )
+                      |                         (               )
+                      |                               (               )
+DHPT
+
+                                    *
+(     (     (   ) (   ) [   ) (   ) |   ] (   ) (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )                   |
+      (               )             |
+            (               )       |
+                  (               ) |
+                        [           |   ]
+                              (     |         )
+                                    |               )
+                                    |     (               )
+                                    |           (               )
+                                    |                 (               )
+CHPS
+
+                        *               |
+(     (     (   ) (   ) (   ) [   ) (   | (   ] (   ) (   )     )     )
+0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
+(               )                       |
+      (               )                 |
+            (               )           |
+                  (     *         )     |
+                        (               |
+                              [         |     ]
+                                    (   |           )
+                                        | (               )
+                                        |       (               )
+                                        |             (               )
+DHPT
 """
 
 
 def _compute_min_time(reftime, refmax, refspan, interval):
-    # Always use refmax, _not_ refmin, in this algorithm, since it allows to
-    # get the right occurrence more easily
-    if reftime > refmax:
-        rem = (reftime - refmax) % interval
-        return reftime - rem + interval - refspan
+    rem = (refmax - reftime) % interval
+    mintime = reftime + rem - refspan
+
+    if rem == 0 and refspan != 0:
+        # Use formula (T), see the examples above
+        return mintime + interval
     else:
-        # Don't use only refmin when refmin <= reftime <= refmax, because in
-        # case of refspan > interval (overlapping occurrences) it wouldn't
-        # always be the correct value (see the examples above)
-        rem = (refmax - reftime) % interval
-        return reftime + rem - refspan
+        # Use formula (S), see the examples above
+        return mintime
 
 
 def get_occurrences_range(mint, maxt, filename, id_, rule, occs):

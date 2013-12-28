@@ -18,7 +18,7 @@
 
 import wx
 import wx.lib.agw.foldpanelbar as foldpanelbar
-from wx.lib.agw.foldpanelbar import FoldPanelBar, CaptionBarStyle
+from wx.lib.agw.foldpanelbar import FoldPanelBar
 
 from outspline.coreaux_api import Event
 import outspline.coreaux_api as coreaux_api
@@ -40,8 +40,46 @@ tabs = {}
 
 
 class EditorPanel(wx.Panel):
-    def __init__(self, parent):
+    ctabmenu = None
+
+    def __init__(self, parent, item):
         wx.Panel.__init__(self, parent)
+        self.ctabmenu = TabContextMenu(item)
+
+    def get_tab_context_menu(self):
+        self.ctabmenu.update()
+        return self.ctabmenu
+
+
+class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
+    def __init__(self, panel):
+        foldpanelbar.CaptionBarStyle.__init__(self)
+
+        bgcolour = panel.GetBackgroundColour()
+
+        DIFF1 = 8
+        DIFF2 = DIFF1 + 16
+        avg = bgcolour.Red() + bgcolour.Green() + bgcolour.Blue() // 3
+
+        if avg > 127:
+            colourtop = wx.Colour(max((bgcolour.Red() - DIFF1, 0)),
+                                          max((bgcolour.Green() - DIFF1, 0)),
+                                          max((bgcolour.Blue() - DIFF1, 0)))
+            colourbottom = wx.Colour(max((bgcolour.Red() - DIFF2, 0)),
+                                          max((bgcolour.Green() - DIFF2, 0)),
+                                          max((bgcolour.Blue() - DIFF2, 0)))
+        else:
+            colourtop = wx.Colour(min((bgcolour.Red() + DIFF2, 255)),
+                                        min((bgcolour.Green() + DIFF2, 255)),
+                                        min((bgcolour.Blue() + DIFF2, 255)))
+            colourbottom = wx.Colour(min((bgcolour.Red() + DIFF1, 255)),
+                                        min((bgcolour.Green() + DIFF1, 255)),
+                                        min((bgcolour.Blue() + DIFF1, 255)))
+
+        self.SetCaptionStyle(foldpanelbar.CAPTIONBAR_GRADIENT_V)
+        self.SetFirstColour(colourtop)
+        self.SetSecondColour(colourbottom)
+        self.SetCaptionColour(panel.GetForegroundColour())
 
 
 class Editor():
@@ -52,8 +90,8 @@ class Editor():
     pbox = None
     area = None
     fpbar = None
+    cbstyle = None
     modstate = None
-    accels = None
 
     def __init__(self, filename, id_, item):
         self.filename = filename
@@ -61,24 +99,9 @@ class Editor():
         self.item = item
         self.modstate = False
 
-        self.panel = EditorPanel(wx.GetApp().nb_right)
+        self.panel = EditorPanel(wx.GetApp().nb_right, item)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
-
-        self.accels = [(wx.wx.ACCEL_CTRL, wx.WXK_RETURN,
-                        wx.GetApp().menu.edit.ID_APPLY),
-                       (wx.wx.ACCEL_CTRL, wx.WXK_NUMPAD_ENTER,
-                        wx.GetApp().menu.edit.ID_APPLY),
-                       (wx.ACCEL_SHIFT | wx.wx.ACCEL_CTRL, wx.WXK_RETURN,
-                        wx.GetApp().menu.edit.ID_APPLY_ALL),
-                       (wx.ACCEL_SHIFT | wx.wx.ACCEL_CTRL, wx.WXK_NUMPAD_ENTER,
-                        wx.GetApp().menu.edit.ID_APPLY_ALL),
-                       (wx.wx.ACCEL_CTRL, ord('w'),
-                        wx.GetApp().menu.edit.ID_CLOSE),
-                       (wx.ACCEL_SHIFT | wx.wx.ACCEL_CTRL, ord('w'),
-                        wx.GetApp().menu.edit.ID_CLOSE_ALL)]
-
-        self.panel.SetAcceleratorTable(wx.AcceleratorTable(self.accels))
 
     def _post_init(self):
         filename = self.filename
@@ -106,31 +129,61 @@ class Editor():
             tabs[item]._post_init()
             open_editor_event.signal(filename=filename, id_=id_, item=item)
         else:
-            wx.GetApp().nb_right.SetSelectionToWindow(tabs[item].panel)
+            tabid = wx.GetApp().nb_right.GetPageIndex(tabs[item].panel)
+            wx.GetApp().nb_right.SetSelection(tabid)
 
     def add_plugin_panel(self, caption):
         if self.fpbar == None:
-            separator = wx.StaticLine(self.panel, size=(1, 1),
-                                      style=wx.LI_HORIZONTAL)
-            self.pbox.Prepend(separator, flag=wx.EXPAND)
-
             self.fpbar = FoldPanelBar(self.panel,
-                                      agwStyle=foldpanelbar.FPB_SINGLE_FOLD |
-                                      foldpanelbar.FPB_HORIZONTAL)
+                                      agwStyle=foldpanelbar.FPB_HORIZONTAL)
             self.pbox.Prepend(self.fpbar, flag=wx.EXPAND)
+
+            self.cbstyle = CaptionBarStyle(self.panel)
 
             self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED,
                             self.handle_collapsiblepane)
             self.fpbar.Bind(foldpanelbar.EVT_CAPTIONBAR,
                             self.handle_captionbar)
 
-        cbstyle = CaptionBarStyle()
+        fpanel = self.fpbar.AddFoldPanel(caption=caption, cbstyle=self.cbstyle)
 
-        return self.fpbar.AddFoldPanel(caption=caption, cbstyle=cbstyle)
+        captionbar = self.get_captionbar(fpanel)
+        captionbar.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+        captionbar.Bind(wx.EVT_MOUSE_EVENTS,
+                                        self.void_default_captionbar_behaviour)
+        captionbar.Bind(wx.EVT_LEFT_DOWN, self.handle_mouse_click)
 
-    def add_plugin_window(self, fpanel, window):
-        self.fpbar.AddFoldPanelWindow(fpanel, window)
-        self.panel.Layout()
+        return fpanel
+
+    def get_captionbar(self, fpanel):
+        try:
+            return fpanel._captionBar
+        except AttributeError:
+            # Since I'm using a hidden attribute (_captionBar) be safe with a
+            # fallback solution
+            for child in fpanel.GetChildren():
+                if child.__class__ is foldpanelbar.CaptionBar:
+                    return child
+
+    def void_default_captionbar_behaviour(self, event):
+        # This lets override the default handling of EVT_MOUSE_EVENTS and
+        # define a custom behaviour of CaptionBar
+        # The default handling of EVT_MOUSE_EVENTS also resets the mouse
+        # cursor, so this is also useful for setting a custom cursor
+        # See http://xoomer.virgilio.it/infinity77/AGW_Docs/_modules/foldpanelbar.html#CaptionBar.OnMouseEvent
+        # For these reasons, do not Skip this event!
+        pass
+
+    def handle_mouse_click(self, event):
+        # This overrides the default behaviour of CaptionBar
+        # See also self.void_default_captionbar_behaviour
+        captionbar = event.GetEventObject()
+        event = foldpanelbar.CaptionBarEvent(
+                                            foldpanelbar.EVT_CAPTIONBAR.typeId)
+        event.SetId(captionbar.GetId())
+        event.SetEventObject(captionbar)
+        event.SetBar(captionbar)
+        captionbar.GetEventHandler().ProcessEvent(event)
 
     def handle_collapsiblepane(self, event):
         self.panel.Layout()
@@ -138,6 +191,10 @@ class Editor():
     def handle_captionbar(self, event):
         event.Skip()
         wx.CallAfter(self.resize_fpb)
+
+    def add_plugin_window(self, fpanel, window):
+        self.fpbar.AddFoldPanelWindow(fpanel, window)
+        self.panel.Layout()
 
     def resize_fpb(self):
         sizeNeeded = self.fpbar.GetPanelsLength(0, 0)[2]
@@ -198,12 +255,18 @@ class Editor():
         # Note that this event is also bound directly by the textarea
         close_editor_event.signal(filename=self.filename, id_=self.id_)
 
-        nb.close_page(nb.GetPageIndex(self.panel))
+        nb.close_page(tabid)
 
         global tabs
         del tabs[item]
 
         return True
+
+    def find_in_tree(self):
+        treedb = tree.dbs[self.filename]
+        treedb.select_item(treedb.find_item(self.id_))
+        nb = wx.GetApp().nb_left
+        nb.select_page(nb.GetPageIndex(treedb))
 
     def get_filename(self):
         return self.filename
@@ -223,6 +286,35 @@ class Editor():
     def make_tabid(filename, id_):
         return '_'.join((filename, str(id_)))
 
-    def add_accelerators(self, accels):
-        self.accels.extend(accels)
-        self.panel.SetAcceleratorTable(wx.AcceleratorTable(self.accels))
+
+class TabContextMenu(wx.Menu):
+    item = None
+    find = None
+    apply_ = None
+    close = None
+
+    def __init__(self, item):
+        wx.Menu.__init__(self)
+        self.item = item
+
+        self.find = wx.MenuItem(self, wx.GetApp().menu.edit.ID_FIND,
+                                                        "&Find in database")
+        self.apply_ = wx.MenuItem(self, wx.GetApp().menu.edit.ID_APPLY,
+                                                                    "&Apply")
+        self.close = wx.MenuItem(self, wx.GetApp().menu.edit.ID_CLOSE,
+                                                                    "Cl&ose")
+
+        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
+        self.apply_.SetBitmap(wx.ArtProvider.GetBitmap('@apply', wx.ART_MENU))
+        self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+
+        self.AppendItem(self.find)
+        self.AppendSeparator()
+        self.AppendItem(self.apply_)
+        self.AppendItem(self.close)
+
+    def update(self):
+        if tabs[self.item].is_modified():
+            self.apply_.Enable()
+        else:
+            self.apply_.Enable(False)

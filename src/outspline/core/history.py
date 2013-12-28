@@ -180,7 +180,7 @@ class DBHistory():
                 self.do_history_row(action, row[3], row[4], row['H_id'],
                                                    row['H_type'], row['H_item'])
                 self.update_history_id(row['H_id'], status)
-            history_event.signal()
+            history_event.signal(filename=self.filename)
 
     def do_history_row(self, action, query, text, hid, type_, itemid):
         qconn = self.connection.get()
