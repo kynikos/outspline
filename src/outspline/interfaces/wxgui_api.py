@@ -18,7 +18,7 @@
 
 import wx
 
-from wxgui import rootw, editor, menubar, tree, databases
+from wxgui import rootw, notebooks, editor, menubar, tree, databases
 
 
 ### DATABASE ###
@@ -291,9 +291,12 @@ def get_open_editors_tab_indexes():
     return wx.GetApp().nb_right.get_open_editors()
 
 
-def add_plugin_to_right_nb(window, caption, close=True):
-    return wx.GetApp().nb_right.add_plugin(window, caption=caption,
-                                              close=close)
+def add_plugin_to_right_nb(window, caption):
+    return wx.GetApp().nb_right.add_plugin(window, caption=caption)
+
+
+def bind_to_plugin_close_event(handler, bind=True):
+    return notebooks.plugin_close_event.bind(handler, bind)
 
 
 ### ROOTW ###

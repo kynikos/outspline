@@ -18,7 +18,7 @@
 
 import wx
 import wx.lib.agw.foldpanelbar as foldpanelbar
-from wx.lib.agw.foldpanelbar import FoldPanelBar, CaptionBarStyle
+from wx.lib.agw.foldpanelbar import FoldPanelBar
 
 from outspline.coreaux_api import Event
 import outspline.coreaux_api as coreaux_api
@@ -51,6 +51,37 @@ class EditorPanel(wx.Panel):
         return self.ctabmenu
 
 
+class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
+    def __init__(self, panel):
+        foldpanelbar.CaptionBarStyle.__init__(self)
+
+        bgcolour = panel.GetBackgroundColour()
+
+        DIFF1 = 8
+        DIFF2 = DIFF1 + 16
+        avg = bgcolour.Red() + bgcolour.Green() + bgcolour.Blue() // 3
+
+        if avg > 127:
+            colourtop = wx.Colour(max((bgcolour.Red() - DIFF1, 0)),
+                                          max((bgcolour.Green() - DIFF1, 0)),
+                                          max((bgcolour.Blue() - DIFF1, 0)))
+            colourbottom = wx.Colour(max((bgcolour.Red() - DIFF2, 0)),
+                                          max((bgcolour.Green() - DIFF2, 0)),
+                                          max((bgcolour.Blue() - DIFF2, 0)))
+        else:
+            colourtop = wx.Colour(min((bgcolour.Red() + DIFF2, 255)),
+                                        min((bgcolour.Green() + DIFF2, 255)),
+                                        min((bgcolour.Blue() + DIFF2, 255)))
+            colourbottom = wx.Colour(min((bgcolour.Red() + DIFF1, 255)),
+                                        min((bgcolour.Green() + DIFF1, 255)),
+                                        min((bgcolour.Blue() + DIFF1, 255)))
+
+        self.SetCaptionStyle(foldpanelbar.CAPTIONBAR_GRADIENT_V)
+        self.SetFirstColour(colourtop)
+        self.SetSecondColour(colourbottom)
+        self.SetCaptionColour(panel.GetForegroundColour())
+
+
 class Editor():
     filename = None
     id_ = None
@@ -59,6 +90,7 @@ class Editor():
     pbox = None
     area = None
     fpbar = None
+    cbstyle = None
     modstate = None
 
     def __init__(self, filename, id_, item):
@@ -97,30 +129,61 @@ class Editor():
             tabs[item]._post_init()
             open_editor_event.signal(filename=filename, id_=id_, item=item)
         else:
-            wx.GetApp().nb_right.SetSelectionToWindow(tabs[item].panel)
+            tabid = wx.GetApp().nb_right.GetPageIndex(tabs[item].panel)
+            wx.GetApp().nb_right.SetSelection(tabid)
 
     def add_plugin_panel(self, caption):
         if self.fpbar == None:
-            separator = wx.StaticLine(self.panel, size=(1, 1),
-                                      style=wx.LI_HORIZONTAL)
-            self.pbox.Prepend(separator, flag=wx.EXPAND)
-
             self.fpbar = FoldPanelBar(self.panel,
                                       agwStyle=foldpanelbar.FPB_HORIZONTAL)
             self.pbox.Prepend(self.fpbar, flag=wx.EXPAND)
+
+            self.cbstyle = CaptionBarStyle(self.panel)
 
             self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED,
                             self.handle_collapsiblepane)
             self.fpbar.Bind(foldpanelbar.EVT_CAPTIONBAR,
                             self.handle_captionbar)
 
-        cbstyle = CaptionBarStyle()
+        fpanel = self.fpbar.AddFoldPanel(caption=caption, cbstyle=self.cbstyle)
 
-        return self.fpbar.AddFoldPanel(caption=caption, cbstyle=cbstyle)
+        captionbar = self.get_captionbar(fpanel)
+        captionbar.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+        captionbar.Bind(wx.EVT_MOUSE_EVENTS,
+                                        self.void_default_captionbar_behaviour)
+        captionbar.Bind(wx.EVT_LEFT_DOWN, self.handle_mouse_click)
 
-    def add_plugin_window(self, fpanel, window):
-        self.fpbar.AddFoldPanelWindow(fpanel, window)
-        self.panel.Layout()
+        return fpanel
+
+    def get_captionbar(self, fpanel):
+        try:
+            return fpanel._captionBar
+        except AttributeError:
+            # Since I'm using a hidden attribute (_captionBar) be safe with a
+            # fallback solution
+            for child in fpanel.GetChildren():
+                if child.__class__ is foldpanelbar.CaptionBar:
+                    return child
+
+    def void_default_captionbar_behaviour(self, event):
+        # This lets override the default handling of EVT_MOUSE_EVENTS and
+        # define a custom behaviour of CaptionBar
+        # The default handling of EVT_MOUSE_EVENTS also resets the mouse
+        # cursor, so this is also useful for setting a custom cursor
+        # See http://xoomer.virgilio.it/infinity77/AGW_Docs/_modules/foldpanelbar.html#CaptionBar.OnMouseEvent
+        # For these reasons, do not Skip this event!
+        pass
+
+    def handle_mouse_click(self, event):
+        # This overrides the default behaviour of CaptionBar
+        # See also self.void_default_captionbar_behaviour
+        captionbar = event.GetEventObject()
+        event = foldpanelbar.CaptionBarEvent(
+                                            foldpanelbar.EVT_CAPTIONBAR.typeId)
+        event.SetId(captionbar.GetId())
+        event.SetEventObject(captionbar)
+        event.SetBar(captionbar)
+        captionbar.GetEventHandler().ProcessEvent(event)
 
     def handle_collapsiblepane(self, event):
         self.panel.Layout()
@@ -128,6 +191,10 @@ class Editor():
     def handle_captionbar(self, event):
         event.Skip()
         wx.CallAfter(self.resize_fpb)
+
+    def add_plugin_window(self, fpanel, window):
+        self.fpbar.AddFoldPanelWindow(fpanel, window)
+        self.panel.Layout()
 
     def resize_fpb(self):
         sizeNeeded = self.fpbar.GetPanelsLength(0, 0)[2]
@@ -188,7 +255,7 @@ class Editor():
         # Note that this event is also bound directly by the textarea
         close_editor_event.signal(filename=self.filename, id_=self.id_)
 
-        nb.close_page(nb.GetPageIndex(self.panel))
+        nb.close_page(tabid)
 
         global tabs
         del tabs[item]
