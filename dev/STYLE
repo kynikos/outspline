@@ -1,10 +1,23 @@
 ### BEST PRACTICES ###
-- Component versioning follows http://semver.org/
-  Addon versioning merges the MINOR and PATCH numbers
-- Make sure that every database table is managed by one and only one extension
-- Major addon version number should be increased when breaking backward
-  compatibility
+
+Code:
+- In general, follow the PEP8 guidelines and all other Python conventions
+- Keep database queries, exception classes and message strings in separated
+  files
+
+Database:
+- Make sure that every database table is either managed by the core or by one
+  and only one extension
+- Interfaces and plugins must not query the database directly, but do it
+  through either the core or an extension
+
+Addon relations:
+- Extensions and interfaces can only use core's or other extensions' APIs
+  Plugins can use all APIs
+- Do not import attributes from other addons directly, use APIs
 - Import optional dependency APIs with the appropriate function
+
+User databases:
 - All addons should be able to ignore databases that were created without their
   support
   Pay particular attention to copying/pasting
@@ -12,6 +25,67 @@
   the entire program is closed, in fact in case of a crash, since the procedure
   hasn't been started yet, the database could get damaged or anyway be left in
   an unpredicted state
+
+Threading:
 - Make sure that all the commands that can be launched either directly by the
   user (through interaction with the interfaces and their plugins) or
   automatically (e.g. by a timer) are protected by the Protection class methods
+
+Versioning:
+- Component versioning follows http://semver.org/
+  Addon versioning merges the MINOR and PATCH numbers
+- Major addon version number should be increased when breaking backward
+  compatibility:
+  * when some API attributes are removed or their input or output values are
+    changed (also because of cascading effects from changes to the addon's
+    dependencies)
+  * when the addon cannot manage user databases created with the previous
+    release anymore without updating them
+
+Development:
+- Let populate database create items with all the supported features
+- Add all possible user actions to the simulator
+
+Info files:
+- author:
+    Author name and contacts
+    Required but can have an empty value
+- version:
+    Full addon version number
+    Required
+- description:
+    Short description of the addons
+    Required but can have an empty value
+- website:
+    Web reference for the addon
+    Required but can have an empty value
+- affects_database:
+    Set to a different value than 'no' if the extension can write the user
+    database or if it affects the stabdards with which other extensions read or
+    write the user database
+    In general, this option determines which addons are added to the
+    CoMpatibility table and hence used for compatibility checks when opening a
+    user database
+    Required
+- provides_tables:
+    Names of the database tables managed by the extension
+    If another extension provides some of those tables, Outspline won't load
+    Required but can have an empty value
+- provides_history_actions:
+    Names of the history actions provided by the extension
+    If another extension provides some of those actions, Outspline won't load
+    Required but can have an empty value
+- dependency_N:
+    N-th dependency for the addon
+    If not all dependencies are satisfied, the addon is not loaded
+    Optional
+- optional_dependency_N:
+    N-th optional dependency for the addon
+    If not all optional dependencies are satisfied, the addon is loaded anyway,
+    and only some of its functionalities will be disabled
+    Optional
+- database_dependency_group_N:
+    Names and versions of the N-th group of addons that must appear in the
+    CoMpatibility table of a user database for this addon to manage its N-th
+    group of features related to such user database
+    Optional

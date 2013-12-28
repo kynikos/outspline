@@ -71,20 +71,31 @@ class Item():
 
         databases.dbs[filename].connection.give(qconn)
 
-        databases.dbs[filename].items[id_] = cls(database=databases.dbs[filename
-                                                  ], filename=filename, id_=id_)
+        databases.dbs[filename].items[id_] = cls(database=databases.dbs[
+                                        filename], filename=filename, id_=id_)
 
         item_insert_event.signal(filename=filename, id_=id_, group=group,
                                  description=description)
 
         if updnext:
             items[updnext.get_id()].update(group, previous=id_,
-                                                        description=description)
+                                                    description=description)
 
         return id_
 
     def update(self, group, parent=None, previous=None, text=None,
-               description='Update item'):
+                                                    description='Update item'):
+        self.update_no_event(group, parent=parent, previous=previous,
+                                            text=text, description=description)
+
+        # Note that update_no_event can be called directly, thus not
+        # signalling this event
+        item_update_event.signal(filename=self.filename, id_=self.id_,
+                                parent=parent, previous=previous, text=text,
+                                group=group, description=description)
+
+    def update_no_event(self, group, parent=None, previous=None, text=None,
+                                                    description='Update item'):
         new_values = {'I_parent': parent,
                       'I_previous': previous}
 
@@ -124,10 +135,6 @@ class Item():
                                                 query_undo, unqtext))
 
         self.database.connection.give(qconn)
-
-        item_update_event.signal(filename=self.filename, id_=self.id_,
-                                    parent=parent, previous=previous, text=text,
-                                           group=group, description=description)
 
     def delete(self, group, description='Delete item'):
         prev = self.get_previous()
@@ -184,7 +191,7 @@ class Item():
                 prev.update(group, previous=id_, description=description)
                 if next_:
                     next_.update(group, previous=previd,
-                                                        description=description)
+                                                    description=description)
             else:
                 raise exceptions.CannotMoveItemError()
         elif mode == 'down':
@@ -221,7 +228,7 @@ class Item():
                             description=description)
                 if next_:
                     next_.update(group, previous=previd,
-                                                        description=description)
+                                                    description=description)
             else:
                 raise exceptions.CannotMoveItemError()
 

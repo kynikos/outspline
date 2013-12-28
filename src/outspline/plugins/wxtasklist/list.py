@@ -123,14 +123,8 @@ class OccurrencesView():
         self.delay = wx.CallLater(self.DELAY, int)
         self.timer = wx.CallLater(0, self.restart)
 
-        core_api.bind_to_update_item(self.delay_restart_on_text_update)
-        # Note that self.delay_restart is *not* bound to
-        # organism_timer_api.bind_to_get_next_occurrences which is signalled by
-        # self.refresh signal because of the call to
-        # organism_timer_api.get_next_occurrences, otherwise this would make
-        # self.refresh recur infinitely
-        organism_timer_api.bind_to_search_next_occurrences(self.delay_restart)
-        organism_alarms_api.bind_to_alarm_off(self.delay_restart)
+        self.enable_refresh()
+
         self.listview.Bind(wx.EVT_CONTEXT_MENU, self.popup_context_menu)
 
     def get_secondary_sort_values(self, col, key1, key2):
@@ -186,6 +180,22 @@ class OccurrencesView():
     def delay_restart_on_text_update(self, kwargs=None):
         if kwargs['text'] is not None:
             self.delay_restart()
+
+    def enable_refresh(self):
+        core_api.bind_to_update_item(self.delay_restart_on_text_update)
+        # Note that self.delay_restart is *not* bound to
+        # organism_timer_api.bind_to_get_next_occurrences which is signalled by
+        # self.refresh signal because of the call to
+        # organism_timer_api.get_next_occurrences, otherwise this would make
+        # self.refresh recur infinitely
+        organism_timer_api.bind_to_search_next_occurrences(self.delay_restart)
+        organism_alarms_api.bind_to_alarm_off(self.delay_restart)
+
+    def disable_refresh(self):
+        core_api.bind_to_update_item(self.delay_restart_on_text_update, False)
+        organism_timer_api.bind_to_search_next_occurrences(self.delay_restart,
+                                                                        False)
+        organism_alarms_api.bind_to_alarm_off(self.delay_restart, False)
 
     def delay_restart(self, kwargs=None):
         # Instead of self.restart, bind _this_ function to events that can be
@@ -436,9 +446,6 @@ class ListItem():
             # Note that the assignment of the active color must come after any
             # previous color assignment, in order to override them
             listview.SetItemTextColour(index, occview.colors['active'])
-            listview.SetItemFont(index, wx.Font(
-                      listview.GetFont().GetPointSize(), wx.FONTFAMILY_DEFAULT,
-                                      wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD))
         # Note that testing if isinstance(self.alarm, int) *before* testing if
         # self.alarm is False would return True also when self.alarm is False!
         else:
@@ -488,8 +495,8 @@ class MainMenu(wx.Menu):
         self.ID_DISMISS = wx.NewId()
         self.ID_DISMISS_ALL = wx.NewId()
 
-        self.find = wx.MenuItem(self, self.ID_FIND, "&Find in tree\tF5",
-            "Select the database item associated to the selected occurrence")
+        self.find = wx.MenuItem(self, self.ID_FIND, "&Find in database\tF5",
+            "Select the database items associated to the selected occurrences")
         self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit selected\tF6",
                             "Open in the editor the database items associated "
                             "to the selected occurrences")
@@ -667,7 +674,8 @@ class ContextMenu(wx.Menu):
         self.occview = occview
         self.mainmenu = mainmenu
 
-        self.find = wx.MenuItem(self, self.mainmenu.ID_FIND, "&Find in tree")
+        self.find = wx.MenuItem(self, self.mainmenu.ID_FIND,
+                                                        "&Find in database")
         self.edit = wx.MenuItem(self, self.mainmenu.ID_EDIT, "&Edit selected")
         self.snooze = wx.MenuItem(self, self.mainmenu.ID_SNOOZE,
                                             "&Snooze selected",

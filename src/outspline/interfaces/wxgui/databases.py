@@ -115,7 +115,6 @@ def save_database_backup(origin):
 def close_database(filename, no_confirm=False, exit_=False):
     # Do not use nb_left.select_tab() to get the tree, use tree.dbs
     nbl = wx.GetApp().nb_left
-    nbr = wx.GetApp().nb_right
 
     for item in tuple(editor.tabs.keys()):
         if editor.tabs[item].get_filename() == filename:

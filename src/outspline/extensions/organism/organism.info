@@ -1,5 +1,5 @@
 author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.3
+version = 0.4
 description = Adds the backend for storing schedule information for items.
 website = https://github.com/kynikos/outspline/
 affects_database = yes

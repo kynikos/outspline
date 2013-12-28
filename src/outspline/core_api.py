@@ -96,7 +96,7 @@ def move_item_up(filename, id_, description='Move item up'):
     group = databases.dbs[filename].get_next_history_group()
     try:
         return databases.dbs[filename].items[id_].shift(mode='up', group=group,
-                                                        description=description)
+                                                    description=description)
     except CannotMoveItemError:
         return False
 
@@ -105,7 +105,7 @@ def move_item_down(filename, id_, description='Move item down'):
     group = databases.dbs[filename].get_next_history_group()
     try:
         return databases.dbs[filename].items[id_].shift(mode='down',
-                                           group=group, description=description)
+                                        group=group, description=description)
     except CannotMoveItemError:
         return False
 
@@ -114,7 +114,7 @@ def move_item_to_parent(filename, id_, description='Move item to parent'):
     group = databases.dbs[filename].get_next_history_group()
     try:
         return databases.dbs[filename].items[id_].shift(mode='parent',
-                                           group=group, description=description)
+                                        group=group, description=description)
     except CannotMoveItemError:
         return False
 
@@ -124,7 +124,15 @@ def update_item_text(filename, id_, text, group=None,
     if group == None:
         group = databases.dbs[filename].get_next_history_group()
     return databases.dbs[filename].items[id_].update(group,
-                                             description=description, text=text)
+                                            description=description, text=text)
+
+
+def update_item_text_no_event(filename, id_, text, group=None,
+                                            description='Update item text'):
+    if group == None:
+        group = databases.dbs[filename].get_next_history_group()
+    return databases.dbs[filename].items[id_].update_no_event(group,
+                                            description=description, text=text)
 
 
 def insert_history(filename, group, id_, type, description, query_redo,

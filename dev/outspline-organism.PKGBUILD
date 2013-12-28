@@ -1,7 +1,7 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='outspline-organism'
-pkgver='0.2.1'
+pkgver='0.3.1'
 pkgrel=1
 pkgdesc="Organizer component for Outspline, adding advanced time management abilities"
 arch=('any')
@@ -14,7 +14,7 @@ conflicts=('organism-organizer')
 replaces=('organism-organizer')
 install="$pkgname.install"
 source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
-sha256sums=('36dd26a0faead47064d3dc0b5201108ec970d19d2ba03f330ed82fb52a571f35')
+sha256sums=('8356c7242d2f6c03fb1a9fb86ac352393006bc22001e0f0b7c7969500db5f6e8')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"

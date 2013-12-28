@@ -16,36 +16,69 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import wx.lib.agw.aui as aui
+import wx
+import wx.lib.agw.flatnotebook as flatnotebook
+from wx.lib.agw.flatnotebook import FlatNotebook
 
+from outspline.coreaux_api import Event
 import outspline.core_api as core_api
 
 import editor
 import databases
 
+plugin_close_event = Event()
 
-class Notebook(aui.AuiNotebook):
+
+class Notebook(FlatNotebook):
     parent = None
 
-    def __init__(self, parent, agwStyle):
-        aui.AuiNotebook.__init__(self, parent, agwStyle=agwStyle)
-
+    def __init__(self, parent):
+        FlatNotebook.__init__(self, parent, agwStyle=
+                                        flatnotebook.FNB_FANCY_TABS |
+                                        flatnotebook.FNB_NO_X_BUTTON |
+                                        flatnotebook.FNB_NO_NAV_BUTTONS |
+                                        flatnotebook.FNB_X_ON_TAB |
+                                        # Only supported from wxPython 2.9
+                                        #flatnotebook.FNB_SMART_TABS |
+                                        flatnotebook.FNB_DROPDOWN_TABS_LIST |
+                                        flatnotebook.FNB_NO_TAB_FOCUS)
         self.parent = parent
+        self.set_colours(parent)
 
-        # aui.FF2TabArt seems to be the best compromise to support both
-        # dark-on-light and light-on-dark GTK themes
-        self.SetArtProvider(aui.FF2TabArt())
+        self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CONTEXT_MENU,
+                                                        self.popup_tab_menu)
 
-        self.Bind(aui.EVT_AUINOTEBOOK_END_DRAG, self.reset_focus)
-        self.Bind(aui.EVT_AUINOTEBOOK_TAB_RIGHT_DOWN, self.popup_tab_menu)
+    def set_colours(self, parent):
+        bgcolour = parent.GetBackgroundColour()
+        avg = bgcolour.Red() + bgcolour.Green() + bgcolour.Blue() // 3
 
-    def reset_focus(self, event):
-        # This workaround is necessary for a bug in moving tabs
-        self.SetSelection(event.GetSelection())
+        if avg > 127:
+            DIFF = 24
+            tabcolour = wx.Colour(max((bgcolour.Red() - DIFF, 0)),
+                                          max((bgcolour.Green() - DIFF, 0)),
+                                          max((bgcolour.Blue() - DIFF, 0)))
+        else:
+            DIFF = 48
+            tabcolour = wx.Colour(min((bgcolour.Red() + DIFF, 255)),
+                                        min((bgcolour.Green() + DIFF, 255)),
+                                        min((bgcolour.Blue() + DIFF, 255)))
 
-        # Also reset focus, otherwise for example the menus will be disabled
-        # after dragging
-        self.GetPage(event.GetSelection()).SetFocus()
+        self.SetTabAreaColour(bgcolour)
+
+        # This is probably ineffective with the used style
+        self.SetActiveTabColour(tabcolour)
+
+        # Top gradient colour of the active tab
+        self.SetGradientColourTo(tabcolour)
+
+        # Border on top of the active tab
+        self.SetGradientColourBorder(self.GetBorderColour())
+
+        # Bottom gradient colour of the active tab AND colour of the top border
+        # of the whole page
+        self.SetGradientColourFrom(bgcolour)
+
+        self.SetActiveTabTextColour(self.GetForegroundColour())
 
     def popup_tab_menu(self, event):
         # Select the clicked tab, as many actions are executed on the
@@ -55,21 +88,11 @@ class Notebook(aui.AuiNotebook):
         self.SetSelection(event.GetSelection())
 
         try:
-            cmenu = self.GetPage(event.GetSelection()).get_tab_context_menu()
+            cmenu = self.GetCurrentPage().get_tab_context_menu()
         except AttributeError:
             pass
         else:
-            self.PopupMenu(cmenu)
-
-    def add_page(self, window, caption, select=True):
-        self.AddPage(window, caption, select=select)
-        self.parent.split_window()
-
-    def close_page(self, pageid):
-        self.DeletePage(pageid)
-
-        if self.GetPageCount() == 0:
-            self.parent.unsplit_window()
+            self.SetRightClickMenu(cmenu)
 
     def select_page(self, index):
         self.SetSelection(index)
@@ -79,60 +102,91 @@ class Notebook(aui.AuiNotebook):
         return self.GetSelection()
 
     def get_selected_tab(self):
-        try:
-            return self.GetPage(self.GetSelection())
-        except IndexError:
-            return False
-
-    def get_tabs(self):
-        tabs = []
-        for idx in range(self.GetPageCount()):
-            tabs.append(self.GetPage(idx))
-        return tabs
+        return self.GetCurrentPage()
 
 
 class LeftNotebook(Notebook):
     def __init__(self, parent):
-        Notebook.__init__(self, parent, agwStyle=aui.AUI_NB_TOP |
-                          aui.AUI_NB_SCROLL_BUTTONS | aui.AUI_NB_TAB_MOVE |
-                          aui.AUI_NB_CLOSE_ON_ACTIVE_TAB |
-                          aui.AUI_NB_NO_TAB_FOCUS |
-                          aui.AUI_NB_WINDOWLIST_BUTTON)
+        Notebook.__init__(self, parent)
 
-        self.Bind(aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.handle_page_close)
+        self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
+                                                    self.handle_page_closing)
+        self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSED,
+                                                    self.handle_page_closed)
 
-    def handle_page_close(self, event):
+    def handle_page_closing(self, event):
         core_api.block_databases()
         # Veto the event, page deletion is managed explicitly later
         event.Veto()
-        page = self.GetPage(event.GetSelection())
+        page = self.GetCurrentPage()
         databases.close_database(page.get_filename())
         core_api.release_databases()
+
+    def handle_page_closed(self, event):
+        if self.GetPageCount() == 0:
+            self.parent.unsplit_window()
+            self.Show(False)
+
+    def add_page(self, window, caption, select=True):
+        self.AddPage(window, caption, select=select)
+        self.parent.split_window()
+
+    def close_page(self, pageid):
+        # self.DeletePage signals EVT_FLATNOTEBOOK_PAGE_CLOSING, so it's
+        # necessary to unbind self.handle_page_closing, otherwise this would
+        # enter an infinite recursion
+        self.Unbind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
+                                            handler=self.handle_page_closing)
+        self.DeletePage(pageid)
+        self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
+                                                    self.handle_page_closing)
 
 
 class RightNotebook(Notebook):
     def __init__(self, parent):
-        Notebook.__init__(self, parent, agwStyle=aui.AUI_NB_TOP |
-                          aui.AUI_NB_SCROLL_BUTTONS | aui.AUI_NB_TAB_MOVE |
-                          aui.AUI_NB_CLOSE_ON_ALL_TABS |
-                          aui.AUI_NB_NO_TAB_FOCUS)
+        Notebook.__init__(self, parent)
 
-        self.Bind(aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.handle_page_close)
+        self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
+                                                    self.handle_page_closing)
+        self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSED,
+                                                    self.handle_page_closed)
 
-    def handle_page_close(self, event):
+    def handle_page_closing(self, event):
         core_api.block_databases()
+
         # Veto the event, page deletion is managed explicitly later
         event.Veto()
-        page = self.GetPage(event.GetSelection())
+
+        page = self.GetCurrentPage()
+
+        # This also prevents closing a plugin window
         for item in tuple(editor.tabs.keys()):
             if editor.tabs[item].panel is page:
                 editor.tabs[item].close()
+                break
+        else:
+            plugin_close_event.signal(page=page)
+
         core_api.release_databases()
 
-    def add_plugin(self, window, caption, close=True):
-        self.AddPage(window, caption=caption)
-        if not close:
-            self.SetCloseButton(self.GetPageIndex(window), False)
+    def handle_page_closed(self, event):
+        self.unsplit()
+
+    def split(self):
+        if self.parent.nb_left.GetPageCount() > 0:
+            self.parent.split_window()
+
+    def unsplit(self):
+        if self.GetPageCount() == 0:
+            self.parent.unsplit_window()
+
+    def add_page(self, window, caption, select=True):
+        self.AddPage(window, caption, select=select)
+        self.split()
+
+    def add_plugin(self, window, caption):
+        self.InsertPage(0, window, text=caption)
+        self.split()
 
     def set_editor_title(self, item, title):
         self.SetPageText(self.GetPageIndex(editor.tabs[item].panel),
@@ -149,3 +203,27 @@ class RightNotebook(Notebook):
     def get_open_editors(self):
         return [self.GetPageIndex(editor.tabs[item].panel)
                                                        for item in editor.tabs]
+
+    def hide_page(self, pageid):
+        # self.RemovePage signals EVT_FLATNOTEBOOK_PAGE_CLOSING, so it's
+        # necessary to unbind self.handle_page_closing, otherwise this would
+        # enter an infinite recursion
+        self.Unbind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
+                                            handler=self.handle_page_closing)
+        self.RemovePage(pageid)
+
+        # EVT_FLATNOTEBOOK_PAGE_CLOSED is not called after self.RemovePage
+        self.unsplit()
+
+        self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
+                                                    self.handle_page_closing)
+
+    def close_page(self, pageid):
+        # self.DeletePage signals EVT_FLATNOTEBOOK_PAGE_CLOSING, so it's
+        # necessary to unbind self.handle_page_closing, otherwise this would
+        # enter an infinite recursion
+        self.Unbind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
+                                            handler=self.handle_page_closing)
+        self.DeletePage(pageid)
+        self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
+                                                    self.handle_page_closing)

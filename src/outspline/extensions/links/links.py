@@ -36,7 +36,8 @@ def select_links(filename):
     return cursor.fetchall()
 
 
-def upsert_link(filename, id_, target, group, description='Insert link'):
+def upsert_link(filename, id_, target, group, description='Insert link',
+                                                                event=True):
     # target could be None (creating a broken link) or could be a no-longer
     # existing item
     if core_api.is_item(filename, target):
@@ -47,8 +48,13 @@ def upsert_link(filename, id_, target, group, description='Insert link'):
         else:
             # Sync text
             tgttext = core_api.get_item_text(filename, target)
-            core_api.update_item_text(filename, id_, tgttext, group=group,
-                                                       description=description)
+
+            if event:
+                core_api.update_item_text(filename, id_, tgttext, group=group,
+                                                    description=description)
+            else:
+                core_api.update_item_text_no_event(filename, id_, tgttext,
+                                        group=group, description=description)
 
             # Drop any rules
             if organism_api:
@@ -280,4 +286,12 @@ def paste_link(filename, id_, oldid, group, description):
                 # way of retrieving its new id
                 target = None
 
-            upsert_link(filename, id_, target, group, description)
+            # Do not emit an update event when pasting links (affects only
+            # pasting in the same database), otherwise the interface will react
+            # trying to update the text of the item in the tree, but the item
+            # hasn't been created yet in the tree, resulting in an exception
+            # (KeyError)
+            # Right because the item is inserted in the tree *after* updating
+            # its text, it will be added already with the correct text, so
+            # there's no need to handle an update event in that case
+            upsert_link(filename, id_, target, group, description, event=False)
