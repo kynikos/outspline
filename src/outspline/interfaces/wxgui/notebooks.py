@@ -20,10 +20,13 @@ import wx
 import wx.lib.agw.flatnotebook as flatnotebook
 from wx.lib.agw.flatnotebook import FlatNotebook
 
+from outspline.coreaux_api import Event
 import outspline.core_api as core_api
 
 import editor
 import databases
+
+plugin_close_event = Event()
 
 
 class Notebook(FlatNotebook):
@@ -89,15 +92,6 @@ class Notebook(FlatNotebook):
         else:
             self.SetRightClickMenu(cmenu)
 
-    def add_page(self, window, caption, select=True):
-        self.AddPage(window, caption, select=select)
-
-        # Make sure the notebook is shown although the following split_window
-        # should do it implicitly
-        self.Show(True)
-
-        self.parent.split_window()
-
     def select_page(self, index):
         self.SetSelection(index)
 
@@ -130,6 +124,10 @@ class LeftNotebook(Notebook):
         if self.GetPageCount() == 0:
             self.parent.unsplit_window()
             self.Show(False)
+
+    def add_page(self, window, caption, select=True):
+        self.AddPage(window, caption, select=select)
+        self.parent.split_window()
 
     def close_page(self, pageid):
         # self.DeletePage signals EVT_FLATNOTEBOOK_PAGE_CLOSING, so it's
@@ -164,15 +162,29 @@ class RightNotebook(Notebook):
             if editor.tabs[item].panel is page:
                 editor.tabs[item].close()
                 break
+        else:
+            plugin_close_event.signal(page=page)
 
         core_api.release_databases()
 
     def handle_page_closed(self, event):
+        self.unsplit()
+
+    def split(self):
+        if self.parent.nb_left.GetPageCount() > 0:
+            self.parent.split_window()
+
+    def unsplit(self):
         if self.GetPageCount() == 0:
             self.parent.unsplit_window()
 
-    def add_plugin(self, window, caption, close=True):
-        self.AddPage(window, text=caption)
+    def add_page(self, window, caption, select=True):
+        self.AddPage(window, caption, select=select)
+        self.split()
+
+    def add_plugin(self, window, caption):
+        self.InsertPage(0, window, text=caption)
+        self.split()
 
     def set_editor_title(self, item, title):
         self.SetPageText(self.GetPageIndex(editor.tabs[item].panel),
@@ -189,6 +201,20 @@ class RightNotebook(Notebook):
     def get_open_editors(self):
         return [self.GetPageIndex(editor.tabs[item].panel)
                                                        for item in editor.tabs]
+
+    def hide_page(self, pageid):
+        # self.RemovePage signals EVT_FLATNOTEBOOK_PAGE_CLOSING, so it's
+        # necessary to unbind self.handle_page_closing, otherwise this would
+        # enter an infinite recursion
+        self.Unbind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
+                                            handler=self.handle_page_closing)
+        self.RemovePage(pageid)
+
+        # EVT_FLATNOTEBOOK_PAGE_CLOSED is not called after self.RemovePage
+        self.unsplit()
+
+        self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
+                                                    self.handle_page_closing)
 
     def close_page(self, pageid):
         # self.DeletePage signals EVT_FLATNOTEBOOK_PAGE_CLOSING, so it's

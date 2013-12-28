@@ -172,10 +172,16 @@ class MainPanes(wx.SplitterWindow):
         event.Veto()
 
     def split_window(self):
+        # Make sure the left notebook is shown in any case
+        self.nb_left.Show(True)
+
         if not self.IsSplit() and self.nb_right.GetPageCount() > 0:
             width = self.GetSizeTuple()[0]
 
-            # self.SplitVertically also shows the panes if they're hidden
+            # Make sure the right notebook is shown although
+            # self.SplitVertically should do it implicitly
+            self.nb_right.Show(True)
+
             self.SplitVertically(self.nb_left, self.nb_right)
             self.SetSashGravity(0.33)
 

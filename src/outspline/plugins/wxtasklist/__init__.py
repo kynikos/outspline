@@ -18,6 +18,7 @@
 
 import wx
 
+import outspline.coreaux_api as coreaux_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
 import list as list_
@@ -39,10 +40,14 @@ class TaskListPanel(wx.Panel):
 
 
 class TaskList():
+    CAPTION = None
     panel = None
     pbox = None
+    config = None
     list_ = None
     filters = None
+    ID_SHOW = None
+    menushow = None
 
     def __init__(self, parent):
         # Note that the remaining border is due to the SplitterWindow, whose
@@ -53,14 +58,66 @@ class TaskList():
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
 
+        self.CAPTION = 'Occurrences'
+
+        self.config = coreaux_api.get_plugin_configuration('wxtasklist')
+
         self.list_ = list_.OccurrencesView(self.panel)
         self.filters = filters.Filters(self.panel, self.list_)
 
         self.panel._init_tab_menu(self)
 
+        self._init_view_menu()
+
         self.pbox.Add(self.filters.panel, flag=wx.EXPAND | wx.ALL, border=2)
         self.pbox.Add(self.list_.listview, 1, flag=wx.EXPAND | wx.ALL,
                                                                       border=2)
+
+        wxgui_api.bind_to_plugin_close_event(self.handle_tab_hide)
+        wxgui_api.bind_to_menu_view_update(self.update_menu_items)
+
+    def _init_view_menu(self):
+        self.ID_SHOW = wx.NewId()
+        self.menushow = wxgui_api.insert_menu_item('View',
+                                       self.config.get_int('show_menu_pos'),
+                                       'Show &occurrences\tCTRL+SHIFT+F5',
+                                       id_=self.ID_SHOW,
+                                       help='Show the occurrences window',
+                                       kind='check',
+                                       sep=self.config['show_menu_sep'])
+
+        wxgui_api.bind_to_menu(self.toggle_shown, self.menushow)
+
+    def update_menu_items(self, event):
+        self.menushow.Check(check=self.is_shown())
+
+    def handle_tab_hide(self, kwargs):
+        if kwargs['page'] is self.panel:
+            self.hide()
+
+    def toggle_shown(self, event):
+        if self.is_shown():
+            self.hide()
+        else:
+            self.show()
+
+    def is_shown(self):
+        nb = wx.GetApp().nb_right
+        tabid = nb.GetPageIndex(self.panel)
+        return True if tabid > -1 else False
+
+    def show(self):
+        wxgui_api.add_plugin_to_right_nb(self.panel, self.CAPTION)
+
+        self.list_.enable_refresh()
+        self.list_.delay_restart()
+
+    def hide(self):
+        nb = wx.GetApp().nb_right
+        tabid = nb.GetPageIndex(self.panel)
+        nb.hide_page(tabid)
+
+        self.list_.disable_refresh()
 
 
 class TabContextMenu(wx.Menu):
@@ -97,5 +154,5 @@ class TabContextMenu(wx.Menu):
 
 def main():
     nb = wxgui_api.get_right_nb()
-    wxgui_api.add_plugin_to_right_nb(TaskList(nb).panel, 'Occurrences',
-                                                                   close=False)
+    tasklist = TaskList(nb)
+    wxgui_api.add_plugin_to_right_nb(tasklist.panel, tasklist.CAPTION)
