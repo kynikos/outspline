@@ -18,7 +18,7 @@
 
 import wx
 import wx.lib.agw.foldpanelbar as foldpanelbar
-from wx.lib.agw.foldpanelbar import FoldPanelBar, CaptionBarStyle
+from wx.lib.agw.foldpanelbar import FoldPanelBar
 
 from outspline.coreaux_api import Event
 import outspline.coreaux_api as coreaux_api
@@ -51,6 +51,37 @@ class EditorPanel(wx.Panel):
         return self.ctabmenu
 
 
+class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
+    def __init__(self, panel):
+        foldpanelbar.CaptionBarStyle.__init__(self)
+
+        bgcolour = panel.GetBackgroundColour()
+
+        DIFF1 = 8
+        DIFF2 = DIFF1 + 16
+        avg = bgcolour.Red() + bgcolour.Green() + bgcolour.Blue() // 3
+
+        if avg > 127:
+            colourtop = wx.Colour(max((bgcolour.Red() - DIFF1, 0)),
+                                          max((bgcolour.Green() - DIFF1, 0)),
+                                          max((bgcolour.Blue() - DIFF1, 0)))
+            colourbottom = wx.Colour(max((bgcolour.Red() - DIFF2, 0)),
+                                          max((bgcolour.Green() - DIFF2, 0)),
+                                          max((bgcolour.Blue() - DIFF2, 0)))
+        else:
+            colourtop = wx.Colour(min((bgcolour.Red() + DIFF2, 255)),
+                                        min((bgcolour.Green() + DIFF2, 255)),
+                                        min((bgcolour.Blue() + DIFF2, 255)))
+            colourbottom = wx.Colour(min((bgcolour.Red() + DIFF1, 255)),
+                                        min((bgcolour.Green() + DIFF1, 255)),
+                                        min((bgcolour.Blue() + DIFF1, 255)))
+
+        self.SetCaptionStyle(foldpanelbar.CAPTIONBAR_GRADIENT_V)
+        self.SetFirstColour(colourtop)
+        self.SetSecondColour(colourbottom)
+        self.SetCaptionColour(panel.GetForegroundColour())
+
+
 class Editor():
     filename = None
     id_ = None
@@ -59,6 +90,7 @@ class Editor():
     pbox = None
     area = None
     fpbar = None
+    cbstyle = None
     modstate = None
 
     def __init__(self, filename, id_, item):
@@ -109,14 +141,14 @@ class Editor():
                                       agwStyle=foldpanelbar.FPB_HORIZONTAL)
             self.pbox.Prepend(self.fpbar, flag=wx.EXPAND)
 
+            self.cbstyle = CaptionBarStyle(self.panel)
+
             self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED,
                             self.handle_collapsiblepane)
             self.fpbar.Bind(foldpanelbar.EVT_CAPTIONBAR,
                             self.handle_captionbar)
 
-        cbstyle = CaptionBarStyle()
-
-        return self.fpbar.AddFoldPanel(caption=caption, cbstyle=cbstyle)
+        return self.fpbar.AddFoldPanel(caption=caption, cbstyle=self.cbstyle)
 
     def add_plugin_window(self, fpanel, window):
         self.fpbar.AddFoldPanelWindow(fpanel, window)
