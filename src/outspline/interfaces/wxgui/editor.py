@@ -148,11 +148,45 @@ class Editor():
             self.fpbar.Bind(foldpanelbar.EVT_CAPTIONBAR,
                             self.handle_captionbar)
 
-        return self.fpbar.AddFoldPanel(caption=caption, cbstyle=self.cbstyle)
+        fpanel = self.fpbar.AddFoldPanel(caption=caption, cbstyle=self.cbstyle)
 
-    def add_plugin_window(self, fpanel, window):
-        self.fpbar.AddFoldPanelWindow(fpanel, window)
-        self.panel.Layout()
+        captionbar = self.get_captionbar(fpanel)
+        captionbar.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+        captionbar.Bind(wx.EVT_MOUSE_EVENTS,
+                                        self.void_default_captionbar_behaviour)
+        captionbar.Bind(wx.EVT_LEFT_DOWN, self.handle_mouse_click)
+
+        return fpanel
+
+    def get_captionbar(self, fpanel):
+        try:
+            return fpanel._captionBar
+        except AttributeError:
+            # Since I'm using a hidden attribute (_captionBar) be safe with a
+            # fallback solution
+            for child in fpanel.GetChildren():
+                if child.__class__ is foldpanelbar.CaptionBar:
+                    return child
+
+    def void_default_captionbar_behaviour(self, event):
+        # This lets override the default handling of EVT_MOUSE_EVENTS and
+        # define a custom behaviour of CaptionBar
+        # The default handling of EVT_MOUSE_EVENTS also resets the mouse
+        # cursor, so this is also useful for setting a custom cursor
+        # See http://xoomer.virgilio.it/infinity77/AGW_Docs/_modules/foldpanelbar.html#CaptionBar.OnMouseEvent
+        # For these reasons, do not Skip this event!
+        pass
+
+    def handle_mouse_click(self, event):
+        # This overrides the default behaviour of CaptionBar
+        # See also self.void_default_captionbar_behaviour
+        captionbar = event.GetEventObject()
+        event = foldpanelbar.CaptionBarEvent(
+                                            foldpanelbar.EVT_CAPTIONBAR.typeId)
+        event.SetId(captionbar.GetId())
+        event.SetEventObject(captionbar)
+        event.SetBar(captionbar)
+        captionbar.GetEventHandler().ProcessEvent(event)
 
     def handle_collapsiblepane(self, event):
         self.panel.Layout()
@@ -160,6 +194,10 @@ class Editor():
     def handle_captionbar(self, event):
         event.Skip()
         wx.CallAfter(self.resize_fpb)
+
+    def add_plugin_window(self, fpanel, window):
+        self.fpbar.AddFoldPanelWindow(fpanel, window)
+        self.panel.Layout()
 
     def resize_fpb(self):
         sizeNeeded = self.fpbar.GetPanelsLength(0, 0)[2]
