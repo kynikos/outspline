@@ -129,14 +129,11 @@ class Editor():
             tabs[item]._post_init()
             open_editor_event.signal(filename=filename, id_=id_, item=item)
         else:
-            wx.GetApp().nb_right.SetSelectionToWindow(tabs[item].panel)
+            tabid = wx.GetApp().nb_right.GetPageIndex(tabs[item].panel)
+            wx.GetApp().nb_right.SetSelection(tabid)
 
     def add_plugin_panel(self, caption):
         if self.fpbar == None:
-            separator = wx.StaticLine(self.panel, size=(1, 1),
-                                      style=wx.LI_HORIZONTAL)
-            self.pbox.Prepend(separator, flag=wx.EXPAND)
-
             self.fpbar = FoldPanelBar(self.panel,
                                       agwStyle=foldpanelbar.FPB_HORIZONTAL)
             self.pbox.Prepend(self.fpbar, flag=wx.EXPAND)
@@ -258,7 +255,7 @@ class Editor():
         # Note that this event is also bound directly by the textarea
         close_editor_event.signal(filename=self.filename, id_=self.id_)
 
-        nb.close_page(nb.GetPageIndex(self.panel))
+        nb.close_page(tabid)
 
         global tabs
         del tabs[item]

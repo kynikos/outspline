@@ -159,9 +159,12 @@ class MainPanes(wx.SplitterWindow):
         self.nb_left = notebooks.LeftNotebook(self)
         self.nb_right = notebooks.RightNotebook(self)
 
+        self.Initialize(self.nb_left)
+
+        # Hide the notebooks *after* self.Initialize, which would isntead show
+        # them again implicitly
         self.nb_left.Show(False)
         self.nb_right.Show(False)
-        self.Initialize(self.nb_left)
 
         self.Bind(wx.EVT_SPLITTER_DCLICK, self.veto_dclick)
 
@@ -172,6 +175,7 @@ class MainPanes(wx.SplitterWindow):
         if not self.IsSplit() and self.nb_right.GetPageCount() > 0:
             width = self.GetSizeTuple()[0]
 
+            # self.SplitVertically also shows the panes if they're hidden
             self.SplitVertically(self.nb_left, self.nb_right)
             self.SetSashGravity(0.33)
 
