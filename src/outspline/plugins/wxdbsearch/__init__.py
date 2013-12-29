@@ -18,7 +18,9 @@
 
 import re
 import wx
+import time
 
+from outspline.coreaux_api import log
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 import outspline.interfaces.wxgui_api as wxgui_api
@@ -55,6 +57,8 @@ class SearchView():
         except re.error:
             pass  # Show error dialog *******************************************************
         else:
+            search_start = (time.time(), time.clock())
+
             for filename in core_api.get_open_databases():
                 rows = core_api.get_all_items_text(filename)
 
@@ -72,6 +76,10 @@ class SearchView():
                     # only one match per line should be shown
                     if matches:
                         self.results.add(filename, id_, text, matches)
+
+            log.debug('Search completed in {} (time) / {} (clock) s'.format(
+                                              time.time() - search_start[0],
+                                              time.clock() - search_start[1]))
 
         core_api.release_databases()
 
