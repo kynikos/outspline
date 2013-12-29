@@ -81,6 +81,8 @@ items_select_id_haschildren = 'SELECT I_id FROM Items WHERE I_parent=? LIMIT 1'
 items_select_parent = ('SELECT I_id, I_text FROM Items WHERE I_parent=? AND '
                        'I_previous=? LIMIT 1')
 
+items_select_search = 'SELECT I_id, I_text FROM Items'
+
 items_insert = ('INSERT INTO Items (I_id, I_parent, I_previous, I_text) '
                 'VALUES ({}, {}, {}, ?)')
 

@@ -344,3 +344,11 @@ class Database(history.DBHistory):
                     del dids[dids.index(id_)]
 
         delete_items_event.signal()
+
+    def get_all_items_text(self):
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+        cursor.execute(queries.items_select_search)
+        self.connection.give(qconn)
+
+        return cursor.fetchall()
