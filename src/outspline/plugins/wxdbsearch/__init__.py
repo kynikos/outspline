@@ -19,29 +19,110 @@
 import wx
 
 import outspline.coreaux_api as coreaux_api
+import outspline.core_api as core_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
-ID_SEARCH = None
+
+class SearchView():
+    panel = None
+    box = None
+    filters = None
+    results = None
+
+    def __init__(self, parent):
+        self.panel = wx.Panel(parent)
+        self.box = wx.BoxSizer(wx.VERTICAL)
+        self.panel.SetSizer(self.box)
+
+        self.filters = SearchFilters(self.panel)
+        self.results = SearchResults(self.panel)
+
+        self.box.Add(self.filters.box, flag=wx.EXPAND)
+        self.box.Add(self.results.list_, 1, flag=wx.EXPAND)
 
 
-def handle_open_database(kwargs):
-    filename = kwargs['filename']
+class SearchFilters():
+    # Search in all databases / in selected database / under selected items  ************
+    # Regular expression ****************************************************************
+    # Case sensitive ********************************************************************
+    # List of words (OR) ****************************************************************
+    # Whole words (not part of words) ***************************************************
+    # Invert results ********************************************************************
+    box = None
+    text = None
+    search = None
 
-    accels = [(wx.ACCEL_CTRL, ord('f'), ID_SEARCH), ]
+    def __init__(self, parent):
+        self.box = wx.BoxSizer(wx.HORIZONTAL)
 
-    wxgui_api.add_database_accelerators(filename, accels)
+        self.text = wx.TextCtrl(parent)
+        self.box.Add(self.text, 1, flag=wx.ALIGN_CENTER_VERTICAL)
+
+        self.search = wx.Button(parent)
+        self.box.Add(self.search, flag=wx.ALIGN_CENTER_VERTICAL)
+
+
+class SearchResults():
+    # Fields:            **************************************************************
+    #   Database         **************************************************************
+    #   Title            **************************************************************
+    #   Matching line    **************************************************************
+    list_ = None
+
+    def __init__(self, parent):
+        self.list_ = wx.ListView(parent)
+
+
+class MainMenu(wx.Menu):
+    # Search (refresh)      ***********************************************************
+    # Find in database      ***********************************************************
+    # Edit selected         ***********************************************************
+    # Close                 ***********************************************************
+    # Close all             ***********************************************************
+    # Also item context menu **********************************************************
+    # Also tab context menu ***********************************************************
+    # Also close with tab X ***********************************************************
+    ID_SEARCH = None
+    search = None
+
+    def __init__(self):
+        wx.Menu.__init__(self)
+
+        self.ID_SEARCH = wx.NewId()
+
+        self.search = wx.MenuItem(self, self.ID_SEARCH,
+                                            "New &search...\tCTRL+f",
+                                            "Search text in the databases")
+
+        self.search.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch',
+                                                                wx.ART_MENU))
+
+        self.AppendItem(self.search)
+
+        wxgui_api.bind_to_menu(self.new_search, self.search)
+
+        wxgui_api.bind_to_update_menu_items(self.update_items)
+        wxgui_api.bind_to_reset_menu_items(self.reset_items)
+
+        wxgui_api.insert_menu_main_item('&Search', 'View', self)
+
+    def update_items(self, kwargs):
+        if kwargs['menu'] is self:
+            self.search.Enable(False)
+
+            if core_api.get_databases_count() > 0:
+                self.search.Enable()
+
+    def reset_items(self, kwargs):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.search.Enable()
+
+    def new_search(self, event):
+        if core_api.get_databases_count() > 0:
+            nb = wxgui_api.get_right_nb()
+            wxgui_api.add_page_to_right_nb(SearchView(nb).panel, 'Search')
 
 
 def main():
-    config = coreaux_api.get_plugin_configuration('wxdbsearch')
-
-    global ID_SEARCH
-    ID_SEARCH = wx.NewId()
-
-    wxgui_api.insert_menu_item('Database', config.get_int('menu_pos'),
-                               'Searc&h...', id_=ID_SEARCH,
-                               help='Search in the database',
-                               sep=config['menu_sep'],
-                               icon='@dbsearch').Enable(False)
-
-    #wxgui_api.bind_to_open_database(handle_open_database)
+    MainMenu()
