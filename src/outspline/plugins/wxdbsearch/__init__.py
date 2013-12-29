@@ -20,6 +20,7 @@ import re
 import time
 import os.path
 import sys
+import threading
 import wx
 from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin, ColumnSorterMixin
 
@@ -49,10 +50,10 @@ class SearchView():
         self.box.Add(self.results.listview, 1, flag=wx.EXPAND)
 
     def search(self, event):
-        # Search must be threaded ***********************************************************
         # Add (part of) the search string to the title of the notebook tab ******************
-        core_api.block_databases()
-
+        # Show when the search is ongoing and when it's finished ****************************
+        # Note that the databases are *not* blocked, because searching should *******************************
+        # never alter the database **************************************************************
         string = self.filters.text.GetValue()
         string = re.escape(string)  # Escape only if needed **********************************
 
@@ -63,31 +64,103 @@ class SearchView():
         except re.error:
             pass  # Show error dialog *******************************************************
         else:
-            search_start = (time.time(), time.clock())
+            thread = threading.Thread(target=self._search_threaded,
+                                                            args=(regexp, ))
+            thread.start()
 
-            for filename in core_api.get_open_databases():
-                rows = core_api.get_all_items_text(filename)
+    def _search_threaded(self, regexp):
+        # Test race conditions with long searches *****************************************
+        # Note that the databases are *not* blocked, because searching should *******************************
+        # never alter the database *********************************************************
+        search_start = (time.time(), time.clock())
 
-                for row in rows:
-                    id_ = row['I_id']
-                    text = row['I_text']
+        results = []
 
-                    matches = []
+        for filename in core_api.get_open_databases():
+            rows = core_api.get_all_items_text(filename)
 
-                    for match in regexp.finditer(text):
-                        matches.append(match)
-                        # break if one result per item **********************************
+            for row in rows:
+                id_ = row['I_id']
+                text = row['I_text']
 
-                    # It's necessary to aggregate the matches first because
-                    # only one match per line should be shown
-                    if matches:
-                        self.results.add(filename, id_, text, matches)
+                results = self.find_match_lines(regexp, filename, id_,
+                                                            text, results)
 
-            log.debug('Search completed in {} (time) / {} (clock) s'.format(
-                                              time.time() - search_start[0],
-                                              time.clock() - search_start[1]))
+        log.debug('Search completed in {} (time) / {} (clock) s'.format(
+                                          time.time() - search_start[0],
+                                          time.clock() - search_start[1]))
 
-        core_api.release_databases()
+        # The gui must be updated in the main thread, so do it only once when
+        # the search is *finished* instead of calling CallAfter every time a
+        # match is found
+        wx.CallAfter(self.results.display, results)
+
+    def find_match_lines(self, regexp, filename, id_, text, results):
+        fname = os.path.basename(filename)
+        heading = text.partition('\n')[0]
+
+        # I can't use a simple for loop because previous_line_index must be
+        # initialized at the first iteration
+        iterator = regexp.finditer(text)
+
+        try:
+            match = iterator.next()
+        except StopIteration:
+            pass
+        else:
+            previous_line_index, line = self._find_first_match_line(text,
+                                                                match.start())
+            results.append((filename, id_, fname, heading, line))
+
+            # break if one result per item ***************************************************
+
+            while True:
+                try:
+                    match = iterator.next()
+                except StopIteration:
+                    break
+                else:
+                    try:
+                        previous_line_index, line = self._find_match_line(text,
+                                            previous_line_index, match.start())
+                    except exceptions.MatchIsInSameLineError:
+                        pass
+                    else:
+                        results.append((filename, id_, fname, heading, line))
+
+        return results
+
+    def _find_first_match_line(self, text, match_start):
+        try:
+            # Add 1 so that the line doesn't start with the '\n'
+            line_start = text.rindex('\n', 0, match_start) + 1
+        except ValueError:
+            # The match is in the first line
+            line_start = 0
+
+        return self._find_match_line_end(text, line_start)
+
+    def _find_match_line(self, text, previous_line_index, match_start):
+        try:
+            # Add 1 so that the line doesn't start with the '\n'
+            line_start = text.rindex('\n', previous_line_index, match_start) \
+                                                                            + 1
+        except ValueError:
+            # The match is in the line of the previous match
+            raise exceptions.MatchIsInSameLineError()
+        else:
+            return self._find_match_line_end(text, line_start)
+
+    def _find_match_line_end(self, text, line_start):
+        try:
+            line_end = text.index('\n', line_start)
+        except ValueError:
+            # The match is in the last line
+            line_end = len(text)
+
+        line = text[line_start:line_end]
+
+        return (line_start, line)
 
 
 class SearchFilters():
@@ -171,81 +244,21 @@ class SearchResults():
 
         self.listview.DeleteAllItems()
 
-    def add(self, filename, id_, text, matches):
-        fname = os.path.basename(filename)
-        heading = self.get_heading(filename, id_)
+    def display(self, results):
+        for result in results:
+            filename, id_, fname, heading, line = result
 
-        # I have to use an iterator because previous_line_index must be
-        # initialized at the first iteration
-        iterator = iter(matches)
+            index = self.listview.InsertStringItem(sys.maxint, fname)
+            self.listview.SetStringItem(index, 1, heading)
+            self.listview.SetStringItem(index, 2, line)
 
-        match = iterator.next()
-        previous_line_index, line = self.find_first_match_line(text,
-                                                                match.start())
-        self.show(fname, heading, line)
+            # In order for ColumnSorterMixin to work, all items must have a
+            # unique data value
+            self.listview.SetItemData(index, index)
 
-        while True:
-            try:
-                match = iterator.next()
-            except StopIteration:
-                break
-            else:
-                try:
-                    previous_line_index, line = self.find_match_line(text,
-                                            previous_line_index, match.start())
-                except exceptions.MatchIsInSameLineError:
-                    pass
-                else:
-                    self.show(fname, heading, line)
-
-    def find_first_match_line(self, text, match_start):
-        try:
-            # Add 1 so that the line doesn't start with the '\n'
-            line_start = text.rindex('\n', 0, match_start) + 1
-        except ValueError:
-            # The match is in the first line
-            line_start = 0
-
-        return self._find_match_line_end(text, line_start)
-
-    def find_match_line(self, text, previous_line_index, match_start):
-        try:
-            # Add 1 so that the line doesn't start with the '\n'
-            line_start = text.rindex('\n', previous_line_index, match_start) \
-                                                                            + 1
-        except ValueError:
-            # The match is in the line of the previous match
-            raise exceptions.MatchIsInSameLineError()
-        else:
-            return self._find_match_line_end(text, line_start)
-
-    def _find_match_line_end(self, text, line_start):
-        try:
-            line_end = text.index('\n', line_start)
-        except ValueError:
-            # The match is in the last line
-            line_end = len(text)
-
-        line = text[line_start:line_end]
-
-        return (line_start, line)
-
-    def get_heading(self, filename, id_):
-        text = core_api.get_item_text(filename, id_)
-        return text.partition('\n')[0]
-
-    def show(self, fname, heading, line):
-        index = self.listview.InsertStringItem(sys.maxint, fname)
-        self.listview.SetStringItem(index, 1, heading)
-        self.listview.SetStringItem(index, 2, line)
-
-        # In order for ColumnSorterMixin to work, all items must have a unique
-        # data value
-        self.listview.SetItemData(index, index)
-
-        # Both the key and the values of self.datamap must comply with the
-        # requirements of ColumnSorterMixin
-        self.datamap[index] = (fname, heading, line)
+            # Both the key and the values of self.datamap must comply with the
+            # requirements of ColumnSorterMixin
+            self.datamap[index] = (fname, heading, line)
 
 
 class MainMenu(wx.Menu):
