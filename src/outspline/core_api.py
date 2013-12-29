@@ -226,6 +226,10 @@ def get_item_text(filename, id_):
     return databases.dbs[filename].items[id_].get_text()
 
 
+def get_all_items_text(filename):
+    return databases.dbs[filename].get_all_items_text()
+
+
 def get_history_descriptions(filename):
     return databases.dbs[filename].get_history_descriptions()
 
