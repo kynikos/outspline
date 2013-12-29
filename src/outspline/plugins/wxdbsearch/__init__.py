@@ -17,8 +17,11 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-import wx
 import time
+import os.path
+import sys
+import wx
+from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin, ColumnSorterMixin
 
 from outspline.coreaux_api import log
 import outspline.coreaux_api as coreaux_api
@@ -42,15 +45,18 @@ class SearchView():
         self.filters = SearchFilters(self)
         self.results = SearchResults(self)
 
-        self.box.Add(self.filters.box, flag=wx.EXPAND)
-        self.box.Add(self.results.list_, 1, flag=wx.EXPAND)
+        self.box.Add(self.filters.box, flag=wx.EXPAND | wx.BOTTOM, border=4)
+        self.box.Add(self.results.listview, 1, flag=wx.EXPAND)
 
     def search(self, event):
         # Search must be threaded ***********************************************************
+        # Add (part of) the search string to the title of the notebook tab ******************
         core_api.block_databases()
 
         string = self.filters.text.GetValue()
         string = re.escape(string)  # Escape only if needed **********************************
+
+        self.results.reset()
 
         try:
             regexp = re.compile(string, re.IGNORECASE)  # Add flags as needed **************
@@ -99,26 +105,74 @@ class SearchFilters():
     def __init__(self, mainview):
         self.box = wx.BoxSizer(wx.HORIZONTAL)
 
-        self.text = wx.TextCtrl(mainview.panel)
-        self.box.Add(self.text, 1, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.text = wx.TextCtrl(mainview.panel, size=(-1, 24))
+        self.box.Add(self.text, 1, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                    border=4)
 
-        self.search = wx.Button(mainview.panel, label='Search')
+        self.search = wx.Button(mainview.panel, label='Search', size=(-1, 24))
         self.box.Add(self.search, flag=wx.ALIGN_CENTER_VERTICAL)
 
         mainview.panel.Bind(wx.EVT_BUTTON, mainview.search, self.search)
 
 
+class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
+    imagelistsmall = None
+    imagemap = None
+
+    def __init__(self, parent, columns):
+        # Note that this makes use of ListView, which is an interface for
+        # ListCtrl
+        wx.ListView.__init__(self, parent, style=wx.LC_REPORT)
+        ListCtrlAutoWidthMixin.__init__(self)
+        ColumnSorterMixin.__init__(self, columns)
+
+        self.set_image_lists()
+
+    def GetListCtrl(self):
+        return self
+
+    def set_image_lists(self):
+        self.imagelistsmall = wx.ImageList(16, 16)
+        self.imagemap = {
+            'small': {}
+        }
+
+        # Remember to find better icons (add to existing bug report) ***************************
+        self.imagemap['small']['sortup'] = self.imagelistsmall.Add(
+                 wx.ArtProvider.GetBitmap('@sortup', wx.ART_TOOLBAR, (16, 16)))
+        self.imagemap['small']['sortdown'] = self.imagelistsmall.Add(
+               wx.ArtProvider.GetBitmap('@sortdown', wx.ART_TOOLBAR, (16, 16)))
+
+        self.SetImageList(self.imagelistsmall, wx.IMAGE_LIST_SMALL)
+
+    def GetSortImages(self):
+        return (self.imagemap['small']['sortup'],
+                                            self.imagemap['small']['sortdown'])
+
+
 class SearchResults():
-    # Fields:            **************************************************************
-    #   Database         **************************************************************
-    #   Title            **************************************************************
-    #   Matching line    **************************************************************
-    list_ = None
+    listview = None
+    datamap = None
 
     def __init__(self, mainview):
-        self.list_ = wx.ListView(mainview.panel)
+        self.listview = ListView(mainview.panel, 3)
+
+        self.listview.InsertColumn(0, 'Database', width=120)
+        self.listview.InsertColumn(1, 'Heading', width=300)
+        self.listview.InsertColumn(2, 'Match line', width=120)
+
+    def reset(self):
+        # Defining an itemDataMap dictionary is required by ColumnSorterMixin
+        self.listview.itemDataMap = {}
+
+        # Create an alias for self.itemDataMap to save it from any future
+        # attribute renaming
+        self.datamap = self.listview.itemDataMap
+
+        self.listview.DeleteAllItems()
 
     def add(self, filename, id_, text, matches):
+        fname = os.path.basename(filename)
         heading = self.get_heading(filename, id_)
 
         # I have to use an iterator because previous_line_index must be
@@ -128,7 +182,7 @@ class SearchResults():
         match = iterator.next()
         previous_line_index, line = self.find_first_match_line(text,
                                                                 match.start())
-        self.show(filename, heading, line)
+        self.show(fname, heading, line)
 
         while True:
             try:
@@ -142,7 +196,7 @@ class SearchResults():
                 except exceptions.MatchIsInSameLineError:
                     pass
                 else:
-                    self.show(filename, heading, line)
+                    self.show(fname, heading, line)
 
     def find_first_match_line(self, text, match_start):
         try:
@@ -180,8 +234,18 @@ class SearchResults():
         text = core_api.get_item_text(filename, id_)
         return text.partition('\n')[0]
 
-    def show(self, filename, heading, line):
-        print('ZZZ', filename, heading, line)  # *******************************************************************
+    def show(self, fname, heading, line):
+        index = self.listview.InsertStringItem(sys.maxint, fname)
+        self.listview.SetStringItem(index, 1, heading)
+        self.listview.SetStringItem(index, 2, line)
+
+        # In order for ColumnSorterMixin to work, all items must have a unique
+        # data value
+        self.listview.SetItemData(index, index)
+
+        # Both the key and the values of self.datamap must comply with the
+        # requirements of ColumnSorterMixin
+        self.datamap[index] = (fname, heading, line)
 
 
 class MainMenu(wx.Menu):
