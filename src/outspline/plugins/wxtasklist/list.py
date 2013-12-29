@@ -496,7 +496,7 @@ class MainMenu(wx.Menu):
         self.ID_DISMISS_ALL = wx.NewId()
 
         self.find = wx.MenuItem(self, self.ID_FIND, "&Find in database\tF5",
-            "Select the database item associated to the selected occurrence")
+            "Select the database items associated to the selected occurrences")
         self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit selected\tF6",
                             "Open in the editor the database items associated "
                             "to the selected occurrences")

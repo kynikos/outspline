@@ -291,8 +291,14 @@ def get_open_editors_tab_indexes():
     return wx.GetApp().nb_right.get_open_editors()
 
 
-def add_plugin_to_right_nb(window, caption):
-    return wx.GetApp().nb_right.add_plugin(window, caption=caption)
+def add_plugin_to_right_nb(window, caption, select=True):
+    return wx.GetApp().nb_right.add_plugin(window, caption=caption,
+                                                                select=select)
+
+
+def add_page_to_right_nb(window, caption, select=True):
+    return wx.GetApp().nb_right.add_page(window, caption=caption,
+                                                                select=select)
 
 
 def bind_to_plugin_close_event(handler, bind=True):
