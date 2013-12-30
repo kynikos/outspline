@@ -33,6 +33,7 @@ import exceptions
 
 
 class SearchView():
+    # Unrelated: Add wxpython<=2.8 to the depends in the PKGBUILD? **************************
     panel = None
     box = None
     filters = None
@@ -53,8 +54,6 @@ class SearchView():
         # Add (part of) the search string to the title of the notebook tab ******************
         # Show when the search is ongoing and when it's finished ****************************
         # Close all open searches if no databases are left open after closing them **********************************
-        # Note that the databases are *not* blocked, because searching should ****************
-        # never alter the database
         string = self.filters.text.GetValue()
         string = re.escape(string)  # Escape only if needed **********************************
 
@@ -119,7 +118,7 @@ class SearchView():
         except StopIteration:
             pass
         else:
-            previous_line_index, line = self._find_first_match_line(text,
+            line, previous_line_end_index = self._find_match_line(text, 0,
                                                                 match.start())
             results.append((id_, heading, line))
 
@@ -131,38 +130,32 @@ class SearchView():
                 except StopIteration:
                     break
                 else:
-                    try:
-                        previous_line_index, line = self._find_match_line(text,
-                                            previous_line_index, match.start())
-                    except exceptions.MatchIsInSameLineError:
-                        pass
-                    else:
+                    # Don't use >= because if looking for an expression that
+                    # starts with '\n', the one starting at
+                    # previous_line_end_index (which is always a '\n'
+                    # character except at the last iteration) will have been
+                    # found at the previous iteration
+                    if match.start() > previous_line_end_index:
+                        line, previous_line_end_index = self._find_match_line(
+                                text, previous_line_end_index, match.start())
                         results.append((id_, heading, line))
 
         return results
 
-    def _find_first_match_line(self, text, match_start):
-        try:
-            # Add 1 so that the line doesn't start with the '\n'
-            line_start = text.rindex('\n', 0, match_start) + 1
-        except ValueError:
-            # The match is in the first line
-            line_start = 0
+    def _find_match_line(self, text, previous_line_end_index, match_start):
+        # Add 1 so that the line doesn't start with the '\n'
+        # If the first match is in the first line, rfind will return -1, so
+        # adding 1 will give 0 which is still the expected index
+        # For the matches after the first one (which are already filtered for
+        # being all on different lines) rfind will always find an index (and
+        # never return -1) because previous_line_end_index is always the index
+        # of a '\n' character
+        # If match_start is the index of a '\n' character, line_start will be
+        # the *previous* '\n' character, which is expected, as '\n' characters
+        # are considered to be part of the previous line (specifically its
+        # final character)
+        line_start = text.rfind('\n', previous_line_end_index, match_start) + 1
 
-        return self._find_match_line_end(text, line_start)
-
-    def _find_match_line(self, text, previous_line_index, match_start):
-        try:
-            # Add 1 so that the line doesn't start with the '\n'
-            line_start = text.rindex('\n', previous_line_index, match_start) \
-                                                                            + 1
-        except ValueError:
-            # The match is in the line of the previous match
-            raise exceptions.MatchIsInSameLineError()
-        else:
-            return self._find_match_line_end(text, line_start)
-
-    def _find_match_line_end(self, text, line_start):
         try:
             line_end = text.index('\n', line_start)
         except ValueError:
@@ -171,7 +164,7 @@ class SearchView():
 
         line = text[line_start:line_end]
 
-        return (line_start, line)
+        return (line, line_end)
 
 
 class SearchFilters():
