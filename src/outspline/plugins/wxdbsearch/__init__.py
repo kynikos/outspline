@@ -31,7 +31,21 @@ import outspline.interfaces.wxgui_api as wxgui_api
 
 import exceptions
 
+mainmenu = None
 searches = []
+
+
+class SearchViewPanel(wx.Panel):
+    ctabmenu = None
+
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, style=wx.BORDER_NONE)
+
+    def _init_tab_menu(self):
+        self.ctabmenu = TabContextMenu()
+
+    def get_tab_context_menu(self):
+        return self.ctabmenu
 
 
 class SearchView():
@@ -43,12 +57,14 @@ class SearchView():
 
     def __init__(self, parent):
         # Close if no databases are left open after closing them **********************************
-        self.panel = wx.Panel(parent)
+        self.panel = SearchViewPanel(parent)
         self.box = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.box)
 
         self.filters = SearchFilters(self)
         self.results = SearchResults(self)
+
+        self.panel._init_tab_menu()
 
         self.box.Add(self.filters.box, flag=wx.EXPAND | wx.BOTTOM, border=4)
         self.box.Add(self.results.listview, 1, flag=wx.EXPAND)
@@ -304,7 +320,6 @@ class SearchResults():
 
 class MainMenu(wx.Menu):
     # Also item context menu **********************************************************
-    # Also tab context menu ***********************************************************
     ID_NEW_SEARCH = None
     search = None
     ID_REFRESH_SEARCH = None
@@ -497,5 +512,24 @@ class MainMenu(wx.Menu):
             mainview.close_()
 
 
+class TabContextMenu(wx.Menu):
+    def __init__(self):
+        wx.Menu.__init__(self)
+
+        refresh = wx.MenuItem(self, mainmenu.ID_REFRESH_SEARCH,
+                                                "&Start search\tCTRL+r",
+                                                "Start the selected search")
+        close_ = wx.MenuItem(self, mainmenu.ID_CLOSE, "Cl&ose\tCTRL+t",
+                                                "Close the selected search")
+
+        refresh.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch',
+                                                                wx.ART_MENU))
+        close_.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+
+        self.AppendItem(refresh)
+        self.AppendItem(close_)
+
+
 def main():
-    MainMenu()
+    global mainmenu
+    mainmenu = MainMenu()
