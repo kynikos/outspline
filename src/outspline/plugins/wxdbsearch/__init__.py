@@ -31,15 +31,7 @@ import outspline.interfaces.wxgui_api as wxgui_api
 
 import exceptions
 
-
-class SearchViewPanel(wx.Panel):
-    # Having a special class name for this panel lets recognize when a search
-    # notebook tab is selected
-    mainview = None
-
-    def __init__(self, parent, mainview):
-        wx.Panel.__init__(self, parent)
-        self.mainview = mainview
+searches = []
 
 
 class SearchView():
@@ -50,7 +42,8 @@ class SearchView():
     results = None
 
     def __init__(self, parent):
-        self.panel = SearchViewPanel(parent, self)
+        # Close if no databases are left open after closing them **********************************
+        self.panel = wx.Panel(parent)
         self.box = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.box)
 
@@ -60,11 +53,27 @@ class SearchView():
         self.box.Add(self.filters.box, flag=wx.EXPAND | wx.BOTTOM, border=4)
         self.box.Add(self.results.listview, 1, flag=wx.EXPAND)
 
+    @classmethod
+    def open_(cls):
+        nb = wxgui_api.get_right_nb()
+        searchview = cls(nb)
+
+        global searches
+        searches.append(searchview)
+
+        wxgui_api.add_page_to_right_nb(searchview.panel, 'Search')
+
+    def close_(self):
+        # *********************************************************************************
+        # Also implement closing with tab X ***********************************************
+        # Also stop the search, if ongoing ************************************************
+        # Also delete the object in the global searches list ******************************
+        pass
+
     def search(self, event=None):
         # Stop the current search, if ongoing ******************************************
         # Add (part of) the search string to the title of the notebook tab ******************
         # Show when the search is ongoing and when it's finished ****************************
-        # Close all open searches if no databases are left open after closing them **********************************
         string = self.filters.text.GetValue()
         string = re.escape(string)  # Escape only if needed **********************************
 
@@ -294,11 +303,8 @@ class SearchResults():
 
 
 class MainMenu(wx.Menu):
-    # Close (and stop the search, if ongoing) *****************************************
-    # Close all (and stop any ongoing searches) ***************************************
     # Also item context menu **********************************************************
     # Also tab context menu ***********************************************************
-    # Also close with tab X ***********************************************************
     ID_NEW_SEARCH = None
     search = None
     ID_REFRESH_SEARCH = None
@@ -307,6 +313,10 @@ class MainMenu(wx.Menu):
     find = None
     ID_EDIT = None
     edit = None
+    ID_CLOSE = None
+    close_ = None
+    ID_CLOSE_ALL = None
+    closeall = None
 
     def __init__(self):
         wx.Menu.__init__(self)
@@ -315,6 +325,8 @@ class MainMenu(wx.Menu):
         self.ID_REFRESH_SEARCH = wx.NewId()
         self.ID_FIND = wx.NewId()
         self.ID_EDIT = wx.NewId()
+        self.ID_CLOSE = wx.NewId()
+        self.ID_CLOSE_ALL = wx.NewId()
 
         self.search = wx.MenuItem(self, self.ID_NEW_SEARCH,
                                     "&New search...\tCTRL+f",
@@ -329,6 +341,10 @@ class MainMenu(wx.Menu):
                             "&Edit selected\tF12",
                             "Open in the editor the database items associated "
                             "to the selected results")
+        self.close_ = wx.MenuItem(self, self.ID_CLOSE, "Cl&ose\tCTRL+t",
+                                                "Close the selected search")
+        self.closeall = wx.MenuItem(self, self.ID_CLOSE_ALL,
+                        "Clos&e all\tCTRL+SHIFT+t", "Close all open searches")
 
         self.search.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch',
                                                                 wx.ART_MENU))
@@ -336,22 +352,40 @@ class MainMenu(wx.Menu):
                                                                 wx.ART_MENU))
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
         self.edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
+        self.close_.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+        self.closeall.SetBitmap(wx.ArtProvider.GetBitmap('@closeall',
+                                                                wx.ART_MENU))
 
         self.AppendItem(self.search)
         self.AppendItem(self.refresh)
         self.AppendSeparator()
         self.AppendItem(self.find)
         self.AppendItem(self.edit)
+        self.AppendSeparator()
+        self.AppendItem(self.close_)
+        self.AppendItem(self.closeall)
 
         wxgui_api.bind_to_menu(self.new_search, self.search)
         wxgui_api.bind_to_menu(self.refresh_search, self.refresh)
         wxgui_api.bind_to_menu(self.find_in_tree, self.find)
         wxgui_api.bind_to_menu(self.edit_items, self.edit)
+        wxgui_api.bind_to_menu(self.close_tab, self.close_)
+        wxgui_api.bind_to_menu(self.close_all_tabs, self.closeall)
 
         wxgui_api.bind_to_update_menu_items(self.update_items)
         wxgui_api.bind_to_reset_menu_items(self.reset_items)
 
         wxgui_api.insert_menu_main_item('&Search', 'View', self)
+
+    @staticmethod
+    def get_selected_search():
+        tab = wx.GetApp().nb_right.get_selected_tab()
+
+        for search in searches:
+            if search.panel is tab:
+                return search
+        else:
+            return False
 
     def update_items(self, kwargs):
         if kwargs['menu'] is self:
@@ -359,20 +393,26 @@ class MainMenu(wx.Menu):
             self.refresh.Enable(False)
             self.find.Enable(False)
             self.edit.Enable(False)
+            self.close_.Enable(False)
+            self.closeall.Enable(False)
 
             if core_api.get_databases_count() > 0:
                 self.search.Enable()
 
-            tab = wx.GetApp().nb_right.get_selected_tab()
+            mainview = self.get_selected_search()
 
-            if tab.__class__ is SearchViewPanel:
+            if mainview:
                 self.refresh.Enable()
+                self.close_.Enable()
 
-                sel = tab.mainview.results.listview.GetFirstSelected()
+                sel = mainview.results.listview.GetFirstSelected()
 
                 if sel > -1:
                     self.find.Enable()
                     self.edit.Enable()
+
+            if len(searches) > 0:
+                self.closeall.Enable()
 
     def reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
@@ -381,23 +421,24 @@ class MainMenu(wx.Menu):
         self.refresh.Enable()
         self.find.Enable()
         self.edit.Enable()
+        self.close_.Enable()
+        self.closeall.Enable()
 
     def new_search(self, event):
         if core_api.get_databases_count() > 0:
-            nb = wxgui_api.get_right_nb()
-            wxgui_api.add_page_to_right_nb(SearchView(nb).panel, 'Search')
+            SearchView.open_()
 
     def refresh_search(self, event):
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        mainview = self.get_selected_search()
 
-        if tab.__class__ is SearchViewPanel:
-            tab.mainview.search()
+        if mainview:
+            mainview.search()
 
     def find_in_tree(self, event):
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        mainview = self.get_selected_search()
 
-        if tab.__class__ is SearchViewPanel:
-            results = tab.mainview.results
+        if mainview:
+            results = mainview.results
             listview = results.listview
 
             sel = listview.GetFirstSelected()
@@ -429,10 +470,10 @@ class MainMenu(wx.Menu):
                         break
 
     def edit_items(self, event):
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        mainview = self.get_selected_search()
 
-        if tab.__class__ is SearchViewPanel:
-            results = tab.mainview.results
+        if mainview:
+            results = mainview.results
             listview = results.listview
 
             sel = listview.GetFirstSelected()
@@ -444,6 +485,16 @@ class MainMenu(wx.Menu):
                 wxgui_api.open_editor(filename, id_)
 
                 sel = listview.GetNextSelected(sel)
+
+    def close_tab(self, event):
+        mainview = self.get_selected_search()
+
+        if mainview:
+            mainview.close_()
+
+    def close_all_tabs(self, event):
+        for mainview in searches:
+            mainview.close_()
 
 
 def main():
