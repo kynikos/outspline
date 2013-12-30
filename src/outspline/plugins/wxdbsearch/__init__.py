@@ -32,6 +32,16 @@ import outspline.interfaces.wxgui_api as wxgui_api
 import exceptions
 
 
+class SearchViewPanel(wx.Panel):
+    # Having a special class name for this panel lets recognize when a search
+    # notebook tab is selected
+    mainview = None
+
+    def __init__(self, parent, mainview):
+        wx.Panel.__init__(self, parent)
+        self.mainview = mainview
+
+
 class SearchView():
     # Unrelated: Add wxpython<=2.8 to the depends in the PKGBUILD? **************************
     panel = None
@@ -40,7 +50,7 @@ class SearchView():
     results = None
 
     def __init__(self, parent):
-        self.panel = wx.Panel(parent)
+        self.panel = SearchViewPanel(parent, self)
         self.box = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.box)
 
@@ -50,7 +60,8 @@ class SearchView():
         self.box.Add(self.filters.box, flag=wx.EXPAND | wx.BOTTOM, border=4)
         self.box.Add(self.results.listview, 1, flag=wx.EXPAND)
 
-    def search(self, event):
+    def search(self, event=None):
+        # Stop the current search, if ongoing ******************************************
         # Add (part of) the search string to the title of the notebook tab ******************
         # Show when the search is ongoing and when it's finished ****************************
         # Close all open searches if no databases are left open after closing them **********************************
@@ -279,7 +290,6 @@ class SearchResults():
 
 
 class MainMenu(wx.Menu):
-    # Search (refresh) (should stop the current search, if ongoing) *******************
     # Find in database (check items still exist) **************************************
     # Edit selected (check items still exist) *****************************************
     # Close (and stop the search, if ongoing) *****************************************
@@ -287,24 +297,34 @@ class MainMenu(wx.Menu):
     # Also item context menu **********************************************************
     # Also tab context menu ***********************************************************
     # Also close with tab X ***********************************************************
-    ID_SEARCH = None
+    ID_NEW_SEARCH = None
     search = None
+    ID_REFRESH_SEARCH = None
+    refresh = None
 
     def __init__(self):
         wx.Menu.__init__(self)
 
-        self.ID_SEARCH = wx.NewId()
+        self.ID_NEW_SEARCH = wx.NewId()
+        self.ID_REFRESH_SEARCH = wx.NewId()
 
-        self.search = wx.MenuItem(self, self.ID_SEARCH,
-                                            "New &search...\tCTRL+f",
-                                            "Search text in the databases")
+        self.search = wx.MenuItem(self, self.ID_NEW_SEARCH,
+                                    "&New search...\tCTRL+f",
+                                    "Open a new text search in the databases")
+        self.refresh = wx.MenuItem(self, self.ID_REFRESH_SEARCH,
+                                            "&Start search\tCTRL+r",
+                                            "Start the selected search")
 
         self.search.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch',
                                                                 wx.ART_MENU))
+        self.refresh.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch',
+                                                                wx.ART_MENU))
 
         self.AppendItem(self.search)
+        self.AppendItem(self.refresh)
 
         wxgui_api.bind_to_menu(self.new_search, self.search)
+        wxgui_api.bind_to_menu(self.refresh_search, self.refresh)
 
         wxgui_api.bind_to_update_menu_items(self.update_items)
         wxgui_api.bind_to_reset_menu_items(self.reset_items)
@@ -314,19 +334,32 @@ class MainMenu(wx.Menu):
     def update_items(self, kwargs):
         if kwargs['menu'] is self:
             self.search.Enable(False)
+            self.refresh.Enable(False)
 
             if core_api.get_databases_count() > 0:
                 self.search.Enable()
+
+            tab = wx.GetApp().nb_right.get_selected_tab()
+
+            if tab.__class__ is SearchViewPanel:
+                self.refresh.Enable()
 
     def reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
         # accelerators
         self.search.Enable()
+        self.refresh.Enable()
 
     def new_search(self, event):
         if core_api.get_databases_count() > 0:
             nb = wxgui_api.get_right_nb()
             wxgui_api.add_page_to_right_nb(SearchView(nb).panel, 'Search')
+
+    def refresh_search(self, event):
+        tab = wx.GetApp().nb_right.get_selected_tab()
+
+        if tab.__class__ is SearchViewPanel:
+            tab.mainview.search()
 
 
 def main():
