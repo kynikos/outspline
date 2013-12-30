@@ -179,7 +179,6 @@ class SearchView():
 
 
 class SearchFilters():
-    # Clicking on Search again should stop the current search, if ongoing *************
     # Search in all databases / in selected database / under selected items  **********
     # Regular expression **************************************************************
     # Case sensitive ******************************************************************
@@ -244,6 +243,7 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
 class SearchResults():
     listview = None
     datamap = None
+    itemdatamap = None
 
     def __init__(self, mainview):
         self.listview = ListView(mainview.panel, 3)
@@ -259,6 +259,8 @@ class SearchResults():
         # Create an alias for self.itemDataMap to save it from any future
         # attribute renaming
         self.datamap = self.listview.itemDataMap
+
+        self.itemdatamap = {}
 
         self.listview.DeleteAllItems()
 
@@ -284,14 +286,14 @@ class SearchResults():
             # unique data value
             self.listview.SetItemData(index, index)
 
+            self.itemdatamap[index] = (filename, id_)
+
             # Both the key and the values of self.datamap must comply with the
             # requirements of ColumnSorterMixin
             self.datamap[index] = (fname, heading, line)
 
 
 class MainMenu(wx.Menu):
-    # Find in database (check items still exist) **************************************
-    # Edit selected (check items still exist) *****************************************
     # Close (and stop the search, if ongoing) *****************************************
     # Close all (and stop any ongoing searches) ***************************************
     # Also item context menu **********************************************************
@@ -301,30 +303,50 @@ class MainMenu(wx.Menu):
     search = None
     ID_REFRESH_SEARCH = None
     refresh = None
+    ID_FIND = None
+    find = None
+    ID_EDIT = None
+    edit = None
 
     def __init__(self):
         wx.Menu.__init__(self)
 
         self.ID_NEW_SEARCH = wx.NewId()
         self.ID_REFRESH_SEARCH = wx.NewId()
+        self.ID_FIND = wx.NewId()
+        self.ID_EDIT = wx.NewId()
 
         self.search = wx.MenuItem(self, self.ID_NEW_SEARCH,
                                     "&New search...\tCTRL+f",
                                     "Open a new text search in the databases")
         self.refresh = wx.MenuItem(self, self.ID_REFRESH_SEARCH,
-                                            "&Start search\tCTRL+r",
-                                            "Start the selected search")
+                                                "&Start search\tCTRL+r",
+                                                "Start the selected search")
+        self.find = wx.MenuItem(self, self.ID_FIND,
+                "&Find in database\tF9",
+                "Select the database items associated to the selected results")
+        self.edit = wx.MenuItem(self, self.ID_EDIT,
+                            "&Edit selected\tF12",
+                            "Open in the editor the database items associated "
+                            "to the selected results")
 
         self.search.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch',
                                                                 wx.ART_MENU))
         self.refresh.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch',
                                                                 wx.ART_MENU))
+        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
+        self.edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
 
         self.AppendItem(self.search)
         self.AppendItem(self.refresh)
+        self.AppendSeparator()
+        self.AppendItem(self.find)
+        self.AppendItem(self.edit)
 
         wxgui_api.bind_to_menu(self.new_search, self.search)
         wxgui_api.bind_to_menu(self.refresh_search, self.refresh)
+        wxgui_api.bind_to_menu(self.find_in_tree, self.find)
+        wxgui_api.bind_to_menu(self.edit_items, self.edit)
 
         wxgui_api.bind_to_update_menu_items(self.update_items)
         wxgui_api.bind_to_reset_menu_items(self.reset_items)
@@ -335,6 +357,8 @@ class MainMenu(wx.Menu):
         if kwargs['menu'] is self:
             self.search.Enable(False)
             self.refresh.Enable(False)
+            self.find.Enable(False)
+            self.edit.Enable(False)
 
             if core_api.get_databases_count() > 0:
                 self.search.Enable()
@@ -344,11 +368,19 @@ class MainMenu(wx.Menu):
             if tab.__class__ is SearchViewPanel:
                 self.refresh.Enable()
 
+                sel = tab.mainview.results.listview.GetFirstSelected()
+
+                if sel > -1:
+                    self.find.Enable()
+                    self.edit.Enable()
+
     def reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
         # accelerators
         self.search.Enable()
         self.refresh.Enable()
+        self.find.Enable()
+        self.edit.Enable()
 
     def new_search(self, event):
         if core_api.get_databases_count() > 0:
@@ -360,6 +392,58 @@ class MainMenu(wx.Menu):
 
         if tab.__class__ is SearchViewPanel:
             tab.mainview.search()
+
+    def find_in_tree(self, event):
+        tab = wx.GetApp().nb_right.get_selected_tab()
+
+        if tab.__class__ is SearchViewPanel:
+            results = tab.mainview.results
+            listview = results.listview
+
+            sel = listview.GetFirstSelected()
+
+            if sel > -1:
+                for filename in core_api.get_open_databases():
+                    wxgui_api.unselect_all_items(filename)
+
+                # [1]: line repeated in the loop because of
+                # wxgui_api.select_database_tab
+                filename, id_ = results.itemdatamap[listview.GetItemData(sel)]
+
+                # Check database still exists *********************************************
+                wxgui_api.select_database_tab(filename)
+
+                while True:
+                    # It's necessary to repeat this line (see [1]) because
+                    # wxgui_api.select_database_tab must be executed only once
+                    # for the first selected item
+                    filename, id_ = results.itemdatamap[listview.GetItemData(
+                                                                        sel)]
+
+                    # Check item still exists *******************************************************
+                    wxgui_api.add_item_to_selection(filename, id_)
+
+                    sel = listview.GetNextSelected(sel)
+
+                    if sel < 0:
+                        break
+
+    def edit_items(self, event):
+        tab = wx.GetApp().nb_right.get_selected_tab()
+
+        if tab.__class__ is SearchViewPanel:
+            results = tab.mainview.results
+            listview = results.listview
+
+            sel = listview.GetFirstSelected()
+
+            while sel > -1:
+                filename, id_ = results.itemdatamap[listview.GetItemData(sel)]
+
+                # Check item still exists *******************************************************
+                wxgui_api.open_editor(filename, id_)
+
+                sel = listview.GetNextSelected(sel)
 
 
 def main():
