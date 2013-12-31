@@ -267,6 +267,7 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
 
 class SearchResults():
     listview = None
+    cmenu = None
     datamap = None
     itemdatamap = None
 
@@ -276,6 +277,13 @@ class SearchResults():
         self.listview.InsertColumn(0, 'Database', width=120)
         self.listview.InsertColumn(1, 'Heading', width=300)
         self.listview.InsertColumn(2, 'Match line', width=120)
+
+        self.cmenu = ContextMenu()
+
+        self.listview.Bind(wx.EVT_CONTEXT_MENU, self.popup_context_menu)
+
+    def popup_context_menu(self, event):
+        self.listview.PopupMenu(self.cmenu)
 
     def reset(self):
         # Defining an itemDataMap dictionary is required by ColumnSorterMixin
@@ -319,7 +327,6 @@ class SearchResults():
 
 
 class MainMenu(wx.Menu):
-    # Also item context menu **********************************************************
     ID_NEW_SEARCH = None
     search = None
     ID_REFRESH_SEARCH = None
@@ -512,6 +519,20 @@ class MainMenu(wx.Menu):
             mainview.close_()
 
 
+class ContextMenu(wx.Menu):
+    def __init__(self):
+        wx.Menu.__init__(self)
+
+        find = wx.MenuItem(self, mainmenu.ID_FIND, "&Find in database")
+        edit = wx.MenuItem(self, mainmenu.ID_EDIT, "&Edit selected")
+
+        find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
+        edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
+
+        self.AppendItem(find)
+        self.AppendItem(edit)
+
+
 class TabContextMenu(wx.Menu):
     def __init__(self):
         wx.Menu.__init__(self)
@@ -522,8 +543,7 @@ class TabContextMenu(wx.Menu):
         close_ = wx.MenuItem(self, mainmenu.ID_CLOSE, "Cl&ose\tCTRL+t",
                                                 "Close the selected search")
 
-        refresh.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch',
-                                                                wx.ART_MENU))
+        refresh.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch', wx.ART_MENU))
         close_.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
 
         self.AppendItem(refresh)
