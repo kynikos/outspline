@@ -54,6 +54,9 @@ class SearchView():
     box = None
     filters = None
     results = None
+    threads = None
+    search_threaded_action = None
+    finish_search_action = None
 
     def __init__(self, parent):
         # Close if no databases are left open after closing them **********************************
@@ -65,6 +68,10 @@ class SearchView():
         self.results = SearchResults(self)
 
         self.panel._init_tab_menu()
+
+        self.threads = 0
+        self.search_threaded_action = self._search_threaded_stop
+        self.finish_search_action = self._finish_search_dummy
 
         self.box.Add(self.filters.box, flag=wx.EXPAND | wx.BOTTOM, border=4)
         self.box.Add(self.results.listview, 1, flag=wx.EXPAND)
@@ -80,20 +87,44 @@ class SearchView():
         wxgui_api.add_page_to_right_nb(searchview.panel, 'Search')
 
     def close_(self):
-        # *********************************************************************************
         # Also implement closing with tab X ***********************************************
-        # Also stop the search, if ongoing ************************************************
-        # Also delete the object in the global searches list ******************************
-        pass
+        self.finish_search_action = self._finish_search_close
+        self.stop_search()
 
     def search(self, event=None):
-        # Stop the current search, if ongoing ******************************************
+        self.finish_search_action = self._finish_search_restart
+        self.stop_search()
+
+    def stop_search(self):
+        if self.threads > 0:
+            self.search_threaded_action = self._search_threaded_stop
+        else:
+            self.finish_search_action()
+
+    def finish_search(self):
+        self.threads -= 1
+
+        # Perform the action only when the last threads terminates
+        if self.threads == 0:
+            self.finish_search_action()
+
+    def _finish_search_dummy(self):
+        pass
+
+    def _finish_search_close(self):
+        # Destroy the notebook tab ********************************************************
+        # Delete the object in the global searches list ***********************************
+        self.finish_search_action = self._finish_search_dummy
+
+    def _finish_search_restart(self):
         # Add (part of) the search string to the title of the notebook tab ******************
         # Show when the search is ongoing and when it's finished ****************************
         string = self.filters.text.GetValue()
         string = re.escape(string)  # Escape only if needed **********************************
 
         self.results.reset()
+        self.search_threaded_action = self._search_threaded_continue
+        self.finish_search_action = self._finish_search_dummy
 
         try:
             regexp = re.compile(string, re.IGNORECASE)  # Add flags as needed **************
@@ -110,37 +141,57 @@ class SearchView():
                 # at once, as the searches are done in separate threads
                 search_start = (time.time(), time.clock())
 
-                rows = core_api.get_all_items_text(filename)
+                cursor = core_api.get_all_items_text(filename)
 
                 # A thread for each database is instantiated and started
-                thread = threading.Thread(target=self._search_threaded,
-                                args=(regexp, filename, rows, search_start))
+                thread = threading.Thread(
+                            target=self._search_threaded_continue,
+                            args=(regexp, filename, cursor, [], search_start))
                 thread.start()
+                self.threads += 1
 
             # Note that the databases are released *before* the threads are
             # terminated: this is safe as no more calls to the databases are
             # made after core_api.get_all_items_text
             core_api.release_databases()
 
-    def _search_threaded(self, regexp, filename, rows, search_start):
-        fname = os.path.basename(filename)
-        results = []
+    def _search_threaded_continue(self, regexp, filename, cursor, results,
+                                                                search_start):
+        row = cursor.fetchone()
 
-        for row in rows:
+        if row is not None:
             id_ = row['I_id']
             text = row['I_text']
 
             results = self._find_match_lines(regexp, id_, text, results)
 
-        log.debug('Search in {} completed in {} (time) / {} (clock) s'.format(
-                                            filename,
+            # Use a recursion instead of a simple for loop, so that it will be
+            # easy to stop the search from the main thread if needed
+            self.search_threaded_action(regexp, filename, cursor, results,
+                                                                search_start)
+        else:
+
+            log.debug('Search in {} completed in {} (time) / {} (clock) s'
+                                            ''.format(filename,
                                             time.time() - search_start[0],
                                             time.clock() - search_start[1]))
 
-        # The gui must be updated in the main thread, so do it only once when
-        # the search is *finished* instead of calling CallAfter every time a
-        # match is found
-        wx.CallAfter(self.results.display, filename, fname, results)
+            fname = os.path.basename(filename)
+
+            # The gui must be updated in the main thread, so do it only once
+            # when the search is *finished* instead of calling CallAfter every
+            # time a match is found
+            wx.CallAfter(self.results.display, filename, fname, results)
+
+    def _search_threaded_stop(self, regexp, filename, cursor, results,
+                                                                search_start):
+        log.debug('Search in {} stopped after {} (time) / {} (clock) s'
+                                            ''.format(filename,
+                                            time.time() - search_start[0],
+                                            time.clock() - search_start[1]))
+
+        # The number of ongoing threads must be updated in the main thread
+        wx.CallAfter(self.finish_search)
 
     def _find_match_lines(self, regexp, id_, text, results):
         heading = text.partition('\n')[0]
@@ -266,12 +317,14 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
 
 
 class SearchResults():
+    mainview = None
     listview = None
     cmenu = None
     datamap = None
     itemdatamap = None
 
     def __init__(self, mainview):
+        self.mainview = mainview
         self.listview = ListView(mainview.panel, 3)
 
         self.listview.InsertColumn(0, 'Database', width=120)
@@ -299,15 +352,16 @@ class SearchResults():
 
     def display(self, filename, fname, results):
         # Even though this method is called with wx.CallAfter from
-        # self.listview._search_threaded, which is running in a different
-        # thread, there's no need to check that the databases and items still
-        # exist, because they're not queried any more. Doing it wouldn't make
-        # sense because then the search should be also refreshed when closing
-        # a database, deleting items etc... Instead, perform those checks when
-        # acting on the search results, e.g. with context-menu actions
+        # self.listview._search_threaded_continue, which is running in a
+        # different thread, there's no need to check that the databases and
+        # items still exist, because they're not queried any more. Doing it
+        # wouldn't make sense because then the search should be also refreshed
+        # when closing a database, deleting items etc... Instead, perform those
+        # checks when acting on the search results, e.g. with context-menu
+        # actions
         # Note that this method is called as many times as the open databases,
-        # because self.listview._search_threaded is run separately for every
-        # database
+        # because self.listview._search_threaded_continue is run separately for
+        # every database
         for result in results:
             id_, heading, line = result
 
@@ -324,6 +378,8 @@ class SearchResults():
             # Both the key and the values of self.datamap must comply with the
             # requirements of ColumnSorterMixin
             self.datamap[index] = (fname, heading, line)
+
+        self.mainview.finish_search()
 
 
 class MainMenu(wx.Menu):
