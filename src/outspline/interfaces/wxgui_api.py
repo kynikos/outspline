@@ -264,6 +264,10 @@ def get_active_database():
     return wx.GetApp().nb_left.get_selected_tab()
 
 
+def get_active_database_filename():
+    return wx.GetApp().nb_left.get_selected_tab().filename
+
+
 def get_right_nb():
     return wx.GetApp().nb_right
 
