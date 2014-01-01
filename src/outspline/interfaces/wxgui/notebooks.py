@@ -181,16 +181,19 @@ class RightNotebook(Notebook):
             self.parent.unsplit_window()
 
     def add_page(self, window, caption, select=True):
-        self.AddPage(window, caption, select=select)
+        self.AddPage(window, text=caption, select=select)
         self.split()
 
-    def add_plugin(self, window, caption):
-        self.InsertPage(0, window, text=caption)
+    def add_plugin(self, window, caption, select=True):
+        self.InsertPage(0, window, text=caption, select=select)
         self.split()
 
     def set_editor_title(self, item, title):
         self.SetPageText(self.GetPageIndex(editor.tabs[item].panel),
                          text=title)
+
+    def set_page_title(self, window, title):
+        self.SetPageText(self.GetPageIndex(window), text=title)
 
     def get_selected_editor(self):
         tab = self.get_selected_tab()

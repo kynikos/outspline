@@ -15,6 +15,8 @@ Addon relations:
 - Extensions and interfaces can only use core's or other extensions' APIs
   Plugins can use all APIs
 - Do not import attributes from other addons directly, use APIs
+  For example do not use wx.GetApp() in the plugins to make calls to the
+  interface
 - Import optional dependency APIs with the appropriate function
 
 User databases:

@@ -7,3 +7,4 @@ plugin_1 = wxsession 0.3
 plugin_2 = wxcopypaste 0.4
 plugin_3 = wxtrayicon 0.3
 plugin_4 = wxtexthistory 0.3
+plugin_5 = wxdbsearch 0.1

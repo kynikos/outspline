@@ -264,6 +264,10 @@ def get_active_database():
     return wx.GetApp().nb_left.get_selected_tab()
 
 
+def get_active_database_filename():
+    return wx.GetApp().nb_left.get_selected_tab().filename
+
+
 def get_right_nb():
     return wx.GetApp().nb_right
 
@@ -291,8 +295,18 @@ def get_open_editors_tab_indexes():
     return wx.GetApp().nb_right.get_open_editors()
 
 
-def add_plugin_to_right_nb(window, caption):
-    return wx.GetApp().nb_right.add_plugin(window, caption=caption)
+def add_plugin_to_right_nb(window, caption, select=True):
+    return wx.GetApp().nb_right.add_plugin(window, caption=caption,
+                                                                select=select)
+
+
+def add_page_to_right_nb(window, caption, select=True):
+    return wx.GetApp().nb_right.add_page(window, caption=caption,
+                                                                select=select)
+
+
+def set_right_nb_page_title(window, title):
+    return wx.GetApp().nb_right.set_page_title(window, title)
 
 
 def bind_to_plugin_close_event(handler, bind=True):

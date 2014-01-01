@@ -36,7 +36,7 @@ import filters
 
 COLUMNS = (
     (0, 'Database', 120),
-    (1, 'Title', 300),
+    (1, 'Heading', 300),
     (2, 'Start', 120),
     (3, 'End', 120),
     (4, 'State', 80),
