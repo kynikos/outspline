@@ -351,4 +351,4 @@ class Database(history.DBHistory):
         cursor.execute(queries.items_select_search)
         self.connection.give(qconn)
 
-        return cursor
+        return cursor.fetchall()
