@@ -29,7 +29,7 @@ import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
-import exceptions
+import msgboxes
 
 mainmenu = None
 searches = []
@@ -49,7 +49,6 @@ class SearchViewPanel(wx.Panel):
 
 
 class SearchView():
-    # Unrelated: Add wxpython<=2.8 to the depends in the PKGBUILD? **************************
     panel = None
     box = None
     filters = None
@@ -129,7 +128,7 @@ class SearchView():
         try:
             regexp = re.compile(string, re.IGNORECASE)  # Add flags as needed **************
         except re.error:
-            pass  # Show error dialog *******************************************************
+            msgboxes.bad_regular_expression().ShowModal()
         else:
             # Note that the databases are released *before* the threads are
             # terminated: this is safe as no more calls to the databases are
@@ -209,7 +208,7 @@ class SearchView():
                                                                 match.start())
             results.append((id_, heading, line))
 
-            # break if one result per item ***************************************************
+            # Break here if one result per item ***************************************************
 
             while True:
                 try:
@@ -256,14 +255,11 @@ class SearchView():
 
 class SearchFilters():
     # Search in all databases / in selected database / under selected items  **********
-    # Regular expression **************************************************************
-    # Case sensitive ******************************************************************
-    # List of words (OR) **************************************************************
-    # Whole words (not part of words) *************************************************
-    # Invert results ******************************************************************
     # Show only one result per item ***************************************************
     # Search only in headings *********************************************************
-    # Ignore links ********************************************************************
+    # Regular expression **************************************************************
+    # Case sensitive ******************************************************************
+    # Invert results ******************************************************************
     box = None
     text = None
     search = None
@@ -303,7 +299,6 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
             'small': {}
         }
 
-        # Remember to find better icons (add to existing bug report) ***************************
         self.imagemap['small']['sortup'] = self.imagelistsmall.Add(
                  wx.ArtProvider.GetBitmap('@sortup', wx.ART_TOOLBAR, (16, 16)))
         self.imagemap['small']['sortdown'] = self.imagelistsmall.Add(
@@ -561,9 +556,9 @@ class MainMenu(wx.Menu):
                     wxgui_api.select_database_tab(seldb)
 
                     if warning:
-                        pass  # Show warning dialog *******************************************************
+                        msgboxes.some_items_not_found().ShowModal()
                 elif warning:
-                    pass  # Show warning dialog *******************************************************
+                    msgboxes.all_items_not_found().ShowModal()
 
     def edit_items(self, event):
         mainview = self.get_selected_search()
@@ -596,9 +591,9 @@ class MainMenu(wx.Menu):
 
             if warning:
                 if exists:
-                    pass  # Show warning dialog *******************************************************
+                    msgboxes.some_items_not_found().ShowModal()
                 else:
-                    pass  # Show warning dialog *******************************************************
+                    msgboxes.all_items_not_found().ShowModal()
 
     def close_tab(self, event):
         mainview = self.get_selected_search()
