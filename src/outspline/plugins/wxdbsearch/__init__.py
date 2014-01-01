@@ -145,45 +145,61 @@ class SearchView():
     def _finish_search_restart(self):
         string = self.filters.text.GetValue()
         self.set_title(string)
-        string = re.escape(string)  # Escape only if needed **********************************
+
+        if not self.filters.option4.GetValue():
+            string = re.escape(string)
 
         self.results.reset()
         self.search_threaded_action = self._search_threaded_continue
         self.finish_search_action = self._finish_search_dummy
 
+        if self.filters.option5.GetValue():
+            flags = 0
+        else:
+            flags = re.IGNORECASE
+
         try:
-            regexp = re.compile(string, re.IGNORECASE)  # Add flags as needed **************
+            regexp = re.compile(string, flags)
         except re.error:
             msgboxes.bad_regular_expression().ShowModal()
         else:
             # Note that the databases are released *before* the threads are
             # terminated: this is safe as no more calls to the databases are
-            # made after core_api.get_all_items_text
+            # made after core_api.get_all_items_text in
+            # self._finish_search_restart_database
             core_api.block_databases()
 
-            for filename in core_api.get_open_databases():
-                # It's not easy to benchmark the search for all the databases
-                # at once, as the searches are done in separate threads
-                search_start = (time.time(), time.clock())
-
-                # Retrieve all the rows immediately (based on fetchall()):
-                # retrieving row by row (based on fetchone()) would need
-                # querying the database in the thread, which would be faster
-                # but exposed to race conditions
-                rows = core_api.get_all_items_text(filename)
-                iterator = iter(rows)
-
-                # A thread for each database is instantiated and started
-                thread = threading.Thread(
-                        target=self._search_threaded_continue,
-                        args=(regexp, filename, iterator, [], search_start))
-                thread.start()
-                self.threads += 1
+            if self.filters.option1.GetValue():
+                filename = wxgui_api.get_active_database_filename()
+                self._finish_search_restart_database(filename, regexp)
+            else:
+                for filename in core_api.get_open_databases():
+                    self._finish_search_restart_database(filename, regexp)
 
             # Note that the databases are released *before* the threads are
             # terminated: this is safe as no more calls to the databases are
-            # made after core_api.get_all_items_text
+            # made after core_api.get_all_items_text in
+            # self._finish_search_restart_database
             core_api.release_databases()
+
+    def _finish_search_restart_database(self, filename, regexp):
+        # It's not easy to benchmark the search for all the databases
+        # at once, as the searches are done in separate threads
+        search_start = (time.time(), time.clock())
+
+        # Retrieve all the rows immediately (based on fetchall()):
+        # retrieving row by row (based on fetchone()) would need
+        # querying the database in the thread, which would be faster
+        # but exposed to race conditions
+        rows = core_api.get_all_items_text(filename)
+        iterator = iter(rows)
+
+        # A thread for each database is instantiated and started
+        thread = threading.Thread(
+                target=self._search_threaded_continue,
+                args=(regexp, filename, iterator, [], search_start))
+        thread.start()
+        self.threads += 1
 
     def _search_threaded_continue(self, regexp, filename, iterator, results,
                                                                 search_start):
@@ -205,7 +221,13 @@ class SearchView():
             id_ = row['I_id']
             text = row['I_text']
 
-            results = self._find_match_lines(regexp, id_, text, results)
+            heading = text.partition('\n')[0]
+
+            if self.filters.option2.GetValue():
+                text = heading
+
+            results = self._find_match_lines(regexp, id_, heading, text,
+                                                                    results)
 
             # Use a recursion instead of a simple for loop, so that it will be
             # easy to stop the search from the main thread if needed
@@ -222,9 +244,7 @@ class SearchView():
         # The number of ongoing threads must be updated in the main thread
         wx.CallAfter(self.finish_search)
 
-    def _find_match_lines(self, regexp, id_, text, results):
-        heading = text.partition('\n')[0]
-
+    def _find_match_lines(self, regexp, id_, heading, text, results):
         # I can't use a simple for loop because previous_line_index must be
         # initialized at the first iteration
         iterator = regexp.finditer(text)
@@ -238,23 +258,22 @@ class SearchView():
                                                                 match.start())
             results.append((id_, heading, line))
 
-            # Break here if one result per item ***************************************************
-
-            while True:
-                try:
-                    match = iterator.next()
-                except StopIteration:
-                    break
-                else:
-                    # Don't use >= because if looking for an expression that
-                    # starts with '\n', the one starting at
-                    # previous_line_end_index (which is always a '\n'
-                    # character except at the last iteration) will have been
-                    # found at the previous iteration
-                    if match.start() > previous_line_end_index:
-                        line, previous_line_end_index = self._find_match_line(
-                                text, previous_line_end_index, match.start())
-                        results.append((id_, heading, line))
+            if not self.filters.option3.GetValue():
+                while True:
+                    try:
+                        match = iterator.next()
+                    except StopIteration:
+                        break
+                    else:
+                        # Don't use >= because if looking for an expression that
+                        # starts with '\n', the one starting at
+                        # previous_line_end_index (which is always a '\n'
+                        # character except at the last iteration) will have been
+                        # found at the previous iteration
+                        if match.start() > previous_line_end_index:
+                            line, previous_line_end_index = self._find_match_line(
+                                    text, previous_line_end_index, match.start())
+                            results.append((id_, heading, line))
 
         return results
 
@@ -284,27 +303,56 @@ class SearchView():
 
 
 class SearchFilters():
-    # Search in all databases / in selected database / under selected items  **********
-    # Show only one result per item ***************************************************
-    # Search only in headings *********************************************************
-    # Regular expression **************************************************************
-    # Case sensitive ******************************************************************
-    # Invert results ******************************************************************
+    mainview = None
     box = None
     text = None
     search = None
+    ogrid = None
+    option1 = None
+    option2 = None
+    option3 = None
+    option4 = None
+    option5 = None
 
     def __init__(self, mainview):
-        self.box = wx.BoxSizer(wx.HORIZONTAL)
+        self.mainview = mainview
+
+        self.box = wx.BoxSizer(wx.VERTICAL)
+        sbox = wx.BoxSizer(wx.HORIZONTAL)
+
+        label = wx.StaticText(mainview.panel, label='Search for:')
+        sbox.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
         self.text = wx.TextCtrl(mainview.panel, size=(-1, 24))
-        self.box.Add(self.text, 1, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+        sbox.Add(self.text, 1, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
         self.search = wx.Button(mainview.panel, label='Search', size=(-1, 24))
-        self.box.Add(self.search, flag=wx.ALIGN_CENTER_VERTICAL)
+        sbox.Add(self.search, flag=wx.ALIGN_CENTER_VERTICAL)
+
+        self.box.Add(sbox, flag=wx.EXPAND | wx.BOTTOM, border=4)
+
+        self.ogrid = wx.GridSizer(3, 2, 4, 4)
+        self.box.Add(self.ogrid, flag=wx.EXPAND)
+
+        # The order of creation affects the placement in the GridSizer
+        self.option1 = self.make_option('Only in selected database')
+        self.option4 = self.make_option('Regular expression')
+        self.option2 = self.make_option('Only in headings')
+        self.option5 = self.make_option('Case sensitive')
+        self.option3 = self.make_option('Only one result per item')
 
         mainview.panel.Bind(wx.EVT_BUTTON, mainview.search, self.search)
+
+    def make_option(self, label):
+        obox = wx.BoxSizer(wx.HORIZONTAL)
+        check = wx.CheckBox(self.mainview.panel)
+        obox.Add(check)
+        label = wx.StaticText(self.mainview.panel, label=label)
+        obox.Add(label)
+        self.ogrid.Add(obox)
+
+        return check
 
 
 class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
