@@ -99,6 +99,12 @@ class SearchView():
         if core_api.get_databases_count() < 1:
             self.close_()
 
+    def set_title(self, title):
+        if len(title) > 20:
+            title = title[:17] + '...'
+
+        wxgui_api.set_right_nb_page_title(self.panel, title)
+
     def search(self, event=None):
         self.finish_search_action = self._finish_search_restart
         self.stop_search()
@@ -137,9 +143,8 @@ class SearchView():
         self.finish_search_action = self._finish_search_dummy
 
     def _finish_search_restart(self):
-        # Add (part of) the search string to the title of the notebook tab ******************
-        # Show when the search is ongoing and when it's finished ****************************
         string = self.filters.text.GetValue()
+        self.set_title(string)
         string = re.escape(string)  # Escape only if needed **********************************
 
         self.results.reset()
