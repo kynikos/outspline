@@ -525,12 +525,12 @@ class MainMenu(wx.Menu):
                 for filename in core_api.get_open_databases():
                     wxgui_api.unselect_all_items(filename)
 
+                seldb = None
+                warning = False
+
                 # [1]: line repeated in the loop because of
                 # wxgui_api.select_database_tab
                 filename, id_ = results.itemdatamap[listview.GetItemData(sel)]
-
-                # Check database still exists *********************************************
-                wxgui_api.select_database_tab(filename)
 
                 while True:
                     # It's necessary to repeat this line (see [1]) because
@@ -539,13 +539,31 @@ class MainMenu(wx.Menu):
                     filename, id_ = results.itemdatamap[listview.GetItemData(
                                                                         sel)]
 
-                    # Check item still exists *******************************************************
-                    wxgui_api.add_item_to_selection(filename, id_)
+                    # Check whether the database is still open and the item
+                    # still exists because the search results are retrieved in
+                    # a separate thread and are not updated together with the
+                    # database
+                    if core_api.is_database_open(filename) and \
+                                            core_api.is_item(filename, id_):
+                        wxgui_api.add_item_to_selection(filename, id_)
+
+                        if seldb is None:
+                            seldb = filename
+                    else:
+                        warning = True
 
                     sel = listview.GetNextSelected(sel)
 
                     if sel < 0:
                         break
+
+                if seldb:
+                    wxgui_api.select_database_tab(seldb)
+
+                    if warning:
+                        pass  # Show warning dialog *******************************************************
+                elif warning:
+                    pass  # Show warning dialog *******************************************************
 
     def edit_items(self, event):
         mainview = self.get_selected_search()
@@ -556,13 +574,31 @@ class MainMenu(wx.Menu):
 
             sel = listview.GetFirstSelected()
 
+            exists = False
+            warning = False
+
             while sel > -1:
                 filename, id_ = results.itemdatamap[listview.GetItemData(sel)]
 
-                # Check item still exists *******************************************************
-                wxgui_api.open_editor(filename, id_)
+                # Check whether the database is still open and the item
+                # still exists because the search results are retrieved in
+                # a separate thread and are not updated together with the
+                # database
+                if core_api.is_database_open(filename) and \
+                                            core_api.is_item(filename, id_):
+                    wxgui_api.open_editor(filename, id_)
+
+                    exists = True
+                else:
+                    warning = True
 
                 sel = listview.GetNextSelected(sel)
+
+            if warning:
+                if exists:
+                    pass  # Show warning dialog *******************************************************
+                else:
+                    pass  # Show warning dialog *******************************************************
 
     def close_tab(self, event):
         mainview = self.get_selected_search()
