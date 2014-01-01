@@ -58,7 +58,6 @@ class SearchView():
     finish_search_action = None
 
     def __init__(self, parent):
-        # Close if no databases are left open after closing them **********************************
         self.panel = SearchViewPanel(parent)
         self.box = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.box)
@@ -75,6 +74,7 @@ class SearchView():
         self.box.Add(self.filters.box, flag=wx.EXPAND | wx.BOTTOM, border=4)
         self.box.Add(self.results.listview, 1, flag=wx.EXPAND)
 
+        wxgui_api.bind_to_close_database(self.handle_close_database)
         wxgui_api.bind_to_plugin_close_event(self.handle_tab_hide)
 
     @classmethod
@@ -93,6 +93,10 @@ class SearchView():
 
     def handle_tab_hide(self, kwargs):
         if kwargs['page'] is self.panel:
+            self.close_()
+
+    def handle_close_database(self, kwargs):
+        if core_api.get_databases_count() < 1:
             self.close_()
 
     def search(self, event=None):
@@ -122,6 +126,13 @@ class SearchView():
 
         global searches
         searches.remove(self)
+
+        # Unbind the handlers, otherwise they would be called also for closed
+        # searches when closing all databases (e.g. when quitting the
+        # application) raising an exception when trying to remove self from
+        # the searches list
+        wxgui_api.bind_to_close_database(self.handle_close_database, False)
+        wxgui_api.bind_to_plugin_close_event(self.handle_tab_hide, False)
 
         self.finish_search_action = self._finish_search_dummy
 
