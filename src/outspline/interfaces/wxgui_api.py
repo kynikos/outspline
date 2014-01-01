@@ -301,6 +301,10 @@ def add_page_to_right_nb(window, caption, select=True):
                                                                 select=select)
 
 
+def set_right_nb_page_title(window, title):
+    return wx.GetApp().nb_right.set_page_title(window, title)
+
+
 def bind_to_plugin_close_event(handler, bind=True):
     return notebooks.plugin_close_event.bind(handler, bind)
 

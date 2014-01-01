@@ -192,6 +192,9 @@ class RightNotebook(Notebook):
         self.SetPageText(self.GetPageIndex(editor.tabs[item].panel),
                          text=title)
 
+    def set_page_title(self, window, title):
+        self.SetPageText(self.GetPageIndex(window), text=title)
+
     def get_selected_editor(self):
         tab = self.get_selected_tab()
         for item in editor.tabs:
