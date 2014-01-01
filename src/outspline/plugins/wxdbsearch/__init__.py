@@ -75,6 +75,8 @@ class SearchView():
         self.box.Add(self.filters.box, flag=wx.EXPAND | wx.BOTTOM, border=4)
         self.box.Add(self.results.listview, 1, flag=wx.EXPAND)
 
+        wxgui_api.bind_to_plugin_close_event(self.handle_tab_hide)
+
     @classmethod
     def open_(cls):
         nb = wxgui_api.get_right_nb()
@@ -86,9 +88,12 @@ class SearchView():
         wxgui_api.add_page_to_right_nb(searchview.panel, 'Search')
 
     def close_(self):
-        # Also implement closing with tab X ***********************************************
         self.finish_search_action = self._finish_search_close
         self.stop_search()
+
+    def handle_tab_hide(self, kwargs):
+        if kwargs['page'] is self.panel:
+            self.close_()
 
     def search(self, event=None):
         self.finish_search_action = self._finish_search_restart
@@ -111,8 +116,13 @@ class SearchView():
         pass
 
     def _finish_search_close(self):
-        # Destroy the notebook tab ********************************************************
-        # Delete the object in the global searches list ***********************************
+        nb = wx.GetApp().nb_right
+        tabid = nb.GetPageIndex(self.panel)
+        nb.close_page(tabid)
+
+        global searches
+        searches.remove(self)
+
         self.finish_search_action = self._finish_search_dummy
 
     def _finish_search_restart(self):
@@ -602,7 +612,8 @@ class MainMenu(wx.Menu):
             mainview.close_()
 
     def close_all_tabs(self, event):
-        for mainview in searches:
+        # Use a copy of searches because close_ is modifying it
+        for mainview in searches[:]:
             mainview.close_()
 
 
