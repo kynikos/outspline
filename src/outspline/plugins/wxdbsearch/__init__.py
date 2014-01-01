@@ -150,12 +150,17 @@ class SearchView():
                 # at once, as the searches are done in separate threads
                 search_start = (time.time(), time.clock())
 
-                cursor = core_api.get_all_items_text(filename)
+                # Retrieve all the rows immediately (based on fetchall()):
+                # retrieving row by row (based on fetchone()) would need
+                # querying the database in the thread, which would be faster
+                # but exposed to race conditions
+                rows = core_api.get_all_items_text(filename)
+                iterator = iter(rows)
 
                 # A thread for each database is instantiated and started
                 thread = threading.Thread(
-                            target=self._search_threaded_continue,
-                            args=(regexp, filename, cursor, [], search_start))
+                        target=self._search_threaded_continue,
+                        args=(regexp, filename, iterator, [], search_start))
                 thread.start()
                 self.threads += 1
 
@@ -164,22 +169,11 @@ class SearchView():
             # made after core_api.get_all_items_text
             core_api.release_databases()
 
-    def _search_threaded_continue(self, regexp, filename, cursor, results,
+    def _search_threaded_continue(self, regexp, filename, iterator, results,
                                                                 search_start):
-        row = cursor.fetchone()
-
-        if row is not None:
-            id_ = row['I_id']
-            text = row['I_text']
-
-            results = self._find_match_lines(regexp, id_, text, results)
-
-            # Use a recursion instead of a simple for loop, so that it will be
-            # easy to stop the search from the main thread if needed
-            self.search_threaded_action(regexp, filename, cursor, results,
-                                                                search_start)
-        else:
-
+        try:
+            row = iterator.next()
+        except StopIteration:
             log.debug('Search in {} completed in {} (time) / {} (clock) s'
                                             ''.format(filename,
                                             time.time() - search_start[0],
@@ -191,8 +185,18 @@ class SearchView():
             # when the search is *finished* instead of calling CallAfter every
             # time a match is found
             wx.CallAfter(self.results.display, filename, fname, results)
+        else:
+            id_ = row['I_id']
+            text = row['I_text']
 
-    def _search_threaded_stop(self, regexp, filename, cursor, results,
+            results = self._find_match_lines(regexp, id_, text, results)
+
+            # Use a recursion instead of a simple for loop, so that it will be
+            # easy to stop the search from the main thread if needed
+            self.search_threaded_action(regexp, filename, iterator, results,
+                                                                search_start)
+
+    def _search_threaded_stop(self, regexp, filename, iterator, results,
                                                                 search_start):
         log.debug('Search in {} stopped after {} (time) / {} (clock) s'
                                             ''.format(filename,
