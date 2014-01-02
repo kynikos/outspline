@@ -18,10 +18,12 @@
 
 import wx
 
+import outspline.interfaces.wxgui_api as wxgui_api
+
 
 def unsafe_paste_confirm():
-    return wx.MessageDialog(wx.GetApp().root, 'The destination database does '
-                    'not support all the data copied from the origin database: '
-                          'consider upgrading the destination database first.\n'
-                     'Paste the items anyway, discarding the unsupported data?',
-           caption="Paste items", style=wx.OK | wx.CANCEL | wx.ICON_EXCLAMATION)
+    return wx.MessageDialog(wxgui_api.get_main_frame(), 'The destination '
+        'database does not support all the data copied from the origin '
+        'database: consider upgrading the destination database first.\n'
+        'Paste the items anyway, discarding the unsupported data?',
+        caption="Paste items", style=wx.OK | wx.CANCEL | wx.ICON_EXCLAMATION)

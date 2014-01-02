@@ -43,30 +43,35 @@ cmenu = {}
 def cut_items(event, no_confirm=False):
     core_api.block_databases()
 
-    treedb = wxgui_api.get_active_database()
-    if treedb:
-        # select() arguments must be compatible with delete_items()
-        selection = treedb.get_selections(none=False, descendants=True)
-        if selection:
-            filename = treedb.get_filename()
+    filename = wxgui_api.get_selected_database_filename()
 
+    # This method may be launched by the menu accelerator, but not database
+    # may be open
+    if filename:
+        # select() arguments must be compatible with delete_items()
+        selection = wxgui_api.get_tree_selections(filename, none=False,
+                                                            descendants=True)
+
+        if selection:
             for item in selection:
-                id_ = treedb.get_item_id(item)
+                id_ = wxgui_api.get_tree_item_id(filename, item)
+
                 if not wxgui_api.close_editor(filename, id_,
                                     ask='quiet' if no_confirm else 'discard'):
                     core_api.release_databases()
                     return False
 
             items = []
+
             for item in selection:
-                id_ = treedb.get_item_id(item)
+                id_ = wxgui_api.get_tree_item_id(filename, item)
                 items.append(id_)
 
             copypaste_api.cut_items(filename, items, description='Cut {} items'
                                     ''.format(len(items)))
 
-            treedb.remove_items(selection)
-            treedb.history.refresh()
+            wxgui_api.remove_tree_items(filename, selection)
+            wxgui_api.refresh_history(filename)
             cut_items_event.signal()
 
     core_api.release_databases()
@@ -75,15 +80,21 @@ def cut_items(event, no_confirm=False):
 def copy_items(event):
     core_api.block_databases()
 
-    treedb = wxgui_api.get_active_database()
-    if treedb:
+    filename = wxgui_api.get_selected_database_filename()
+
+    # This method may be launched by the menu accelerator, but not database
+    # may be open
+    if filename:
         # select() arguments must be compatible with delete_items()
-        selection = treedb.get_selections(none=False, descendants=True)
+        selection = wxgui_api.get_tree_selections(filename, none=False,
+                                                            descendants=True)
+
         if selection:
-            filename = treedb.get_filename()
             items = []
+
             for item in selection:
-                items.append(treedb.get_item_id(item))
+                items.append(wxgui_api.get_tree_item_id(filename, item))
+
             copypaste_api.copy_items(filename, items)
 
     core_api.release_databases()
@@ -92,44 +103,42 @@ def copy_items(event):
 def paste_items_as_siblings(event, no_confirm=False):
     core_api.block_databases()
 
-    treedb = wxgui_api.get_active_database()
+    filename = wxgui_api.get_selected_database_filename()
 
-    if treedb:
-        filename = treedb.get_filename()
+    # This method may be launched by the menu accelerator, but not database
+    # may be open
+    if filename and (no_confirm or copypaste_api.can_paste_safely(filename) or
+                    msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK):
+        # Do not use none=False in order to allow pasting in an empty database
+        selection = wxgui_api.get_tree_selections(filename, many=False)
 
-        if no_confirm or copypaste_api.can_paste_safely(filename) or \
-                    msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK:
-            # Do not use none=False in order to allow pasting in an empty
-            # database
-            selection = treedb.get_selections(many=False)
+        # If multiple items are selected, selection will be bool (False)
+        if isinstance(selection, list):
+            if len(selection) > 0:
+                base = selection[0]
+                baseid = wxgui_api.get_tree_item_id(filename, base)
 
-            # If multiple items are selected, selection will be bool (False)
-            if isinstance(selection, list):
-                if len(selection) > 0:
-                    base = selection[0]
-                    baseid = treedb.get_item_id(base)
+                roots = copypaste_api.paste_items_as_siblings(filename, baseid,
+                                                    description='Paste items')
 
-                    roots = copypaste_api.paste_items_as_siblings(filename,
-                                            baseid, description='Paste items')
+                for r in roots:
+                    treeroot = wxgui_api.insert_tree_item_after(filename,
+                                                            selection[0], r)
+                    wxgui_api.create_tree(filename, treeroot)
+            else:
+                base = wxgui_api.get_root_tree_item(filename)
+                baseid = wxgui_api.get_tree_item_id(filename, base)
 
-                    for r in roots:
-                        treeroot = treedb.insert_item(selection[0], 'after',
-                                                                        id_=r)
-                        treedb.create(base=treeroot)
-                else:
-                    base = treedb.get_root()
-                    baseid = treedb.get_item_id(base)
+                roots = copypaste_api.paste_items_as_children(filename, baseid,
+                                                    description='Paste items')
 
-                    roots = copypaste_api.paste_items_as_children(filename,
-                                            baseid, description='Paste items')
+                for r in roots:
+                    treeroot = wxgui_api.append_tree_item(filename, base, r)
+                    wxgui_api.create_tree(filename, treeroot)
 
-                    for r in roots:
-                        treeroot = treedb.insert_item(base, 'append', id_=r)
-                        treedb.create(base=treeroot)
+            wxgui_api.refresh_history(filename)
 
-                treedb.history.refresh()
-
-                items_pasted_event.signal(filename=filename)
+            items_pasted_event.signal(filename=filename)
 
     core_api.release_databases()
 
@@ -137,27 +146,30 @@ def paste_items_as_siblings(event, no_confirm=False):
 def paste_items_as_children(event, no_confirm=False):
     core_api.block_databases()
 
-    treedb = wxgui_api.get_active_database()
-    if treedb:
-        selection = treedb.get_selections(none=False, many=False)
-        if selection:
-            filename = treedb.get_filename()
+    filename = wxgui_api.get_selected_database_filename()
 
-            if no_confirm or copypaste_api.can_paste_safely(filename) or \
-                    msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK:
-                baseid = treedb.get_item_id(selection[0])
+    # This method may be launched by the menu accelerator, but not database
+    # may be open
+    if filename:
+        selection = wxgui_api.get_tree_selections(filename, none=False,
+                                                                    many=False)
 
-                roots = copypaste_api.paste_items_as_children(filename, baseid,
+        if selection and (no_confirm or
+                    copypaste_api.can_paste_safely(filename) or
+                    msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK):
+            baseid = wxgui_api.get_tree_item_id(filename, selection[0])
+
+            roots = copypaste_api.paste_items_as_children(filename, baseid,
                                                 description='Paste sub-items')
 
-                for r in roots:
-                    treeroot = treedb.insert_item(selection[0], 'append',
-                                                                        id_=r)
-                    treedb.create(base=treeroot)
+            for r in roots:
+                treeroot = wxgui_api.append_tree_item(filename, selection[0],
+                                                                            r)
+                wxgui_api.create_tree(filename, treeroot)
 
-                treedb.history.refresh()
+            wxgui_api.refresh_history(filename)
 
-                items_pasted_event.signal(filename=filename)
+            items_pasted_event.signal(filename=filename)
 
     core_api.release_databases()
 

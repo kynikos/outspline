@@ -124,10 +124,6 @@ def simulate_close_all_editors(ask='apply'):
 
 ### MENUBAR ###
 
-def get_menu():
-    return wx.GetApp().menu
-
-
 def insert_menu_main_item(title, before, menu):
     return wx.GetApp().menu.Insert(wx.GetApp().menu.FindMenu(before),
                                       menu, title)
@@ -260,16 +256,23 @@ def get_selected_database_tab_index():
     return wx.GetApp().nb_left.get_selected_tab_index()
 
 
-def get_active_database():
-    return wx.GetApp().nb_left.get_selected_tab()
+def get_selected_database_filename():
+    dbtab = wx.GetApp().nb_left.get_selected_tab()
 
-
-def get_active_database_filename():
-    return wx.GetApp().nb_left.get_selected_tab().filename
+    if dbtab:
+        return dbtab.get_filename()
+    else:
+        return False
 
 
 def get_right_nb():
     return wx.GetApp().nb_right
+
+
+def is_page_in_right_nb(window):
+    nb = wx.GetApp().nb_right
+    tabid = nb.GetPageIndex(window)
+    return True if tabid > -1 else False
 
 
 def select_editor_tab_index(index):
@@ -281,13 +284,17 @@ def get_selected_editor_tab_index():
     return wx.GetApp().nb_right.get_selected_tab_index()
 
 
-def get_active_editor():
+def get_selected_editor_identification():
     item = wx.GetApp().nb_right.get_selected_editor()
     tab = editor.tabs[item]
     return (tab.get_filename(), tab.get_id())
 
 
-def get_active_editor_tag():
+def get_selected_right_nb_tab():
+    return wx.GetApp().nb_right.get_selected_tab()
+
+
+def get_selected_editor():
     return wx.GetApp().nb_right.get_selected_editor()
 
 
@@ -303,6 +310,18 @@ def add_plugin_to_right_nb(window, caption, select=True):
 def add_page_to_right_nb(window, caption, select=True):
     return wx.GetApp().nb_right.add_page(window, caption=caption,
                                                                 select=select)
+
+
+def hide_right_nb_page(window):
+    nb = wx.GetApp().nb_right
+    tabid = nb.GetPageIndex(window)
+    return nb.hide_page(tabid)
+
+
+def close_right_nb_page(window):
+    nb = wx.GetApp().nb_right
+    tabid = nb.GetPageIndex(window)
+    return nb.close_page(tabid)
 
 
 def set_right_nb_page_title(window, title):
@@ -339,6 +358,10 @@ def is_shown():
     return wx.GetApp().root.IsShown()
 
 
+def exit_application(event=None):
+    return wx.GetApp().exit_app()
+
+
 def bind_to_menu(handler, button):
     return wx.GetApp().root.Bind(wx.EVT_MENU, handler, button)
 
@@ -363,6 +386,14 @@ def add_item_to_selection(filename, id_):
     return tree.dbs[filename].add_item_to_selection(treeitem)
 
 
+def get_tree_item_id(filename, treeitem):
+    return tree.dbs[filename].get_item_id(treeitem)
+
+
+def get_root_tree_item(filename):
+    return tree.dbs[filename].get_root()
+
+
 def append_item(filename, baseid, id_, text):
     label = tree.dbs[filename].make_item_title(text)
     base = tree.dbs[filename].find_item(baseid)
@@ -373,6 +404,22 @@ def insert_item_after(filename, baseid, id_, text):
     label = tree.dbs[filename].make_item_title(text)
     base = tree.dbs[filename].find_item(baseid)
     return tree.dbs[filename].insert_item(base, 'after', label=label, id_=id_)
+
+
+def append_tree_item(filename, baseid, id_):
+    return tree.dbs[filename].insert_item(baseid, 'append', id_=id_)
+
+
+def insert_tree_item_after(filename, baseid, id_):
+    return tree.dbs[filename].insert_item(baseid, 'after', id_=id_)
+
+
+def create_tree(filename, treeroot):
+    return tree.dbs[filename].create(base=treeroot)
+
+
+def remove_tree_items(filename, treeitems):
+    return tree.dbs[filename].remove_items(treeitems)
 
 
 def set_item_font(filename, id_, wxfont):

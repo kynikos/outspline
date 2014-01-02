@@ -102,9 +102,7 @@ class TaskList():
             self.show()
 
     def is_shown(self):
-        nb = wx.GetApp().nb_right
-        tabid = nb.GetPageIndex(self.panel)
-        return True if tabid > -1 else False
+        return wxgui_api.is_page_in_right_nb(self.panel)
 
     def show(self):
         wxgui_api.add_plugin_to_right_nb(self.panel, self.CAPTION)
@@ -113,10 +111,7 @@ class TaskList():
         self.list_.delay_restart()
 
     def hide(self):
-        nb = wx.GetApp().nb_right
-        tabid = nb.GetPageIndex(self.panel)
-        nb.hide_page(tabid)
-
+        wxgui_api.hide_right_nb_page(self.panel)
         self.list_.disable_refresh()
 
 

@@ -163,50 +163,50 @@ class MenuDev(wx.Menu):
 
     def populate_tree(self, event):
         core_api.block_databases()
-        db = wxgui_api.get_active_database()
-        if db:
-            filename = db.get_filename()
-            if filename:
-                group = core_api.get_next_history_group(filename)
-                description = 'Populate tree'
+        filename = wxgui_api.get_selected_database_filename()
 
-                i = 0
-                while i < 10:
-                    dbitems = core_api.get_items_ids(filename)
+        # This method may be launched even if no database is open
+        if filename:
+            group = core_api.get_next_history_group(filename)
+            description = 'Populate tree'
 
-                    try:
-                        itemid = random.choice(dbitems)
-                    except IndexError:
-                        # No items in the database yet
-                        itemid = 0
+            i = 0
+            while i < 10:
+                dbitems = core_api.get_items_ids(filename)
 
-                    mode = random.choice(('child', 'sibling'))
+                try:
+                    itemid = random.choice(dbitems)
+                except IndexError:
+                    # No items in the database yet
+                    itemid = 0
 
-                    if mode == 'sibling' and itemid == 0:
-                        continue
+                mode = random.choice(('child', 'sibling'))
 
-                    i += 1
+                if mode == 'sibling' and itemid == 0:
+                    continue
 
-                    text = self._populate_tree_text()
+                i += 1
 
-                    id_ = self._populate_tree_item(mode, filename, itemid,
-                                                    group, text, description)
+                text = self._populate_tree_text()
 
-                    if organism_api and wxscheduler_basicrules_api and \
-                            filename in \
-                            organism_api.get_supported_open_databases():
-                        self._populate_tree_rules(filename, id_, group,
-                                                            description)
+                id_ = self._populate_tree_item(mode, filename, itemid,
+                                                group, text, description)
 
-                    self._populate_tree_gui(mode, filename, itemid, id_, text)
+                if organism_api and wxscheduler_basicrules_api and \
+                        filename in \
+                        organism_api.get_supported_open_databases():
+                    self._populate_tree_rules(filename, id_, group,
+                                                        description)
 
-                    # Links must be created *after* self._populate_tree_gui
-                    if links_api and wxlinks_api and filename in \
-                                    links_api.get_supported_open_databases():
-                            self._populate_tree_link(filename, id_, dbitems,
-                                                            group, description)
+                self._populate_tree_gui(mode, filename, itemid, id_, text)
 
-                wxgui_api.refresh_history(filename)
+                # Links must be created *after* self._populate_tree_gui
+                if links_api and wxlinks_api and filename in \
+                                links_api.get_supported_open_databases():
+                        self._populate_tree_link(filename, id_, dbitems,
+                                                        group, description)
+
+            wxgui_api.refresh_history(filename)
         core_api.release_databases()
 
     def _populate_tree_text(self):

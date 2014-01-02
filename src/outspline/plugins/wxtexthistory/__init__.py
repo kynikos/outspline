@@ -34,13 +34,13 @@ mredo = None
 
 
 def undo_text(event):
-    tab = wxgui_api.get_active_editor_tag()
+    tab = wxgui_api.get_selected_editor()
     if tab:
         areas[tab].undo()
 
 
 def redo_text(event):
-    tab = wxgui_api.get_active_editor_tag()
+    tab = wxgui_api.get_selected_editor()
     if tab:
         areas[tab].redo()
 

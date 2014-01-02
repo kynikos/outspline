@@ -126,9 +126,7 @@ class SearchView():
         pass
 
     def _finish_search_close(self):
-        nb = wx.GetApp().nb_right
-        tabid = nb.GetPageIndex(self.panel)
-        nb.close_page(tabid)
+        wxgui_api.close_right_nb_page(self.panel)
 
         global searches
         searches.remove(self)
@@ -170,7 +168,7 @@ class SearchView():
             core_api.block_databases()
 
             if self.filters.option1.GetValue():
-                filename = wxgui_api.get_active_database_filename()
+                filename = wxgui_api.get_selected_database_filename()
                 self._finish_search_restart_database(filename, regexp)
             else:
                 for filename in core_api.get_open_databases():
@@ -530,7 +528,7 @@ class MainMenu(wx.Menu):
 
     @staticmethod
     def get_selected_search():
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wxgui_api.get_selected_right_nb_tab()
 
         for search in searches:
             if search.panel is tab:

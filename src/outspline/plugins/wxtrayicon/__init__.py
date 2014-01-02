@@ -187,7 +187,7 @@ class TrayMenu(wx.Menu):
         self.exit_ = self.Append(wx.ID_EXIT, "E&xit\tCTRL+q")
 
         parent.Bind(wx.EVT_MENU, wxgui_api.toggle_main_window, self.restore)
-        parent.Bind(wx.EVT_MENU, wx.GetApp().exit_app, self.exit_)
+        parent.Bind(wx.EVT_MENU, wxgui_api.exit_application, self.exit_)
 
     def insert_item(self, pos, text, id_=wx.ID_ANY, help='', sep='none',
                     kind='normal', sub=None, icon=None):

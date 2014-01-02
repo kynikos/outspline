@@ -550,7 +550,7 @@ class MainMenu(wx.Menu):
             self.dismiss.Enable(False)
             self.dismiss_all.Enable(False)
 
-            tab = wx.GetApp().nb_right.get_selected_tab()
+            tab = wxgui_api.get_selected_right_nb_tab()
 
             if tab is self.occview.parent:
                 sel = self.occview.listview.GetFirstSelected()
@@ -591,7 +591,7 @@ class MainMenu(wx.Menu):
         self.dismiss_all.Enable()
 
     def find_in_tree(self, event):
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.occview.parent:
             sel = self.occview.listview.GetFirstSelected()
@@ -619,7 +619,7 @@ class MainMenu(wx.Menu):
                         break
 
     def edit_items(self, event):
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.occview.parent:
             sel = self.occview.listview.GetFirstSelected()
@@ -633,7 +633,7 @@ class MainMenu(wx.Menu):
     def dismiss_selected_alarms(self, event):
         core_api.block_databases()
 
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.occview.parent:
             alarmsd = self.occview.get_selected_active_alarms()
@@ -649,7 +649,7 @@ class MainMenu(wx.Menu):
         # hidden in the current view
         core_api.block_databases()
 
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.occview.parent:
             alarmsd = self.occview.activealarms
@@ -755,7 +755,7 @@ class _SnoozeConfigMenu(wx.Menu):
     def snooze_for(self, time):
         core_api.block_databases()
 
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.occview.parent:
             alarmsd = self.get_alarms()
@@ -769,7 +769,7 @@ class _SnoozeConfigMenu(wx.Menu):
     def snooze_for_custom(self, event):
         core_api.block_databases()
 
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.occview.parent:
             alarmsd = self.get_alarms()
@@ -789,7 +789,7 @@ class SnoozeDialog(wx.Dialog):
     unit = None
 
     def __init__(self):
-        wx.Dialog.__init__(self, parent=wx.GetApp().root,
+        wx.Dialog.__init__(self, parent=wxgui_api.get_main_frame(),
                                                 title="Snooze configuration")
 
         vsizer = wx.BoxSizer(wx.VERTICAL)
