@@ -345,9 +345,9 @@ class SearchFilters():
     def make_option(self, label):
         obox = wx.BoxSizer(wx.HORIZONTAL)
         check = wx.CheckBox(self.mainview.panel)
-        obox.Add(check)
+        obox.Add(check, flag=wx.ALIGN_CENTER_VERTICAL)
         label = wx.StaticText(self.mainview.panel, label=label)
-        obox.Add(label)
+        obox.Add(label, flag=wx.ALIGN_CENTER_VERTICAL)
         self.ogrid.Add(obox)
 
         return check
