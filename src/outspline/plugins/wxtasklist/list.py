@@ -78,7 +78,7 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
 
 
 class OccurrencesView():
-    parent = None
+    tasklist = None
     listview = None
     cmenu = None
     colors = None
@@ -92,9 +92,12 @@ class OccurrencesView():
     timer = None
     autoscroll = None
 
-    def __init__(self, parent):
-        self.parent = parent
-        self.listview = ListView(parent)
+    def __init__(self, tasklist):
+        self.tasklist = tasklist
+        self.listview = ListView(tasklist.panel)
+
+        self.set_filter(self.tasklist.filters.get_filter_configuration(
+                                self.tasklist.filters.get_selected_filter()))
 
         # Override ColumnSorterMixin's method for sorting items that have equal
         # primary sort value
@@ -225,18 +228,20 @@ class OccurrencesView():
     def set_filter(self, config):
         self.autoscroll = Autoscroll(self.listview, config['autoscroll'])
 
-        if config['mode'] == 'relative':
-            self.filter_ = filters.FilterRelative(config)
-        elif config['mode'] == 'absolute':
-            self.filter_ = filters.FilterAbsolute(config)
-        elif config['mode'] == 'regular':
-            self.filter_ = filters.FilterRegular(config)
-        elif config['mode'] == 'staticmonth':
-            self.filter_ = filters.FilterMonthStatic(config)
-        elif config['mode'] == 'month':
-            self.filter_ = filters.FilterMonthDynamic(config)
-        else:
+        filterclasses = {
+            'relative': filters.FilterRelative,
+            'absolute': filters.FilterAbsolute,
+            'regular': filters.FilterRegular,
+            'staticmonth': filters.FilterMonthStatic,
+            'month': filters.FilterMonthDynamic,
+        }
+
+        try:
+            class_ = filterclasses[config['mode']]
+        except KeyError:
             self.set_filter(filters.DEFAULT_FILTERS[0]['F0'])
+        else:
+            self.filter_ = class_(config)
 
     def refresh(self):
         log.debug('Refresh tasklist')

@@ -41,7 +41,6 @@ class TaskListPanel(wx.Panel):
 
 
 class TaskList():
-    CAPTION = None
     panel = None
     pbox = None
     config = None
@@ -60,25 +59,26 @@ class TaskList():
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
 
-        self.CAPTION = 'Occurrences'
-
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
-        self.list_ = list_.OccurrencesView(self.panel)
-        self.filters = filters.Filters(self.panel, self.list_)
+        # filters.Filters must be instantiated *before* list_.OccurrencesView,
+        # because the former sets the filter for the latter; note that
+        # inverting the order would work anyway because of a favorable race
+        # condition, but of course don't rely on that
+        self.filters = filters.Filters(self)
+        self.list_ = list_.OccurrencesView(self)
 
-        self.mainmenu = menus.MainMenu(self.list_)
+        self.mainmenu = menus.MainMenu(self)
         menus.ViewMenu(self)
         self.panel._init_tab_menu(self)
         self.list_._init_context_menu(self.mainmenu)
 
-        self.pbox.Add(self.filters.panel, flag=wx.EXPAND | wx.ALL, border=2)
-        self.pbox.Add(self.list_.listview, 1, flag=wx.EXPAND | wx.ALL,
-                                                                      border=2)
+        self.pbox.Add(self.list_.listview, 1, flag=wx.EXPAND)
 
         wxgui_api.bind_to_plugin_close_event(self.handle_tab_hide)
         wxgui_api.bind_to_show_main_window(self.handle_show_main_window)
         wxgui_api.bind_to_hide_main_window(self.handle_hide_main_window)
+        wxgui_api.bind_to_exit_application(self.handle_exit_application)
 
     def handle_tab_hide(self, kwargs):
         if kwargs['page'] is self.panel:
@@ -102,7 +102,7 @@ class TaskList():
             self.show()
 
     def show(self):
-        wxgui_api.add_plugin_to_right_nb(self.panel, self.CAPTION)
+        wxgui_api.add_plugin_to_right_nb(self.panel, self.get_tab_title())
         self._enable()
 
     def hide(self):
@@ -121,8 +121,18 @@ class TaskList():
     def _disable(self):
         self.list_.disable_refresh()
 
+    def get_tab_title(self):
+        return self.filters.get_filter_configuration(
+                                    self.filters.get_selected_filter())['name']
+
+    def handle_exit_application(self, event):
+        configfile = coreaux_api.get_user_config_file()
+        # Reset the Filters section because some filters may have been removed
+        self.config('Filters').export_reset(configfile)
+        self.config.export_upgrade(configfile)
+
 
 def main():
     nb = wxgui_api.get_right_nb()
     tasklist = TaskList(nb)
-    wxgui_api.add_plugin_to_right_nb(tasklist.panel, tasklist.CAPTION)
+    wxgui_api.add_plugin_to_right_nb(tasklist.panel, tasklist.get_tab_title())
