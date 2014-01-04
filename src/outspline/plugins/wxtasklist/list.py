@@ -192,6 +192,9 @@ class OccurrencesView():
         organism_alarms_api.bind_to_alarm_off(self.delay_restart)
 
     def disable_refresh(self):
+        # Do not even think of disabling refreshing when the notebook tab is
+        # not selected, because then it should always be refreshed when
+        # selecting it, which would make everything more sluggish
         core_api.bind_to_update_item(self.delay_restart_on_text_update, False)
         organism_timer_api.bind_to_search_next_occurrences(self.delay_restart,
                                                                         False)

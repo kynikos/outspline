@@ -75,6 +75,8 @@ class TaskList():
 
         wxgui_api.bind_to_plugin_close_event(self.handle_tab_hide)
         wxgui_api.bind_to_menu_view_update(self.update_menu_items)
+        wxgui_api.bind_to_show_main_window(self.handle_show_main_window)
+        wxgui_api.bind_to_hide_main_window(self.handle_hide_main_window)
 
     def _init_view_menu(self):
         self.ID_SHOW = wx.NewId()
@@ -95,23 +97,41 @@ class TaskList():
         if kwargs['page'] is self.panel:
             self.hide()
 
+    def is_shown(self):
+        return wxgui_api.is_page_in_right_nb(self.panel)
+
+    def handle_show_main_window(self, event):
+        if self.is_shown():
+            self._enable()
+
+    def handle_hide_main_window(self, event):
+        if self.is_shown():
+            self._disable()
+
     def toggle_shown(self, event):
         if self.is_shown():
             self.hide()
         else:
             self.show()
 
-    def is_shown(self):
-        return wxgui_api.is_page_in_right_nb(self.panel)
-
     def show(self):
         wxgui_api.add_plugin_to_right_nb(self.panel, self.CAPTION)
+        self._enable()
 
+    def hide(self):
+        # Showing/hiding is the correct behaviour: allowing multiple instances
+        # of tasklist notebook tabs would need finding a way to refresh only
+        # one at a time, probably only the selected one, thus requiring to
+        # update it every time it gets selected, which would in turn make
+        # everything more sluggish
+        wxgui_api.hide_right_nb_page(self.panel)
+        self._disable()
+
+    def _enable(self):
         self.list_.enable_refresh()
         self.list_.delay_restart()
 
-    def hide(self):
-        wxgui_api.hide_right_nb_page(self.panel)
+    def _disable(self):
         self.list_.disable_refresh()
 
 

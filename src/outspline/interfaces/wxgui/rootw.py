@@ -30,6 +30,8 @@ import history
 
 config = coreaux_api.get_interface_configuration('wxgui')
 
+show_main_window_event = Event()
+hide_main_window_event = Event()
 exit_application_event = Event()
 
 _ROOT_MIN_SIZE = (600, 408)
@@ -132,8 +134,10 @@ class MainFrame(wx.Frame):
 
     def hide(self, event):
         self.Show(False)
+        hide_main_window_event.signal()
 
     def show(self, event):
+        show_main_window_event.signal()
         self.Show(True)
 
     def toggle_shown(self, event):

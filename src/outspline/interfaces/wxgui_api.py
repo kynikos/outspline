@@ -366,6 +366,14 @@ def bind_to_menu(handler, button):
     return wx.GetApp().root.Bind(wx.EVT_MENU, handler, button)
 
 
+def bind_to_show_main_window(handler, bind=True):
+    return rootw.show_main_window_event.bind(handler, bind)
+
+
+def bind_to_hide_main_window(handler, bind=True):
+    return rootw.hide_main_window_event.bind(handler, bind)
+
+
 def bind_to_exit_application(handler, bind=True):
     return rootw.exit_application_event.bind(handler, bind)
 
