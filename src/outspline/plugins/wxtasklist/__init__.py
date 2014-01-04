@@ -23,6 +23,7 @@ import outspline.interfaces.wxgui_api as wxgui_api
 
 import list as list_
 import filters
+import menus
 
 
 class TaskListPanel(wx.Panel):
@@ -32,7 +33,7 @@ class TaskListPanel(wx.Panel):
         wx.Panel.__init__(self, parent, style=wx.BORDER_NONE)
 
     def _init_tab_menu(self, tasklist):
-        self.ctabmenu = TabContextMenu(tasklist)
+        self.ctabmenu = menus.TabContextMenu(tasklist)
 
     def get_tab_context_menu(self):
         self.ctabmenu.update()
@@ -44,6 +45,7 @@ class TaskList():
     panel = None
     pbox = None
     config = None
+    mainmenu = None
     list_ = None
     filters = None
     ID_SHOW = None
@@ -65,33 +67,18 @@ class TaskList():
         self.list_ = list_.OccurrencesView(self.panel)
         self.filters = filters.Filters(self.panel, self.list_)
 
+        self.mainmenu = menus.MainMenu(self.list_)
+        menus.ViewMenu(self)
         self.panel._init_tab_menu(self)
-
-        self._init_view_menu()
+        self.list_._init_context_menu(self.mainmenu)
 
         self.pbox.Add(self.filters.panel, flag=wx.EXPAND | wx.ALL, border=2)
         self.pbox.Add(self.list_.listview, 1, flag=wx.EXPAND | wx.ALL,
                                                                       border=2)
 
         wxgui_api.bind_to_plugin_close_event(self.handle_tab_hide)
-        wxgui_api.bind_to_menu_view_update(self.update_menu_items)
         wxgui_api.bind_to_show_main_window(self.handle_show_main_window)
         wxgui_api.bind_to_hide_main_window(self.handle_hide_main_window)
-
-    def _init_view_menu(self):
-        self.ID_SHOW = wx.NewId()
-        self.menushow = wxgui_api.insert_menu_item('View',
-                                       self.config.get_int('show_menu_pos'),
-                                       'Show &occurrences\tCTRL+SHIFT+F5',
-                                       id_=self.ID_SHOW,
-                                       help='Show the occurrences window',
-                                       kind='check',
-                                       sep=self.config['show_menu_sep'])
-
-        wxgui_api.bind_to_menu(self.toggle_shown, self.menushow)
-
-    def update_menu_items(self, event):
-        self.menushow.Check(check=self.is_shown())
 
     def handle_tab_hide(self, kwargs):
         if kwargs['page'] is self.panel:
@@ -133,38 +120,6 @@ class TaskList():
 
     def _disable(self):
         self.list_.disable_refresh()
-
-
-class TabContextMenu(wx.Menu):
-    tasklist = None
-    snooze_all = None
-    dismiss_all = None
-
-    def __init__(self, tasklist):
-        wx.Menu.__init__(self)
-        self.tasklist = tasklist
-
-        self.snooze_all = wx.MenuItem(self,
-                     self.tasklist.list_.mainmenu.ID_SNOOZE_ALL, "S&nooze all",
-                        subMenu=list_.SnoozeAllConfigMenu(self.tasklist.list_))
-        self.dismiss_all = wx.MenuItem(self,
-                   self.tasklist.list_.mainmenu.ID_DISMISS_ALL, "&Dismiss all")
-
-        self.snooze_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarms',
-                                                                  wx.ART_MENU))
-        self.dismiss_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
-                                                                  wx.ART_MENU))
-
-        self.AppendItem(self.snooze_all)
-        self.AppendItem(self.dismiss_all)
-
-    def update(self):
-        if len(self.tasklist.list_.activealarms) > 0:
-            self.snooze_all.Enable()
-            self.dismiss_all.Enable()
-        else:
-            self.snooze_all.Enable(False)
-            self.dismiss_all.Enable(False)
 
 
 def main():
