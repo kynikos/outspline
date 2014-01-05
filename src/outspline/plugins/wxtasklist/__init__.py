@@ -30,7 +30,7 @@ class TaskListPanel(wx.Panel):
     ctabmenu = None
 
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, style=wx.BORDER_NONE)
+        wx.Panel.__init__(self, parent)
 
     def _init_tab_menu(self, tasklist):
         self.ctabmenu = menus.TabContextMenu(tasklist)

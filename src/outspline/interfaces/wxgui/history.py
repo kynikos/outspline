@@ -39,7 +39,7 @@ class History():
     def __init__(self, parent, filename):
         self.filename = filename
 
-        self.scwindow = wx.ScrolledWindow(parent)
+        self.scwindow = wx.ScrolledWindow(parent, style=wx.BORDER_SUNKEN)
         self.scwindow.SetScrollRate(20, 20)
         self.scwindow.SetBackgroundColour(parent.treec.GetBackgroundColour())
 

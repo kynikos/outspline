@@ -111,8 +111,7 @@ class Editor():
         title = self.make_title(text)
 
         self.area = textarea.TextArea(self.filename, self.id_, self.item, text)
-        self.pbox.Add(self.area.area, proportion=1, flag=wx.EXPAND | wx.ALL,
-                      border=4)
+        self.pbox.Add(self.area.area, proportion=1, flag=wx.EXPAND)
 
         open_textctrl_event.signal(filename=filename, id_=id_, item=self.item,
                                    text=text)

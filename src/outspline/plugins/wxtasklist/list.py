@@ -50,7 +50,7 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
     def __init__(self, parent):
         # Note that this makes use of ListView, which is an interface for
         # ListCtrl
-        wx.ListView.__init__(self, parent, style=wx.LC_REPORT)
+        wx.ListView.__init__(self, parent, style=wx.LC_REPORT | wx.BORDER_SUNKEN)
         ListCtrlAutoWidthMixin.__init__(self)
         ColumnSorterMixin.__init__(self, len(COLUMNS))
 

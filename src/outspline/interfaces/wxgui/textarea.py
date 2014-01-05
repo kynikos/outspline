@@ -47,7 +47,7 @@ class TextArea():
         # Do not set the text now, otherwise for example URLs won't be
         # highlighted in blue
         self.area = TextUrlCtrl(editor.tabs[item].panel, '',
-                   style=wx.BORDER_NONE | wx.TE_PROCESS_TAB | wx.TE_MULTILINE |
+                style=wx.BORDER_SUNKEN | wx.TE_PROCESS_TAB | wx.TE_MULTILINE |
                                               wx.TE_NOHIDESEL | wx.TE_DONTWRAP)
 
         font = self.area.GetFont()

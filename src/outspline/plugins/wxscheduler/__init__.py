@@ -127,8 +127,8 @@ class Scheduler():
 
     def _init_rules_list(self):
         self.rlist = wx.Panel(self.rpanel)
-        self.rbox.Add(self.rlist, proportion=1, flag=wx.EXPAND | wx.LEFT |
-                      wx.RIGHT | wx.BOTTOM, border=4)
+        self.rbox.Add(self.rlist, proportion=1, flag=wx.EXPAND | wx.BOTTOM,
+                                                                    border=4)
 
         pgrid = wx.GridBagSizer(4, 4)
         self.rlist.SetSizer(pgrid)
@@ -271,8 +271,8 @@ class Scheduler():
 
     def _init_rule_maker(self):
         self.rmaker = wx.Panel(self.rpanel)
-        self.rbox.Add(self.rmaker, proportion=1, flag=wx.EXPAND | wx.LEFT |
-                      wx.RIGHT | wx.BOTTOM, border=4)
+        self.rbox.Add(self.rmaker, proportion=1, flag=wx.EXPAND | wx.BOTTOM,
+                                                                    border=4)
         self.rmaker.Show(False)
 
         self.mbox = wx.BoxSizer(wx.VERTICAL)
