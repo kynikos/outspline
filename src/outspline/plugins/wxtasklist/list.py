@@ -91,6 +91,7 @@ class OccurrencesView():
     delay = None
     timer = None
     autoscroll = None
+    timeformat = None
 
     def __init__(self, tasklist):
         self.tasklist = tasklist
@@ -114,8 +115,9 @@ class OccurrencesView():
         # Do not self.listview.setResizeColumn(2) because it gives a
         # non-standard feeling; the last column is auto-resized by default
 
-        self.DELAY = coreaux_api.get_plugin_configuration('wxtasklist'
-                                                     ).get_int('refresh_delay')
+        config = coreaux_api.get_plugin_configuration('wxtasklist')
+        self.DELAY = config.get_int('refresh_delay')
+        self.timeformat = config['time_format']
 
         # Initialize self.delay with a dummy function (int)
         self.delay = wx.CallLater(self.DELAY, int)
@@ -434,12 +436,12 @@ class ListItem():
         text = core_api.get_item_text(self.filename, self.id_)
         self.title = self.make_heading(text)
 
-        startdate = _time.strftime('%Y.%m.%d %H:%M', _time.localtime(self.start
-                                                                             ))
+        startdate = _time.strftime(occview.timeformat, _time.localtime(
+                                                                self.start))
 
         if self.end is not None:
-            enddate = _time.strftime('%Y.%m.%d %H:%M', _time.localtime(self.end
-                                                                             ))
+            enddate = _time.strftime(occview.timeformat, _time.localtime(
+                                                                    self.end))
         else:
             enddate = 'none'
 
@@ -455,7 +457,7 @@ class ListItem():
         # Note that testing if isinstance(self.alarm, int) *before* testing if
         # self.alarm is False would return True also when self.alarm is False!
         else:
-            alarmdate = _time.strftime('%Y.%m.%d %H:%M', _time.localtime(
+            alarmdate = _time.strftime(occview.timeformat, _time.localtime(
                                                                    self.alarm))
 
         listview.SetStringItem(index, 1, self.title)
