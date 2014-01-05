@@ -82,6 +82,8 @@ class Database(wx.SplitterWindow):
 
         self.treec.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.veto_label_edit)
         self.treec.Bind(wx.EVT_TREE_ITEM_MENU, self.popup_item_menu)
+        self.treec.Bind(wx.EVT_RIGHT_DOWN, self.popup_window_menu)
+        self.treec.Bind(wx.EVT_LEFT_DOWN, self.unselect_on_empty_areas)
 
         core_api.bind_to_update_item(self.handle_update_item)
         core_api.bind_to_history_insert(self.handle_history_insert)
@@ -404,12 +406,33 @@ class Database(wx.SplitterWindow):
         return self.treec.GetItemParent(treeitem) == self.treec.GetRootItem()
 
     def popup_item_menu(self, event):
-        self.treec.SetFocus()
+        # Using a separate procedure for EVT_TREE_ITEM_MENU (instead of always
+        # using EVT_RIGHT_DOWN) ensures a standard behaviour, e.g. selecting
+        # the item if not selected unselecting all the others, or leaving the
+        # selection untouched if clicking on an already selected item
+        self._popup_context_menu(event.GetPoint())
 
+    def popup_window_menu(self, event):
+        # Use EVT_RIGHT_DOWN when clicking in areas without items, because in
+        # that case EVT_TREE_ITEM_MENU is not triggered
+        if not self.treec.HitTest(event.GetPosition())[0].IsOk():
+            self.treec.UnselectAll()
+            self._popup_context_menu(event.GetPosition())
+
+        # Skip the event so that self.popup_item_menu can work correctly
+        event.Skip()
+
+    def _popup_context_menu(self, point):
         self.cmenu.update_items()
         popup_context_menu_event.signal(filename=self.filename)
+        self.treec.PopupMenu(self.cmenu, point)
 
-        self.treec.PopupMenu(self.cmenu, event.GetPoint())
+    def unselect_on_empty_areas(self, event):
+        if not self.treec.HitTest(event.GetPosition())[0].IsOk():
+            self.treec.UnselectAll()
+
+        # Skipping the event ensures correct left click behaviour
+        event.Skip()
 
     def get_tab_context_menu(self):
         self.ctabmenu.update()
