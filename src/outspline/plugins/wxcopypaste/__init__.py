@@ -180,32 +180,37 @@ def handle_open_database(kwargs):
     cmenu[filename] = {}
     config = coreaux_api.get_plugin_configuration('wxcopypaste')
 
-    cmenu[filename]['cut'] = wxgui_api.insert_tree_context_menu_item(filename,
-                                                config.get_int('cmenucut_pos'),
-                                                'Cu&t items', id_=ID_CUT,
-                                                help='Cut the selected items',
-                                                sep=config['cmenucut_sep'],
-                                                icon='@cut')
-    cmenu[filename]['copy'] = wxgui_api.insert_tree_context_menu_item(filename,
-                                               config.get_int('cmenucopy_pos'),
-                                               '&Copy items', id_=ID_COPY,
-                                               help='Copy the selected items',
-                                               sep=config['cmenucopy_sep'],
-                                               icon='@copy')
-    cmenu[filename]['paste'] = wxgui_api.insert_tree_context_menu_item(
-                        filename,
-                        config.get_int('cmenupaste_pos'),
-                        '&Paste siblings',
-                        id_=ID_PASTE,
-                        help='Paste items as siblings after the selected item',
-                        sep=config['cmenupaste_sep'], icon='@paste')
-    cmenu[filename]['pastesub'] = wxgui_api.insert_tree_context_menu_item(
-                           filename,
-                           config.get_int('cmenupastesub_pos'),
-                           'P&aste sub-items',
-                           id_=ID_PASTE_SUB,
-                           help='Paste items as children of the selected item',
-                           sep=config['cmenupastesub_sep'], icon='@paste')
+    cmenu[filename]['cut'] = wx.MenuItem(
+                                    wxgui_api.get_tree_context_menu(filename),
+                                    ID_CUT, 'Cu&t items')
+    cmenu[filename]['copy'] = wx.MenuItem(
+                                    wxgui_api.get_tree_context_menu(filename),
+                                    ID_COPY, '&Copy items')
+    cmenu[filename]['paste'] = wx.MenuItem(
+                                    wxgui_api.get_tree_context_menu(filename),
+                                    ID_PASTE, '&Paste siblings')
+    cmenu[filename]['pastesub'] = wx.MenuItem(
+                                    wxgui_api.get_tree_context_menu(filename),
+                                    ID_PASTE_SUB, 'P&aste sub-items')
+
+    cmenu[filename]['cut'].SetBitmap(wx.ArtProvider.GetBitmap('@cut',
+                                                                wx.ART_MENU))
+    cmenu[filename]['copy'].SetBitmap(wx.ArtProvider.GetBitmap('@copy',
+                                                                wx.ART_MENU))
+    cmenu[filename]['paste'].SetBitmap(wx.ArtProvider.GetBitmap('@paste',
+                                                                wx.ART_MENU))
+    cmenu[filename]['pastesub'].SetBitmap(wx.ArtProvider.GetBitmap('@paste',
+                                                                wx.ART_MENU))
+
+    separator = wx.MenuItem(wxgui_api.get_tree_context_menu(filename),
+                                                        kind=wx.ITEM_SEPARATOR)
+
+    # Add in reverse order
+    wxgui_api.add_tree_context_menu_item(filename, separator)
+    wxgui_api.add_tree_context_menu_item(filename, cmenu[filename]['pastesub'])
+    wxgui_api.add_tree_context_menu_item(filename, cmenu[filename]['paste'])
+    wxgui_api.add_tree_context_menu_item(filename, cmenu[filename]['copy'])
+    wxgui_api.add_tree_context_menu_item(filename, cmenu[filename]['cut'])
 
 
 def handle_close_database(kwargs):
@@ -283,26 +288,31 @@ def main():
     global mcut, mcopy, mpaste, mpastesub
     config = coreaux_api.get_plugin_configuration('wxcopypaste')
 
-    mcut = wxgui_api.insert_menu_item('Database',
-                                      config.get_int('menucut_pos'),
-                                      'Cu&t items\tCTRL+SHIFT+x', id_=ID_CUT,
-                                      help='Cut the selected items',
-                                      sep=config['menucut_sep'], icon='@cut')
-    mcopy = wxgui_api.insert_menu_item('Database',
-                                   config.get_int('menucopy_pos'),
-                                   '&Copy items\tCTRL+SHIFT+c', id_=ID_COPY,
-                                   help='Copy the selected items',
-                                   sep=config['menucopy_sep'], icon='@copy')
-    mpaste = wxgui_api.insert_menu_item('Database',
-                        config.get_int('menupaste_pos'),
-                        '&Paste items\tCTRL+SHIFT+v', id_=ID_PASTE,
-                        help='Paste items as siblings after the selected item',
-                        sep=config['menupaste_sep'], icon='@paste')
-    mpastesub = wxgui_api.insert_menu_item('Database',
-                           config.get_int('menupastesub_pos'),
-                           'P&aste sub-items\tCTRL+SHIFT+b', id_=ID_PASTE_SUB,
-                           help='Paste items as children of the selected item',
-                           sep=config['menupastesub_sep'], icon='@paste')
+    mcut = wx.MenuItem(wxgui_api.get_menu_database(), ID_CUT,
+                        'Cu&t items\tCTRL+SHIFT+x', 'Cut the selected items')
+    mcopy = wx.MenuItem(wxgui_api.get_menu_database(), ID_COPY,
+                        '&Copy items\tCTRL+SHIFT+c', 'Copy the selected items')
+    mpaste = wx.MenuItem(wxgui_api.get_menu_database(), ID_PASTE,
+                            '&Paste items\tCTRL+SHIFT+v',
+                            'Paste items as siblings after the selected item')
+    mpastesub = wx.MenuItem(wxgui_api.get_menu_database(), ID_PASTE_SUB,
+                                'P&aste sub-items\tCTRL+SHIFT+b',
+                                'Paste items as children of the selected item')
+
+    mcut.SetBitmap(wx.ArtProvider.GetBitmap('@cut', wx.ART_MENU))
+    mcopy.SetBitmap(wx.ArtProvider.GetBitmap('@copy', wx.ART_MENU))
+    mpaste.SetBitmap(wx.ArtProvider.GetBitmap('@paste', wx.ART_MENU))
+    mpastesub.SetBitmap(wx.ArtProvider.GetBitmap('@paste', wx.ART_MENU))
+
+    separator = wx.MenuItem(wxgui_api.get_menu_database(),
+                                                        kind=wx.ITEM_SEPARATOR)
+
+    # Add in reverse order
+    wxgui_api.add_menu_database_item(separator)
+    wxgui_api.add_menu_database_item(mpastesub)
+    wxgui_api.add_menu_database_item(mpaste)
+    wxgui_api.add_menu_database_item(mcopy)
+    wxgui_api.add_menu_database_item(mcut)
 
     wxgui_api.bind_to_menu(cut_items, mcut)
     wxgui_api.bind_to_menu(copy_items, mcopy)

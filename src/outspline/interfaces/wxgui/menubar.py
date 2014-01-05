@@ -68,35 +68,6 @@ class RootMenu(wx.MenuBar):
         self.Append(self.dev, "&Dev")
         self.Append(self.help, "&Help")
 
-    def insert_item(self, menu, pos, text, id_=wx.ID_ANY, help='', sep='none',
-                    kind='normal', sub=None, icon=None):
-        menuw = self.GetMenu(self.FindMenu(menu))
-
-        kinds = {'normal': wx.ITEM_NORMAL,
-                 'check': wx.ITEM_CHECK,
-                 'radio': wx.ITEM_RADIO}
-
-        item = wx.MenuItem(parentMenu=menuw, id=id_, text=text,
-                           help=help, kind=kinds[kind], subMenu=sub)
-
-        if icon is not None:
-            item.SetBitmap(wx.ArtProvider.GetBitmap(icon, wx.ART_MENU))
-
-        if pos == -1:
-            if sep in ('up', 'both'):
-                menuw.AppendSeparator()
-            menuw.AppendItem(item)
-            if sep in ('down', 'both'):
-                menuw.AppendSeparator()
-        else:
-            # Start from bottom, so that it's always possible to use pos
-            if sep in ('down', 'both'):
-                menuw.InsertSeparator(pos)
-            menuw.InsertItem(pos, item)
-            if sep in ('up', 'both'):
-                menuw.InsertSeparator(pos)
-        return item
-
     def update_menus(self, event):
         menu = event.GetMenu()
 
@@ -188,6 +159,7 @@ class MenuFile(wx.Menu):
         self.AppendSeparator()
         self.AppendItem(self.close_)
         self.AppendItem(self.closeall)
+        self.AppendSeparator()
         self.AppendItem(self.exit_)
 
         wx.GetApp().Bind(wx.EVT_MENU, self.new_database, self.new_)

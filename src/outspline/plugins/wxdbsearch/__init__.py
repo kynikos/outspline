@@ -524,7 +524,8 @@ class MainMenu(wx.Menu):
         wxgui_api.bind_to_update_menu_items(self.update_items)
         wxgui_api.bind_to_reset_menu_items(self.reset_items)
 
-        wxgui_api.insert_menu_main_item('&Search', 'View', self)
+        wxgui_api.insert_menu_main_item('&Search',
+                                    wxgui_api.get_menu_view_position(), self)
 
     @staticmethod
     def get_selected_search():

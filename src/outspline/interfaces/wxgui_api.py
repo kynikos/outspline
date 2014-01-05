@@ -124,15 +124,49 @@ def simulate_close_all_editors(ask='apply'):
 
 ### MENUBAR ###
 
-def insert_menu_main_item(title, before, menu):
-    return wx.GetApp().menu.Insert(wx.GetApp().menu.FindMenu(before),
-                                      menu, title)
+def get_menu_file():
+    return wx.GetApp().menu.file
 
 
-def insert_menu_item(menu, pos, item, id_=wx.ID_ANY, help='', sep='none',
-                     kind='normal', sub=None, icon=None):
-    return wx.GetApp().menu.insert_item(menu, pos, item, id_, help, sep, kind,
-                                        sub, icon)
+def get_menu_database():
+    return wx.GetApp().menu.database
+
+
+def get_menu_editor():
+    return wx.GetApp().menu.edit
+
+
+def get_menu_view():
+    return wx.GetApp().menu.view
+
+
+def get_menu_view_position():
+    return wx.GetApp().menu.FindMenu('View')
+
+
+def get_menu_help_position():
+    return wx.GetApp().menu.FindMenu('Help')
+
+
+def insert_menu_main_item(title, position, menu):
+    return wx.GetApp().menu.Insert(position, menu, title)
+
+
+def add_menu_file_item(item):
+    position = wx.GetApp().menu.file.GetMenuItemCount() - 1
+    return wx.GetApp().menu.file.InsertItem(position, item)
+
+
+def add_menu_database_item(item):
+    return wx.GetApp().menu.database.InsertItem(6, item)
+
+
+def add_menu_editor_item(item):
+    return wx.GetApp().menu.edit.InsertItem(0, item)
+
+
+def add_menu_view_item(item):
+    return wx.GetApp().menu.view.AppendItem(item)
 
 
 def bind_to_update_menu_items(handler, bind=True):
@@ -439,11 +473,12 @@ def set_item_font(filename, id_, wxfont):
         return tree.dbs[filename].set_item_font(treeitem, wxfont)
 
 
-def insert_tree_context_menu_item(filename, pos, item, id_=wx.ID_ANY, help='',
-                                  sep='none', kind='normal', sub=None,
-                                  icon=None):
-    return tree.dbs[filename].cmenu.insert_item(pos, item, id_, help, sep,
-                                                kind, sub, icon)
+def get_tree_context_menu(filename):
+    return tree.dbs[filename].cmenu
+
+
+def add_tree_context_menu_item(filename, item):
+    return tree.dbs[filename].cmenu.InsertItem(3, item)
 
 
 def refresh_history(filename):

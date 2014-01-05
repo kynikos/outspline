@@ -498,33 +498,6 @@ class ContextMenu(wx.Menu):
         self.AppendSeparator()
         self.AppendItem(self.delete)
 
-    def insert_item(self, pos, text, id_=wx.ID_ANY, help='', sep='none',
-                    kind='normal', sub=None, icon=None):
-        kinds = {'normal': wx.ITEM_NORMAL,
-                 'check': wx.ITEM_CHECK,
-                 'radio': wx.ITEM_RADIO}
-
-        item = wx.MenuItem(parentMenu=self, id=id_, text=text, help=help,
-                           kind=kinds[kind], subMenu=sub)
-
-        if icon is not None:
-            item.SetBitmap(wx.ArtProvider.GetBitmap(icon, wx.ART_MENU))
-
-        if pos == -1:
-            if sep in ('up', 'both'):
-                self.AppendSeparator()
-            self.AppendItem(item)
-            if sep in ('down', 'both'):
-                self.AppendSeparator()
-        else:
-            # Start from bottom, so that it's always possible to use pos
-            if sep in ('down', 'both'):
-                self.InsertSeparator(pos)
-            self.InsertItem(pos, item)
-            if sep in ('up', 'both'):
-                self.InsertSeparator(pos)
-        return item
-
     def reset_items(self):
         self.sibling.Enable(False)
         self.child.Enable(False)

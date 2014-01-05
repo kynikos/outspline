@@ -141,7 +141,8 @@ class MainMenu(wx.Menu):
         wxgui_api.bind_to_update_menu_items(self.update_items)
         wxgui_api.bind_to_reset_menu_items(self.reset_items)
 
-        wxgui_api.insert_menu_main_item('&Occurrences', 'View', self)
+        wxgui_api.insert_menu_main_item('&Occurrences',
+                                    wxgui_api.get_menu_view_position(), self)
 
     def update_items(self, kwargs):
         if kwargs['menu'] is self:
@@ -295,13 +296,13 @@ class ViewMenu():
         self.tasklist = tasklist
 
         self.ID_SHOW = wx.NewId()
-        self.menushow = wxgui_api.insert_menu_item('View',
-                               self.tasklist.config.get_int('show_menu_pos'),
-                               'Show &occurrences\tCTRL+SHIFT+F5',
-                               id_=self.ID_SHOW,
-                               help='Show the occurrences window',
-                               kind='check',
-                               sep=self.tasklist.config['show_menu_sep'])
+
+        self.menushow = wx.MenuItem(wxgui_api.get_menu_view(), self.ID_SHOW,
+                                            "Show &occurrences\tCTRL+SHIFT+F5",
+                                            "Show the occurrences window",
+                                            kind=wx.ITEM_CHECK)
+
+        self.menushow = wxgui_api.add_menu_view_item(self.menushow)
 
         wxgui_api.bind_to_menu_view_update(self.update_menu_items)
         wxgui_api.bind_to_menu(self.tasklist.toggle_shown, self.menushow)

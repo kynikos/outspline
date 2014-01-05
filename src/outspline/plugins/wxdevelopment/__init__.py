@@ -53,7 +53,8 @@ class MenuDev(wx.Menu):
         self.populate = self.Append(wx.NewId(), "&Populate database")
         self.simulator = self.AppendCheckItem(wx.NewId(), "&Run simulator")
 
-        wxgui_api.insert_menu_main_item('Develo&pment', 'Help', self)
+        wxgui_api.insert_menu_main_item('Develo&pment',
+                                    wxgui_api.get_menu_help_position(), self)
 
         wxgui_api.bind_to_menu(self.populate_tree, self.populate)
         wxgui_api.bind_to_menu(self.toggle_simulator, self.simulator)

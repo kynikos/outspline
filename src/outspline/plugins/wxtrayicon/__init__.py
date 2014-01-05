@@ -43,12 +43,13 @@ class TrayIcon(wx.TaskBarIcon):
 
         self.icon = BlinkingIcon(self)
 
-        menumin = wxgui_api.insert_menu_item('File',
-                                  config.get_int('menu_pos'),
-                                  '&Minimize to tray\tCTRL+m',
-                                  id_=self.ID_MINIMIZE,
-                                  help='Minimize the main window to tray icon',
-                                  sep=config['menu_sep'], icon='@tray')
+        menumin = wx.MenuItem(wxgui_api.get_menu_file(), self.ID_MINIMIZE,
+                                    '&Minimize to tray\tCTRL+m',
+                                    'Minimize the main window to tray icon')
+
+        menumin.SetBitmap(wx.ArtProvider.GetBitmap('@tray', wx.ART_MENU))
+
+        wxgui_api.add_menu_file_item(menumin)
 
         self.Bind(wx.EVT_TASKBAR_LEFT_DOWN, self._handle_left_click)
         self.Bind(wx.EVT_TASKBAR_RIGHT_DOWN, self._handle_right_click)
@@ -75,7 +76,7 @@ class TrayIcon(wx.TaskBarIcon):
         # called
         self.menu = TrayMenu(self)
 
-        create_menu_event.signal()
+        create_menu_event.signal(menu=self.menu)
 
         self.menu.update_items()
 
@@ -188,33 +189,6 @@ class TrayMenu(wx.Menu):
 
         parent.Bind(wx.EVT_MENU, wxgui_api.toggle_main_window, self.restore)
         parent.Bind(wx.EVT_MENU, wxgui_api.exit_application, self.exit_)
-
-    def insert_item(self, pos, text, id_=wx.ID_ANY, help='', sep='none',
-                    kind='normal', sub=None, icon=None):
-        kinds = {'normal': wx.ITEM_NORMAL,
-                 'check': wx.ITEM_CHECK,
-                 'radio': wx.ITEM_RADIO}
-
-        item = wx.MenuItem(parentMenu=self, id=id_, text=text, help=help,
-                           kind=kinds[kind], subMenu=sub)
-
-        if icon is not None:
-            item.SetBitmap(wx.ArtProvider.GetBitmap(icon, wx.ART_MENU))
-
-        if pos == -1:
-            if sep in ('up', 'both'):
-                self.AppendSeparator()
-            self.AppendItem(item)
-            if sep in ('down', 'both'):
-                self.AppendSeparator()
-        else:
-            # Start from bottom, so that it's always possible to use pos
-            if sep in ('down', 'both'):
-                self.InsertSeparator(pos)
-            self.InsertItem(pos, item)
-            if sep in ('up', 'both'):
-                self.InsertSeparator(pos)
-        return item
 
     def reset_items(self):
         self.restore.Check(check=wxgui_api.is_shown())
