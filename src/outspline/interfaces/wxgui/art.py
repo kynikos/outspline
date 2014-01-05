@@ -62,6 +62,7 @@ class ArtProvider(wx.ArtProvider):
                     '@filters': ('document-open', ),
                     '@find': ('search', 'find' 'edit-find', 'gtk-find',
                               'filefind', 'stock_search'),
+                    '@history': ('window-close', ),
                     '@languages': ('locale', 'preferences-desktop-locale',
                                    'config-language'),
                     '@movedown': ('go-down', 'gtk-go-down', 'down',
