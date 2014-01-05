@@ -82,6 +82,7 @@ class Database(wx.SplitterWindow):
 
         self.treec.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.veto_label_edit)
         self.treec.Bind(wx.EVT_TREE_ITEM_MENU, self.popup_item_menu)
+        # Note that EVT_CONTEXT_MENU wouldn't work on empty spaces
         self.treec.Bind(wx.EVT_RIGHT_DOWN, self.popup_window_menu)
         self.treec.Bind(wx.EVT_LEFT_DOWN, self.unselect_on_empty_areas)
 
