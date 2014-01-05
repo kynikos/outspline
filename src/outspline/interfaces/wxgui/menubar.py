@@ -660,8 +660,7 @@ class MenuDatabase(wx.Menu):
         treedb = wx.GetApp().nb_left.get_selected_tab()
         if treedb:
             selection = treedb.get_selections(none=False, descendants=True)
-            if selection and (no_confirm or msgboxes.delete_items_confirm(
-                                    len(selection)).ShowModal() == wx.ID_OK):
+            if selection:
                 filename = treedb.get_filename()
                 for item in selection:
                     id_ = treedb.get_item_id(item)
