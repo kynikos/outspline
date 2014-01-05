@@ -126,7 +126,7 @@ class OccurrencesView():
         self.listview.Bind(wx.EVT_CONTEXT_MENU, self.popup_context_menu)
 
     def _init_context_menu(self, mainmenu):
-        self.cmenu = menus.ListContextMenu(self, mainmenu)
+        self.cmenu = menus.ListContextMenu(self.tasklist, mainmenu)
 
     def get_secondary_sort_values(self, col, key1, key2):
         return (self.datamap[key1][2], self.datamap[key2][2])

@@ -87,11 +87,11 @@ class MainMenu(wx.Menu):
                             "to the selected occurrences")
 
         self.snooze = wx.MenuItem(self, self.ID_SNOOZE, "&Snooze selected",
-                                "Snooze the selected alarms",
-                                subMenu=SnoozeSelectedConfigMenu(self.occview))
+                            "Snooze the selected alarms",
+                            subMenu=SnoozeSelectedConfigMenu(self.tasklist))
         self.snooze_all = wx.MenuItem(self, self.ID_SNOOZE_ALL,
                                 "S&nooze all", "Snooze all the active alarms",
-                                subMenu=SnoozeAllConfigMenu(self.occview))
+                                subMenu=SnoozeAllConfigMenu(self.tasklist))
 
         self.dismiss = wx.MenuItem(self, self.ID_DISMISS,
                         "Dis&miss selected\tF8", "Dismiss the selected alarms")
@@ -218,7 +218,7 @@ class MainMenu(wx.Menu):
     def find_in_tree(self, event):
         tab = wxgui_api.get_selected_right_nb_tab()
 
-        if tab is self.occview.parent:
+        if tab is self.tasklist.panel:
             sel = self.occview.listview.GetFirstSelected()
 
             if sel > -1:
@@ -246,7 +246,7 @@ class MainMenu(wx.Menu):
     def edit_items(self, event):
         tab = wxgui_api.get_selected_right_nb_tab()
 
-        if tab is self.occview.parent:
+        if tab is self.tasklist.panel:
             sel = self.occview.listview.GetFirstSelected()
 
             while sel > -1:
@@ -260,7 +260,7 @@ class MainMenu(wx.Menu):
 
         tab = wxgui_api.get_selected_right_nb_tab()
 
-        if tab is self.occview.parent:
+        if tab is self.tasklist.panel:
             alarmsd = self.occview.get_selected_active_alarms()
 
             if len(alarmsd) > 0:
@@ -276,7 +276,7 @@ class MainMenu(wx.Menu):
 
         tab = wxgui_api.get_selected_right_nb_tab()
 
-        if tab is self.occview.parent:
+        if tab is self.tasklist.panel:
             alarmsd = self.occview.activealarms
 
             if len(alarmsd) > 0:
@@ -336,7 +336,7 @@ class TabContextMenu(wx.Menu):
                     self.tasklist.mainmenu.ID_REMOVE_FILTER, "&Remove filter")
         self.snooze_all = wx.MenuItem(self,
                         self.tasklist.mainmenu.ID_SNOOZE_ALL, "S&nooze all",
-                        subMenu=SnoozeAllConfigMenu(self.tasklist.list_))
+                        subMenu=SnoozeAllConfigMenu(self.tasklist))
         self.dismiss_all = wx.MenuItem(self,
                         self.tasklist.mainmenu.ID_DISMISS_ALL, "&Dismiss all")
 
@@ -374,6 +374,7 @@ class TabContextMenu(wx.Menu):
 
 
 class ListContextMenu(wx.Menu):
+    tasklist = None
     occview = None
     mainmenu = None
     find = None
@@ -381,9 +382,10 @@ class ListContextMenu(wx.Menu):
     snooze = None
     dismiss = None
 
-    def __init__(self, occview, mainmenu):
+    def __init__(self, tasklist, mainmenu):
         wx.Menu.__init__(self)
-        self.occview = occview
+        self.tasklist = tasklist
+        self.occview = tasklist.list_
         self.mainmenu = mainmenu
 
         self.find = wx.MenuItem(self, self.mainmenu.ID_FIND,
@@ -392,7 +394,7 @@ class ListContextMenu(wx.Menu):
         self.snooze = wx.MenuItem(self, self.mainmenu.ID_SNOOZE,
                                             "&Snooze selected",
                                             subMenu=SnoozeSelectedConfigMenu(
-                                            self.occview, accelerator=False))
+                                            self.tasklist, accelerator=False))
         self.dismiss = wx.MenuItem(self, self.mainmenu.ID_DISMISS,
                                                            "&Dismiss selected")
 
@@ -472,13 +474,13 @@ class FiltersMenu(wx.Menu):
 
 
 class _SnoozeConfigMenu(wx.Menu):
-    occview = None
+    tasklist = None
     snoozetimes = None
     snoozefor = None
 
-    def __init__(self, occview):
+    def __init__(self, tasklist):
         wx.Menu.__init__(self)
-        self.occview = occview
+        self.tasklist = tasklist
         self.snoozetimes = {}
 
         # Using a set here to remove any duplicates would lose the order of
@@ -509,7 +511,7 @@ class _SnoozeConfigMenu(wx.Menu):
 
         tab = wxgui_api.get_selected_right_nb_tab()
 
-        if tab is self.occview.parent:
+        if tab is self.tasklist.panel:
             alarmsd = self.get_alarms()
 
             if len(alarmsd) > 0:
@@ -523,7 +525,7 @@ class _SnoozeConfigMenu(wx.Menu):
 
         tab = wxgui_api.get_selected_right_nb_tab()
 
-        if tab is self.occview.parent:
+        if tab is self.tasklist.panel:
             alarmsd = self.get_alarms()
 
             if len(alarmsd) > 0:
@@ -589,24 +591,24 @@ class SnoozeDialog(wx.Dialog):
 
 
 class SnoozeSelectedConfigMenu(_SnoozeConfigMenu):
-    def __init__(self, occview, accelerator=True):
-        _SnoozeConfigMenu.__init__(self, occview)
+    def __init__(self, tasklist, accelerator=True):
+        _SnoozeConfigMenu.__init__(self, tasklist)
         accel = "\tF7" if accelerator else ""
         self.snoozefor.SetText(self.snoozefor.GetText() + accel)
 
     def get_alarms(self):
-        return self.occview.get_selected_active_alarms()
+        return self.tasklist.list_.get_selected_active_alarms()
 
 
 class SnoozeAllConfigMenu(_SnoozeConfigMenu):
-    def __init__(self, occview, accelerator=True):
-        _SnoozeConfigMenu.__init__(self, occview)
+    def __init__(self, tasklist, accelerator=True):
+        _SnoozeConfigMenu.__init__(self, tasklist)
         accel = "\tCTRL+F7" if accelerator else ""
         self.snoozefor.SetText(self.snoozefor.GetText() + accel)
 
     def get_alarms(self):
         # Note that "all" means all the visible active alarms; some may be
         # hidden in the current view
-        return self.occview.activealarms
+        return self.tasklist.list_.activealarms
 
 
