@@ -30,46 +30,50 @@ config = coreaux_api.get_interface_configuration('wxgui')
 _show_history = config.get_bool('show_history')
 
 
-class HistoryWindow(wx.ScrolledWindow):
+class History():
     filename = None
-    events = None
+    scwindow = None
     box = None
     cmenu = None
 
     def __init__(self, parent, filename):
-        wx.ScrolledWindow.__init__(self, parent)
-        self.SetScrollRate(20, 20)
-
         self.filename = filename
-        self.events = {}
+
+        self.scwindow = wx.ScrolledWindow(parent)
+        self.scwindow.SetScrollRate(20, 20)
+        self.scwindow.SetBackgroundColour(parent.treec.GetBackgroundColour())
 
         self.box = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(self.box)
+        self.scwindow.SetSizer(self.box)
 
         self.cmenu = ContextMenu(filename)
 
-        self.Bind(wx.EVT_CONTEXT_MENU, self.popup_context_menu)
+        self.scwindow.Bind(wx.EVT_CONTEXT_MENU, self.popup_context_menu)
 
         self.refresh()
 
     def refresh(self):
+        # Don't use self.scwindow.DestroyChildren() because it wouldn't also
+        # delete the spacer; moreover, while refreshing, all the StaticText
+        # items would appear all overlapping until the Layout, which doesn't
+        # happen with self.box.Clear(True)
         self.box.Clear(True)
 
-        descriptions = core_api.get_history_descriptions(self.filename)
-        for row in descriptions:
-            st = wx.StaticText(self, label=''.join(('[', str(row['H_status']),
-                                                    '] ',
-                                                    row['H_description'])))
-            self.events[row['H_group']] = {'status': row['H_status'],
-                                            'st': st}
-            self.box.Add(st)
+        self.box.AddSpacer(4)
 
-        self.Layout()
-        self.box.FitInside(self)
+        descriptions = core_api.get_history_descriptions(self.filename)
+
+        for row in descriptions:
+            line = "".join(("[", str(row['H_status']), "] ",
+                                                        row['H_description']))
+            text = wx.StaticText(self.scwindow, label=line)
+            self.box.Add(text, flag=wx.EXPAND | wx.LEFT, border=4)
+
+        self.scwindow.Layout()
 
     def popup_context_menu(self, event):
         self.cmenu.update_items()
-        self.PopupMenu(self.cmenu)
+        self.scwindow.PopupMenu(self.cmenu)
 
 
 class ContextMenu(wx.Menu):

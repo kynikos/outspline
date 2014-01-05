@@ -44,7 +44,6 @@ class Database(wx.SplitterWindow):
     titems = None
     cmenu = None
     ctabmenu = None
-    hpanel = None
     history = None
 
     def __init__(self, filename, parent):
@@ -64,18 +63,9 @@ class Database(wx.SplitterWindow):
         self.cmenu = ContextMenu(self)
         self.ctabmenu = TabContextMenu(self.filename)
 
-        self.hpanel = wx.Panel(self)
-        bs = wx.BoxSizer(wx.VERTICAL)
-        self.hpanel.SetSizer(bs)
+        self.history = history.History(self, self.filename)
+        self.history.scwindow.Show(False)
 
-        self.history = history.HistoryWindow(self.hpanel, self.filename)
-
-        line = wx.StaticLine(self.hpanel, size=(1, 1), style=wx.LI_HORIZONTAL)
-
-        bs.Add(line, flag=wx.EXPAND)
-        bs.Add(self.history, 1, flag=wx.EXPAND)
-
-        self.hpanel.Show(False)
         self.Initialize(self.treec)
 
         self.create()
@@ -301,7 +291,7 @@ class Database(wx.SplitterWindow):
         del dbs[self.filename]
 
     def show_history(self):
-        self.SplitHorizontally(self.treec, self.hpanel)
+        self.SplitHorizontally(self.treec, self.history.scwindow)
         self.SetSashGravity(1.0)
 
         # The same workaround for http://trac.wxwidgets.org/ticket/9821
@@ -311,7 +301,7 @@ class Database(wx.SplitterWindow):
         self.SetSashPosition(-80)
 
     def hide_history(self):
-        self.Unsplit(self.hpanel)
+        self.Unsplit(self.history.scwindow)
 
     def get_filename(self):
         return self.filename
