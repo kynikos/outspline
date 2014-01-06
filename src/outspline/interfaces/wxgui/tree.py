@@ -433,6 +433,8 @@ class Database(wx.SplitterWindow):
 class ContextMenu(wx.Menu):
     parent = None
     sibling = None
+    sibling_label_1 = None
+    sibling_label_2 = None
     child = None
     moveup = None
     movedn = None
@@ -443,28 +445,26 @@ class ContextMenu(wx.Menu):
     def __init__(self, parent):
         wx.Menu.__init__(self)
 
+        self.sibling_label_1 = "Create &item"
+        self.sibling_label_2 = "Create s&ibling"
+
         self.parent = parent
 
         self.sibling = wx.MenuItem(self, wx.GetApp().menu.database.ID_SIBLING,
-                                   "Create s&ibling",
-                                   "Create a sibling after the selected item")
+                                                        self.sibling_label_1)
         self.child = wx.MenuItem(self, wx.GetApp().menu.database.ID_CHILD,
-                                 "Create &sub-item",
-                                 "Create a child for the selected item")
+                                                            "Create c&hild")
         self.moveup = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_UP,
-                                  "&Move item up",
-                                  "Swap the selected item with the one above")
+                                                            "&Move item up")
         self.movedn = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_DOWN,
-                                  "Mo&ve item down",
-                                  "Swap the selected item with the one below")
-        self.movept = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_PARENT,
-                                  "M&ove item to parent",
-                           "Move the selected item as a sibling of its parent")
+                                                            "Mo&ve item down")
+        self.movept = wx.MenuItem(self,
+                                    wx.GetApp().menu.database.ID_MOVE_PARENT,
+                                    "M&ove item to parent")
         self.edit = wx.MenuItem(self, wx.GetApp().menu.database.ID_EDIT,
-                                "&Edit item",
-                                "Open the selected item in the editor")
+                                                                "&Edit item")
         self.delete = wx.MenuItem(self, wx.GetApp().menu.database.ID_DELETE,
-                                  "&Delete items", "Delete the selected items")
+                                                            "&Delete items")
 
         self.sibling.SetBitmap(wx.ArtProvider.GetBitmap('@newitem',
                                                         wx.ART_MENU))
@@ -497,6 +497,7 @@ class ContextMenu(wx.Menu):
         self.movept.Enable(False)
         self.edit.Enable(False)
         self.delete.Enable(False)
+        self.sibling.SetItemLabel(self.sibling_label_1)
 
         reset_context_menu_event.signal(filename=self.parent.filename)
 
@@ -507,6 +508,7 @@ class ContextMenu(wx.Menu):
 
         if len(sel) == 1:
             self.sibling.Enable()
+            self.sibling.SetItemLabel(self.sibling_label_2)
             self.child.Enable()
 
             if self.parent.get_item_previous(sel[0]).IsOk():

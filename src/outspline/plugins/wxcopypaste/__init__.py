@@ -35,9 +35,15 @@ ID_COPY = None
 mcopy = None
 ID_PASTE = None
 mpaste = None
+mpaste_label_1 = None
+mpaste_help_1 = None
+mpaste_label_2 = None
+mpaste_help_2 = None
 ID_PASTE_SUB = None
 mpastesub = None
 cmenu = {}
+cpaste_label_1 = None
+cpaste_label_2 = None
 
 
 def cut_items(event, no_confirm=False):
@@ -175,9 +181,14 @@ def paste_items_as_children(event, no_confirm=False):
 
 
 def handle_open_database(kwargs):
-    global cmenu
     filename = kwargs['filename']
+
+    global cmenu, cpaste_label_1, cpaste_label_2
+    cpaste_label_1 = '&Paste items'
+    cpaste_label_2 = '&Paste as siblings'
+
     cmenu[filename] = {}
+
     config = coreaux_api.get_plugin_configuration('wxcopypaste')
 
     cmenu[filename]['cut'] = wx.MenuItem(
@@ -188,10 +199,10 @@ def handle_open_database(kwargs):
                                     ID_COPY, '&Copy items')
     cmenu[filename]['paste'] = wx.MenuItem(
                                     wxgui_api.get_tree_context_menu(filename),
-                                    ID_PASTE, '&Paste siblings')
+                                    ID_PASTE, cpaste_label_1)
     cmenu[filename]['pastesub'] = wx.MenuItem(
                                     wxgui_api.get_tree_context_menu(filename),
-                                    ID_PASTE_SUB, 'P&aste sub-items')
+                                    ID_PASTE_SUB, 'P&aste as children')
 
     cmenu[filename]['cut'].SetBitmap(wx.ArtProvider.GetBitmap('@cut',
                                                                 wx.ART_MENU))
@@ -232,6 +243,8 @@ def handle_enable_tree_menus(kwargs):
     mcopy.Enable(False)
     mpaste.Enable(False)
     mpastesub.Enable(False)
+    mpaste.SetItemLabel(mpaste_label_1)
+    mpaste.SetHelp(mpaste_help_1)
 
     # filename is None is no database is open
     if filename:
@@ -242,13 +255,14 @@ def handle_enable_tree_menus(kwargs):
             mcopy.Enable()
             if copypaste_api.has_copied_items(filename):
                 mpaste.Enable()
+                mpaste.SetItemLabel(mpaste_label_2)
+                mpaste.SetHelp(mpaste_help_2)
                 mpastesub.Enable()
         elif len(sel) > 1:
             mcut.Enable()
             mcopy.Enable()
-        else:
-            if copypaste_api.has_copied_items(filename):
-                mpaste.Enable()
+        elif copypaste_api.has_copied_items(filename):
+            mpaste.Enable()
 
 
 def handle_reset_tree_context_menu(kwargs):
@@ -257,6 +271,7 @@ def handle_reset_tree_context_menu(kwargs):
     cms['copy'].Enable(False)
     cms['paste'].Enable(False)
     cms['pastesub'].Enable(False)
+    cms['paste'].SetItemLabel(cpaste_label_1)
 
 
 def handle_popup_tree_context_menu(kwargs):
@@ -269,13 +284,13 @@ def handle_popup_tree_context_menu(kwargs):
         cms['copy'].Enable()
         if copypaste_api.has_copied_items(filename):
             cms['paste'].Enable()
+            cms['paste'].SetItemLabel(cpaste_label_2)
             cms['pastesub'].Enable()
     elif len(sel) > 1:
         cms['cut'].Enable()
         cms['copy'].Enable()
-    else:
-        if copypaste_api.has_copied_items(filename):
-            cms['paste'].Enable()
+    elif copypaste_api.has_copied_items(filename):
+        cms['paste'].Enable()
 
 
 def main():
@@ -285,6 +300,12 @@ def main():
     ID_PASTE = wx.NewId()
     ID_PASTE_SUB = wx.NewId()
 
+    global mpaste_label_1, mpaste_help_1, mpaste_label_2, mpaste_help_2
+    mpaste_label_1 = '&Paste items\tCTRL+SHIFT+v'
+    mpaste_help_1 = 'Paste items as root items'
+    mpaste_label_2 = '&Paste as siblings\tCTRL+SHIFT+v'
+    mpaste_help_2 = 'Paste items as siblings below the selected item'
+
     global mcut, mcopy, mpaste, mpastesub
     config = coreaux_api.get_plugin_configuration('wxcopypaste')
 
@@ -293,10 +314,9 @@ def main():
     mcopy = wx.MenuItem(wxgui_api.get_menu_database(), ID_COPY,
                         '&Copy items\tCTRL+SHIFT+c', 'Copy the selected items')
     mpaste = wx.MenuItem(wxgui_api.get_menu_database(), ID_PASTE,
-                            '&Paste items\tCTRL+SHIFT+v',
-                            'Paste items as siblings after the selected item')
+                                                mpaste_label_1, mpaste_help_1)
     mpastesub = wx.MenuItem(wxgui_api.get_menu_database(), ID_PASTE_SUB,
-                                'P&aste sub-items\tCTRL+SHIFT+b',
+                                'P&aste as children\tCTRL+SHIFT+b',
                                 'Paste items as children of the selected item')
 
     mcut.SetBitmap(wx.ArtProvider.GetBitmap('@cut', wx.ART_MENU))

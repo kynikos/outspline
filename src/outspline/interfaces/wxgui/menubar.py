@@ -279,6 +279,10 @@ class MenuDatabase(wx.Menu):
     redo = None
     ID_SIBLING = None
     sibling = None
+    sibling_label_1 = None
+    sibling_help_1 = None
+    sibling_label_2 = None
+    sibling_help_2 = None
     ID_CHILD = None
     child = None
     ID_MOVE_UP = None
@@ -305,15 +309,19 @@ class MenuDatabase(wx.Menu):
         self.ID_EDIT = wx.NewId()
         self.ID_DELETE = wx.NewId()
 
+        self.sibling_label_1 = "Create &item\tCTRL+INSERT"
+        self.sibling_help_1 = "Create a root item"
+        self.sibling_label_2 = "Create s&ibling\tCTRL+INSERT"
+        self.sibling_help_2 = "Create a sibling below the selected item"
+
         self.undo = wx.MenuItem(self, self.ID_UNDO, "&Undo\tCTRL+SHIFT+z",
                                 "Undo the previous database edit in history")
         self.redo = wx.MenuItem(self, self.ID_REDO, "&Redo\tCTRL+SHIFT+y",
                                     "Redo the next database edit in history")
-        self.sibling = wx.MenuItem(self, self.ID_SIBLING,
-                                    "Create &item\tCTRL+INSERT",
-                                    "Create a sibling after the selected item")
+        self.sibling = wx.MenuItem(self, self.ID_SIBLING, self.sibling_label_1,
+                                                        self.sibling_help_1)
         self.child = wx.MenuItem(self, self.ID_CHILD,
-                                        "Create &sub-item\tCTRL+SHIFT+INSERT",
+                                        "Create c&hild\tCTRL+SHIFT+INSERT",
                                         "Create a child for the selected item")
         self.moveup = wx.MenuItem(self, self.ID_MOVE_UP,
                                 "&Move item up\tCTRL+k",
@@ -378,6 +386,8 @@ class MenuDatabase(wx.Menu):
         self.movept.Enable(False)
         self.edit.Enable(False)
         self.delete.Enable(False)
+        self.sibling.SetItemLabel(self.sibling_label_1)
+        self.sibling.SetHelp(self.sibling_help_1)
 
         tab = wx.GetApp().nb_left.get_selected_tab()
 
@@ -393,6 +403,8 @@ class MenuDatabase(wx.Menu):
 
             if len(sel) == 1:
                 self.sibling.Enable()
+                self.sibling.SetItemLabel(self.sibling_label_2)
+                self.sibling.SetHelp(self.sibling_help_2)
                 self.child.Enable()
 
                 if tab.get_item_previous(sel[0]).IsOk():
