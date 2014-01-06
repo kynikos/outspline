@@ -52,6 +52,8 @@ class Scheduler():
     mpanel = None
     choice = None
     choices = None
+    scwindow = None
+    scbox = None
 
     def __init__(self, filename, id_):
         self.filename = filename
@@ -202,7 +204,7 @@ class Scheduler():
         self.mmode = 'append'
 
         create_rule_event.signal(filename=self.filename, id_=self.id_,
-                                                             parent=self.rmaker)
+                                                        parent=self.scwindow)
 
         self.rmaker.Show()
         self.resize_rpanel()
@@ -216,7 +218,7 @@ class Scheduler():
             self.mmode = index
 
             edit_rule_event.signal(filename=self.filename, id_=self.id_,
-                                          parent=self.rmaker, ruled=self.mrules)
+                                    parent=self.scwindow, ruled=self.mrules)
 
             self.rmaker.Show()
             self.resize_rpanel()
@@ -291,6 +293,12 @@ class Scheduler():
         button_ok = wx.Button(self.rmaker, label='OK', size=(60, 24))
         mbox2.Add(button_ok)
 
+        self.scwindow = wx.ScrolledWindow(self.rmaker, style=wx.BORDER_NONE)
+        self.scwindow.SetScrollRate(20, 20)
+        self.scbox = wx.BoxSizer(wx.VERTICAL)
+        self.scwindow.SetSizer(self.scbox)
+        self.mbox.Add(self.scwindow, 1, flag=wx.EXPAND)
+
         self.rmaker.Bind(wx.EVT_CHOICE, self.choose_rule, self.choice)
         self.rmaker.Bind(wx.EVT_BUTTON, self.cancel_maker, button_cancel)
         self.rmaker.Bind(wx.EVT_BUTTON, self.check_maker, button_ok)
@@ -309,14 +317,21 @@ class Scheduler():
 
     def choose_rule(self, event):
         choose_rule_event.signal(filename=self.filename, id_=self.id_,
-                               parent=self.rmaker, choice=event.GetClientData(),
-                                                              ruled=self.mrules)
+                            parent=self.scwindow, choice=event.GetClientData(),
+                            ruled=self.mrules)
 
     def change_rule(self, window):
         if self.mpanel:
-            self.mbox.Remove(self.mpanel)
+            self.scbox.Clear(True)
         self.mpanel = window
-        self.mbox.Add(self.mpanel, 1, flag=wx.EXPAND)
+        self.scbox.Add(self.mpanel, 1, flag=wx.EXPAND)
+        # Do not allocate space for the horizontal scroll bar, otherwise
+        # when/if the user expands the window and the scroll bar disappears,
+        # an ugly gap would be left shown in place of the scroll bar, unless
+        # some complicated size-updating algorithm is used (which is not the
+        # case of this application)
+        self.scwindow.SetMinSize((-1,
+                                self.mpanel.GetBestVirtualSize().GetHeight()))
         self.resize_rpanel()
 
     def cancel_maker(self, event):
@@ -326,9 +341,8 @@ class Scheduler():
 
     def check_maker(self, event):
         check_maker_event.signal(filename=self.filename, id_=self.id_,
-                                 rule=self.choice.GetClientData(
-                                                    self.choice.GetSelection()),
-                                 object_=self.rmaker_ref)
+                    rule=self.choice.GetClientData(self.choice.GetSelection()),
+                    object_=self.rmaker_ref)
 
     def apply_maker(self, ruled, label):
         self.rmaker.Show(False)
