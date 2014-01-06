@@ -146,7 +146,7 @@ class OccurrencesView():
             self.colors['past'] = system
         elif colpast == 'auto':
             DIFF = 64
-            avg = system.Red() + system.Green() + system.Blue() // 3
+            avg = (system.Red() + system.Green() + system.Blue()) // 3
 
             if avg > 127:
                 self.colors['past'] = wx.Colour(

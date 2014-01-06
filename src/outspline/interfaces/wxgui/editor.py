@@ -57,11 +57,11 @@ class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
 
         bgcolour = panel.GetBackgroundColour()
 
-        DIFF1 = 8
-        DIFF2 = DIFF1 + 16
-        avg = bgcolour.Red() + bgcolour.Green() + bgcolour.Blue() // 3
+        avg = (bgcolour.Red() + bgcolour.Green() + bgcolour.Blue()) // 3
 
         if avg > 127:
+            DIFF1 = 16
+            DIFF2 = DIFF1 + 16
             colourtop = wx.Colour(max((bgcolour.Red() - DIFF1, 0)),
                                           max((bgcolour.Green() - DIFF1, 0)),
                                           max((bgcolour.Blue() - DIFF1, 0)))
@@ -69,6 +69,8 @@ class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
                                           max((bgcolour.Green() - DIFF2, 0)),
                                           max((bgcolour.Blue() - DIFF2, 0)))
         else:
+            DIFF1 = 8
+            DIFF2 = DIFF1 + 16
             colourtop = wx.Colour(min((bgcolour.Red() + DIFF2, 255)),
                                         min((bgcolour.Green() + DIFF2, 255)),
                                         min((bgcolour.Blue() + DIFF2, 255)))
