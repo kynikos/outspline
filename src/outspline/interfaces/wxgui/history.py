@@ -33,18 +33,30 @@ _show_history = config.get_bool('show_history')
 class History():
     filename = None
     scwindow = None
-    box = None
+    grid = None
+    colors = None
+    format_action = None
     cmenu = None
 
     def __init__(self, parent, filename):
         self.filename = filename
+        bgcolor = parent.treec.GetBackgroundColour()
 
         self.scwindow = wx.ScrolledWindow(parent, style=wx.BORDER_SUNKEN)
         self.scwindow.SetScrollRate(20, 20)
-        self.scwindow.SetBackgroundColour(parent.treec.GetBackgroundColour())
+        self.scwindow.SetBackgroundColour(bgcolor)
 
-        self.box = wx.BoxSizer(wx.VERTICAL)
-        self.scwindow.SetSizer(self.box)
+        self.grid = wx.FlexGridSizer(cols=2, hgap=4)
+        self.grid.AddGrowableCol(1, 1)
+        self.scwindow.SetSizer(self.grid)
+
+        self.set_colors(bgcolor)
+
+        if config.get_bool('debug_history'):
+            self.format_action = lambda row: "".join(("[",
+                            str(row['H_status']), "] ", row['H_description']))
+        else:
+            self.format_action = lambda row: row['H_description']
 
         self.cmenu = ContextMenu(filename)
 
@@ -52,22 +64,58 @@ class History():
 
         self.refresh()
 
+    def set_colors(self, bgcolor):
+        coldone = config['history_color_done']
+        colundone = config['history_color_undone']
+        colsaved = config['history_color_saved']
+
+        if coldone == 'none':
+            colordone = bgcolor
+        else:
+            colordone = wx.Colour()
+            colordone.SetFromString(coldone)
+
+        if colundone == 'none':
+            colorundone = bgcolor
+        else:
+            colorundone = wx.Colour()
+            colorundone.SetFromString(colundone)
+
+        if colsaved == 'none':
+            colorsaved = bgcolor
+        else:
+            colorsaved = wx.Colour()
+            colorsaved.SetFromString(colsaved)
+
+        self.colors = {
+            0: colorundone,
+            1: colordone,
+            2: colorundone,
+            3: colordone,
+            4: colorundone,
+            5: colorsaved,
+        }
+
     def refresh(self):
         # Don't use self.scwindow.DestroyChildren() because it wouldn't also
         # delete the spacer; moreover, while refreshing, all the StaticText
         # items would appear all overlapping until the Layout, which doesn't
         # happen with self.box.Clear(True)
-        self.box.Clear(True)
+        self.grid.Clear(True)
 
-        self.box.AddSpacer(4)
+        self.grid.AddSpacer(4)
+        self.grid.AddSpacer(4)
 
         descriptions = core_api.get_history_descriptions(self.filename)
 
         for row in descriptions:
-            line = "".join(("[", str(row['H_status']), "] ",
-                                                        row['H_description']))
-            text = wx.StaticText(self.scwindow, label=line)
-            self.box.Add(text, flag=wx.EXPAND | wx.LEFT, border=4)
+            text = wx.StaticText(self.scwindow, label=self.format_action(row))
+            status = wx.Panel(self.scwindow,
+                                        size=(6, text.GetSize().GetHeight()))
+            status.SetBackgroundColour(self.colors[row['H_status']])
+
+            self.grid.Add(status)
+            self.grid.Add(text)
 
         self.scwindow.Layout()
 
