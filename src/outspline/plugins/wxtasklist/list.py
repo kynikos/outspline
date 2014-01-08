@@ -121,6 +121,12 @@ class ToolTip(wx.TipWindow):
         self.Show(False)
 
 
+class ToolTip2(wx.ToolTip):
+    # *********************************************************************************
+    def __init__(self):
+        wx.ToolTip.__init__(self, 'TEST')
+
+
 class OccurrencesView():
     tasklist = None
     listview = None
@@ -168,12 +174,21 @@ class OccurrencesView():
         self.delay = wx.CallLater(self.DELAY, int)
         self.timer = wx.CallLater(0, self.restart)
         # Initialize self.tooltip_timer with a dummy function (int)
-        self.tooltip_timer = wx.CallLater(500, self.popup_tooltip)
+        #self.tooltip_timer = wx.CallLater(500, self.popup_tooltip)  # **************
+        self.tt = ToolTip2()  # **********************************************************
+        self.listview.SetToolTip(self.tt)  # ******************************************
+        wx.CallLater(3000, self.test)
 
         self.enable_refresh()
 
         self.listview.Bind(wx.EVT_CONTEXT_MENU, self.popup_context_menu)
-        self.listview.Bind(wx.EVT_MOTION, self.restart_tooltip_timer)
+        #self.listview.Bind(wx.EVT_MOTION, self.restart_tooltip_timer)  # **************
+
+    def test(self):
+        print(dir(self.tt), self.tt.GetWindow())  # ****************************************
+        #self.tt.Enable(False)
+        event = wx.PyCommandEvent(wx.EVT_KEY_DOWN.typeId, self.listview.GetId())
+        self.GetEventHandler().ProcessEvent(event)
 
     def _init_context_menu(self, mainmenu):
         self.cmenu = menus.ListContextMenu(self.tasklist, mainmenu)
