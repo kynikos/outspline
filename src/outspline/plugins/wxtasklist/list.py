@@ -77,6 +77,50 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
                                             self.imagemap['small']['sortdown'])
 
 
+class ToolTip(wx.TipWindow):
+    parent = None
+    rect = None
+
+    def __init__(self, parent, item_index):
+        wx.TipWindow.__init__(self, parent, str(item_index))
+
+        self.parent = parent
+        self.rect = parent.GetItemRect(item_index)
+
+        # Must work with EVT_KEY_DOWN, but TipWindow seems to bind it without **********************
+        # skipping it *****************************************************************************
+        self.Bind(wx.EVT_KEY_UP, self.handle_key_down)
+        # Must work with EVT_MOTION, but TipWindow seems to bind it without **********************
+        # skipping it *****************************************************************************
+        self.Bind(wx.EVT_KEY_UP, self.handle_mouse_motion)
+        self.Bind(wx.EVT_KILL_FOCUS, self.handle_focus_loss)
+
+    def handle_key_down(self, event):
+        print('GGG')  # ***************************************************************
+        self.close()
+        event.Skip()
+
+    def handle_mouse_motion(self, event):
+        # Find a more reilable way to calculate the header height ***************************
+        rawpos = self.parent.ScreenToClient(wx.GetMousePosition())
+        HEADER_HEIGHT = 23
+        pos = wx.Point(rawpos.x, rawpos.y + HEADER_HEIGHT)
+
+        if not self.rect.Contains(pos):
+            print('HHH')  # ************************************************************
+            self.close()
+
+        event.Skip()
+
+    def handle_focus_loss(self, event):
+        print('III')  # ***************************************************************
+        self.close()
+        event.Skip()
+
+    def close(self):
+        self.Show(False)
+
+
 class OccurrencesView():
     tasklist = None
     listview = None
@@ -92,6 +136,7 @@ class OccurrencesView():
     timer = None
     autoscroll = None
     timeformat = None
+    tooltip_timer = None
 
     def __init__(self, tasklist):
         self.tasklist = tasklist
@@ -122,10 +167,13 @@ class OccurrencesView():
         # Initialize self.delay with a dummy function (int)
         self.delay = wx.CallLater(self.DELAY, int)
         self.timer = wx.CallLater(0, self.restart)
+        # Initialize self.tooltip_timer with a dummy function (int)
+        self.tooltip_timer = wx.CallLater(500, self.popup_tooltip)
 
         self.enable_refresh()
 
         self.listview.Bind(wx.EVT_CONTEXT_MENU, self.popup_context_menu)
+        self.listview.Bind(wx.EVT_MOTION, self.restart_tooltip_timer)
 
     def _init_context_menu(self, mainmenu):
         self.cmenu = menus.ListContextMenu(self.tasklist, mainmenu)
@@ -312,6 +360,32 @@ class OccurrencesView():
     def popup_context_menu(self, event):
         self.cmenu.update()
         self.listview.PopupMenu(self.cmenu)
+
+    def restart_tooltip_timer(self, event):
+        print('AAAAAAAAAA')  # *********************************************************
+        self.tooltip_timer.Restart()
+
+    def popup_tooltip(self):
+        # Do not show when hovering the headers nor te scrollbars **************************
+        index = self.listview.HitTest(self.listview.ScreenToClient(
+                                                    wx.GetMousePosition()))[0]
+
+        print(self.listview.HitTest(self.listview.ScreenToClient(  # *********************
+                                            wx.GetMousePosition()))[1],
+                                            wx.LIST_HITTEST_ABOVE,
+                                            wx.LIST_HITTEST_BELOW,
+                                            wx.LIST_HITTEST_NOWHERE,
+                                            wx.LIST_HITTEST_ONITEMICON,
+                                            wx.LIST_HITTEST_ONITEMLABEL,
+                                            wx.LIST_HITTEST_ONITEMRIGHT,
+                                            wx.LIST_HITTEST_ONITEMSTATEICON,
+                                            wx.LIST_HITTEST_TOLEFT,
+                                            wx.LIST_HITTEST_TORIGHT,
+                                            wx.LIST_HITTEST_ONITEM)
+
+        if index > -1:
+            print('BBBBBBBB')  # ********************************************************
+            ToolTip(self.listview, index)
 
     def add_active_alarm(self, filename, alarmid):
         try:
