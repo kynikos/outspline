@@ -25,15 +25,10 @@ class ToolTip():
     text = None
     timer = None
     rect_bounds = None
-    bounds_window = None
 
-    def __init__(self, parent):
+    def __init__(self, parent, delay, call):
         self.parent = parent
         self.window = wx.PopupWindow(self.parent)
-
-        # Initialize self.bounds_window so self.close will work anyway, as it
-        # tries to unbind self.bounds_window
-        self.bounds_window = wx.GetTopLevelParent(self.parent)
 
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.window.SetSizer(box)
@@ -45,64 +40,60 @@ class ToolTip():
         self.parent.Bind(wx.EVT_KEY_DOWN, self._handle_key_down)
         self.text.Bind(wx.EVT_KILL_FOCUS, self._handle_kill_focus)
 
-    def _handle_motion_hidden(self, event):
-        self.timer.Restart()
-        event.Skip()
+        # self.parent must also be bound to EVT_LEAVE_WINDOW
+        self.parent.Bind(wx.EVT_MOTION, self._handle_motion_hidden)
 
-    def _handle_motion_shown(self, event):
-        if not self.rect_bounds.Contains(event.GetPosition()):
-            self.close()
+        # Binding to EVT_LEAVE_WINDOW also allows closing the tooltip when
+        # leaving rect_bounds from one of its sides that overlaps an edge of
+        # parent
+        # parent is the correct window to bind because it's also bound to
+        # EVT_MOTION, meaning that outside of it motion events won't be handled
+        self.parent.Bind(wx.EVT_LEAVE_WINDOW, self._handle_leave_window)
 
-        event.Skip()
+        self.timer = wx.CallLater(delay, call)
 
     def _handle_left_down(self, event):
         self.close()
         event.Skip()
 
     def _handle_key_down(self, event):
-        # Doesn't work the first time entering the parent window *****************************
-        print('KEY_DOWN')
+        # Doesn't work if the parent window doesn't have focus *****************************
+        print('KEY_DOWN')  # ***********************************************************
         self.close()
         event.Skip()
 
     def _handle_kill_focus(self, event):
-        # Test ****************************************************************************
-        print('KILL_FOCUS')
+        # Test: let the tooltip popup and then switch window with ALT+TAB: ***********************
+        #   the tooltip must close (disable the closing on key down first!) **********************
+        print('KILL_FOCUS')  # ***********************************************************
         self.close()
         event.Skip()
 
-    def _handle_leave_window(self, event):
-        print('WWW', self.bounds_window)  # *****************************************
-        print('LEAVE', dir(event), event.GetPosition())  # **************************
-        # Unless leaving to the tooltip window *****************************************
-        # Maybe simply test again the rect contains? *********************************
-        if False:  # *****************************************************************
-            self.close()
-
+    def _handle_motion_hidden(self, event):
+        self.timer.Restart()
         event.Skip()
 
-    def enable(self, delay, call):
-        self.parent.Bind(wx.EVT_MOTION, self._handle_motion_hidden)
-        self.timer = wx.CallLater(delay, call)
+    def _handle_motion_shown(self, event):
+        self._close_conditional()
+        event.Skip()
 
-    def popup(self, tip, rect_bounds=None, bounds_window=None):
+    def _handle_leave_window(self, event):
+        # EVT_LEAVE_WINDOW is triggered also if the mouse enters a child window
+        # *inside* rect_bounds, and in that case the tooltip should not be
+        # closed
+        # For some reason EVT_LEAVE_WINDOW is triggered twice for example in a
+        # ListCtrl with different event.Position parameters (apparently
+        # differing by the list header height), so one of them would always be
+        # out of rect_bounds, thus always closing the tooltip; for this reason
+        # use self._close_conditional, which in turn makes use of the more
+        # reliable wx.GetMousePosition()
+        self._close_conditional()
+        event.Skip()
+
+    def popup(self, tip, rect_bounds=None):
         self.text.SetLabel(tip)
 
         self.parent.Unbind(wx.EVT_MOTION, handler=self._handle_motion_hidden)
-
-        # First unbind the previously bound window
-        self.bounds_window.Unbind(wx.EVT_LEAVE_WINDOW,
-                                            handler=self._handle_leave_window)
-
-        if bounds_window is None:
-            self.bounds_window = wx.GetTopLevelParent(self.parent)
-        else:
-            self.bounds_window = bounds_window
-
-        # Binding to EVT_LEAVE_WINDOW also allows closing the tooltip when
-        # leaving rect_bounds from one of its sides that overlaps an edge of
-        # bounds_window
-        self.bounds_window.Bind(wx.EVT_LEAVE_WINDOW, self._handle_leave_window)
 
         if rect_bounds is not None:
             self.rect_bounds = rect_bounds
@@ -113,9 +104,12 @@ class ToolTip():
         self.window.Position(wx.GetMousePosition(), (0, 0))
         self.window.Show()
 
+    def _close_conditional(self):
+        if self.rect_bounds and not self.rect_bounds.Contains(
+                            self.parent.ScreenToClient(wx.GetMousePosition())):
+            self.close()
+
     def close(self):
         self.window.Show(False)
         self.parent.Unbind(wx.EVT_MOTION, handler=self._handle_motion_shown)
-        self.bounds_window.Unbind(wx.EVT_LEAVE_WINDOW,
-                                            handler=self._handle_leave_window)
         self.parent.Bind(wx.EVT_MOTION, self._handle_motion_hidden)

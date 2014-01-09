@@ -123,8 +123,7 @@ class OccurrencesView():
         self.DELAY = config.get_int('refresh_delay')
         self.timeformat = config['time_format']
 
-        self.tooltip = ToolTip(self.listview)
-        self.tooltip.enable(1000, self.popup_tooltip)
+        self.tooltip = ToolTip(self.listview, 1000, self.popup_tooltip)
 
         # Initialize self.delay with a dummy function (int)
         self.delay = wx.CallLater(self.DELAY, int)
@@ -343,9 +342,7 @@ class OccurrencesView():
             # Find a reliable way to get the header height *****************************
             HEADER_HEIGHT = 23
             rect.SetY(rect.GetY() - HEADER_HEIGHT)
-            self.tooltip.popup('TEST\n' + str(index), rect_bounds=rect,
-                                                # Check bounds_window **********************
-                                                bounds_window=self.listview)
+            self.tooltip.popup('TEST\n' + str(index), rect_bounds=rect)
 
     def add_active_alarm(self, filename, alarmid):
         try:
