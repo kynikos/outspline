@@ -99,7 +99,7 @@ class AlarmsWindow():
 
         parent.Bind(wx.EVT_MENU, self.toggle_shown, self.menushow)
 
-        self.window.Bind(wx.EVT_CLOSE, self.hide)
+        self.window.Bind(wx.EVT_CLOSE, self.handle_close)
 
         organism_alarms_api.bind_to_alarm(self.handle_alarm)
         organism_alarms_api.bind_to_alarm_off(self.handle_alarm_off)
@@ -110,7 +110,7 @@ class AlarmsWindow():
             wxtrayicon_api.bind_to_create_menu(self.handle_create_tray_menu)
             wxtrayicon_api.bind_to_reset_menu(self.handle_reset_tray_menu)
 
-    def update_menu_items(self, event):
+    def update_menu_items(self, kwargs):
         self.menushow.Check(check=self.window.IsShown())
 
     def handle_create_tray_menu(self, kwargs):
@@ -151,11 +151,14 @@ class AlarmsWindow():
         self.window.Bind(wx.EVT_BUTTON, self.snooze_all, button_s)
         self.window.Bind(wx.EVT_BUTTON, self.dismiss_all, button_d)
 
-    def show(self, event=None):
+    def handle_close(self, event):
+        self.hide()
+
+    def show(self):
         self.window.Show(True)
         self.window.Centre()
 
-    def hide(self, event=None):
+    def hide(self):
         self.window.Show(False)
 
     def toggle_shown(self, event):

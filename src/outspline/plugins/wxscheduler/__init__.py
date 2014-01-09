@@ -181,11 +181,14 @@ class Scheduler():
         self.rlist.Bind(wx.EVT_BUTTON, self.move_rule_up, self.button_up)
         self.rlist.Bind(wx.EVT_BUTTON, self.move_rule_down, self.button_down)
 
-        self.rulesl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.update_buttons)
-        self.rulesl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.update_buttons)
-        self.rulesl.Bind(wx.EVT_LIST_DELETE_ITEM, self.update_buttons)
+        self.rulesl.Bind(wx.EVT_LIST_ITEM_SELECTED, self._update_buttons)
+        self.rulesl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._update_buttons)
+        self.rulesl.Bind(wx.EVT_LIST_DELETE_ITEM, self._update_buttons)
 
-    def update_buttons(self, event=None):
+    def _update_buttons(self, event):
+        self.update_buttons()
+
+    def update_buttons(self):
         if self.rulesl.GetSelectedItemCount():
             self.button_edit.Enable()
             self.button_remove.Enable()

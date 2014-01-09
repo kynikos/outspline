@@ -207,13 +207,13 @@ class MainMenu(wx.Menu):
         self.dismiss.Enable()
         self.dismiss_all.Enable()
 
-    def add_filter(self, kwargs):
+    def add_filter(self, event):
         self.tasklist.filters.create()
 
-    def edit_filter(self, kwargs):
+    def edit_filter(self, event):
         self.tasklist.filters.edit_selected()
 
-    def remove_filter(self, kwargs):
+    def remove_filter(self, event):
         self.tasklist.filters.remove_selected()
 
     def find_in_tree(self, event):

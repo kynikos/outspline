@@ -35,7 +35,7 @@ class TrayIcon(wx.TaskBarIcon):
     icon = None
     menu = None
 
-    def __init__(self, rootw):
+    def __init__(self):
         wx.TaskBarIcon.__init__(self)
         self.ID_MINIMIZE = wx.NewId()
 
@@ -53,8 +53,8 @@ class TrayIcon(wx.TaskBarIcon):
 
         self.Bind(wx.EVT_TASKBAR_LEFT_DOWN, self._handle_left_click)
         self.Bind(wx.EVT_TASKBAR_RIGHT_DOWN, self._handle_right_click)
-        rootw.Bind(wx.EVT_CLOSE, wxgui_api.hide_main_window)
-        wxgui_api.bind_to_menu(wxgui_api.hide_main_window, menumin)
+        wxgui_api.bind_to_close_window(self.hide_main_window)
+        wxgui_api.bind_to_menu(self.hide_main_window, menumin)
         core_api.bind_to_exit_app_2(self.remove)
 
     def _handle_left_click(self, event):
@@ -70,6 +70,9 @@ class TrayIcon(wx.TaskBarIcon):
 
         # Skipping the event will let the click also popup the context menu
         event.Skip()
+
+    def hide_main_window(self, event):
+        wxgui_api.hide_main_window()
 
     def CreatePopupMenu(self):
         # TrayMenu must be instantiated here, everytime CreatePopupMenu is
@@ -187,8 +190,14 @@ class TrayMenu(wx.Menu):
         self.AppendSeparator()
         self.exit_ = self.Append(wx.ID_EXIT, "E&xit\tCTRL+q")
 
-        parent.Bind(wx.EVT_MENU, wxgui_api.toggle_main_window, self.restore)
-        parent.Bind(wx.EVT_MENU, wxgui_api.exit_application, self.exit_)
+        parent.Bind(wx.EVT_MENU, self.toggle_main_window, self.restore)
+        parent.Bind(wx.EVT_MENU, self.exit_application, self.exit_)
+
+    def toggle_main_window(self, event):
+        wxgui_api.toggle_main_window()
+
+    def exit_application(self, event):
+        wxgui_api.exit_application()
 
     def reset_items(self):
         self.restore.Check(check=wxgui_api.is_shown())
@@ -201,4 +210,4 @@ class TrayMenu(wx.Menu):
 
 def main():
     global trayicon
-    trayicon = TrayIcon(wxgui_api.get_main_frame())
+    trayicon = TrayIcon()

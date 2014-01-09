@@ -105,7 +105,7 @@ class SearchView():
 
         wxgui_api.set_right_nb_page_title(self.panel, title)
 
-    def search(self, event=None):
+    def search(self):
         self.finish_search_action = self._finish_search_restart
         self.stop_search()
 
@@ -340,7 +340,10 @@ class SearchFilters():
         self.option5 = self.make_option('Case sensitive')
         self.option3 = self.make_option('Only one result per item')
 
-        mainview.panel.Bind(wx.EVT_BUTTON, mainview.search, self.search)
+        mainview.panel.Bind(wx.EVT_BUTTON, self._search, self.search)
+
+    def _search(self, event):
+        self.mainview.search()
 
     def make_option(self, label):
         obox = wx.BoxSizer(wx.HORIZONTAL)

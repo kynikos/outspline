@@ -376,23 +376,23 @@ def get_main_icon_bundle():
     return wx.GetApp().get_main_icon_bundle()
 
 
-def show_main_window(event=None):
-    return wx.GetApp().root.show(event=event)
+def show_main_window():
+    return wx.GetApp().root.show()
 
 
-def hide_main_window(event=None):
-    return wx.GetApp().root.hide(event=event)
+def hide_main_window():
+    return wx.GetApp().root.hide()
 
 
-def toggle_main_window(event=None):
-    return wx.GetApp().root.toggle_shown(event=event)
+def toggle_main_window():
+    return wx.GetApp().root.toggle_shown()
 
 
 def is_shown():
     return wx.GetApp().root.IsShown()
 
 
-def exit_application(event=None):
+def exit_application():
     return wx.GetApp().exit_app()
 
 
@@ -406,6 +406,10 @@ def bind_to_show_main_window(handler, bind=True):
 
 def bind_to_hide_main_window(handler, bind=True):
     return rootw.hide_main_window_event.bind(handler, bind)
+
+
+def bind_to_close_window(handler):
+    return wx.GetApp().root.bind_to_close_event(handler)
 
 
 def bind_to_exit_application(handler, bind=True):

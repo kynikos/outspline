@@ -87,11 +87,11 @@ class TaskList():
     def is_shown(self):
         return wxgui_api.is_page_in_right_nb(self.panel)
 
-    def handle_show_main_window(self, event):
+    def handle_show_main_window(self, kwargs):
         if self.is_shown():
             self._enable()
 
-    def handle_hide_main_window(self, event):
+    def handle_hide_main_window(self, kwargs):
         if self.is_shown():
             self._disable()
 
@@ -125,7 +125,7 @@ class TaskList():
         return self.filters.get_filter_configuration(
                                     self.filters.get_selected_filter())['name']
 
-    def handle_exit_application(self, event):
+    def handle_exit_application(self, kwargs):
         configfile = coreaux_api.get_user_config_file()
         # Reset the Filters section because some filters may have been removed
         self.config('Filters').export_reset(configfile)
