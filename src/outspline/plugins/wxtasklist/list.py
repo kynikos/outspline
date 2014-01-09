@@ -123,7 +123,8 @@ class OccurrencesView():
         self.DELAY = config.get_int('refresh_delay')
         self.timeformat = config['time_format']
 
-        self.tooltip = ToolTip(self.listview, 1000, self.popup_tooltip)
+        self.tooltip = ToolTip(self.listview, 1000, self.popup_tooltip,
+                                                                    (10, 10))
 
         # Initialize self.delay with a dummy function (int)
         self.delay = wx.CallLater(self.DELAY, int)
@@ -321,6 +322,8 @@ class OccurrencesView():
 
     def popup_tooltip(self):
         # Do not show when hovering the headers nor the scrollbars **************************
+        #   Get a maximum rectangle out of which the tooltip must not be shown **************
+        #   even if HitTest returns an item *************************************************
         print(self.listview.HitTest(self.listview.ScreenToClient(  # *********************
                                             wx.GetMousePosition()))[1],
                                             wx.LIST_HITTEST_ABOVE,

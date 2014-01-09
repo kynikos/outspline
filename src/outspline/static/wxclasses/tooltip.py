@@ -24,10 +24,12 @@ class ToolTip():
     window = None
     text = None
     timer = None
+    offset = None
     rect_bounds = None
 
-    def __init__(self, parent, delay, call):
+    def __init__(self, parent, delay, call, offset=(0, 0)):
         self.parent = parent
+        self.offset = offset
         self.window = wx.PopupWindow(self.parent)
 
         box = wx.BoxSizer(wx.HORIZONTAL)
@@ -37,8 +39,10 @@ class ToolTip():
         box.Add(self.text, flag=wx.ALL, border=4)
 
         self.text.Bind(wx.EVT_LEFT_DOWN, self._handle_left_down)
-        self.parent.Bind(wx.EVT_KEY_DOWN, self._handle_key_down)
-        self.text.Bind(wx.EVT_KILL_FOCUS, self._handle_kill_focus)
+        #self.parent.Bind(wx.EVT_KEY_DOWN, self._handle_key_down)  # ***************
+        # http://www.wxpython.org/docs/api/wx.ActivateEvent-class.html ***************
+        self.parent.Bind(wx.EVT_KILL_FOCUS, self._handle_kill_focus)
+        #wx.GetApp().root.Bind(wx.EVT_ACTIVATE, self._handle_kill_focus)
 
         # self.parent must also be bound to EVT_LEAVE_WINDOW
         self.parent.Bind(wx.EVT_MOTION, self._handle_motion_hidden)
@@ -65,7 +69,13 @@ class ToolTip():
     def _handle_kill_focus(self, event):
         # Test: let the tooltip popup and then switch window with ALT+TAB: ***********************
         #   the tooltip must close (disable the closing on key down first!) **********************
-        print('KILL_FOCUS')  # ***********************************************************
+        # Test: edit an item from the list by clicking on its context menu: **********************
+        #   the tooltip must not even popup ******************************************************
+        #   Maybe just close the tooltip on mouse clicks wherever they are ***********************
+        #   Or maybe set the focus on the list when right-clicking *******************************
+        #   Or use a method to 'disable' the tooltip (e.g. when a context menu *******************
+        #   is triggered *************************************************************************
+        print('KILL_FOCUS', dir(event))#, event.GetActive())  # ***********************************************************
         self.close()
         event.Skip()
 
@@ -101,7 +111,7 @@ class ToolTip():
 
         self.window.Layout()
         self.window.Fit()
-        self.window.Position(wx.GetMousePosition(), (0, 0))
+        self.window.Position(wx.GetMousePosition(), self.offset)
         self.window.Show()
 
     def _close_conditional(self):
