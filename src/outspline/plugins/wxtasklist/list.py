@@ -22,6 +22,8 @@ import sys
 import time as _time
 import os
 
+from outspline.static.wxclasses.tooltip import ToolTip
+
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import log
 import outspline.core_api as core_api
@@ -50,7 +52,8 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
     def __init__(self, parent):
         # Note that this makes use of ListView, which is an interface for
         # ListCtrl
-        wx.ListView.__init__(self, parent, style=wx.LC_REPORT | wx.BORDER_SUNKEN)
+        wx.ListView.__init__(self, parent, style=wx.LC_REPORT |
+                                                            wx.BORDER_SUNKEN)
         ListCtrlAutoWidthMixin.__init__(self)
         ColumnSorterMixin.__init__(self, len(COLUMNS))
 
@@ -91,6 +94,7 @@ class OccurrencesView():
     delay = None
     timer = None
     autoscroll = None
+    tooltip = None
     timeformat = None
 
     def __init__(self, tasklist):
@@ -118,6 +122,9 @@ class OccurrencesView():
         config = coreaux_api.get_plugin_configuration('wxtasklist')
         self.DELAY = config.get_int('refresh_delay')
         self.timeformat = config['time_format']
+
+        self.tooltip = ToolTip(self.listview)
+        self.tooltip.enable(1000, self.popup_tooltip)
 
         # Initialize self.delay with a dummy function (int)
         self.delay = wx.CallLater(self.DELAY, int)
@@ -312,6 +319,33 @@ class OccurrencesView():
     def popup_context_menu(self, event):
         self.cmenu.update()
         self.listview.PopupMenu(self.cmenu)
+
+    def popup_tooltip(self):
+        # Do not show when hovering the headers nor the scrollbars **************************
+        print(self.listview.HitTest(self.listview.ScreenToClient(  # *********************
+                                            wx.GetMousePosition()))[1],
+                                            wx.LIST_HITTEST_ABOVE,
+                                            wx.LIST_HITTEST_BELOW,
+                                            wx.LIST_HITTEST_NOWHERE,
+                                            wx.LIST_HITTEST_ONITEMICON,
+                                            wx.LIST_HITTEST_ONITEMLABEL,
+                                            wx.LIST_HITTEST_ONITEMRIGHT,
+                                            wx.LIST_HITTEST_ONITEMSTATEICON,
+                                            wx.LIST_HITTEST_TOLEFT,
+                                            wx.LIST_HITTEST_TORIGHT,
+                                            wx.LIST_HITTEST_ONITEM)
+
+        index = self.listview.HitTest(self.listview.ScreenToClient(
+                                                    wx.GetMousePosition()))[0]
+
+        if index > -1:
+            rect = self.listview.GetItemRect(index)
+            # Find a reliable way to get the header height *****************************
+            HEADER_HEIGHT = 23
+            rect.SetY(rect.GetY() - HEADER_HEIGHT)
+            self.tooltip.popup('TEST\n' + str(index), rect_bounds=rect,
+                                                # Check bounds_window **********************
+                                                bounds_window=self.listview)
 
     def add_active_alarm(self, filename, alarmid):
         try:
