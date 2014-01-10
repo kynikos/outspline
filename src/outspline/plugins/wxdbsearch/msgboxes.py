@@ -18,21 +18,24 @@
 
 import wx
 
+import outspline.interfaces.wxgui_api as wxgui_api
+
 
 def bad_regular_expression():
-    return wx.MessageDialog(wx.GetApp().root, 'Bad regular expression.',
+    return wx.MessageDialog(wxgui_api.get_main_frame(),
+                        'Bad regular expression.',
                         caption="Search", style=wx.OK | wx.ICON_EXCLAMATION)
 
 
 def some_items_not_found():
-    return wx.MessageDialog(wx.GetApp().root, 'Some selected search result '
-                        'items do not exist anymore. '
-                        'Re-execute the search for up-to-date results.',
-                        caption="Search", style=wx.OK | wx.ICON_EXCLAMATION)
+    return wx.MessageDialog(wxgui_api.get_main_frame(),
+                    'Some selected search result items do not exist '
+                    'anymore. Re-execute the search for up-to-date results.',
+                    caption="Search", style=wx.OK | wx.ICON_EXCLAMATION)
 
 
 def all_items_not_found():
-    return wx.MessageDialog(wx.GetApp().root, 'All the selected search result '
-                        'items do not exist anymore. '
-                        'Re-execute the search for up-to-date results.',
-                        caption="Search", style=wx.OK | wx.ICON_EXCLAMATION)
+    return wx.MessageDialog(wxgui_api.get_main_frame(),
+                    'All the selected search result items do not exist '
+                    'anymore. Re-execute the search for up-to-date results.',
+                    caption="Search", style=wx.OK | wx.ICON_EXCLAMATION)

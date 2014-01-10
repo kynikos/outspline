@@ -124,14 +124,10 @@ class InfoBox(wx.SplitterWindow):
         self.tree.AddRoot(text='root')
         self.init_info()
 
-        panel = wx.Panel(self, style=wx.BORDER_SUNKEN)
-        psizer = wx.BoxSizer(wx.HORIZONTAL)
-        panel.SetSizer(psizer)
-        self.textw = TextUrlCtrl(panel, value='', style=wx.TE_MULTILINE |
-                              wx.TE_READONLY | wx.TE_DONTWRAP | wx.BORDER_NONE)
-        psizer.Add(self.textw, 1, flag=wx.EXPAND | wx.ALL, border=4)
+        self.textw = TextUrlCtrl(self, value='', style=wx.TE_MULTILINE |
+                            wx.TE_READONLY | wx.TE_DONTWRAP | wx.BORDER_SUNKEN)
 
-        self.SplitVertically(self.tree, panel)
+        self.SplitVertically(self.tree, self.textw)
 
         # Prevent the window from unsplitting when dragging the sash to the
         # border

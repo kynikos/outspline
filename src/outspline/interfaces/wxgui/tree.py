@@ -33,8 +33,8 @@ dbs = {}
 class Tree(wx.TreeCtrl):
     def __init__(self, parent):
         wx.TreeCtrl.__init__(self, parent, wx.ID_ANY, style=wx.TR_HAS_BUTTONS |
-                             wx.TR_HIDE_ROOT | wx.TR_MULTIPLE |
-                             wx.TR_EXTENDED | wx.TR_FULL_ROW_HIGHLIGHT)
+                         wx.TR_HIDE_ROOT | wx.TR_MULTIPLE | wx.TR_EXTENDED |
+                         wx.TR_FULL_ROW_HIGHLIGHT | wx.BORDER_SUNKEN)
 
 
 class Database(wx.SplitterWindow):
@@ -44,7 +44,6 @@ class Database(wx.SplitterWindow):
     titems = None
     cmenu = None
     ctabmenu = None
-    hpanel = None
     history = None
 
     def __init__(self, filename, parent):
@@ -64,24 +63,18 @@ class Database(wx.SplitterWindow):
         self.cmenu = ContextMenu(self)
         self.ctabmenu = TabContextMenu(self.filename)
 
-        self.hpanel = wx.Panel(self)
-        bs = wx.BoxSizer(wx.VERTICAL)
-        self.hpanel.SetSizer(bs)
+        self.history = history.History(self, self.filename)
+        self.history.scwindow.Show(False)
 
-        self.history = history.HistoryWindow(self.hpanel, self.filename)
-
-        line = wx.StaticLine(self.hpanel, size=(1, 1), style=wx.LI_HORIZONTAL)
-
-        bs.Add(line, flag=wx.EXPAND)
-        bs.Add(self.history, 1, flag=wx.EXPAND)
-
-        self.hpanel.Show(False)
         self.Initialize(self.treec)
 
         self.create()
 
         self.treec.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.veto_label_edit)
         self.treec.Bind(wx.EVT_TREE_ITEM_MENU, self.popup_item_menu)
+        # Note that EVT_CONTEXT_MENU wouldn't work on empty spaces
+        self.treec.Bind(wx.EVT_RIGHT_DOWN, self.popup_window_menu)
+        self.treec.Bind(wx.EVT_LEFT_DOWN, self.unselect_on_empty_areas)
 
         core_api.bind_to_update_item(self.handle_update_item)
         core_api.bind_to_history_insert(self.handle_history_insert)
@@ -298,7 +291,7 @@ class Database(wx.SplitterWindow):
         del dbs[self.filename]
 
     def show_history(self):
-        self.SplitHorizontally(self.treec, self.hpanel)
+        self.SplitHorizontally(self.treec, self.history.scwindow)
         self.SetSashGravity(1.0)
 
         # The same workaround for http://trac.wxwidgets.org/ticket/9821
@@ -308,7 +301,7 @@ class Database(wx.SplitterWindow):
         self.SetSashPosition(-80)
 
     def hide_history(self):
-        self.Unsplit(self.hpanel)
+        self.Unsplit(self.history.scwindow)
 
     def get_filename(self):
         return self.filename
@@ -404,12 +397,33 @@ class Database(wx.SplitterWindow):
         return self.treec.GetItemParent(treeitem) == self.treec.GetRootItem()
 
     def popup_item_menu(self, event):
-        self.treec.SetFocus()
+        # Using a separate procedure for EVT_TREE_ITEM_MENU (instead of always
+        # using EVT_RIGHT_DOWN) ensures a standard behaviour, e.g. selecting
+        # the item if not selected unselecting all the others, or leaving the
+        # selection untouched if clicking on an already selected item
+        self._popup_context_menu(event.GetPoint())
 
+    def popup_window_menu(self, event):
+        # Use EVT_RIGHT_DOWN when clicking in areas without items, because in
+        # that case EVT_TREE_ITEM_MENU is not triggered
+        if not self.treec.HitTest(event.GetPosition())[0].IsOk():
+            self.treec.UnselectAll()
+            self._popup_context_menu(event.GetPosition())
+
+        # Skip the event so that self.popup_item_menu can work correctly
+        event.Skip()
+
+    def _popup_context_menu(self, point):
         self.cmenu.update_items()
         popup_context_menu_event.signal(filename=self.filename)
+        self.treec.PopupMenu(self.cmenu, point)
 
-        self.treec.PopupMenu(self.cmenu, event.GetPoint())
+    def unselect_on_empty_areas(self, event):
+        if not self.treec.HitTest(event.GetPosition())[0].IsOk():
+            self.treec.UnselectAll()
+
+        # Skipping the event ensures correct left click behaviour
+        event.Skip()
 
     def get_tab_context_menu(self):
         self.ctabmenu.update()
@@ -419,6 +433,8 @@ class Database(wx.SplitterWindow):
 class ContextMenu(wx.Menu):
     parent = None
     sibling = None
+    sibling_label_1 = None
+    sibling_label_2 = None
     child = None
     moveup = None
     movedn = None
@@ -429,28 +445,26 @@ class ContextMenu(wx.Menu):
     def __init__(self, parent):
         wx.Menu.__init__(self)
 
+        self.sibling_label_1 = "Create &item"
+        self.sibling_label_2 = "Create s&ibling"
+
         self.parent = parent
 
         self.sibling = wx.MenuItem(self, wx.GetApp().menu.database.ID_SIBLING,
-                                   "Create s&ibling",
-                                   "Create a sibling after the selected item")
+                                                        self.sibling_label_1)
         self.child = wx.MenuItem(self, wx.GetApp().menu.database.ID_CHILD,
-                                 "Create &sub-item",
-                                 "Create a child for the selected item")
+                                                            "Create c&hild")
         self.moveup = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_UP,
-                                  "&Move item up",
-                                  "Swap the selected item with the one above")
+                                                            "&Move item up")
         self.movedn = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_DOWN,
-                                  "Mo&ve item down",
-                                  "Swap the selected item with the one below")
-        self.movept = wx.MenuItem(self, wx.GetApp().menu.database.ID_MOVE_PARENT,
-                                  "M&ove item to parent",
-                           "Move the selected item as a sibling of its parent")
+                                                            "Mo&ve item down")
+        self.movept = wx.MenuItem(self,
+                                    wx.GetApp().menu.database.ID_MOVE_PARENT,
+                                    "M&ove item to parent")
         self.edit = wx.MenuItem(self, wx.GetApp().menu.database.ID_EDIT,
-                                "&Edit item",
-                                "Open the selected item in the editor")
+                                                                "&Edit item")
         self.delete = wx.MenuItem(self, wx.GetApp().menu.database.ID_DELETE,
-                                  "&Delete items", "Delete the selected items")
+                                                            "&Delete items")
 
         self.sibling.SetBitmap(wx.ArtProvider.GetBitmap('@newitem',
                                                         wx.ART_MENU))
@@ -475,33 +489,6 @@ class ContextMenu(wx.Menu):
         self.AppendSeparator()
         self.AppendItem(self.delete)
 
-    def insert_item(self, pos, text, id_=wx.ID_ANY, help='', sep='none',
-                    kind='normal', sub=None, icon=None):
-        kinds = {'normal': wx.ITEM_NORMAL,
-                 'check': wx.ITEM_CHECK,
-                 'radio': wx.ITEM_RADIO}
-
-        item = wx.MenuItem(parentMenu=self, id=id_, text=text, help=help,
-                           kind=kinds[kind], subMenu=sub)
-
-        if icon is not None:
-            item.SetBitmap(wx.ArtProvider.GetBitmap(icon, wx.ART_MENU))
-
-        if pos == -1:
-            if sep in ('up', 'both'):
-                self.AppendSeparator()
-            self.AppendItem(item)
-            if sep in ('down', 'both'):
-                self.AppendSeparator()
-        else:
-            # Start from bottom, so that it's always possible to use pos
-            if sep in ('down', 'both'):
-                self.InsertSeparator(pos)
-            self.InsertItem(pos, item)
-            if sep in ('up', 'both'):
-                self.InsertSeparator(pos)
-        return item
-
     def reset_items(self):
         self.sibling.Enable(False)
         self.child.Enable(False)
@@ -510,6 +497,7 @@ class ContextMenu(wx.Menu):
         self.movept.Enable(False)
         self.edit.Enable(False)
         self.delete.Enable(False)
+        self.sibling.SetItemLabel(self.sibling_label_1)
 
         reset_context_menu_event.signal(filename=self.parent.filename)
 
@@ -520,6 +508,7 @@ class ContextMenu(wx.Menu):
 
         if len(sel) == 1:
             self.sibling.Enable()
+            self.sibling.SetItemLabel(self.sibling_label_2)
             self.child.Enable()
 
             if self.parent.get_item_previous(sel[0]).IsOk():

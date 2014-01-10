@@ -18,11 +18,13 @@
 
 import wx
 
+import outspline.interfaces.wxgui_api as wxgui_api
+
 generic = "Some rule parameters are not set correctly."
 end_time = "End time must be greater than start time."
 short_months = "Some selected months do not have enough days."
 
 
 def warn_bad_rule(message):
-    return wx.MessageDialog(wx.GetApp().root, message, caption="Create rule",
-                            style=wx.OK | wx.ICON_EXCLAMATION)
+    return wx.MessageDialog(wxgui_api.get_main_frame(), message,
+                    caption="Create rule", style=wx.OK | wx.ICON_EXCLAMATION)

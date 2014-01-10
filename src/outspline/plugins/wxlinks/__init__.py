@@ -109,15 +109,22 @@ class LinkManager():
         self.button_link = wx.Button(self.lpanel,
                                   label='Link to selected item', size=(-1, 24))
 
-        self.lpanel.Bind(wx.EVT_BUTTON, self.link_to_selection,
+        self.lpanel.Bind(wx.EVT_BUTTON, self._link_to_selection,
                                                               self.button_link)
 
-    def link_to_selection(self, event=None):
-        treedb = wxgui_api.get_active_database()
-        if treedb:
-            selection = treedb.get_selections(none=False, many=False)
+    def _link_to_selection(self, event):
+        self.link_to_selection()
+
+    def link_to_selection(self):
+        filename = wxgui_api.get_selected_database_filename()
+
+        if filename:
+            selection = wxgui_api.get_tree_selections(filename, none=False,
+                                                                    many=False)
+
             if selection:
-                self.target = treedb.get_item_id(selection[0])
+                self.target = wxgui_api.get_tree_item_id(filename,
+                                                                selection[0])
 
     @staticmethod
     def make_itemid(filename, id_):

@@ -39,7 +39,7 @@ class SearchViewPanel(wx.Panel):
     ctabmenu = None
 
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, style=wx.BORDER_NONE)
+        wx.Panel.__init__(self, parent)
 
     def _init_tab_menu(self):
         self.ctabmenu = TabContextMenu()
@@ -105,7 +105,7 @@ class SearchView():
 
         wxgui_api.set_right_nb_page_title(self.panel, title)
 
-    def search(self, event=None):
+    def search(self):
         self.finish_search_action = self._finish_search_restart
         self.stop_search()
 
@@ -126,9 +126,7 @@ class SearchView():
         pass
 
     def _finish_search_close(self):
-        nb = wx.GetApp().nb_right
-        tabid = nb.GetPageIndex(self.panel)
-        nb.close_page(tabid)
+        wxgui_api.close_right_nb_page(self.panel)
 
         global searches
         searches.remove(self)
@@ -170,7 +168,7 @@ class SearchView():
             core_api.block_databases()
 
             if self.filters.option1.GetValue():
-                filename = wxgui_api.get_active_database_filename()
+                filename = wxgui_api.get_selected_database_filename()
                 self._finish_search_restart_database(filename, regexp)
             else:
                 for filename in core_api.get_open_databases():
@@ -342,14 +340,17 @@ class SearchFilters():
         self.option5 = self.make_option('Case sensitive')
         self.option3 = self.make_option('Only one result per item')
 
-        mainview.panel.Bind(wx.EVT_BUTTON, mainview.search, self.search)
+        mainview.panel.Bind(wx.EVT_BUTTON, self._search, self.search)
+
+    def _search(self, event):
+        self.mainview.search()
 
     def make_option(self, label):
         obox = wx.BoxSizer(wx.HORIZONTAL)
         check = wx.CheckBox(self.mainview.panel)
-        obox.Add(check)
+        obox.Add(check, flag=wx.ALIGN_CENTER_VERTICAL)
         label = wx.StaticText(self.mainview.panel, label=label)
-        obox.Add(label)
+        obox.Add(label, flag=wx.ALIGN_CENTER_VERTICAL)
         self.ogrid.Add(obox)
 
         return check
@@ -362,7 +363,8 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
     def __init__(self, parent, columns):
         # Note that this makes use of ListView, which is an interface for
         # ListCtrl
-        wx.ListView.__init__(self, parent, style=wx.LC_REPORT)
+        wx.ListView.__init__(self, parent, style=wx.LC_REPORT |
+                                                            wx.BORDER_SUNKEN)
         ListCtrlAutoWidthMixin.__init__(self)
         ColumnSorterMixin.__init__(self, columns)
 
@@ -526,11 +528,12 @@ class MainMenu(wx.Menu):
         wxgui_api.bind_to_update_menu_items(self.update_items)
         wxgui_api.bind_to_reset_menu_items(self.reset_items)
 
-        wxgui_api.insert_menu_main_item('&Search', 'View', self)
+        wxgui_api.insert_menu_main_item('&Search',
+                                    wxgui_api.get_menu_view_position(), self)
 
     @staticmethod
     def get_selected_search():
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wxgui_api.get_selected_right_nb_tab()
 
         for search in searches:
             if search.panel is tab:

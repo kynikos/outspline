@@ -41,9 +41,12 @@ class WidgetChoiceCtrl():
         # to use this very object, which at this stage hasn;'t been instantiated
         # yet; call self.force_update after the object is created, instead
 
-        self.panel.Bind(wx.EVT_CHOICE, self._update, self.choicectrl)
+        self.panel.Bind(wx.EVT_CHOICE, self._handle_choice, self.choicectrl)
 
-    def _update(self, event=None):
+    def _handle_choice(self, event):
+        self._update()
+
+    def _update(self):
         # self.activectrl may not exist yet
         if self.activectrl:
             self.activectrl.Destroy()

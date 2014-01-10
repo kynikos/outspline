@@ -21,10 +21,9 @@ import wx
 import wxtrayicon
 
 
-def insert_menu_item(pos, item, id_=wx.ID_ANY, help='', sep='none',
-                     kind='normal', sub=None, icon=None):
-    return wxtrayicon.trayicon.menu.insert_item(pos, item, id_, help, sep,
-                                                kind, sub, icon)
+def add_menu_item(item):
+    position = wxtrayicon.trayicon.menu.GetMenuItemCount() - 2
+    return wxtrayicon.trayicon.menu.InsertItem(position, item)
 
 
 def start_blinking(start_id, alt_icon=None):

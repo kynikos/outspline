@@ -18,7 +18,10 @@
 
 import wx
 
+import outspline.interfaces.wxgui_api as wxgui_api
+
 
 def warn_generic(text):
-    return wx.MessageDialog(wx.GetApp().root, text, caption="Test: generic "
-                                   "warning", style=wx.OK | wx.ICON_EXCLAMATION)
+    return wx.MessageDialog(wxgui_api.get_main_frame(), text,
+                                            caption="Test: generic warning",
+                                            style=wx.OK | wx.ICON_EXCLAMATION)
