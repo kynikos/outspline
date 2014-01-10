@@ -181,7 +181,7 @@ class BlinkingTrayIcon():
         wxtrayicon_api.set_tooltip_value(self.ref_id, tooltip)
         return nalarms
 
-    def _exit(self, event):
+    def _exit(self, kwargs):
         # Unbind the handlers whose timers could race with the application
         # closure
         organism_alarms_api.bind_to_alarm_off(self._stop_later, False)

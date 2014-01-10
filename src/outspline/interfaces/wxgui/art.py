@@ -28,7 +28,8 @@ class ArtProvider(wx.ArtProvider):
 
         # Find standard icon names at http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
         # Use ids prefixed with '@' so that they're not mistaken as GTK icons
-        self.gtk = {'@alarms': ('appointment-soon', 'appointment',
+        self.gtk = {'@add-filter': ('list-add', ),
+                    '@alarms': ('appointment-soon', 'appointment',
                                 'appointment-new', 'stock_new-appointment'),
                     '@alarmoff': ('appointment-missed', 'appointment-soon',
                                   'appointment'),
@@ -54,11 +55,14 @@ class ArtProvider(wx.ArtProvider):
                     '@delete': ('edit-delete', 'editdelete', 'gtk-delete',
                                 'stock_delete'),
                     '@edit': ('text-editor', 'accessories-text-editor'),
+                    '@edit-filter': ('document-properties', ),
                     '@exporttxt': ('document-export', 'gnome-stock-export',
                                    'document-save-as', 'gtk-save-as',
                                    'filesaveas', 'stock_save-as'),
+                    '@filters': ('document-open', ),
                     '@find': ('search', 'find' 'edit-find', 'gtk-find',
                               'filefind', 'stock_search'),
+                    '@history': ('window-close', ),
                     '@languages': ('locale', 'preferences-desktop-locale',
                                    'config-language'),
                     '@movedown': ('go-down', 'gtk-go-down', 'down',
@@ -73,6 +77,7 @@ class ArtProvider(wx.ArtProvider):
                     '@paste': ('edit-paste', 'editpaste', 'gtk-paste',
                                'stock_paste'),
                     '@preferences': ('package_settings', 'gtk-preferences'),
+                    '@remove-filter': ('list-remove', ),
                     '@save': ('document-save', 'gtk-save', 'filesave',
                                 'stock_save'),
                     '@saveall': ('document-save', 'gtk-save', 'filesave',

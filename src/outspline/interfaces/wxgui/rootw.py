@@ -30,6 +30,8 @@ import history
 
 config = coreaux_api.get_interface_configuration('wxgui')
 
+show_main_window_event = Event()
+hide_main_window_event = Event()
 exit_application_event = Event()
 
 _ROOT_MIN_SIZE = (600, 408)
@@ -103,6 +105,7 @@ class GUI(wx.App):
 class MainFrame(wx.Frame):
     menu = None
     mainpanes = None
+    close_handler = None
 
     def __init__(self):
         confsize = [int(s) for s in config['initial_geometry'].split('x')]
@@ -125,22 +128,31 @@ class MainFrame(wx.Frame):
 
         self.Bind(wx.EVT_MENU_OPEN, self.menu.update_menus)
         self.Bind(wx.EVT_MENU_CLOSE, self.menu.reset_menus)
-        self.Bind(wx.EVT_CLOSE, wx.GetApp().exit_app)
+        self.bind_to_close_event(wx.GetApp().exit_app)
 
         self.Centre()
         self.Show(True)
 
-    def hide(self, event):
-        self.Show(False)
+    def bind_to_close_event(self, handler):
+        if self.close_handler:
+            self.Unbind(wx.EVT_CLOSE, handler=self.close_handler)
 
-    def show(self, event):
+        self.close_handler = handler
+        self.Bind(wx.EVT_CLOSE, handler)
+
+    def hide(self):
+        self.Show(False)
+        hide_main_window_event.signal()
+
+    def show(self):
+        show_main_window_event.signal()
         self.Show(True)
 
-    def toggle_shown(self, event):
+    def toggle_shown(self):
         if self.IsShown():
-            self.hide(event)
+            self.hide()
         else:
-            self.show(event)
+            self.show()
 
 
 class MainPanes(wx.SplitterWindow):

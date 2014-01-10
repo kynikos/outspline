@@ -84,13 +84,6 @@ def close_db_ask(filename):
                             style=wx.YES_NO | wx.CANCEL | wx.ICON_QUESTION)
 
 
-def delete_items_confirm(n):
-    return wx.MessageDialog(wx.GetApp().root, '{} item{P0s} {P0is} going to '
-                            'be deleted.'.format(n, **plural.set((n, ), )),
-                            caption="Delete items",
-                            style=wx.OK | wx.CANCEL | wx.ICON_EXCLAMATION)
-
-
 def close_tab_ask():
     return wx.MessageDialog(wx.GetApp().root, 'Do you want to apply the '
                             'changes to the item before closing the editor?',

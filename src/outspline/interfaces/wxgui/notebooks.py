@@ -50,7 +50,7 @@ class Notebook(FlatNotebook):
 
     def set_colours(self, parent):
         bgcolour = parent.GetBackgroundColour()
-        avg = bgcolour.Red() + bgcolour.Green() + bgcolour.Blue() // 3
+        avg = (bgcolour.Red() + bgcolour.Green() + bgcolour.Blue()) // 3
 
         if avg > 127:
             DIFF = 24
