@@ -109,10 +109,13 @@ class LinkManager():
         self.button_link = wx.Button(self.lpanel,
                                   label='Link to selected item', size=(-1, 24))
 
-        self.lpanel.Bind(wx.EVT_BUTTON, self.link_to_selection,
+        self.lpanel.Bind(wx.EVT_BUTTON, self._link_to_selection,
                                                               self.button_link)
 
-    def link_to_selection(self, event=None):
+    def _link_to_selection(self, event):
+        self.link_to_selection()
+
+    def link_to_selection(self):
         filename = wxgui_api.get_selected_database_filename()
 
         if filename:
