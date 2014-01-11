@@ -120,6 +120,9 @@ class OccurrencesView():
 
         self.set_colors(config)
 
+        # No need to validate the values, as they are reset every time the
+        # application is closed, and if a user edits them manually he knows
+        # he's done something wrong in the configuration file
         self.listview.InsertColumn(self.DATABASE_COLUMN, 'Database',
                                     width=config.get_int('database_column'))
         self.listview.InsertColumn(self.HEADING_COLUMN, 'Heading',
@@ -383,6 +386,24 @@ class OccurrencesView():
             sel = self.listview.GetNextSelected(sel)
 
         return alarmsd
+
+    def save_column_widths(self):
+        config = coreaux_api.get_plugin_configuration('wxtasklist')
+
+        config['database_column'] = str(self.listview.GetColumnWidth(
+                                                        self.DATABASE_COLUMN))
+        config['heading_column'] = str(self.listview.GetColumnWidth(
+                                                        self.HEADING_COLUMN))
+        config['start_column'] = str(self.listview.GetColumnWidth(
+                                                            self.START_COLUMN))
+        config['duration_column'] = str(self.listview.GetColumnWidth(
+                                                        self.DURATION_COLUMN))
+        config['end_column'] = str(self.listview.GetColumnWidth(
+                                                            self.END_COLUMN))
+        config['state_column'] = str(self.listview.GetColumnWidth(
+                                                            self.STATE_COLUMN))
+        config['alarm_column'] = str(self.listview.GetColumnWidth(
+                                                            self.ALARM_COLUMN))
 
     @staticmethod
     def format_database_short(filename):
