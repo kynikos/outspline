@@ -33,26 +33,18 @@ import outspline.interfaces.wxgui_api as wxgui_api
 import filters
 import menus
 
-COLUMNS = (
-    (0, 'Database', 120),
-    (1, 'Heading', 300),
-    (2, 'Start', 120),
-    (3, 'End', 120),
-    (4, 'State', 80),
-    (5, 'Alarm', 120),
-)
-
 
 class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
     imagelistsmall = None
     imagemap = None
 
-    def __init__(self, parent):
+    def __init__(self, parent, colsn):
         # Note that this makes use of ListView, which is an interface for
         # ListCtrl
-        wx.ListView.__init__(self, parent, style=wx.LC_REPORT | wx.BORDER_SUNKEN)
+        wx.ListView.__init__(self, parent, style=wx.LC_REPORT |
+                                                            wx.BORDER_SUNKEN)
         ListCtrlAutoWidthMixin.__init__(self)
-        ColumnSorterMixin.__init__(self, len(COLUMNS))
+        ColumnSorterMixin.__init__(self, colsn)
 
         self.set_image_lists()
 
@@ -78,6 +70,13 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
 
 
 class OccurrencesView():
+    DATABASE_COLUMN = None
+    HEADING_COLUMN = None
+    START_COLUMN = None
+    DURATION_COLUMN = None
+    END_COLUMN = None
+    STATE_COLUMN = None
+    ALARM_COLUMN = None
     tasklist = None
     listview = None
     cmenu = None
@@ -91,11 +90,24 @@ class OccurrencesView():
     delay = None
     timer = None
     autoscroll = None
-    timeformat = None
+    startformat = None
+    endformat = None
+    alarmformat = None
+    format_database = None
+    format_duration = None
 
     def __init__(self, tasklist):
+        self.DATABASE_COLUMN = 0
+        self.HEADING_COLUMN = 1
+        self.START_COLUMN = 2
+        self.DURATION_COLUMN = 3
+        self.END_COLUMN = 4
+        self.STATE_COLUMN = 5
+        self.ALARM_COLUMN = 6
+        COLUMNS_NUMBER = 7
+
         self.tasklist = tasklist
-        self.listview = ListView(tasklist.panel)
+        self.listview = ListView(tasklist.panel, COLUMNS_NUMBER)
 
         self.set_filter(self.tasklist.filters.get_filter_configuration(
                                 self.tasklist.filters.get_selected_filter()))
@@ -104,20 +116,51 @@ class OccurrencesView():
         # primary sort value
         self.listview.GetSecondarySortValues = self.get_secondary_sort_values
 
-        self.set_colors()
+        config = coreaux_api.get_plugin_configuration('wxtasklist')
 
-        for col in COLUMNS:
-            self.listview.InsertColumn(col[0], col[1], width=col[2])
+        self.set_colors(config)
+
+        self.listview.InsertColumn(self.DATABASE_COLUMN, 'Database',
+                                    width=config.get_int('database_column'))
+        self.listview.InsertColumn(self.HEADING_COLUMN, 'Heading',
+                                        width=config.get_int('heading_column'))
+        self.listview.InsertColumn(self.START_COLUMN, 'Start',
+                                        width=config.get_int('start_column'))
+        self.listview.InsertColumn(self.DURATION_COLUMN, 'Duration',
+                                    width=config.get_int('duration_column'))
+        self.listview.InsertColumn(self.END_COLUMN, 'End',
+                                            width=config.get_int('end_column'))
+        self.listview.InsertColumn(self.STATE_COLUMN, 'State',
+                                        width=config.get_int('state_column'))
+        self.listview.InsertColumn(self.ALARM_COLUMN, 'Alarm',
+                                        width=config.get_int('alarm_column'))
 
         # Initialize sort column and order
-        self.listview.SortListItems(4, 1)
+        self.listview.SortListItems(self.STATE_COLUMN, 1)
 
         # Do not self.listview.setResizeColumn(2) because it gives a
         # non-standard feeling; the last column is auto-resized by default
 
-        config = coreaux_api.get_plugin_configuration('wxtasklist')
         self.DELAY = config.get_int('refresh_delay')
-        self.timeformat = config['time_format']
+        self.startformat = config['start_format']
+        self.endformat = config['end_format']
+        self.alarmformat = config['alarm_format']
+
+        if self.endformat == 'start':
+            self.endformat = self.startformat
+
+        if self.alarmformat == 'start':
+            self.alarmformat = self.startformat
+
+        if config['database_format'] == 'full':
+            self.format_database = self.format_database_full
+        else:
+            self.format_database = self.format_database_short
+
+        if config['duration_format'] == 'compact':
+            self.format_duration = self.format_duration_compact
+        else:
+            self.format_duration = self.format_duration_expanded
 
         # Initialize self.delay with a dummy function (int)
         self.delay = wx.CallLater(self.DELAY, int)
@@ -133,9 +176,8 @@ class OccurrencesView():
     def get_secondary_sort_values(self, col, key1, key2):
         return (self.datamap[key1][2], self.datamap[key2][2])
 
-    def set_colors(self):
+    def set_colors(self, config):
         system = self.listview.GetTextColour()
-        config = coreaux_api.get_plugin_configuration('wxtasklist')
         colpast = config['color_past']
         colongoing = config['color_ongoing']
         colfuture = config['color_future']
@@ -228,7 +270,8 @@ class OccurrencesView():
             log.debug('Next tasklist refresh in {} seconds'.format(delay))
 
     def set_filter(self, config):
-        self.autoscroll = Autoscroll(self.listview, config['autoscroll'])
+        self.autoscroll = Autoscroll(self.listview, config['autoscroll'],
+                                                            self.STATE_COLUMN)
 
         filterclasses = {
             'relative': filters.FilterRelative,
@@ -341,6 +384,47 @@ class OccurrencesView():
 
         return alarmsd
 
+    @staticmethod
+    def format_database_short(filename):
+        return os.path.basename(filename)
+
+    @staticmethod
+    def format_database_full(filename):
+        return filename
+
+    @staticmethod
+    def format_duration_compact(duration):
+        if duration % 604800 == 0:
+            return '{} weeks'.format(str(duration // 604800))
+        elif duration % 86400 == 0:
+            return '{} days'.format(str(duration // 86400))
+        elif duration % 3600 == 0:
+            return '{} hours'.format(str(duration // 3600))
+        elif duration % 60 == 0:
+            return '{} minutes'.format(str(duration // 60))
+
+    @staticmethod
+    def format_duration_expanded(duration):
+        strings = []
+        w, r = divmod(duration, 604800)
+        d, r = divmod(r, 86400)
+        h, r = divmod(r, 3600)
+        m = r // 60
+
+        if w > 0:
+            strings.append('{}w'.format(str(w)))
+
+        if d > 0:
+            strings.append('{}d'.format(str(d)))
+
+        if h > 0:
+            strings.append('{}h'.format(str(h)))
+
+        if m > 0:
+            strings.append('{}m'.format(str(m)))
+
+        return ' '.join(strings)
+
 
 class Autoscroll():
     listview = None
@@ -348,7 +432,7 @@ class Autoscroll():
     execute = None
     height = None
 
-    def __init__(self, listview, padding):
+    def __init__(self, listview, padding, state_column):
         self.listview = listview
 
         try:
@@ -362,7 +446,7 @@ class Autoscroll():
             # Autoscroll enabled
             # Reset the scroll configuration to State ascending, which is
             # needed by the autoscroll
-            self.listview.SortListItems(4, 1)
+            self.listview.SortListItems(state_column, 1)
             self.execute = self.execute_auto
 
     def execute_auto(self, yscroll, states):
@@ -406,8 +490,10 @@ class ListItem():
         self.end = occ['end']
         self.alarm = occ['alarm']
 
-        self.fname = os.path.basename(self.filename)
-        index = listview.InsertStringItem(sys.maxint, self.fname)
+        # Initialize the first column with an empty string
+        index = listview.InsertStringItem(sys.maxint, '')
+
+        self.fname = occview.format_database(self.filename)
 
         mnow = now // 60 * 60
 
@@ -436,17 +522,21 @@ class ListItem():
         text = core_api.get_item_text(self.filename, self.id_)
         self.title = self.make_heading(text)
 
-        startdate = _time.strftime(occview.timeformat, _time.localtime(
+        startdate = _time.strftime(occview.startformat, _time.localtime(
                                                                 self.start))
 
         if self.end is not None:
-            enddate = _time.strftime(occview.timeformat, _time.localtime(
+            enddate = _time.strftime(occview.endformat, _time.localtime(
                                                                     self.end))
+            self.duration = self.end - self.start
+            durationstr = occview.format_duration(self.duration)
         else:
-            enddate = 'none'
+            enddate = ''
+            self.duration = None
+            durationstr = ''
 
         if self.alarm is None:
-            alarmdate = 'none'
+            alarmdate = ''
         elif self.alarm is False:
             alarmdate = 'active'
             self.alarmid = occ['alarmid']
@@ -457,14 +547,16 @@ class ListItem():
         # Note that testing if isinstance(self.alarm, int) *before* testing if
         # self.alarm is False would return True also when self.alarm is False!
         else:
-            alarmdate = _time.strftime(occview.timeformat, _time.localtime(
+            alarmdate = _time.strftime(occview.alarmformat, _time.localtime(
                                                                    self.alarm))
 
-        listview.SetStringItem(index, 1, self.title)
-        listview.SetStringItem(index, 2, startdate)
-        listview.SetStringItem(index, 3, enddate)
-        listview.SetStringItem(index, 4, self.state)
-        listview.SetStringItem(index, 5, alarmdate)
+        listview.SetStringItem(index, occview.DATABASE_COLUMN, self.fname)
+        listview.SetStringItem(index, occview.HEADING_COLUMN, self.title)
+        listview.SetStringItem(index, occview.START_COLUMN, startdate)
+        listview.SetStringItem(index, occview.DURATION_COLUMN, durationstr)
+        listview.SetStringItem(index, occview.END_COLUMN, enddate)
+        listview.SetStringItem(index, occview.STATE_COLUMN, self.state)
+        listview.SetStringItem(index, occview.ALARM_COLUMN, alarmdate)
 
         # In order for ColumnSorterMixin to work, all items must have a unique
         # data value
@@ -472,8 +564,8 @@ class ListItem():
 
     def get_values(self):
         # These values must comply with the requirements of ColumnSorterMixin
-        return (self.fname, self.title, self.start, self.end, self.stateid,
-                                                                    self.alarm)
+        return (self.fname, self.title, self.start, self.duration, self.end,
+                                                    self.stateid, self.alarm)
 
     def get_state(self):
         return self.state
