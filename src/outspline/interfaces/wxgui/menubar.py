@@ -46,7 +46,6 @@ class RootMenu(wx.MenuBar):
     database = None
     edit = None
     view = None
-    dev = None
     help = None
 
     def __init__(self):
@@ -65,7 +64,6 @@ class RootMenu(wx.MenuBar):
         self.Append(self.database, "&Database")
         self.Append(self.edit, "&Editor")
         self.Append(self.view, "&View")
-        self.Append(self.dev, "&Dev")
         self.Append(self.help, "&Help")
 
     def insert_item(self, menu, pos, text, id_=wx.ID_ANY, help='', sep='none',

@@ -259,16 +259,19 @@ class OccurrencesView():
 
         self.activealarms = {}
 
-        # Save the scroll y for restoring it after inserting the items
-        # I could instead save
-        #   self.listview.GetItemData(self.listview.GetTopItem()), but in case
-        #   that disappears or moves in the list, the thing should start being
-        #   complicated, and probably even confusing for the user
-        # Note that self.listview.GetItemRect(0).GetY() gives a slightly
-        # wrong value
-        yscroll = abs(self.listview.GetItemPosition(0).y)
-
-        self.listview.DeleteAllItems()
+        if self.listview.GetItemCount() > 0:
+            # Save the scroll y for restoring it after inserting the items
+            # I could instead save
+            #   self.listview.GetItemData(self.listview.GetTopItem()), but in
+            #   case that disappears or moves in the list, the thing should
+            #   start being complicated, and probably even confusing for the
+            #   user
+            # Note that self.listview.GetItemRect(0).GetY() gives a slightly
+            # wrong value
+            yscroll = abs(self.listview.GetItemPosition(0).y)
+            self.listview.DeleteAllItems()
+        else:
+            yscroll = 0
 
         for i, o in enumerate(occurrences):
             self.occs[i] = ListItem(i, o, now, self, self.listview,
@@ -328,7 +331,6 @@ class Autoscroll():
     listview = None
     padding = None
     execute = None
-    height = None
 
     def __init__(self, listview, padding):
         self.listview = listview
@@ -348,16 +350,18 @@ class Autoscroll():
             self.execute = self.execute_auto
 
     def execute_auto(self, yscroll, states):
-        # This height computation is tested safe even if there are no items in
-        # the list
-        self.height = self.listview.GetItemRect(self.listview.GetTopItem()
-                                                                  ).GetHeight()
-
-        # Note that the autoscroll relies on the items to be initially sorted
-        # by State ascending
         pastn = len(states['past'])
-        yscrollauto = (pastn - self.padding) * self.height
-        self.listview.ScrollList(0, yscrollauto)
+
+        # This check also makes this function safe if there are no items in the
+        # list
+        if pastn > 0:
+            height = self.listview.GetItemRect(self.listview.GetTopItem()
+                                                                ).GetHeight()
+
+            # Note that the autoscroll relies on the items to be initially
+            # sorted by State ascending
+            yscrollauto = (pastn - self.padding) * height
+            self.listview.ScrollList(0, yscrollauto)
 
         # Autoscroll only once every time the filter is reset
         self.execute = self.execute_maintain
