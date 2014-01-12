@@ -23,9 +23,6 @@ import importlib
 import configuration
 import exceptions
 from logger import log
-from events import Event
-
-addons_loaded_event = Event()
 
 
 def load_addon(faddon, reqversion, tablenames, historynames):
@@ -270,8 +267,6 @@ def start_addons():
             # different exceptions for any exception that is caught in
             # load_addon() (i.e. don't propagate the same exception, use e.g.
             # exceptions.AddonDependencyError)
-
-    addons_loaded_event.signal()
 
 
 def start_interface():

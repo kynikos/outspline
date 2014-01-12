@@ -30,6 +30,7 @@ import history
 
 config = coreaux_api.get_interface_configuration('wxgui')
 
+application_loaded_event = Event()
 exit_application_event = Event()
 
 _ROOT_MIN_SIZE = (600, 408)
@@ -111,6 +112,7 @@ class MainFrame(wx.Frame):
                     min((confsize[1], clarea.GetHeight()))]
         wx.Frame.__init__(self, None, title='Outspline', size=initsize)
         self.SetMinSize(_ROOT_MIN_SIZE)
+
         if config.get_bool('maximized'):
             self.Maximize()
 
@@ -123,12 +125,17 @@ class MainFrame(wx.Frame):
 
         self.CreateStatusBar()
 
+        self.Bind(wx.EVT_WINDOW_CREATE, self._handle_creation)
         self.Bind(wx.EVT_MENU_OPEN, self.menu.update_menus)
         self.Bind(wx.EVT_MENU_CLOSE, self.menu.reset_menus)
         self.Bind(wx.EVT_CLOSE, wx.GetApp().exit_app)
 
         self.Centre()
         self.Show(True)
+
+    def _handle_creation(self, event):
+        self.Unbind(wx.EVT_WINDOW_CREATE, handler=self._handle_creation)
+        application_loaded_event.signal()
 
     def hide(self, event):
         self.Show(False)
@@ -170,22 +177,9 @@ class MainPanes(wx.SplitterWindow):
 
     def split_window(self):
         if not self.IsSplit() and self.nb_right.GetPageCount() > 0:
-            width = self.GetSizeTuple()[0]
-
+            width = self.GetSize().GetWidth()
             self.SplitVertically(self.nb_left, self.nb_right)
             self.SetSashGravity(0.33)
-
-            # This is a workaround for http://trac.wxwidgets.org/ticket/9821
-            #   sash gravity doesn't work at the first resize after splitting
-            self.SendSizeEvent()
-
-            # Sash position must be set after setting sash gravity and sending
-            # the size event, in this order, otherwise the following bug
-            # happens:
-            # * open a database in a non-maximized window
-            # * close all databases
-            # * maximize the window
-            # * open a database -> the sash is positioned incorrectly
             self.SetSashPosition(width // 3)
 
     def unsplit_window(self):
