@@ -46,9 +46,10 @@ class MenuDev(wx.Menu):
     def __init__(self):
         wx.Menu.__init__(self)
 
-        # Initialize self.ID_PRINT so it can be deleted at the beginning of
+        # Initialize self.ID_PRINT so it can be destroyed at the beginning of
         # self.handle_reset_menu_items
         self.ID_PRINT = wx.NewId()
+        self.PrependItem(wx.MenuItem(self, self.ID_PRINT, "INIT"))
 
         self.populate = self.Append(wx.NewId(), "&Populate database")
         self.simulator = self.AppendCheckItem(wx.NewId(), "&Run simulator")
@@ -67,8 +68,8 @@ class MenuDev(wx.Menu):
             self.reset_simulator_item()
 
     def reset_print_menu(self):
-        self.Delete(self.ID_PRINT)
-        self.ID_PRINT = wx.NewId()
+        self.DestroyId(self.ID_PRINT)
+
         self.printtb = wx.Menu()
         self.PrependMenu(self.ID_PRINT, "Print &databases", self.printtb)
 
