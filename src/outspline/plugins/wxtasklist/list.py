@@ -39,8 +39,6 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
     imagemap = None
 
     def __init__(self, parent, colsn):
-        # Note that this makes use of ListView, which is an interface for
-        # ListCtrl
         wx.ListView.__init__(self, parent, style=wx.LC_REPORT |
                                                             wx.BORDER_SUNKEN)
         ListCtrlAutoWidthMixin.__init__(self)
@@ -236,19 +234,24 @@ class OccurrencesView():
         # self.refresh signal because of the call to
         # organism_timer_api.get_next_occurrences, otherwise this would make
         # self.refresh recur infinitely
-        organism_timer_api.bind_to_search_next_occurrences(self.delay_restart)
-        organism_alarms_api.bind_to_alarm_off(self.delay_restart)
+        organism_timer_api.bind_to_search_next_occurrences(self._delay_restart)
+        organism_alarms_api.bind_to_alarm_off(self._delay_restart)
 
     def disable_refresh(self):
         # Do not even think of disabling refreshing when the notebook tab is
         # not selected, because then it should always be refreshed when
         # selecting it, which would make everything more sluggish
         core_api.bind_to_update_item(self.delay_restart_on_text_update, False)
-        organism_timer_api.bind_to_search_next_occurrences(self.delay_restart,
+        organism_timer_api.bind_to_search_next_occurrences(self._delay_restart,
                                                                         False)
-        organism_alarms_api.bind_to_alarm_off(self.delay_restart, False)
+        organism_alarms_api.bind_to_alarm_off(self._delay_restart, False)
 
-    def delay_restart(self, kwargs=None):
+    def _delay_restart(self, kwargs):
+        # self.delay_restart uses wx.CallLater, which cannot be called from
+        # other threads than the main one
+        wx.CallAfter(self.delay_restart)
+
+    def delay_restart(self):
         # Instead of self.restart, bind _this_ function to events that can be
         # signalled many times in a loop, so that self.restart is executed only
         # once after the last signal
