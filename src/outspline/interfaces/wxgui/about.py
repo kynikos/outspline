@@ -35,8 +35,6 @@ class AboutWindow(wx.Frame):
                           wx.FRAME_FLOAT_ON_PARENT)
 
         sizer1 = wx.GridBagSizer(4, 4)
-        sizer1.AddGrowableRow(3)
-        sizer1.AddGrowableCol(2)
         self.SetSizer(sizer1)
 
         logo = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
@@ -83,6 +81,9 @@ class AboutWindow(wx.Frame):
                    wx.EXPAND, border=4)
         sizer1.Add(button, (4, 0), span=(1, 3), flag=wx.ALIGN_CENTER |
                    wx.BOTTOM, border=4)
+
+        sizer1.AddGrowableRow(3)
+        sizer1.AddGrowableCol(2)
 
         self.Bind(wx.EVT_BUTTON, self.close, button)
 
