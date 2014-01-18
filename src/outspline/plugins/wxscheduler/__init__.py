@@ -66,6 +66,10 @@ class Scheduler():
                                                                     self.panel)
         self.resize()
 
+        # Must be done *after* resizing
+        if not self.rule_list.rules:
+            self.collapse_foldpanel()
+
     def resize(self):
         # This is necessary for letting the fold panel adapt to the variable
         # height
@@ -183,9 +187,6 @@ class RuleList():
                                                                     rule=rule)
 
         self.refresh_mod_state()
-
-        if not self.rules:
-            self.parent.collapse_foldpanel()
 
         init_rules_list_event.signal(filename=self.filename, id_=self.id_)
 
