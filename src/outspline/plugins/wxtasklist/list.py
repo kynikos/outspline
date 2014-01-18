@@ -797,31 +797,34 @@ class ListAuxiliaryItem():
 
         listview.SetItemTextColour(index, color)
 
-        # Don't show the start date nor duration if the gap/overlapping is at
-        # the beginning of the search interval, otherwise it should be updated
-        # every minute
         if minstart:
+            # Don't show the start date if the gap/overlapping is at the
+            # beginning of the search interval, otherwise it should be updated
+            # every minute
             startdate = ''
-            self.duration = None
-            durationstr = ''
         else:
             startdate = _time.strftime(occview.startformat, _time.localtime(
                                                                 self.start))
-            self.duration = self.end - self.start
-            durationstr = occview.format_duration(self.duration)
 
-        # Don't show the end date nor duration if the gap/overlapping is at
-        # the end of the search interval, otherwise it should be updated every
-        # minute
-        if maxend:
-            enddate = ''
+        # Do *not* merge this check with the others for minstart (above) and
+        # maxend (below)
+        if minstart or maxend:
+            # Don't show the duration if the gap/overlapping is at the start or
+            # the end of the search interval, otherwise it should be updated
+            # every minute
             self.duration = None
             durationstr = ''
         else:
-            enddate = _time.strftime(occview.endformat,
-                                                    _time.localtime(self.end))
             self.duration = self.end - self.start
             durationstr = occview.format_duration(self.duration)
+
+        if maxend:
+            # Don't show the end date if the gap/overlapping is at the end of
+            # the search interval, otherwise it should be updated every minute
+            enddate = ''
+        else:
+            enddate = _time.strftime(occview.endformat,
+                                                    _time.localtime(self.end))
 
         alarmdate = ''
 
