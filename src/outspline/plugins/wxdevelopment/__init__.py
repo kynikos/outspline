@@ -203,10 +203,10 @@ class MenuDev(wx.Menu):
                 self._populate_tree_gui(mode, filename, itemid, id_, text)
 
                 # Links must be created *after* self._populate_tree_gui
-                if links_api and wxlinks_api and filename in \
-                                links_api.get_supported_open_databases():
-                        self._populate_tree_link(filename, id_, dbitems,
-                                                        group, description)
+                if links_api and wxlinks_api and len(dbitems) > 0 and \
+                        filename in links_api.get_supported_open_databases():
+                    self._populate_tree_link(filename, id_, dbitems, group,
+                                                                description)
 
             wxgui_api.refresh_history(filename)
         core_api.release_databases()
@@ -296,8 +296,8 @@ class MenuDev(wx.Menu):
 
     def _populate_tree_link(self, filename, id_, dbitems, group, description):
         if random.randint(0, 8) == 0:
-            # This gives a chance that target will be the same as id_, but it's
-            # negligible, especially with large numbers of items
+            # Target can't the same as id_ because dbitems was assigned
+            # *before* the new item was appended
             target = random.choice(dbitems)
             links_api.make_link(filename, id_, target, group, description)
             wxlinks_api.update_items_formatting(filename)
