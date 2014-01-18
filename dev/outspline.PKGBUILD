@@ -7,7 +7,7 @@ pkgdesc="Highly modular and extensible outliner for managing your notes"
 arch=('any')
 url="https://github.com/kynikos/outspline"
 license=('GPL3')
-depends=('wxpython<2.9'
+depends=('wxpython<3.1'
          'python2-configfile'
          'python2-texthistory'
          'python2-plural')
