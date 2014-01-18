@@ -41,6 +41,10 @@ class MainMenu(wx.Menu):
     ID_EDIT_FILTER = None
     removefilter = None
     ID_REMOVE_FILTER = None
+    gaps = None
+    ID_GAPS = None
+    overlaps = None
+    ID_OVERLAPS = None
     find = None
     ID_FIND = None
     edit = None
@@ -63,6 +67,8 @@ class MainMenu(wx.Menu):
         self.ID_ADD_FILTER = wx.NewId()
         self.ID_EDIT_FILTER = wx.NewId()
         self.ID_REMOVE_FILTER = wx.NewId()
+        self.ID_GAPS = wx.NewId()
+        self.ID_OVERLAPS = wx.NewId()
         self.ID_FIND = wx.NewId()
         self.ID_EDIT = wx.NewId()
         self.ID_SNOOZE = wx.NewId()
@@ -80,6 +86,13 @@ class MainMenu(wx.Menu):
                         "&Edit filter", "Edit the currently selected filter")
         self.removefilter = wx.MenuItem(self, self.ID_REMOVE_FILTER,
                     "&Remove filter", "Remove the currently selected filter")
+        self.gaps = wx.MenuItem(self, self.ID_GAPS, "Show &gaps\tCTRL+-",
+                            "Show any unallocated time in the shown interval",
+                            kind=wx.ITEM_CHECK)
+        self.overlaps = wx.MenuItem(self, self.ID_OVERLAPS,
+                        "Show &overlappings\tCTRL+=",
+                        "Show time intervals used by more than one occurrence",
+                        kind=wx.ITEM_CHECK)
         self.find = wx.MenuItem(self, self.ID_FIND, "&Find in database\tF5",
             "Select the database items associated to the selected occurrences")
         self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit selected\tF6",
@@ -122,6 +135,9 @@ class MainMenu(wx.Menu):
         self.AppendItem(self.editfilter)
         self.AppendItem(self.removefilter)
         self.AppendSeparator()
+        self.AppendItem(self.gaps)
+        self.AppendItem(self.overlaps)
+        self.AppendSeparator()
         self.AppendItem(self.find)
         self.AppendItem(self.edit)
         self.AppendSeparator()
@@ -133,6 +149,8 @@ class MainMenu(wx.Menu):
         wxgui_api.bind_to_menu(self.add_filter, self.addfilter)
         wxgui_api.bind_to_menu(self.edit_filter, self.editfilter)
         wxgui_api.bind_to_menu(self.remove_filter, self.removefilter)
+        wxgui_api.bind_to_menu(self.show_gaps, self.gaps)
+        wxgui_api.bind_to_menu(self.show_overlappings, self.overlaps)
         wxgui_api.bind_to_menu(self.find_in_tree, self.find)
         wxgui_api.bind_to_menu(self.edit_items, self.edit)
         wxgui_api.bind_to_menu(self.dismiss_selected_alarms, self.dismiss)
@@ -146,9 +164,14 @@ class MainMenu(wx.Menu):
 
     def update_items(self, kwargs):
         if kwargs['menu'] is self:
+            self.filters.Enable(False)
             self.addfilter.Enable(False)
             self.editfilter.Enable(False)
             self.removefilter.Enable(False)
+            self.gaps.Enable(False)
+            self.gaps.Check(check=self.occview.show_gaps)
+            self.overlaps.Enable(False)
+            self.overlaps.Check(check=self.occview.show_overlappings)
             self.find.Enable(False)
             self.edit.Enable(False)
             self.snooze.Enable(False)
@@ -159,6 +182,7 @@ class MainMenu(wx.Menu):
             tab = wxgui_api.get_selected_right_nb_tab()
 
             if tab is self.tasklist.panel:
+                self.filters.Enable()
                 self.addfilter.Enable()
                 self.editfilter.Enable()
 
@@ -167,23 +191,27 @@ class MainMenu(wx.Menu):
 
                 sel = self.occview.listview.GetFirstSelected()
 
-                if sel > -1:
-                    self.find.Enable()
-                    self.edit.Enable()
+                while sel > -1:
+                    item = self.occview.occs[
+                                    self.occview.listview.GetItemData(sel)]
 
-                    while True:
-                        item = self.occview.occs[
-                                        self.occview.listview.GetItemData(sel)]
+                    canbreak = 0
 
-                        if item.alarm is False:
-                            self.snooze.Enable()
-                            self.dismiss.Enable()
-                            break
+                    # Check item is not a gap or an overlapping
+                    if item.filename is not None:
+                        self.find.Enable()
+                        self.edit.Enable()
+                        canbreak += 1
 
-                        sel = self.occview.listview.GetNextSelected(sel)
+                    if item.alarm is False:
+                        self.snooze.Enable()
+                        self.dismiss.Enable()
+                        canbreak += 1
 
-                        if sel < 0:
-                            break
+                    if canbreak > 1:
+                        break
+
+                    sel = self.occview.listview.GetNextSelected(sel)
 
                 # Note that "all" means all the visible active alarms; some
                 # may be hidden in the current view; this is also why these
@@ -194,12 +222,20 @@ class MainMenu(wx.Menu):
 
                 self.filters_submenu.update()
 
+            if self.tasklist.is_shown():
+                # Already appropriately checked above
+                self.gaps.Enable()
+                self.overlaps.Enable()
+
     def reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
         # accelerators
+        self.filters.Enable()
         self.addfilter.Enable()
         self.editfilter.Enable()
         self.removefilter.Enable()
+        self.gaps.Enable()
+        self.overlaps.Enable()
         self.find.Enable()
         self.edit.Enable()
         self.snooze.Enable()
@@ -216,6 +252,16 @@ class MainMenu(wx.Menu):
     def remove_filter(self, event):
         self.tasklist.filters.remove_selected()
 
+    def show_gaps(self, event):
+        if self.tasklist.is_shown():
+            self.occview.show_gaps = not self.occview.show_gaps
+            self.occview.delay_restart()
+
+    def show_overlappings(self, event):
+        if self.tasklist.is_shown():
+            self.occview.show_overlappings = not self.occview.show_overlappings
+            self.occview.delay_restart()
+
     def find_in_tree(self, event):
         tab = wxgui_api.get_selected_right_nb_tab()
 
@@ -226,23 +272,29 @@ class MainMenu(wx.Menu):
                 for filename in core_api.get_open_databases():
                     wxgui_api.unselect_all_items(filename)
 
-                # [1]: line repeated in the loop because of
-                # wxgui_api.select_database_tab
-                item = self.occview.occs[self.occview.listview.GetItemData(
-                                                                        sel)]
-                wxgui_api.select_database_tab(item.filename)
-
-                while True:
-                    # It's necessary to repeat this line (see [1]) because
-                    # wxgui_api.select_database_tab must be executed only once
-                    # for the first selected item
+                # Loop that selects a database tab (but doesn't select items)
+                while sel > -1:
                     item = self.occview.occs[self.occview.listview.GetItemData(
                                                                         sel)]
-                    wxgui_api.add_item_to_selection(item.filename, item.id_)
-                    sel = self.occview.listview.GetNextSelected(sel)
 
-                    if sel < 0:
+                    if item.filename is not None:
+                        wxgui_api.select_database_tab(item.filename)
+                        # The item is selected in the loop below
                         break
+                    else:
+                        sel = self.occview.listview.GetNextSelected(sel)
+
+                # Loop that doesn't select a database tab but selects items,
+                # including the one found in the loop above
+                while sel > -1:
+                    item = self.occview.occs[self.occview.listview.GetItemData(
+                                                                        sel)]
+
+                    if item.filename is not None:
+                        wxgui_api.add_item_to_selection(item.filename,
+                                                                    item.id_)
+
+                    sel = self.occview.listview.GetNextSelected(sel)
 
     def edit_items(self, event):
         tab = wxgui_api.get_selected_right_nb_tab()
@@ -253,7 +305,10 @@ class MainMenu(wx.Menu):
             while sel > -1:
                 item = self.occview.occs[self.occview.listview.GetItemData(
                                                                         sel)]
-                wxgui_api.open_editor(item.filename, item.id_)
+
+                if item.filename is not None:
+                    wxgui_api.open_editor(item.filename, item.id_)
+
                 sel = self.occview.listview.GetNextSelected(sel)
 
     def dismiss_selected_alarms(self, event):
@@ -318,6 +373,8 @@ class TabContextMenu(wx.Menu):
     addfilter = None
     editfilter = None
     removefilter = None
+    gaps = None
+    overlaps = None
     snooze_all = None
     dismiss_all = None
 
@@ -335,6 +392,11 @@ class TabContextMenu(wx.Menu):
                         self.tasklist.mainmenu.ID_EDIT_FILTER, "&Edit filter")
         self.removefilter = wx.MenuItem(self,
                     self.tasklist.mainmenu.ID_REMOVE_FILTER, "&Remove filter")
+        self.gaps = wx.MenuItem(self, self.tasklist.mainmenu.ID_GAPS,
+                                            "Show &gaps", kind=wx.ITEM_CHECK)
+        self.overlaps = wx.MenuItem(self,
+                    self.tasklist.mainmenu.ID_OVERLAPS, "Show &overlappings",
+                    kind=wx.ITEM_CHECK)
         self.snooze_all = wx.MenuItem(self,
                         self.tasklist.mainmenu.ID_SNOOZE_ALL, "S&nooze all",
                         subMenu=SnoozeAllConfigMenu(self.tasklist))
@@ -360,6 +422,9 @@ class TabContextMenu(wx.Menu):
         self.AppendItem(self.editfilter)
         self.AppendItem(self.removefilter)
         self.AppendSeparator()
+        self.AppendItem(self.gaps)
+        self.AppendItem(self.overlaps)
+        self.AppendSeparator()
         self.AppendItem(self.snooze_all)
         self.AppendItem(self.dismiss_all)
 
@@ -372,6 +437,9 @@ class TabContextMenu(wx.Menu):
             self.dismiss_all.Enable(False)
 
         self.filters_submenu.update()
+
+        self.gaps.Check(check=self.tasklist.list_.show_gaps)
+        self.overlaps.Check(check=self.tasklist.list_.show_overlappings)
 
 
 class ListContextMenu(wx.Menu):
@@ -417,18 +485,25 @@ class ListContextMenu(wx.Menu):
         self.snooze.Enable(False)
         self.dismiss.Enable(False)
 
-        if self.occview.listview.GetSelectedItemCount() > 0:
-            self.find.Enable()
-            self.edit.Enable()
-
         sel = self.occview.listview.GetFirstSelected()
 
         while sel > -1:
             item = self.occview.occs[self.occview.listview.GetItemData(sel)]
 
+            canbreak = 0
+
+            # Check item is not a gap or an overlapping
+            if item.filename is not None:
+                self.find.Enable()
+                self.edit.Enable()
+                canbreak += 1
+
             if item.alarm is False:
                 self.snooze.Enable()
                 self.dismiss.Enable()
+                canbreak += 1
+
+            if canbreak > 1:
                 break
 
             sel = self.occview.listview.GetNextSelected(sel)

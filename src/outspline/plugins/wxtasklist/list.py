@@ -21,6 +21,7 @@ from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin, ColumnSorterMixin
 import sys
 import time as _time
 import os
+import string as string_
 
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import log
@@ -80,6 +81,7 @@ class OccurrencesView():
     cmenu = None
     colors = None
     filter_ = None
+    now = None
     occs = None
     datamap = None
     states = None
@@ -87,12 +89,20 @@ class OccurrencesView():
     DELAY = None
     delay = None
     timer = None
+    min_time = None
+    max_time = None
     autoscroll = None
     startformat = None
     endformat = None
     alarmformat = None
     format_database = None
     format_duration = None
+    time_allocation = None
+    time_allocation_overlap = None
+    compute_time_allocation = None
+    insert_gaps_and_overlappings = None
+    show_gaps = None
+    show_overlappings = None
 
     def __init__(self, tasklist):
         self.DATABASE_COLUMN = 0
@@ -107,16 +117,11 @@ class OccurrencesView():
         self.tasklist = tasklist
         self.listview = ListView(tasklist.panel, COLUMNS_NUMBER)
 
-        self.set_filter(self.tasklist.filters.get_filter_configuration(
-                                self.tasklist.filters.get_selected_filter()))
-
         # Override ColumnSorterMixin's method for sorting items that have equal
         # primary sort value
         self.listview.GetSecondarySortValues = self.get_secondary_sort_values
 
         config = coreaux_api.get_plugin_configuration('wxtasklist')
-
-        self.set_colors(config)
 
         # No need to validate the values, as they are reset every time the
         # application is closed, and if a user edits them manually he knows
@@ -135,6 +140,11 @@ class OccurrencesView():
                                         width=config.get_int('state_column'))
         self.listview.InsertColumn(self.ALARM_COLUMN, 'Alarm',
                                         width=config.get_int('alarm_column'))
+
+        self.set_filter(self.tasklist.filters.get_filter_configuration(
+                                self.tasklist.filters.get_selected_filter()))
+
+        self.set_colors(config)
 
         # Initialize sort column and order
         self.listview.SortListItems(self.STATE_COLUMN, 1)
@@ -163,6 +173,9 @@ class OccurrencesView():
         else:
             self.format_duration = self.format_duration_expanded
 
+        self.show_gaps = config.get_bool('show_gaps')
+        self.show_overlappings = config.get_bool('show_overlappings')
+
         # Initialize self.delay with a dummy function (int)
         self.delay = wx.CallLater(self.DELAY, int)
         self.timer = wx.CallLater(0, self.restart)
@@ -183,6 +196,8 @@ class OccurrencesView():
         colongoing = config['color_ongoing']
         colfuture = config['color_future']
         colactive = config['color_active']
+        colgap = config['color_gap']
+        coloverlap = config['color_overlapping']
         self.colors = {}
 
         if colpast == 'system':
@@ -222,6 +237,9 @@ class OccurrencesView():
         else:
             self.colors['active'] = wx.Colour()
             self.colors['active'].SetFromString(colactive)
+
+        self.colors['gap'] = colgap
+        self.colors['overlapping'] = coloverlap
 
     def delay_restart_on_text_update(self, kwargs=None):
         if kwargs['text'] is not None:
@@ -297,16 +315,17 @@ class OccurrencesView():
     def refresh(self):
         log.debug('Refresh tasklist')
 
-        now = int(_time.time())
+        self.now = int(_time.time())
 
-        mint, maxt = self.filter_.compute_limits(now)
+        self.min_time, self.max_time = self.filter_.compute_limits(self.now)
 
-        occsobj = organism_api.get_occurrences_range(mint=mint, maxt=maxt)
+        occsobj = organism_api.get_occurrences_range(mint=self.min_time,
+                                                            maxt=self.max_time)
         occurrences = occsobj.get_list()
 
         # Always add active (but not snoozed) alarms if time interval includes
         # current time
-        if mint <= now <= maxt:
+        if self.min_time <= self.now <= self.max_time:
             occurrences.extend(occsobj.get_active_list())
 
         self.occs = {}
@@ -326,6 +345,8 @@ class OccurrencesView():
 
         self.activealarms = {}
 
+        self.prepare_time_allocation()
+
         if self.listview.GetItemCount() > 0:
             # Save the scroll y for restoring it after inserting the items
             # I could instead save
@@ -340,15 +361,10 @@ class OccurrencesView():
         else:
             yscroll = 0
 
-        for i, o in enumerate(occurrences):
-            self.occs[i] = ListItem(i, o, now, self, self.listview,
-                                                               self.autoscroll)
+        self._insert_items(occurrences)
 
-            # Both the key and the values of self.datamap must comply with the
-            # requirements of ColumnSorterMixin
-            self.datamap[i] = self.occs[i].get_values()
-
-            self.states[self.occs[i].get_state()].append(i)
+        # Do this *after* inserting the items but *before* sorting
+        self.insert_gaps_and_overlappings()
 
         # Use SortListItems instead of occurrences.sort(), so that the heading
         # will properly display the arrow icon
@@ -359,7 +375,139 @@ class OccurrencesView():
         # correct y values will be got
         self.autoscroll.execute(yscroll, self.states)
 
-        return self.filter_.compute_delay(occsobj, now, mint, maxt)
+        return self.filter_.compute_delay(occsobj, self.now, self.min_time,
+                                                                self.max_time)
+
+    def _insert_items(self, occurrences):
+        for i, o in enumerate(occurrences):
+            self.occs[i] = ListItem(i, o, self, self.listview)
+
+            # Both the key and the values of self.datamap must comply with the
+            # requirements of ColumnSorterMixin
+            self.datamap[i] = self.occs[i].get_values()
+
+            self.states[self.occs[i].get_state()].append(i)
+
+    def prepare_time_allocation(self):
+        if self.show_gaps or self.show_overlappings:
+            # Bit array that stores the minutes occupied by at least an
+            # occurrence
+            self.time_allocation = 0
+
+            # Bit array that stores the minutes occupied by at least two
+            # occurrences
+            self.time_allocation_overlap = 0
+
+            self.compute_time_allocation = self._compute_time_allocation_real
+            self.insert_gaps_and_overlappings = \
+                                        self._insert_gaps_and_overlappings_real
+        else:
+            self.compute_time_allocation = self._compute_time_allocation_dummy
+            self.insert_gaps_and_overlappings = \
+                                    self._insert_gaps_and_overlappings_dummy
+
+    def _compute_time_allocation_real(self, start, end):
+        # Don't even think of using the duration calculated for the occurrence,
+        # since part of it may be out of the interval
+        # The occurrence could span outside of the interval, for example if
+        # it's been retrieved because its alarm time is in the interval instead
+        # If end is None the following test will never be True
+        # Also consider start == self.max_time, in accordance with the
+        # behaviour of the occurrence search algorithm
+        if start <= self.max_time and end > self.min_time:
+            minr = max((start - self.min_time, 0)) // 60
+            # Add 1 to self.max_time because if an occurrence is exceeding it,
+            # it *is* occupying that minute too
+            maxr = (min((end, self.max_time + 60)) - self.min_time) // 60
+            interval = maxr - minr
+            occrarr = 2 ** interval - 1
+            occarr = occrarr << minr
+            occoverlap = self.time_allocation & occarr
+            self.time_allocation |= occarr
+            self.time_allocation_overlap |= occoverlap
+
+    def _compute_time_allocation_dummy(self, start, end):
+        pass
+
+    def _insert_gaps_and_overlappings_real(self):
+        # Don't find gaps/overlappings for occurrences out of the search
+        # interval, e.g. old active alarms
+        # Add 1 minute to self.max_time (and hence to the whole interval)
+        # because that minute is *included* in the occurrence search interval
+        interval = (self.max_time + 60 - self.min_time) // 60
+
+        if self.show_gaps:
+            gaps = '{:b}'.format(self.time_allocation).zfill(interval
+                                ).translate(string_.maketrans("10","01"))[::-1]
+            self._find_gaps_or_overlappings(gaps,self._insert_gap)
+
+        if self.show_overlappings:
+            overlappings = '{:b}'.format(self.time_allocation_overlap).zfill(
+                                                                interval)[::-1]
+            self._find_gaps_or_overlappings(overlappings,
+                                                    self._insert_overlapping)
+
+    def _insert_gaps_and_overlappings_dummy(self):
+        pass
+
+    def _find_gaps_or_overlappings(self, bitstring, call):
+        maxend = False
+
+        # Find a gap/overlapping at the beginning of the interval separately
+        if bitstring[0] == '1':
+            bitstart = 0
+
+            try:
+                bitend = bitstring.index('10', bitstart) + 1
+            except ValueError:
+                bitend = len(bitstring)
+                maxend = True
+
+            call(bitstart, bitend, True, maxend)
+        else:
+            bitend = 0
+
+        while True:
+            try:
+                bitstart = bitstring.index('01', bitend) + 1
+            except ValueError:
+                break
+            else:
+                try:
+                    bitend = bitstring.index('10', bitstart) + 1
+                except ValueError:
+                    bitend = len(bitstring)
+                    maxend = True
+
+                call(bitstart, bitend, False, maxend)
+
+    def _insert_gap(self, mstart, mend, minstart, maxend):
+        i = len(self.occs)
+        start = mstart * 60 + self.min_time
+        end = mend * 60 + self.min_time
+
+        self.occs[i] = ListAuxiliaryItem(i, '[gap]', start, end, minstart,
+                            maxend, self.colors['gap'], self, self.listview)
+
+        # Both the key and the values of self.datamap must comply with the
+        # requirements of ColumnSorterMixin
+        self.datamap[i] = self.occs[i].get_values()
+
+        self.states[self.occs[i].get_state()].append(i)
+
+    def _insert_overlapping(self, mstart, mend, minstart, maxend):
+        i = len(self.occs)
+        start = mstart * 60 + self.min_time
+        end = mend * 60 + self.min_time
+
+        self.occs[i] = ListAuxiliaryItem(i, '[overlapping]', start, end,
+            minstart, maxend, self.colors['overlapping'], self, self.listview)
+
+        # Both the key and the values of self.datamap must comply with the
+        # requirements of ColumnSorterMixin
+        self.datamap[i] = self.occs[i].get_values()
+
+        self.states[self.occs[i].get_state()].append(i)
 
     def popup_context_menu(self, event):
         self.cmenu.update()
@@ -393,7 +541,7 @@ class OccurrencesView():
 
         return alarmsd
 
-    def save_column_widths(self):
+    def save_configuration(self):
         config = coreaux_api.get_plugin_configuration('wxtasklist')
 
         config['database_column'] = str(self.listview.GetColumnWidth(
@@ -410,6 +558,8 @@ class OccurrencesView():
                                                             self.STATE_COLUMN))
         config['alarm_column'] = str(self.listview.GetColumnWidth(
                                                             self.ALARM_COLUMN))
+        config['show_gaps'] = 'yes' if self.show_gaps else 'no'
+        config['show_overlappings'] = 'yes' if self.show_overlappings else 'no'
 
     @staticmethod
     def format_database_short(filename):
@@ -503,6 +653,7 @@ class ListItem():
     filename = None
     id_ = None
     start = None
+    duration = None
     end = None
     alarm = None
     alarmid = None
@@ -511,7 +662,7 @@ class ListItem():
     state = None
     stateid = None
 
-    def __init__(self, i, occ, now, occview, listview, autoscroll):
+    def __init__(self, i, occ, occview, listview):
         self.filename = occ['filename']
         self.id_ = occ['id_']
         self.start = occ['start']
@@ -523,7 +674,7 @@ class ListItem():
 
         self.fname = occview.format_database(self.filename)
 
-        mnow = now // 60 * 60
+        mnow = occview.now // 60 * 60
 
         if mnow < self.start:
             self.state = 'future'
@@ -590,6 +741,8 @@ class ListItem():
         # data value
         listview.SetItemData(index, i)
 
+        occview.compute_time_allocation(self.start, self.end)
+
     def get_values(self):
         # These values must comply with the requirements of ColumnSorterMixin
         return (self.fname, self.title, self.start, self.duration, self.end,
@@ -601,3 +754,93 @@ class ListItem():
     @staticmethod
     def make_heading(text):
         return text.partition('\n')[0]
+
+
+class ListAuxiliaryItem():
+    filename = None
+    id_ = None
+    start = None
+    duration = None
+    end = None
+    alarm = None
+    alarmid = None
+    fname = None
+    title = None
+    state = None
+    stateid = None
+
+    def __init__(self, i, title, start, end, minstart, maxend, color, occview,
+                                                                    listview):
+        self.filename = None
+        self.id_ = None
+        self.fname = ''
+        self.title = title
+        self.start = start
+        self.end = end
+        self.alarm = None
+        self.alarmid = None
+
+        # Initialize the first column with an empty string
+        index = listview.InsertStringItem(sys.maxint, '')
+
+        mnow = occview.now // 60 * 60
+
+        if mnow < self.start:
+            self.state = 'future'
+            self.stateid = 2
+        elif self.start <= mnow < self.end:
+            self.state = 'ongoing'
+            self.stateid = 1
+        else:
+            self.state = 'past'
+            self.stateid = 0
+
+        listview.SetItemTextColour(index, color)
+
+        # Don't show the start date nor duration if the gap/overlapping is at
+        # the beginning of the search interval, otherwise it should be updated
+        # every minute
+        if minstart:
+            startdate = ''
+            self.duration = None
+            durationstr = ''
+        else:
+            startdate = _time.strftime(occview.startformat, _time.localtime(
+                                                                self.start))
+            self.duration = self.end - self.start
+            durationstr = occview.format_duration(self.duration)
+
+        # Don't show the end date nor duration if the gap/overlapping is at
+        # the end of the search interval, otherwise it should be updated every
+        # minute
+        if maxend:
+            enddate = ''
+            self.duration = None
+            durationstr = ''
+        else:
+            enddate = _time.strftime(occview.endformat,
+                                                    _time.localtime(self.end))
+            self.duration = self.end - self.start
+            durationstr = occview.format_duration(self.duration)
+
+        alarmdate = ''
+
+        listview.SetStringItem(index, occview.DATABASE_COLUMN, self.fname)
+        listview.SetStringItem(index, occview.HEADING_COLUMN, self.title)
+        listview.SetStringItem(index, occview.START_COLUMN, startdate)
+        listview.SetStringItem(index, occview.DURATION_COLUMN, durationstr)
+        listview.SetStringItem(index, occview.END_COLUMN, enddate)
+        listview.SetStringItem(index, occview.STATE_COLUMN, self.state)
+        listview.SetStringItem(index, occview.ALARM_COLUMN, alarmdate)
+
+        # In order for ColumnSorterMixin to work, all items must have a unique
+        # data value
+        listview.SetItemData(index, i)
+
+    def get_values(self):
+        # These values must comply with the requirements of ColumnSorterMixin
+        return (self.fname, self.title, self.start, self.duration, self.end,
+                                                    self.stateid, self.alarm)
+
+    def get_state(self):
+        return self.state
