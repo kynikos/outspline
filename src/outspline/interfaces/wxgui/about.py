@@ -54,9 +54,8 @@ class AboutWindow(wx.Frame):
                                        wx.FONTSTYLE_NORMAL,
                                        wx.FONTWEIGHT_NORMAL))
 
-        self.website = wx.HyperlinkCtrl(self, wx.ID_ANY,
-                                        label=coreaux_api.get_website(),
-                                        url=coreaux_api.get_website())
+        self.website = wx.HyperlinkCtrl(self, label=coreaux_api.get_website(),
+                                                url=coreaux_api.get_website())
 
         description = wx.StaticText(self,
                                     label=coreaux_api.get_long_description())
