@@ -93,9 +93,7 @@ class LinkManager():
             wxgui_api.bind_to_close_editor(self.handle_close, False)
 
     def resize_lpanel(self):
-        self.lpanel.Layout()
         self.lpanel.Fit()
-        wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel)
         wxgui_api.expand_panel(self.filename, self.id_, self.fpanel)
         wxgui_api.resize_foldpanelbar(self.filename, self.id_)
 
