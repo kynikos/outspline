@@ -21,7 +21,6 @@ import wx
 
 class TextUrlCtrl(wx.TextCtrl):
     def __init__(self, *args, **kwargs):
-        print(args)
         if 'style' in kwargs:
             kwargs['style'] |= wx.TE_AUTO_URL
         else:
