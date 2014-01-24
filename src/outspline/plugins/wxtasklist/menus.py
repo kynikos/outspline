@@ -78,12 +78,12 @@ class MainMenu(wx.Menu):
 
         self.filters_submenu = FiltersMenu(self.tasklist)
 
-        self.filters = wx.MenuItem(self, self.ID_FILTERS, '&Filters',
+        self.filters = wx.MenuItem(self, self.ID_FILTERS, 'F&ilters',
                             'Select a filter', subMenu=self.filters_submenu)
         self.addfilter = wx.MenuItem(self, self.ID_ADD_FILTER,
                                             "&Add filter", "Add a new filter")
         self.editfilter = wx.MenuItem(self, self.ID_EDIT_FILTER,
-                        "&Edit filter", "Edit the currently selected filter")
+                        "Edi&t filter", "Edit the currently selected filter")
         self.removefilter = wx.MenuItem(self, self.ID_REMOVE_FILTER,
                     "&Remove filter", "Remove the currently selected filter")
         self.gaps = wx.MenuItem(self, self.ID_GAPS, "Show &gaps\tCTRL+-",
@@ -93,9 +93,9 @@ class MainMenu(wx.Menu):
                         "Show &overlappings\tCTRL+=",
                         "Show time intervals used by more than one occurrence",
                         kind=wx.ITEM_CHECK)
-        self.find = wx.MenuItem(self, self.ID_FIND, "&Find in database\tF5",
+        self.find = wx.MenuItem(self, self.ID_FIND, "&Find in database\tF6",
             "Select the database items associated to the selected occurrences")
-        self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit selected\tF6",
+        self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit selected\tCTRL+F6",
                             "Open in the editor the database items associated "
                             "to the selected occurrences")
 
@@ -107,9 +107,9 @@ class MainMenu(wx.Menu):
                                 subMenu=SnoozeAllConfigMenu(self.tasklist))
 
         self.dismiss = wx.MenuItem(self, self.ID_DISMISS,
-                        "Dis&miss selected\tF8", "Dismiss the selected alarms")
+                        "&Dismiss selected\tF8", "Dismiss the selected alarms")
         self.dismiss_all = wx.MenuItem(self, self.ID_DISMISS_ALL,
-                    "&Dismiss all\tCTRL+F8", "Dismiss all the active alarms")
+                    "Dis&miss all\tCTRL+F8", "Dismiss all the active alarms")
 
         self.filters.SetBitmap(wx.ArtProvider.GetBitmap('@filters',
                                                                   wx.ART_MENU))
@@ -385,11 +385,11 @@ class TabContextMenu(wx.Menu):
         self.filters_submenu = FiltersMenu(self.tasklist)
 
         self.filters = wx.MenuItem(self, self.tasklist.mainmenu.ID_FILTERS,
-                                    '&Filters', subMenu=self.filters_submenu)
+                                    'F&ilters', subMenu=self.filters_submenu)
         self.addfilter = wx.MenuItem(self,
                         self.tasklist.mainmenu.ID_ADD_FILTER, "&Add filter")
         self.editfilter = wx.MenuItem(self,
-                        self.tasklist.mainmenu.ID_EDIT_FILTER, "&Edit filter")
+                        self.tasklist.mainmenu.ID_EDIT_FILTER, "Edi&t filter")
         self.removefilter = wx.MenuItem(self,
                     self.tasklist.mainmenu.ID_REMOVE_FILTER, "&Remove filter")
         self.gaps = wx.MenuItem(self, self.tasklist.mainmenu.ID_GAPS,
@@ -401,7 +401,7 @@ class TabContextMenu(wx.Menu):
                         self.tasklist.mainmenu.ID_SNOOZE_ALL, "S&nooze all",
                         subMenu=SnoozeAllConfigMenu(self.tasklist))
         self.dismiss_all = wx.MenuItem(self,
-                        self.tasklist.mainmenu.ID_DISMISS_ALL, "&Dismiss all")
+                        self.tasklist.mainmenu.ID_DISMISS_ALL, "Dis&miss all")
 
         self.filters.SetBitmap(wx.ArtProvider.GetBitmap('@filters',
                                                                   wx.ART_MENU))

@@ -488,7 +488,7 @@ class MainMenu(wx.Menu):
                 "&Find in database\tF9",
                 "Select the database items associated to the selected results")
         self.edit = wx.MenuItem(self, self.ID_EDIT,
-                            "&Edit selected\tF12",
+                            "&Edit selected\tCTRL+F9",
                             "Open in the editor the database items associated "
                             "to the selected results")
         self.close_ = wx.MenuItem(self, self.ID_CLOSE, "Cl&ose\tCTRL+t",
