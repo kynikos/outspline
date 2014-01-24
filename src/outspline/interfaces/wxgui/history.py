@@ -42,7 +42,7 @@ class History():
         self.filename = filename
         bgcolor = parent.treec.GetBackgroundColour()
 
-        self.scwindow = wx.ScrolledWindow(parent, style=wx.BORDER_SUNKEN)
+        self.scwindow = wx.ScrolledWindow(parent, style=wx.BORDER_THEME)
         self.scwindow.SetScrollRate(20, 20)
         self.scwindow.SetBackgroundColour(bgcolor)
 

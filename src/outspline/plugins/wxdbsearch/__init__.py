@@ -361,10 +361,7 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
     imagemap = None
 
     def __init__(self, parent, columns):
-        # Note that this makes use of ListView, which is an interface for
-        # ListCtrl
-        wx.ListView.__init__(self, parent, style=wx.LC_REPORT |
-                                                            wx.BORDER_SUNKEN)
+        wx.ListView.__init__(self, parent, style=wx.LC_REPORT)
         ListCtrlAutoWidthMixin.__init__(self)
         ColumnSorterMixin.__init__(self, columns)
 

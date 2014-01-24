@@ -127,8 +127,7 @@ class RuleList():
         # Initialize with a small size so that it will expand properly in the
         # sizer
         self.listview = wx.ListView(self.panel, size=(10, 10),
-                                        style=wx.LC_REPORT | wx.LC_NO_HEADER |
-                                        wx.LC_SINGLE_SEL | wx.SUNKEN_BORDER)
+                    style=wx.LC_REPORT | wx.LC_NO_HEADER | wx.LC_SINGLE_SEL)
         self.listview.InsertColumn(0, 'Rules')
         hbox.Add(self.listview, 1, flag=wx.EXPAND | wx.RIGHT, border=4)
 

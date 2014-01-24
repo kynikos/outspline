@@ -106,7 +106,7 @@ class InfoBox(wx.SplitterWindow):
 
         self.tree = wx.TreeCtrl(self, style=wx.TR_HAS_BUTTONS |
                                 wx.TR_HIDE_ROOT | wx.TR_SINGLE |
-                                wx.TR_FULL_ROW_HIGHLIGHT | wx.BORDER_SUNKEN)
+                                wx.TR_FULL_ROW_HIGHLIGHT)
 
         self.STYLE_HEAD = wx.TextAttr(font=wx.Font(14, wx.FONTFAMILY_DEFAULT,
                                                    wx.FONTSTYLE_NORMAL,
@@ -125,7 +125,7 @@ class InfoBox(wx.SplitterWindow):
         self.init_info()
 
         self.textw = TextUrlCtrl(self, value='', style=wx.TE_MULTILINE |
-                            wx.TE_READONLY | wx.TE_DONTWRAP | wx.BORDER_SUNKEN)
+                                            wx.TE_READONLY | wx.TE_DONTWRAP)
 
         self.SplitVertically(self.tree, self.textw)
 
