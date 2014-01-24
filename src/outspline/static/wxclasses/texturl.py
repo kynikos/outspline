@@ -20,39 +20,18 @@ import wx
 
 
 class TextUrlCtrl(wx.TextCtrl):
-    urlstart = None
-    urlend = None
+    def __init__(self, *args, **kwargs):
+        print(args)
+        if 'style' in kwargs:
+            kwargs['style'] |= wx.TE_AUTO_URL
+        else:
+            kwargs['style'] = wx.TE_AUTO_URL
 
-    def __init__(self, parent, value='', style=0):
-        wx.TextCtrl.__init__(self, parent, value=value, style=style |
-                                                                wx.TE_AUTO_URL)
+        wx.TextCtrl.__init__(self, *args, **kwargs)
 
         self.Bind(wx.EVT_TEXT_URL, self.handle_mouse_on_url)
 
     def handle_mouse_on_url(self, event):
-        self.urlstart = event.GetURLStart()
-        self.urlend = event.GetURLEnd()
-
-        self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
-
-        self.launch_browser(event)
-
-        self.Bind(wx.EVT_MOTION, self.reset_cursor)
-        self.Bind(wx.EVT_TEXT_URL, self.launch_browser)
-
-    def launch_browser(self, event):
         if event.GetMouseEvent().LeftUp():
-            wx.LaunchDefaultBrowser(self.GetRange(self.urlstart, self.urlend))
-
-    def reset_cursor(self, event):
-        hitpos = self.HitTestPos(event.GetPosition())[1]
-
-        if (self.urlstart is not None and hitpos < self.urlstart) or \
-                            (self.urlend is not None and hitpos > self.urlend):
-            self.urlstart = None
-            self.urlend = None
-
-            self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
-
-            self.Bind(wx.EVT_TEXT_URL, self.handle_mouse_on_url)
-            self.Bind(wx.EVT_MOTION, None)
+            wx.LaunchDefaultBrowser(self.GetRange(event.GetURLStart(),
+                                                            event.GetURLEnd()))
