@@ -140,13 +140,21 @@ class OccurrencesView():
         self.listview.InsertColumn(self.ALARM_COLUMN, 'Alarm',
                                         width=config.get_int('alarm_column'))
 
+        # Initialize sort column and order *before* enabling the autoscroll
+        self.listview.SortListItems(self.STATE_COLUMN, 1)
+
+        self.autoscroll = Autoscroll(self, self.listview,
+                    config.get_int('autoscroll_padding'), self.STATE_COLUMN)
+
+        if config.get_bool('autoscroll'):
+            # Autoscroll is instantiated as disabled, so there's no need for an
+            # else clause
+            self.autoscroll.enable()
+
         self.set_filter(self.tasklist.filters.get_filter_configuration(
                                 self.tasklist.filters.get_selected_filter()))
 
         self.set_colors(config)
-
-        # Initialize sort column and order
-        self.listview.SortListItems(self.STATE_COLUMN, 1)
 
         # Do not self.listview.setResizeColumn(2) because it gives a
         # non-standard feeling; the last column is auto-resized by default
@@ -293,8 +301,7 @@ class OccurrencesView():
             log.debug('Next tasklist refresh in {} seconds'.format(delay))
 
     def set_filter(self, config):
-        self.autoscroll = Autoscroll(self.listview, config['autoscroll'],
-                                                            self.STATE_COLUMN)
+        self.autoscroll.pre_execute()
 
         filterclasses = {
             'relative': filters.FilterRelative,
@@ -372,7 +379,7 @@ class OccurrencesView():
 
         # The list must be autoscrolled *after* sorting the items, so that the
         # correct y values will be got
-        self.autoscroll.execute(yscroll, self.states)
+        self.autoscroll.execute(yscroll)
 
         return self.filter_.compute_delay(occsobj, self.now, self.min_time,
                                                                 self.max_time)
@@ -540,6 +547,9 @@ class OccurrencesView():
 
         return alarmsd
 
+    def get_states(self):
+        return self.states
+
     def save_configuration(self):
         config = coreaux_api.get_plugin_configuration('wxtasklist')
 
@@ -559,6 +569,7 @@ class OccurrencesView():
                                                             self.ALARM_COLUMN))
         config['show_gaps'] = 'yes' if self.show_gaps else 'no'
         config['show_overlappings'] = 'yes' if self.show_overlappings else 'no'
+        config['autoscroll'] = 'on' if self.autoscroll.is_enabled() else 'off'
 
     @staticmethod
     def format_database_short(filename):
@@ -603,29 +614,52 @@ class OccurrencesView():
 
 
 class Autoscroll():
+    occview = None
     listview = None
     padding = None
+    state_column = None
+    enabled = None
     execute = None
 
-    def __init__(self, listview, padding, state_column):
+    def __init__(self, occview, listview, padding, state_column):
+        self.occview = occview
         self.listview = listview
+        self.padding = padding
+        self.state_column = state_column
+        self.enabled = False
 
-        try:
-            self.padding = int(padding)
-        except ValueError:
-            # Autoscroll disabled
-            self.padding = None
-            # Do not restore the y scroll from the previous filter
-            self.execute = self.execute_dummy
+        core_api.bind_to_open_database_dirty(self._pre_execute)
+        wxgui_api.bind_to_close_database(self._pre_execute)
+
+    def enable(self):
+        self.enabled = True
+
+    def disable(self):
+        self.enabled = False
+
+    def is_enabled(self):
+        return self.enabled
+
+    def _pre_execute(self, kwargs):
+        self.pre_execute()
+
+    def pre_execute(self):
+        if self.enabled:
+            column, ascending = self.listview.GetSortState()
+
+            if column == self.state_column and ascending == 1:
+                self.execute = self._execute_auto
+            else:
+                self.execute = self._execute_maintain
         else:
-            # Autoscroll enabled
-            # Reset the scroll configuration to State ascending, which is
-            # needed by the autoscroll
-            self.listview.SortListItems(state_column, 1)
-            self.execute = self.execute_auto
+            # When changing filter or opening/closing a database, do not
+            # restore the y scroll from the previous filter
+            self.execute = self._execute_dummy
 
-    def execute_auto(self, yscroll, states):
-        pastn = len(states['past'])
+    def _execute_auto(self, yscroll):
+        # This method must get the same arguments as the other execute_*
+        # methods
+        pastn = len(self.occview.get_states()['past'])
 
         # This check also makes this function safe if there are no items in the
         # list
@@ -638,14 +672,21 @@ class Autoscroll():
             yscrollauto = (pastn - self.padding) * height
             self.listview.ScrollList(0, yscrollauto)
 
-        # Autoscroll only once every time the filter is reset
-        self.execute = self.execute_maintain
+        self.execute = self._execute_maintain
 
-    def execute_dummy(self, yscroll, states):
-        self.execute = self.execute_maintain
+    def _execute_dummy(self, yscroll):
+        # This method must get the same arguments as the other execute_*
+        # methods
+        self.execute = self._execute_maintain
 
-    def execute_maintain(self, yscroll, states):
+    def _execute_maintain(self, yscroll):
+        # This method must get the same arguments as the other execute_*
+        # methods
         self.listview.ScrollList(0, yscroll)
+
+    def execute_force(self):
+        self.listview.SortListItems(self.state_column, 1)
+        self._execute_auto(None)
 
 
 class ListItem():

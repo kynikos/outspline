@@ -21,7 +21,6 @@ import time as _time
 import datetime as _datetime
 from collections import OrderedDict
 
-from outspline.static.wxclasses.choices import WidgetChoiceCtrl
 from outspline.static.wxclasses.time import DateHourCtrl, TimeSpanCtrl
 import outspline.coreaux_api as coreaux_api
 import outspline.extensions.organism_timer_api as organism_timer_api
@@ -34,7 +33,6 @@ DEFAULT_FILTERS = {
             ('mode', 'relative'),
             ('low', '-5'),
             ('high', '1440'),
-            ('autoscroll', '1'),
         ]),
         'F1': OrderedDict([
             ('name', 'Current week'),
@@ -45,7 +43,6 @@ DEFAULT_FILTERS = {
             ('base', '2013-10-21T00:00'),
             ('span', '10079'),
             ('advance', '10080'),
-            ('autoscroll', '1'),
         ]),
         'F2': OrderedDict([
             ('name', 'Current month'),
@@ -53,7 +50,6 @@ DEFAULT_FILTERS = {
             ('month', '1'),
             ('span', '1'),
             ('advance', '1'),
-            ('autoscroll', '1'),
         ]),
     },
 }
@@ -168,9 +164,6 @@ class FilterEditor():
     name = None
     choice = None
     sfilter = None
-    autoscroll = None
-    aspaddingw = None
-    aspadding = None
 
     def __init__(self, tasklist, filterid, config):
         self.tasklist = tasklist
@@ -185,7 +178,6 @@ class FilterEditor():
         self._init_header()
         self._init_filter_types()
         self._init_selected_filter()
-        self._init_common_options()
 
         self.parent.GetSizer().Prepend(self.panel, flag=wx.EXPAND)
         self.parent.GetSizer().Layout()
@@ -225,11 +217,6 @@ class FilterEditor():
         config['name'] = str(self.name.GetValue())
 
         config.update(self.sfilter.get_config())
-
-        if self.autoscroll.get_selection() == 1:
-            config['autoscroll'] = str(self.aspaddingw.GetValue())
-        else:
-            config['autoscroll'] = 'off'
 
         return config
 
@@ -309,30 +296,6 @@ class FilterEditor():
         self.sfilter = self.choice.GetClientData(self.choice.GetSelection()
                                                      )(self.panel, self.config)
         self.fbox.Add(self.sfilter.panel, flag=wx.EXPAND | wx.BOTTOM, border=4)
-
-    def _init_common_options(self):
-        try:
-            self.aspadding = int(self.config['autoscroll'])
-        except ValueError:
-            self.aspadding = 1
-            selas = 0
-        else:
-            selas = 1
-
-        self.autoscroll = WidgetChoiceCtrl(self.panel,
-                                                      (('No autoscroll', None),
-              ('Autoscroll padding:', self._create_autoscroll_padding_widget)),
-                                                                      selas, 4)
-        self.autoscroll.force_update()
-        self.fbox.Add(self.autoscroll.get_main_panel(), flag=wx.BOTTOM,
-                                                                      border=4)
-
-    def _create_autoscroll_padding_widget(self):
-        self.aspaddingw = wx.SpinCtrl(self.autoscroll.get_main_panel(),
-                          min=0, max=99, size=(40, 21), style=wx.SP_ARROW_KEYS)
-        self.aspaddingw.SetValue(self.aspadding)
-
-        return self.aspaddingw
 
     def choose_filter_type(self, event):
         fpanel = event.GetClientData()(self.panel, self.config)

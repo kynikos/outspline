@@ -45,6 +45,10 @@ class MainMenu(wx.Menu):
     ID_GAPS = None
     overlaps = None
     ID_OVERLAPS = None
+    scroll = None
+    ID_SCROLL = None
+    autoscroll = None
+    ID_AUTOSCROLL = None
     find = None
     ID_FIND = None
     edit = None
@@ -69,6 +73,8 @@ class MainMenu(wx.Menu):
         self.ID_REMOVE_FILTER = wx.NewId()
         self.ID_GAPS = wx.NewId()
         self.ID_OVERLAPS = wx.NewId()
+        self.ID_SCROLL = wx.NewId()
+        self.ID_AUTOSCROLL = wx.NewId()
         self.ID_FIND = wx.NewId()
         self.ID_EDIT = wx.NewId()
         self.ID_SNOOZE = wx.NewId()
@@ -93,6 +99,15 @@ class MainMenu(wx.Menu):
                         "Show &overlappings\tCTRL+=",
                         "Show time intervals used by more than one occurrence",
                         kind=wx.ITEM_CHECK)
+        self.scroll = wx.MenuItem(self, self.ID_SCROLL,
+                                        "Scro&ll to ongoing\tF5",
+                                        "Order the list by State and scroll "
+                                        "to the first ongoing occurrence")
+        self.autoscroll = wx.MenuItem(self, self.ID_AUTOSCROLL,
+                                            "Enable a&uto-scroll",
+                                            "Auto-scroll to the first ongoing "
+                                            "occurrence at pre-defined events",
+                                            kind=wx.ITEM_CHECK)
         self.find = wx.MenuItem(self, self.ID_FIND, "&Find in database\tF6",
             "Select the database items associated to the selected occurrences")
         self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit selected\tCTRL+F6",
@@ -119,6 +134,8 @@ class MainMenu(wx.Menu):
                                                                   wx.ART_MENU))
         self.removefilter.SetBitmap(wx.ArtProvider.GetBitmap('@remove-filter',
                                                                   wx.ART_MENU))
+        self.scroll.SetBitmap(wx.ArtProvider.GetBitmap('@movedown',
+                                                                wx.ART_MENU))
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
         self.edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
         self.snooze.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
@@ -138,6 +155,9 @@ class MainMenu(wx.Menu):
         self.AppendItem(self.gaps)
         self.AppendItem(self.overlaps)
         self.AppendSeparator()
+        self.AppendItem(self.scroll)
+        self.AppendItem(self.autoscroll)
+        self.AppendSeparator()
         self.AppendItem(self.find)
         self.AppendItem(self.edit)
         self.AppendSeparator()
@@ -151,6 +171,8 @@ class MainMenu(wx.Menu):
         wxgui_api.bind_to_menu(self.remove_filter, self.removefilter)
         wxgui_api.bind_to_menu(self.show_gaps, self.gaps)
         wxgui_api.bind_to_menu(self.show_overlappings, self.overlaps)
+        wxgui_api.bind_to_menu(self.scroll_to_ongoing, self.scroll)
+        wxgui_api.bind_to_menu(self.enable_autoscroll, self.autoscroll)
         wxgui_api.bind_to_menu(self.find_in_tree, self.find)
         wxgui_api.bind_to_menu(self.edit_items, self.edit)
         wxgui_api.bind_to_menu(self.dismiss_selected_alarms, self.dismiss)
@@ -172,6 +194,9 @@ class MainMenu(wx.Menu):
             self.gaps.Check(check=self.occview.show_gaps)
             self.overlaps.Enable(False)
             self.overlaps.Check(check=self.occview.show_overlappings)
+            self.scroll.Enable(False)
+            self.autoscroll.Enable(False)
+            self.autoscroll.Check(check=self.occview.autoscroll.is_enabled())
             self.find.Enable(False)
             self.edit.Enable(False)
             self.snooze.Enable(False)
@@ -185,6 +210,7 @@ class MainMenu(wx.Menu):
                 self.filters.Enable()
                 self.addfilter.Enable()
                 self.editfilter.Enable()
+                self.scroll.Enable()
 
                 if len(self.filters.GetSubMenu().GetMenuItems()) > 1:
                     self.removefilter.Enable()
@@ -226,6 +252,7 @@ class MainMenu(wx.Menu):
                 # Already appropriately checked above
                 self.gaps.Enable()
                 self.overlaps.Enable()
+                self.autoscroll.Enable()
 
     def reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
@@ -236,6 +263,8 @@ class MainMenu(wx.Menu):
         self.removefilter.Enable()
         self.gaps.Enable()
         self.overlaps.Enable()
+        self.scroll.Enable()
+        self.autoscroll.Enable()
         self.find.Enable()
         self.edit.Enable()
         self.snooze.Enable()
@@ -261,6 +290,18 @@ class MainMenu(wx.Menu):
         if self.tasklist.is_shown():
             self.occview.show_overlappings = not self.occview.show_overlappings
             self.occview.delay_restart()
+
+    def scroll_to_ongoing(self, event):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.occview.autoscroll.execute_force()
+
+    def enable_autoscroll(self, event):
+        if self.occview.autoscroll.is_enabled():
+            self.occview.autoscroll.disable()
+        else:
+            self.occview.autoscroll.enable()
 
     def find_in_tree(self, event):
         tab = wxgui_api.get_selected_right_nb_tab()
@@ -375,6 +416,8 @@ class TabContextMenu(wx.Menu):
     removefilter = None
     gaps = None
     overlaps = None
+    scroll = None
+    autoscroll = None
     snooze_all = None
     dismiss_all = None
 
@@ -397,6 +440,12 @@ class TabContextMenu(wx.Menu):
         self.overlaps = wx.MenuItem(self,
                     self.tasklist.mainmenu.ID_OVERLAPS, "Show &overlappings",
                     kind=wx.ITEM_CHECK)
+        self.scroll = wx.MenuItem(self,
+                    self.tasklist.mainmenu.ID_SCROLL, "Scro&ll to ongoing")
+        self.autoscroll = wx.MenuItem(self,
+                                        self.tasklist.mainmenu.ID_AUTOSCROLL,
+                                        "Enable a&uto-scroll",
+                                        kind=wx.ITEM_CHECK)
         self.snooze_all = wx.MenuItem(self,
                         self.tasklist.mainmenu.ID_SNOOZE_ALL, "S&nooze all",
                         subMenu=SnoozeAllConfigMenu(self.tasklist))
@@ -411,6 +460,8 @@ class TabContextMenu(wx.Menu):
                                                                   wx.ART_MENU))
         self.removefilter.SetBitmap(wx.ArtProvider.GetBitmap('@remove-filter',
                                                                   wx.ART_MENU))
+        self.scroll.SetBitmap(wx.ArtProvider.GetBitmap('@movedown',
+                                                                wx.ART_MENU))
         self.snooze_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarms',
                                                                   wx.ART_MENU))
         self.dismiss_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
@@ -421,6 +472,9 @@ class TabContextMenu(wx.Menu):
         self.AppendItem(self.addfilter)
         self.AppendItem(self.editfilter)
         self.AppendItem(self.removefilter)
+        self.AppendSeparator()
+        self.AppendItem(self.scroll)
+        self.AppendItem(self.autoscroll)
         self.AppendSeparator()
         self.AppendItem(self.gaps)
         self.AppendItem(self.overlaps)
@@ -440,6 +494,8 @@ class TabContextMenu(wx.Menu):
 
         self.gaps.Check(check=self.tasklist.list_.show_gaps)
         self.overlaps.Check(check=self.tasklist.list_.show_overlappings)
+        self.autoscroll.Check(
+                            check=self.tasklist.list_.autoscroll.is_enabled())
 
 
 class ListContextMenu(wx.Menu):
