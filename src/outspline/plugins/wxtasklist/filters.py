@@ -60,6 +60,7 @@ class Filters():
     config = None
     filterssorted = None
     selected_filter = None
+    editor = None
 
     def __init__(self, tasklist):
         # tasklist.list_ hasn't been instantiated yet here
@@ -107,6 +108,11 @@ class Filters():
         return self.selected_filter
 
     def select_filter(self, filter_, config):
+        # Trying to select a filter while one is being edited is not
+        # supported, so close any open editor first
+        if self.editor:
+            self.editor.close()
+
         self.tasklist.list_.set_filter(config)
 
         # The configuration is exported to the file only when exiting Outspline
@@ -124,19 +130,31 @@ class Filters():
         self.set_tab_title(config['name'])
 
     def create(self):
-        editor = FilterEditor(self.tasklist, None, None)
+        if self.editor:
+            self.editor.close()
+
+        self.editor = FilterEditor(self.tasklist, None, None)
         self.set_tab_title('New filter')
 
     def edit_selected(self):
+        if self.editor:
+            self.editor.close()
+
         filter_ = self.get_selected_filter()
         config = self.get_filter_configuration(filter_)
-        editor = FilterEditor(self.tasklist, filter_, config)
+        self.editor = FilterEditor(self.tasklist, filter_, config)
 
     def remove_selected(self):
         # If there's only one filter left in the configuration, the remove
         # menu item is disabled; however update_filters can also handle the
         # case where there are no filters in the configuration, so no further
         # tests are needed here
+        # Trying to remove a filter that is being edited, and then trying to
+        # save the editor, would generate an error, so close any open editors
+        # first
+        if self.editor:
+            self.editor.close()
+
         filter_ = self.get_selected_filter()
         filters = self.config('Filters')
         filters(filter_).delete()
@@ -263,6 +281,7 @@ class FilterEditor():
 
     def close(self):
         self.panel.Destroy()
+        del self.filters.editor
         self.parent.GetSizer().Layout()
 
     def _init_filter_types(self):
