@@ -144,9 +144,5 @@ def import_optional_plugin_api(plugin):
                                                                        '_api')))
 
 
-def bind_to_addons_loaded(handler, bind=True):
-    return coreaux.addons.addons_loaded_event.bind(handler, bind)
-
-
 def bind_to_uncaught_exception(handler, bind=True):
     return coreaux.events.uncaught_exception_event.bind(handler, bind)

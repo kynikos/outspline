@@ -20,7 +20,7 @@ import outspline.coreaux_api as coreaux_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
 
-def handle_addons_loaded(kwargs):
+def handle_application_loaded(kwargs):
     config = coreaux_api.get_plugin_configuration('wxsession')
 
     for o in config('Files'):
@@ -61,7 +61,7 @@ def refresh_session():
 
 
 def main ():
-    coreaux_api.bind_to_addons_loaded(handle_addons_loaded)
+    wxgui_api.bind_to_application_loaded(handle_application_loaded)
     wxgui_api.bind_to_open_database(handle_open_database)
     wxgui_api.bind_to_close_database(handle_close_database)
     wxgui_api.bind_to_exit_application(handle_exit_application)

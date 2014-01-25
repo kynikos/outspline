@@ -361,10 +361,7 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
     imagemap = None
 
     def __init__(self, parent, columns):
-        # Note that this makes use of ListView, which is an interface for
-        # ListCtrl
-        wx.ListView.__init__(self, parent, style=wx.LC_REPORT |
-                                                            wx.BORDER_SUNKEN)
+        wx.ListView.__init__(self, parent, style=wx.LC_REPORT)
         ListCtrlAutoWidthMixin.__init__(self)
         ColumnSorterMixin.__init__(self, columns)
 
@@ -491,7 +488,7 @@ class MainMenu(wx.Menu):
                 "&Find in database\tF9",
                 "Select the database items associated to the selected results")
         self.edit = wx.MenuItem(self, self.ID_EDIT,
-                            "&Edit selected\tF12",
+                            "&Edit selected\tCTRL+F9",
                             "Open in the editor the database items associated "
                             "to the selected results")
         self.close_ = wx.MenuItem(self, self.ID_CLOSE, "Cl&ose\tCTRL+t",
