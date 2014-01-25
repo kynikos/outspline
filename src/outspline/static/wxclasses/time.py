@@ -71,17 +71,17 @@ class WeekDayCtrl():
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
 
-        self.dayctrl = wx.ComboBox(self.panel, value='Monday', size=(100, 21),
-                                    choices=self.choices, style=wx.CB_READONLY)
+        self.dayctrl = wx.Choice(self.panel, choices=self.choices,
+                                                                size=(100, 21))
 
     def set_day(self, day):
-        self.dayctrl.Select(self.dayctrl.FindString(day))
+        self.dayctrl.SetSelection(self.dayctrl.FindString(day))
 
     def get_main_panel(self):
         return self.panel
 
     def get_day(self):
-        return self.dayctrl.GetValue()
+        return self.dayctrl.GetString(self.dayctrl.GetSelection())
 
     def get_relative_unix_time(self):
         # Day 1 in Unix time was a Thursday
@@ -120,17 +120,17 @@ class MonthDayCtrl():
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
 
-        self.dayctrl = wx.ComboBox(self.panel, value=self.value,
-                    size=self.size, choices=self.choices, style=wx.CB_READONLY)
+        self.dayctrl = wx.Choice(self.panel, choices=self.choices,
+                                                                size=self.size)
 
     def set_day(self, day):
-        self.dayctrl.Select(day - 1)
+        self.dayctrl.SetSelection(day - 1)
 
     def get_main_panel(self):
         return self.panel
 
     def get_day(self):
-        return int(self.dayctrl.GetValue()[:-2])
+        return int(self.dayctrl.GetString(self.dayctrl.GetSelection())[:-2])
 
     def get_relative_time(self):
         return self.get_day() * 86400 - 86400
@@ -151,7 +151,8 @@ class MonthInverseDayCtrl(MonthDayCtrl):
 
     def get_day(self):
         try:
-            return int(self.dayctrl.GetValue()[:-10])
+            return int(self.dayctrl.GetString(self.dayctrl.GetSelection())
+                                                                        [:-10])
         except ValueError:
             return 1
 
@@ -452,22 +453,21 @@ class TimeSpanCtrl():
                       max=max_number, size=(width, 21), style=wx.SP_ARROW_KEYS)
         box.Add(self.numberctrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        self.unitctrl = wx.ComboBox(self.panel, value='minutes',
-                 size=(100, 21), choices=('minutes', 'hours', 'days', 'weeks'),
-                                                          style=wx.CB_READONLY)
+        self.unitctrl = wx.Choice(self.panel,
+                choices=('minutes', 'hours', 'days', 'weeks'), size=(100, 21))
         box.Add(self.unitctrl, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT |
                                                             wx.LEFT, border=12)
 
     def set_values(self, number, unit):
         self.numberctrl.SetValue(number)
-        self.unitctrl.Select(self.unitctrl.FindString(unit))
+        self.unitctrl.SetSelection(self.unitctrl.FindString(unit))
 
     def get_main_panel(self):
         return self.panel
 
     def get_time_span(self):
         number = self.numberctrl.GetValue()
-        unit = self.unitctrl.GetValue()
+        unit = self.unitctrl.GetString(self.unitctrl.GetSelection())
 
         return self._compute_relative_time(number, unit)
 
@@ -475,7 +475,7 @@ class TimeSpanCtrl():
         return self.numberctrl.GetValue()
 
     def get_unit(self):
-        return self.unitctrl.GetValue()
+        return self.unitctrl.GetString(self.unitctrl.GetSelection())
 
     @staticmethod
     def _compute_relative_time(number, unit):

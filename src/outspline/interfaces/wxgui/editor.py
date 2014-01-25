@@ -136,7 +136,7 @@ class Editor():
     def add_plugin_panel(self, caption):
         if self.fpbar == None:
             self.fpbar = FoldPanelBar(self.panel,
-                                      agwStyle=foldpanelbar.FPB_HORIZONTAL)
+                                            agwStyle=foldpanelbar.FPB_VERTICAL)
             self.pbox.Prepend(self.fpbar, flag=wx.EXPAND)
 
             self.cbstyle = CaptionBarStyle(self.panel)

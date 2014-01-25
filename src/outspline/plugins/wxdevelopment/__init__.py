@@ -46,9 +46,10 @@ class MenuDev(wx.Menu):
     def __init__(self):
         wx.Menu.__init__(self)
 
-        # Initialize self.ID_PRINT so it can be deleted at the beginning of
+        # Initialize self.ID_PRINT so it can be destroyed at the beginning of
         # self.handle_reset_menu_items
         self.ID_PRINT = wx.NewId()
+        self.PrependItem(wx.MenuItem(self, self.ID_PRINT, "INIT"))
 
         self.populate = self.Append(wx.NewId(), "&Populate database")
         self.simulator = self.AppendCheckItem(wx.NewId(), "&Run simulator")
@@ -67,8 +68,8 @@ class MenuDev(wx.Menu):
             self.reset_simulator_item()
 
     def reset_print_menu(self):
-        self.Delete(self.ID_PRINT)
-        self.ID_PRINT = wx.NewId()
+        self.DestroyId(self.ID_PRINT)
+
         self.printtb = wx.Menu()
         self.PrependMenu(self.ID_PRINT, "Print &databases", self.printtb)
 
@@ -202,10 +203,10 @@ class MenuDev(wx.Menu):
                 self._populate_tree_gui(mode, filename, itemid, id_, text)
 
                 # Links must be created *after* self._populate_tree_gui
-                if links_api and wxlinks_api and filename in \
-                                links_api.get_supported_open_databases():
-                        self._populate_tree_link(filename, id_, dbitems,
-                                                        group, description)
+                if links_api and wxlinks_api and len(dbitems) > 0 and \
+                        filename in links_api.get_supported_open_databases():
+                    self._populate_tree_link(filename, id_, dbitems, group,
+                                                                description)
 
             wxgui_api.refresh_history(filename)
         core_api.release_databases()
@@ -295,8 +296,8 @@ class MenuDev(wx.Menu):
 
     def _populate_tree_link(self, filename, id_, dbitems, group, description):
         if random.randint(0, 8) == 0:
-            # This gives a chance that target will be the same as id_, but it's
-            # negligible, especially with large numbers of items
+            # Target can't the same as id_ because dbitems was assigned
+            # *before* the new item was appended
             target = random.choice(dbitems)
             links_api.make_link(filename, id_, target, group, description)
             wxlinks_api.update_items_formatting(filename)

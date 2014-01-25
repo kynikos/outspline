@@ -21,7 +21,6 @@ import time as _time
 import datetime as _datetime
 from collections import OrderedDict
 
-from outspline.static.wxclasses.choices import WidgetChoiceCtrl
 from outspline.static.wxclasses.time import DateHourCtrl, TimeSpanCtrl
 import outspline.coreaux_api as coreaux_api
 import outspline.extensions.organism_timer_api as organism_timer_api
@@ -34,7 +33,6 @@ DEFAULT_FILTERS = {
             ('mode', 'relative'),
             ('low', '-5'),
             ('high', '1440'),
-            ('autoscroll', '1'),
         ]),
         'F1': OrderedDict([
             ('name', 'Current week'),
@@ -45,7 +43,6 @@ DEFAULT_FILTERS = {
             ('base', '2013-10-21T00:00'),
             ('span', '10079'),
             ('advance', '10080'),
-            ('autoscroll', '1'),
         ]),
         'F2': OrderedDict([
             ('name', 'Current month'),
@@ -53,7 +50,6 @@ DEFAULT_FILTERS = {
             ('month', '1'),
             ('span', '1'),
             ('advance', '1'),
-            ('autoscroll', '1'),
         ]),
     },
 }
@@ -64,6 +60,7 @@ class Filters():
     config = None
     filterssorted = None
     selected_filter = None
+    editor = None
 
     def __init__(self, tasklist):
         # tasklist.list_ hasn't been instantiated yet here
@@ -111,6 +108,11 @@ class Filters():
         return self.selected_filter
 
     def select_filter(self, filter_, config):
+        # Trying to select a filter while one is being edited is not
+        # supported, so close any open editor first
+        if self.editor:
+            self.editor.close()
+
         self.tasklist.list_.set_filter(config)
 
         # The configuration is exported to the file only when exiting Outspline
@@ -128,19 +130,31 @@ class Filters():
         self.set_tab_title(config['name'])
 
     def create(self):
-        editor = FilterEditor(self.tasklist, None, None)
+        if self.editor:
+            self.editor.close()
+
+        self.editor = FilterEditor(self.tasklist, None, None)
         self.set_tab_title('New filter')
 
     def edit_selected(self):
+        if self.editor:
+            self.editor.close()
+
         filter_ = self.get_selected_filter()
         config = self.get_filter_configuration(filter_)
-        editor = FilterEditor(self.tasklist, filter_, config)
+        self.editor = FilterEditor(self.tasklist, filter_, config)
 
     def remove_selected(self):
         # If there's only one filter left in the configuration, the remove
         # menu item is disabled; however update_filters can also handle the
         # case where there are no filters in the configuration, so no further
         # tests are needed here
+        # Trying to remove a filter that is being edited, and then trying to
+        # save the editor, would generate an error, so close any open editors
+        # first
+        if self.editor:
+            self.editor.close()
+
         filter_ = self.get_selected_filter()
         filters = self.config('Filters')
         filters(filter_).delete()
@@ -168,9 +182,6 @@ class FilterEditor():
     name = None
     choice = None
     sfilter = None
-    autoscroll = None
-    aspaddingw = None
-    aspadding = None
 
     def __init__(self, tasklist, filterid, config):
         self.tasklist = tasklist
@@ -185,7 +196,6 @@ class FilterEditor():
         self._init_header()
         self._init_filter_types()
         self._init_selected_filter()
-        self._init_common_options()
 
         self.parent.GetSizer().Prepend(self.panel, flag=wx.EXPAND)
         self.parent.GetSizer().Layout()
@@ -225,11 +235,6 @@ class FilterEditor():
         config['name'] = str(self.name.GetValue())
 
         config.update(self.sfilter.get_config())
-
-        if self.autoscroll.get_selection() == 1:
-            config['autoscroll'] = str(self.aspaddingw.GetValue())
-        else:
-            config['autoscroll'] = 'off'
 
         return config
 
@@ -276,6 +281,7 @@ class FilterEditor():
 
     def close(self):
         self.panel.Destroy()
+        del self.filters.editor
         self.parent.GetSizer().Layout()
 
     def _init_filter_types(self):
@@ -309,30 +315,6 @@ class FilterEditor():
         self.sfilter = self.choice.GetClientData(self.choice.GetSelection()
                                                      )(self.panel, self.config)
         self.fbox.Add(self.sfilter.panel, flag=wx.EXPAND | wx.BOTTOM, border=4)
-
-    def _init_common_options(self):
-        try:
-            self.aspadding = int(self.config['autoscroll'])
-        except ValueError:
-            self.aspadding = 1
-            selas = 0
-        else:
-            selas = 1
-
-        self.autoscroll = WidgetChoiceCtrl(self.panel,
-                                                      (('No autoscroll', None),
-              ('Autoscroll padding:', self._create_autoscroll_padding_widget)),
-                                                                      selas, 4)
-        self.autoscroll.force_update()
-        self.fbox.Add(self.autoscroll.get_main_panel(), flag=wx.BOTTOM,
-                                                                      border=4)
-
-    def _create_autoscroll_padding_widget(self):
-        self.aspaddingw = wx.SpinCtrl(self.autoscroll.get_main_panel(),
-                          min=0, max=99, size=(40, 21), style=wx.SP_ARROW_KEYS)
-        self.aspaddingw.SetValue(self.aspadding)
-
-        return self.aspaddingw
 
     def choose_filter_type(self, event):
         fpanel = event.GetClientData()(self.panel, self.config)

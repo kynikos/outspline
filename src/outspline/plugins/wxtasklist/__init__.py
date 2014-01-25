@@ -127,6 +127,7 @@ class TaskList():
 
     def handle_exit_application(self, kwargs):
         configfile = coreaux_api.get_user_config_file()
+        self.list_.save_configuration()
         # Reset the Filters section because some filters may have been removed
         self.config('Filters').export_reset(configfile)
         self.config.export_upgrade(configfile)

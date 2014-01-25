@@ -29,7 +29,8 @@ def get_active_alarms():
 
 def simulate_set_snooze_time(number, unit):
     wxalarms.alarmswindow.number.SetValue(number)
-    wxalarms.alarmswindow.unit.SetValue(unit)
+    wxalarms.alarmswindow.unit.SetSelection(
+                                wxalarms.alarmswindow.unit.FindString(unit))
 
 
 def simulate_snooze_alarm(filename, alarmid):
