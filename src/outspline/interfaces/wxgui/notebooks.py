@@ -38,8 +38,6 @@ class Notebook(FlatNotebook):
                                         flatnotebook.FNB_NO_X_BUTTON |
                                         flatnotebook.FNB_NO_NAV_BUTTONS |
                                         flatnotebook.FNB_X_ON_TAB |
-                                        # Only supported from wxPython 2.9
-                                        #flatnotebook.FNB_SMART_TABS |
                                         flatnotebook.FNB_DROPDOWN_TABS_LIST |
                                         flatnotebook.FNB_NO_TAB_FOCUS)
         self.parent = parent

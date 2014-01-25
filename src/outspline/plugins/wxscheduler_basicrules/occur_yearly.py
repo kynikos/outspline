@@ -370,7 +370,7 @@ class Rule():
             else:
                 break
 
-        rstart = random.randint(0, 1440) * 60
+        rstart = random.randint(0, 1439) * 60
 
         endtype = random.randint(0, 2)
 

@@ -74,7 +74,7 @@ class AlarmsWindow():
         box = wx.BoxSizer(wx.VERTICAL)
         self.window.SetSizer(box)
 
-        self.panel = wx.ScrolledWindow(self.window, style=wx.BORDER_SUNKEN)
+        self.panel = wx.ScrolledWindow(self.window, style=wx.BORDER_THEME)
         self.panel.SetScrollRate(20, 20)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
@@ -142,9 +142,9 @@ class AlarmsWindow():
         self.bottom.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                       border=4)
 
-        self.unit = wx.ComboBox(self.window, value='minutes', size=(100, 21),
-                                 choices=('minutes', 'hours', 'days', 'weeks'),
-                                                          style=wx.CB_READONLY)
+        self.unit = wx.Choice(self.window,
+                choices=('minutes', 'hours', 'days', 'weeks'), size=(100, 21))
+        self.unit.SetSelection(0)
         self.bottom.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                       border=4)
 
@@ -247,7 +247,8 @@ class AlarmsWindow():
                 'hours': 3600,
                 'days': 86400,
                 'weeks': 604800}
-        stime = self.number.GetValue() * mult[self.unit.GetValue()]
+        stime = self.number.GetValue() * mult[self.unit.GetString(
+                                                    self.unit.GetSelection())]
         return stime
 
     def get_alarms_dictionary(self):
