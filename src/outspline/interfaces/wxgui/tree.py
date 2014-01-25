@@ -33,8 +33,7 @@ dbs = {}
 class Tree(wx.TreeCtrl):
     def __init__(self, parent):
         wx.TreeCtrl.__init__(self, parent, wx.ID_ANY, style=wx.TR_HAS_BUTTONS |
-                         wx.TR_HIDE_ROOT | wx.TR_MULTIPLE | wx.TR_EXTENDED |
-                         wx.TR_FULL_ROW_HIGHLIGHT | wx.BORDER_SUNKEN)
+                wx.TR_HIDE_ROOT | wx.TR_MULTIPLE | wx.TR_FULL_ROW_HIGHLIGHT)
 
 
 class Database(wx.SplitterWindow):

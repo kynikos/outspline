@@ -35,8 +35,6 @@ class AboutWindow(wx.Frame):
                           wx.FRAME_FLOAT_ON_PARENT)
 
         sizer1 = wx.GridBagSizer(4, 4)
-        sizer1.AddGrowableRow(3)
-        sizer1.AddGrowableCol(2)
         self.SetSizer(sizer1)
 
         logo = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
@@ -56,9 +54,8 @@ class AboutWindow(wx.Frame):
                                        wx.FONTSTYLE_NORMAL,
                                        wx.FONTWEIGHT_NORMAL))
 
-        self.website = wx.HyperlinkCtrl(self, wx.ID_ANY,
-                                        label=coreaux_api.get_website(),
-                                        url=coreaux_api.get_website())
+        self.website = wx.HyperlinkCtrl(self, label=coreaux_api.get_website(),
+                                                url=coreaux_api.get_website())
 
         description = wx.StaticText(self,
                                     label=coreaux_api.get_long_description())
@@ -84,6 +81,9 @@ class AboutWindow(wx.Frame):
         sizer1.Add(button, (4, 0), span=(1, 3), flag=wx.ALIGN_CENTER |
                    wx.BOTTOM, border=4)
 
+        sizer1.AddGrowableRow(3)
+        sizer1.AddGrowableCol(2)
+
         self.Bind(wx.EVT_BUTTON, self.close, button)
 
         self.Centre()
@@ -106,7 +106,7 @@ class InfoBox(wx.SplitterWindow):
 
         self.tree = wx.TreeCtrl(self, style=wx.TR_HAS_BUTTONS |
                                 wx.TR_HIDE_ROOT | wx.TR_SINGLE |
-                                wx.TR_FULL_ROW_HIGHLIGHT | wx.BORDER_SUNKEN)
+                                wx.TR_FULL_ROW_HIGHLIGHT)
 
         self.STYLE_HEAD = wx.TextAttr(font=wx.Font(14, wx.FONTFAMILY_DEFAULT,
                                                    wx.FONTSTYLE_NORMAL,
@@ -125,7 +125,7 @@ class InfoBox(wx.SplitterWindow):
         self.init_info()
 
         self.textw = TextUrlCtrl(self, value='', style=wx.TE_MULTILINE |
-                            wx.TE_READONLY | wx.TE_DONTWRAP | wx.BORDER_SUNKEN)
+                                            wx.TE_READONLY | wx.TE_DONTWRAP)
 
         self.SplitVertically(self.tree, self.textw)
 

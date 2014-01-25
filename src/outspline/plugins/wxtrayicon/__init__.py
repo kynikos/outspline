@@ -108,10 +108,9 @@ class BlinkingIcon():
 
         self.trayicon = trayicon
 
-        self.main_icon = wx.ArtProvider.GetIcon('text-editor',
-                                                            wx.ART_FRAME_ICON)
+        self.main_icon = wx.ArtProvider.GetIcon('text-editor', wx.ART_OTHER)
         self.default_alternative_icon = wx.ArtProvider.GetIcon('@blinkicon',
-                                                            wx.ART_FRAME_ICON)
+                                                                wx.ART_OTHER)
 
         self.current_tooltip = 'Outspline'
         self.tooltips = {}
