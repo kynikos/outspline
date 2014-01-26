@@ -16,7 +16,7 @@ optdepends=('outspline-organism: adds personal organizer capabilities'
 conflicts=('organism')
 replaces=('organism')
 source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
-sha256sums=('076591b1ed2033d1810e32fdac075bd55a3917269f24cec3d5635419456abc0f')
+sha256sums=('e026844978dec2f303ec1700e0ceb33e3498e8cd4fdf81828cc7d90d98566b24')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"

@@ -13,7 +13,7 @@ optdepends=('libnotify: for desktop notifications (notify plugin)'
 conflicts=('organism-organizer')
 replaces=('organism-organizer')
 source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
-sha256sums=('0245ddff5588c6f25020d141d7d185a3042427447c28f245958073ef8e39ae3f')
+sha256sums=('79608c78ca82797899c6b5b201e702a33f532a4937a12215d6e05c90399a07e4')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"
