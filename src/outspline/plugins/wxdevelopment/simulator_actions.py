@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -28,7 +28,7 @@ links_api = coreaux_api.import_optional_extension_api('links')
 wxcopypaste_api = coreaux_api.import_optional_plugin_api('wxcopypaste')
 wxscheduler_api = coreaux_api.import_optional_plugin_api('wxscheduler')
 wxscheduler_basicrules_api = coreaux_api.import_optional_plugin_api(
-                                                       'wxscheduler_basicrules')
+                                                    'wxscheduler_basicrules')
 wxalarms_api = coreaux_api.import_optional_plugin_api('wxalarms')
 wxlinks_api = coreaux_api.import_optional_plugin_api('wxlinks')
 
@@ -45,8 +45,7 @@ def _select_database():
 
 
 def _select_items(many):
-    treedb = wxgui_api.get_active_database()
-    filename = treedb.get_filename()
+    filename = wxgui_api.get_selected_database_filename()
     ids = core_api.get_items_ids(filename)
 
     if ids:
@@ -64,9 +63,11 @@ def _select_items(many):
         if mode == 'unselect_some':
             selection = wxgui_api.get_tree_selections(filename)
             if selection:
-                sids = [treedb.get_item_id(i) for i in selection]
+                sids = [wxgui_api.get_tree_item_id(filename, i) for i in
+                                                                    selection]
                 remids = random.sample(ids, random.randint(1, len(ids)))
-                wxgui_api.simulate_remove_items_from_selection(filename, remids)
+                wxgui_api.simulate_remove_items_from_selection(filename,
+                                                                        remids)
         else:
             if mode in ('select_one', 'reselect_many', 'unselect_all'):
                 wxgui_api.simulate_unselect_all_items(filename)
@@ -74,7 +75,7 @@ def _select_items(many):
             addids = {
                 'select_one': (random.choice(ids), ),
                 'reselect_many': random.sample(ids, random.randint(
-                                           2 if len(ids) > 1 else 1, len(ids))),
+                                        2 if len(ids) > 1 else 1, len(ids))),
                 'select_some': random.sample(ids, random.randint(1, len(ids))),
                 'select_all': ids,
                 'unselect_all': (),
@@ -98,7 +99,7 @@ def _select_editor():
 
 def create_database():
     testfilesd = coreaux_api.get_plugin_configuration('wxdevelopment')(
-                                                                    'TestFiles')
+                                                                'TestFiles')
     testfiles = [os.path.expanduser(testfilesd[key]) for key in testfilesd]
     random.shuffle(testfiles)
 
@@ -124,13 +125,14 @@ def create_database():
 
 def open_database():
     testfilesd = coreaux_api.get_plugin_configuration('wxdevelopment')(
-                                                                    'TestFiles')
+                                                                'TestFiles')
     testfiles = [os.path.expanduser(testfilesd[key]) for key in testfilesd]
     random.shuffle(testfiles)
 
     while testfiles:
         filename = testfiles.pop()
-        if not core_api.is_database_open(filename) and os.path.isfile(filename):
+        if not core_api.is_database_open(filename) and \
+                                                    os.path.isfile(filename):
             log.debug('Simulate open database')
             # Databases are blocked in simulator._do_action
             core_api.release_databases()
@@ -165,7 +167,7 @@ def close_database():
         save = random.randint(0, 5)
         if random.randint(0, 9) < 9:
             log.debug('Simulate' + (' save and ' if save > 0 else ' ') +
-                                                               'close database')
+                                                            'close database')
             # Databases are blocked in simulator._do_action
             core_api.release_databases()
             if save > 0:
@@ -173,7 +175,7 @@ def close_database():
             wxgui_api.simulate_close_database(no_confirm=True)
         else:
             log.debug('Simulate' + (' save and ' if save > 0 else ' ') +
-                                                          'close all databases')
+                                                        'close all databases')
             # Databases are blocked in simulator._do_action
             core_api.release_databases()
             if save > 0:
@@ -369,8 +371,8 @@ def edit_editor_text():
 
 def edit_editor_rules():
     if organism_api and wxscheduler_api and wxscheduler_basicrules_api and \
-                                                               _select_editor():
-        filename, id_ = wxgui_api.get_active_editor()
+                                                            _select_editor():
+        filename, id_ = wxgui_api.get_selected_editor_identification()
 
         if filename in organism_api.get_supported_open_databases():
             wxscheduler_api.simulate_expand_rules_panel(filename, id_)
@@ -442,61 +444,61 @@ def edit_editor_rules():
             for rule in rules:
                 if rule['rule'] == 'occur_once':
                     wxscheduler_basicrules_api.simulate_create_occur_once_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                 elif rule['rule'] == 'occur_regularly_single':
                     if rule['#'][6][0] == '1d':
                         wxscheduler_basicrules_api.simulate_create_occur_every_day_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                     elif rule['#'][6][0] == '1w':
                         wxscheduler_basicrules_api.simulate_create_occur_every_week_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                     elif rule['#'][6][0] == 'sy':
                         wxscheduler_basicrules_api.simulate_create_occur_every_synodic_month_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                     else:
                         wxscheduler_basicrules_api.simulate_create_occur_every_interval_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                 elif rule['rule'] == 'occur_regularly_group':
                     if rule['#'][6][0] == 'sw':
                         wxscheduler_basicrules_api.simulate_create_occur_selected_weekdays_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                 elif rule['rule'] == 'occur_monthly_number_direct':
                     if rule['#'][5][0] == '1m':
                         wxscheduler_basicrules_api.simulate_create_occur_every_month_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                     else:
                         wxscheduler_basicrules_api.simulate_create_occur_selected_months_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                 elif rule['rule'] == 'occur_monthly_number_inverse':
                     if rule['#'][5][0] == '1m':
                         wxscheduler_basicrules_api.simulate_create_occur_every_month_inverse_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                     else:
                         wxscheduler_basicrules_api.simulate_create_occur_selected_months_inverse_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                 elif rule['rule'] == 'occur_monthly_weekday_direct':
                     if rule['#'][7][0] == '1m':
                         wxscheduler_basicrules_api.simulate_create_occur_every_month_weekday_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                     else:
                         wxscheduler_basicrules_api.simulate_create_occur_selected_months_weekday_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                 elif rule['rule'] == 'occur_monthly_weekday_inverse':
                     if rule['#'][7][0] == '1m':
                         wxscheduler_basicrules_api.simulate_create_occur_every_month_weekday_inverse_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                     else:
                         wxscheduler_basicrules_api.simulate_create_occur_selected_months_weekday_inverse_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                 elif rule['rule'] == 'occur_yearly_single':
                     wxscheduler_basicrules_api.simulate_create_occur_yearly_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                 elif rule['rule'] == 'except_once':
                     wxscheduler_basicrules_api.simulate_create_except_once_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
                 elif rule['rule'] == 'except_regularly_single':
                     wxscheduler_basicrules_api.simulate_create_except_every_interval_rule(
-                                                            filename, id_, rule)
+                                                        filename, id_, rule)
         else:
             # Databases are blocked in simulator._do_action
             core_api.release_databases()
@@ -509,7 +511,7 @@ def edit_editor_rules():
 
 def link_item_to_selection():
     if links_api and wxlinks_api and _select_editor():
-        filename, id_ = wxgui_api.get_active_editor()
+        filename, id_ = wxgui_api.get_selected_editor_identification()
         _select_items(False)
 
         if filename in links_api.get_supported_open_databases():
@@ -550,7 +552,7 @@ def close_editor():
         apply_ = random.randint(0, 5)
         if random.randint(0, 9) < 9:
             log.debug('Simulate' + (' apply and ' if apply_ > 0 else ' ') +
-                                                                 'close editor')
+                                                                'close editor')
             # Databases are blocked in simulator._do_action
             core_api.release_databases()
             if apply_ > 0:
@@ -558,7 +560,7 @@ def close_editor():
             wxgui_api.simulate_close_editor(ask='quiet')
         else:
             log.debug('Simulate' + (' apply and ' if apply_ > 0 else ' ') +
-                                                            'close all editors')
+                                                        'close all editors')
             # Databases are blocked in simulator._do_action
             core_api.release_databases()
             if apply_ > 0:
@@ -592,7 +594,7 @@ def snooze_alarms():
                 # Databases are blocked in simulator._do_action
                 core_api.release_databases()
                 wxalarms_api.simulate_snooze_alarm(alarm['filename'],
-                                                                   alarm['alarmid'])
+                                                            alarm['alarmid'])
             else:
                 log.debug('Simulate snooze all alarms')
                 # Databases are blocked in simulator._do_action
@@ -618,7 +620,7 @@ def dismiss_alarms():
                 # Databases are blocked in simulator._do_action
                 core_api.release_databases()
                 wxalarms_api.simulate_dismiss_alarm(alarm['filename'],
-                                                                   alarm['alarmid'])
+                                                            alarm['alarmid'])
             else:
                 log.debug('Simulate dismiss all alarms')
                 # Databases are blocked in simulator._do_action

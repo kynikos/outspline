@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -18,20 +18,22 @@
 
 import wx
 
+import outspline.coreaux_api as coreaux_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
 import list as list_
 import filters
+import menus
 
 
 class TaskListPanel(wx.Panel):
     ctabmenu = None
 
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent, style=wx.BORDER_NONE)
+        wx.Panel.__init__(self, parent)
 
     def _init_tab_menu(self, tasklist):
-        self.ctabmenu = TabContextMenu(tasklist)
+        self.ctabmenu = menus.TabContextMenu(tasklist)
 
     def get_tab_context_menu(self):
         self.ctabmenu.update()
@@ -41,8 +43,12 @@ class TaskListPanel(wx.Panel):
 class TaskList():
     panel = None
     pbox = None
+    config = None
+    mainmenu = None
     list_ = None
     filters = None
+    ID_SHOW = None
+    menushow = None
 
     def __init__(self, parent):
         # Note that the remaining border is due to the SplitterWindow, whose
@@ -53,49 +59,81 @@ class TaskList():
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
 
-        self.list_ = list_.OccurrencesView(self.panel)
-        self.filters = filters.Filters(self.panel, self.list_)
+        self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
+        # filters.Filters must be instantiated *before* list_.OccurrencesView,
+        # because the former sets the filter for the latter; note that
+        # inverting the order would work anyway because of a favorable race
+        # condition, but of course don't rely on that
+        self.filters = filters.Filters(self)
+        self.list_ = list_.OccurrencesView(self)
+
+        self.mainmenu = menus.MainMenu(self)
+        menus.ViewMenu(self)
         self.panel._init_tab_menu(self)
+        self.list_._init_context_menu(self.mainmenu)
 
-        self.pbox.Add(self.filters.panel, flag=wx.EXPAND | wx.ALL, border=2)
-        self.pbox.Add(self.list_.listview, 1, flag=wx.EXPAND | wx.ALL,
-                                                                      border=2)
+        self.pbox.Add(self.list_.listview, 1, flag=wx.EXPAND)
 
+        wxgui_api.bind_to_plugin_close_event(self.handle_tab_hide)
+        wxgui_api.bind_to_show_main_window(self.handle_show_main_window)
+        wxgui_api.bind_to_hide_main_window(self.handle_hide_main_window)
+        wxgui_api.bind_to_exit_application(self.handle_exit_application)
 
-class TabContextMenu(wx.Menu):
-    tasklist = None
-    snooze_all = None
-    dismiss_all = None
+    def handle_tab_hide(self, kwargs):
+        if kwargs['page'] is self.panel:
+            self.hide()
 
-    def __init__(self, tasklist):
-        wx.Menu.__init__(self)
-        self.tasklist = tasklist
+    def is_shown(self):
+        return wxgui_api.is_page_in_right_nb(self.panel)
 
-        self.snooze_all = wx.MenuItem(self,
-                     self.tasklist.list_.mainmenu.ID_SNOOZE_ALL, "S&nooze all",
-                        subMenu=list_.SnoozeAllConfigMenu(self.tasklist.list_))
-        self.dismiss_all = wx.MenuItem(self,
-                   self.tasklist.list_.mainmenu.ID_DISMISS_ALL, "&Dismiss all")
+    def handle_show_main_window(self, kwargs):
+        if self.is_shown():
+            self._enable()
 
-        self.snooze_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarms',
-                                                                  wx.ART_MENU))
-        self.dismiss_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
-                                                                  wx.ART_MENU))
+    def handle_hide_main_window(self, kwargs):
+        if self.is_shown():
+            self._disable()
 
-        self.AppendItem(self.snooze_all)
-        self.AppendItem(self.dismiss_all)
-
-    def update(self):
-        if len(self.tasklist.list_.activealarms) > 0:
-            self.snooze_all.Enable()
-            self.dismiss_all.Enable()
+    def toggle_shown(self, event):
+        if self.is_shown():
+            self.hide()
         else:
-            self.snooze_all.Enable(False)
-            self.dismiss_all.Enable(False)
+            self.show()
+
+    def show(self):
+        wxgui_api.add_plugin_to_right_nb(self.panel, self.get_tab_title())
+        self._enable()
+
+    def hide(self):
+        # Showing/hiding is the correct behaviour: allowing multiple instances
+        # of tasklist notebook tabs would need finding a way to refresh only
+        # one at a time, probably only the selected one, thus requiring to
+        # update it every time it gets selected, which would in turn make
+        # everything more sluggish
+        wxgui_api.hide_right_nb_page(self.panel)
+        self._disable()
+
+    def _enable(self):
+        self.list_.enable_refresh()
+        self.list_.delay_restart()
+
+    def _disable(self):
+        self.list_.disable_refresh()
+
+    def get_tab_title(self):
+        return self.filters.get_filter_configuration(
+                                    self.filters.get_selected_filter())['name']
+
+    def handle_exit_application(self, kwargs):
+        configfile = coreaux_api.get_user_config_file()
+        self.list_.save_configuration()
+        # Reset the Filters section because some filters may have been removed
+        self.config('Filters').export_reset(configfile)
+        self.config.export_upgrade(configfile)
 
 
 def main():
     nb = wxgui_api.get_right_nb()
-    wxgui_api.add_plugin_to_right_nb(TaskList(nb).panel, 'Occurrences',
-                                                                   close=False)
+    tasklist = TaskList(nb)
+    wxgui_api.add_plugin_to_right_nb(tasklist.panel, tasklist.get_tab_title())

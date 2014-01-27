@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -31,6 +31,8 @@ import history
 config = coreaux_api.get_interface_configuration('wxgui')
 
 application_loaded_event = Event()
+show_main_window_event = Event()
+hide_main_window_event = Event()
 exit_application_event = Event()
 
 _ROOT_MIN_SIZE = (600, 408)
@@ -104,6 +106,7 @@ class GUI(wx.App):
 class MainFrame(wx.Frame):
     menu = None
     mainpanes = None
+    close_handler = None
 
     def __init__(self):
         confsize = [int(s) for s in config['initial_geometry'].split('x')]
@@ -128,7 +131,7 @@ class MainFrame(wx.Frame):
         self.Bind(wx.EVT_WINDOW_CREATE, self._handle_creation)
         self.Bind(wx.EVT_MENU_OPEN, self.menu.update_menus)
         self.Bind(wx.EVT_MENU_CLOSE, self.menu.reset_menus)
-        self.Bind(wx.EVT_CLOSE, wx.GetApp().exit_app)
+        self.bind_to_close_event(wx.GetApp().exit_app)
 
         self.Centre()
         self.Show(True)
@@ -137,17 +140,26 @@ class MainFrame(wx.Frame):
         self.Unbind(wx.EVT_WINDOW_CREATE, handler=self._handle_creation)
         application_loaded_event.signal()
 
-    def hide(self, event):
-        self.Show(False)
+    def bind_to_close_event(self, handler):
+        if self.close_handler:
+            self.Unbind(wx.EVT_CLOSE, handler=self.close_handler)
 
-    def show(self, event):
+        self.close_handler = handler
+        self.Bind(wx.EVT_CLOSE, handler)
+
+    def hide(self):
+        self.Show(False)
+        hide_main_window_event.signal()
+
+    def show(self):
+        show_main_window_event.signal()
         self.Show(True)
 
-    def toggle_shown(self, event):
+    def toggle_shown(self):
         if self.IsShown():
-            self.hide(event)
+            self.hide()
         else:
-            self.show(event)
+            self.show()
 
 
 class MainPanes(wx.SplitterWindow):
@@ -166,9 +178,12 @@ class MainPanes(wx.SplitterWindow):
         self.nb_left = notebooks.LeftNotebook(self)
         self.nb_right = notebooks.RightNotebook(self)
 
+        self.Initialize(self.nb_left)
+
+        # Hide the notebooks *after* self.Initialize, which would isntead show
+        # them again implicitly
         self.nb_left.Show(False)
         self.nb_right.Show(False)
-        self.Initialize(self.nb_left)
 
         self.Bind(wx.EVT_SPLITTER_DCLICK, self.veto_dclick)
 
@@ -176,8 +191,16 @@ class MainPanes(wx.SplitterWindow):
         event.Veto()
 
     def split_window(self):
+        # Make sure the left notebook is shown in any case
+        self.nb_left.Show(True)
+
         if not self.IsSplit() and self.nb_right.GetPageCount() > 0:
+            # Make sure the right notebook is shown although
+            # self.SplitVertically should do it implicitly
+            self.nb_right.Show(True)
+
             width = self.GetSize().GetWidth()
+
             self.SplitVertically(self.nb_left, self.nb_right)
             self.SetSashGravity(0.33)
             self.SetSashPosition(width // 3)

@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -344,3 +344,11 @@ class Database(history.DBHistory):
                     del dids[dids.index(id_)]
 
         delete_items_event.signal()
+
+    def get_all_items_text(self):
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+        cursor.execute(queries.items_select_search)
+        self.connection.give(qconn)
+
+        return cursor.fetchall()

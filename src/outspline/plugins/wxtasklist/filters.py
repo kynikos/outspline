@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -21,7 +21,6 @@ import time as _time
 import datetime as _datetime
 from collections import OrderedDict
 
-from outspline.static.wxclasses.choices import WidgetChoiceCtrl
 from outspline.static.wxclasses.time import DateHourCtrl, TimeSpanCtrl
 import outspline.coreaux_api as coreaux_api
 import outspline.extensions.organism_timer_api as organism_timer_api
@@ -34,7 +33,6 @@ DEFAULT_FILTERS = {
             ('mode', 'relative'),
             ('low', '-5'),
             ('high', '1440'),
-            ('autoscroll', '1'),
         ]),
         'F1': OrderedDict([
             ('name', 'Current week'),
@@ -45,7 +43,6 @@ DEFAULT_FILTERS = {
             ('base', '2013-10-21T00:00'),
             ('span', '10079'),
             ('advance', '10080'),
-            ('autoscroll', '1'),
         ]),
         'F2': OrderedDict([
             ('name', 'Current month'),
@@ -53,171 +50,129 @@ DEFAULT_FILTERS = {
             ('month', '1'),
             ('span', '1'),
             ('advance', '1'),
-            ('autoscroll', '1'),
         ]),
     },
 }
 
 
 class Filters():
-    parent = None
-    list_ = None
-    panel = None
-    fbox = None
+    tasklist = None
     config = None
-    choice = None
-    filterids = None
-    filtermap = None
-    button_remove = None
+    filterssorted = None
+    selected_filter = None
+    editor = None
 
-    def __init__(self, parent, list_):
-        self.parent = parent
-        self.list_ = list_
-        self.panel = wx.Panel(parent, style=wx.BORDER_NONE)
-        self.fbox = wx.BoxSizer(wx.HORIZONTAL)
-        self.panel.SetSizer(self.fbox)
+    def __init__(self, tasklist):
+        # tasklist.list_ hasn't been instantiated yet here
+        self.tasklist = tasklist
 
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
-
-        self._init_choice()
-        self._init_buttons()
-
-        wxgui_api.bind_to_exit_application(self.handle_exit_application)
-
-    def _init_choice(self):
-        self.choice = wx.Choice(self.panel, size=(-1, 24), choices=())
         self.update_filters()
-
-        selected_filter = self.config['selected_filter']
+        self.selected_filter = self.config['selected_filter']
 
         try:
-            self.config('Filters')(selected_filter)
+            config = self.config('Filters')(self.selected_filter)
         except KeyError:
-            self.choice.SetSelection(0)
-            self.list_.set_filter(self.choice.GetClientData(0))
-        else:
-            # Do not use self.choice.FindString because filter names are not
-            # guaranteed to be unique
-            index = self.filtermap[selected_filter]
-            self.choice.SetSelection(index)
-            self.list_.set_filter(self.choice.GetClientData(index))
-
-        self.fbox.Add(self.choice, 1)
-
-        self.panel.Bind(wx.EVT_CHOICE, self.choose_filter, self.choice)
-
-    def _init_buttons(self):
-        button_add = wx.Button(self.panel, label='Add', size=(60, 24))
-        self.fbox.Add(button_add, flag=wx.LEFT, border=4)
-
-        button_edit = wx.Button(self.panel, label='Edit', size=(60, 24))
-        self.fbox.Add(button_edit, flag=wx.LEFT, border=4)
-
-        self.button_remove = wx.Button(self.panel, label='Remove',
-                                                                 size=(60, 24))
-        self.fbox.Add(self.button_remove, flag=wx.LEFT, border=4)
-
-        self.update_buttons()
-
-        self.panel.Bind(wx.EVT_BUTTON, self.add_filter, button_add)
-        self.panel.Bind(wx.EVT_BUTTON, self.edit_filter, button_edit)
-        self.panel.Bind(wx.EVT_BUTTON, self.remove_filter, self.button_remove)
-
-    def handle_exit_application(self, event):
-        configfile = coreaux_api.get_user_config_file()
-        # Reset the Filters section because some filters may have been removed
-        self.config('Filters').export_reset(configfile)
-        self.config.export_upgrade(configfile)
-
-    def choose_filter(self, event):
-        self.list_.set_filter(event.GetClientData())
-        # The configuration is exported to the file only when exiting Outspline
-        self.config['selected_filter'] = self.filterids[event.GetSelection()]
-        self.list_.delay_restart()
-
-    def add_filter(self, event):
-        filter_ = FilterEditor(self.parent, self, None, None)
-        self.parent.GetSizer().Replace(self.panel, filter_.panel)
-        self.parent.GetSizer().Layout()
-
-    def edit_filter(self, event):
-        sel = self.choice.GetSelection()
-        filterconf = self.choice.GetClientData(sel)
-        filterid = self.filterids[sel]
-        filter_ = FilterEditor(self.parent, self, filterid, filterconf)
-        self.parent.GetSizer().Replace(self.panel, filter_.panel)
-        self.parent.GetSizer().Layout()
-
-    def remove_filter(self, event):
-        # If there's only one filter left in the configuration, the remove
-        # button is disabled; however update_filters can also handle the case
-        # where there are no filters in the configuration, so no further tests
-        # are needed here
-        selection = self.choice.GetSelection()
-        filters = self.config('Filters')
-        filters(self.filterids[selection]).delete()
-        self.choice.Delete(selection)
-        self.update_buttons()
-        self.update_filters()
-
-        # Select the first filter for safe and consistent behavior
-        self.choice.SetSelection(0)
-
-        self.apply_selected_filter()
+            filter_ = self.filterssorted[0]
+            # The configuration is exported to the file only when exiting
+            # Outspline
+            config = self.get_filter_configuration(filter_)
+            self.config['selected_filter'] = filter_
+            self.selected_filter = self.config['selected_filter']
 
     def update_filters(self):
         filters = self.config('Filters')
+        self.filterssorted = filters.get_sections()
 
-        if len(filters.get_sections()) == 0:
+        if len(self.filterssorted) == 0:
             filters.reset(DEFAULT_FILTERS)
 
-        self.filterids = {}
-        self.filtermap = {}
-        namemap = {}
-
-        for filter_ in filters.get_sections():
-            name = filters(filter_)['name']
-
-            try:
-                namemap[name]
-            except KeyError:
-                namemap[name] = []
-            namemap[name].append(filter_)
+            # Re-get the sections after resetting
+            self.filterssorted = filters.get_sections()
 
         # Filters with the same name must be supported, and with the current
         # absence of a way to configure their order in the choice control, they
         # must be sorted alphabetically
-        names = namemap.keys()
-        names.sort()
+        self.filterssorted.sort(key=self._get_sorting_key)
 
-        self.choice.Clear()
+    def _get_sorting_key(self, filter_):
+        return self.config('Filters')(filter_)['name']
 
-        for name in names:
-            for filter_ in namemap[name]:
-                index = self.choice.Append(name, clientData=filters(filter_
-                                                  ).get_options(ordered=False))
-                self.filterids[index] = filter_
-                self.filtermap[filter_] = index
+    def get_filters_sorted(self):
+        return self.filterssorted
 
-    def update_buttons(self):
-        if self.choice.GetCount() < 2:
-            self.button_remove.Enable(False)
+    def get_filter_configuration(self, filter_):
+        return self.config('Filters')(filter_).get_options()
 
-    def update_filter_configuration(self, filter_, name, config):
-        index = self.filtermap[filter_]
-        self.choice.SetString(index, name)
-        self.choice.SetClientData(index, config)
+    def get_selected_filter(self):
+        return self.selected_filter
 
-    def select_filter(self, filter_):
-        self.choice.SetSelection(self.filtermap[filter_])
+    def select_filter(self, filter_, config):
+        # Trying to select a filter while one is being edited is not
+        # supported, so close any open editor first
+        if self.editor:
+            self.editor.close()
+
+        self.tasklist.list_.set_filter(config)
+
+        # The configuration is exported to the file only when exiting Outspline
+        self.config['selected_filter'] = filter_
+        self.selected_filter = filter_
+
+        self.set_tab_title(config['name'])
+
+        self.tasklist.list_.delay_restart()
 
     def apply_selected_filter(self):
-        self.list_.set_filter(self.choice.GetClientData(
-                                                   self.choice.GetSelection()))
-        self.list_.delay_restart()
+        config = self.get_filter_configuration(self.get_selected_filter())
+        self.tasklist.list_.set_filter(config)
+        self.tasklist.list_.delay_restart()
+        self.set_tab_title(config['name'])
+
+    def create(self):
+        if self.editor:
+            self.editor.close()
+
+        self.editor = FilterEditor(self.tasklist, None, None)
+        self.set_tab_title('New filter')
+
+    def edit_selected(self):
+        if self.editor:
+            self.editor.close()
+
+        filter_ = self.get_selected_filter()
+        config = self.get_filter_configuration(filter_)
+        self.editor = FilterEditor(self.tasklist, filter_, config)
+
+    def remove_selected(self):
+        # If there's only one filter left in the configuration, the remove
+        # menu item is disabled; however update_filters can also handle the
+        # case where there are no filters in the configuration, so no further
+        # tests are needed here
+        # Trying to remove a filter that is being edited, and then trying to
+        # save the editor, would generate an error, so close any open editors
+        # first
+        if self.editor:
+            self.editor.close()
+
+        filter_ = self.get_selected_filter()
+        filters = self.config('Filters')
+        filters(filter_).delete()
+
+        self.update_filters()
+
+        # Select the first filter for safe and consistent behavior
+        filter_ = self.filterssorted[0]
+        config = self.get_filter_configuration(filter_)
+
+        self.select_filter(filter_, config)
+
+    def set_tab_title(self, title):
+        wxgui_api.set_right_nb_page_title(self.tasklist.panel, title)
 
 
 class FilterEditor():
+    tasklist = None
     parent = None
     editid = None
     config = None
@@ -227,15 +182,13 @@ class FilterEditor():
     name = None
     choice = None
     sfilter = None
-    autoscroll = None
-    aspaddingw = None
-    aspadding = None
 
-    def __init__(self, parent, filters, filterid, config):
-        self.parent = parent
+    def __init__(self, tasklist, filterid, config):
+        self.tasklist = tasklist
+        self.parent = tasklist.panel
         self.editid = filterid
-        self.filters = filters
-        self.panel = wx.Panel(parent)
+        self.filters = tasklist.filters
+        self.panel = wx.Panel(self.parent)
         self.fbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.fbox)
 
@@ -243,7 +196,9 @@ class FilterEditor():
         self._init_header()
         self._init_filter_types()
         self._init_selected_filter()
-        self._init_common_options()
+
+        self.parent.GetSizer().Prepend(self.panel, flag=wx.EXPAND)
+        self.parent.GetSizer().Layout()
 
     def _init_config(self, config):
         if config:
@@ -281,11 +236,6 @@ class FilterEditor():
 
         config.update(self.sfilter.get_config())
 
-        if self.autoscroll.get_selection() == 1:
-            config['autoscroll'] = str(self.aspaddingw.GetValue())
-        else:
-            config['autoscroll'] = 'off'
-
         return config
 
     def save(self, event):
@@ -297,42 +247,41 @@ class FilterEditor():
                                                                      'Filters')
 
         if self.editid:
-            filtersconfig(self.editid).reset(config)
-            self.filters.update_filter_configuration(self.editid,
-                                                        config['name'], config)
+            filter_ = self.editid
+            filtersconfig(filter_).reset(config)
+            self.filters.update_filters()
         else:
             newid = 0
 
             while True:
-                newsection = ''.join(('F', str(newid)))
+                filter_ = ''.join(('F', str(newid)))
 
                 try:
-                    filtersconfig(newsection)
+                    filtersconfig(filter_)
                 except KeyError:
-                    filtersconfig.make_subsection(newsection)
-                    filtersconfig(newsection).reset(config)
-                    self.filters.update_buttons()
+                    filtersconfig.make_subsection(filter_)
+                    filtersconfig(filter_).reset(config)
                     self.filters.update_filters()
-                    # select_filter must be done after update_filters
-                    self.filters.select_filter(newsection)
                     break
                 else:
                     newid += 1
 
-        self.filters.apply_selected_filter()
+        self.filters.select_filter(filter_, config)
         self.close()
 
     def preview(self, event):
-        self.filters.list_.set_filter(self.compose_configuration())
-        self.filters.list_.delay_restart()
+        config = self.compose_configuration()
+        self.tasklist.list_.set_filter(config)
+        self.filters.set_tab_title(config['name'])
+        self.tasklist.list_.delay_restart()
 
     def cancel(self, event):
         self.close()
         self.filters.apply_selected_filter()
 
     def close(self):
-        self.parent.GetSizer().Replace(self.panel, self.filters.panel)
         self.panel.Destroy()
+        del self.filters.editor
         self.parent.GetSizer().Layout()
 
     def _init_filter_types(self):
@@ -366,30 +315,6 @@ class FilterEditor():
         self.sfilter = self.choice.GetClientData(self.choice.GetSelection()
                                                      )(self.panel, self.config)
         self.fbox.Add(self.sfilter.panel, flag=wx.EXPAND | wx.BOTTOM, border=4)
-
-    def _init_common_options(self):
-        try:
-            self.aspadding = int(self.config['autoscroll'])
-        except ValueError:
-            self.aspadding = 1
-            selas = 0
-        else:
-            selas = 1
-
-        self.autoscroll = WidgetChoiceCtrl(self.panel,
-                                                      (('No autoscroll', None),
-              ('Autoscroll padding:', self._create_autoscroll_padding_widget)),
-                                                                      selas, 4)
-        self.autoscroll.force_update()
-        self.fbox.Add(self.autoscroll.get_main_panel(), flag=wx.BOTTOM,
-                                                                      border=4)
-
-    def _create_autoscroll_padding_widget(self):
-        self.aspaddingw = wx.SpinCtrl(self.autoscroll.get_main_panel(),
-                          min=0, max=99, size=(40, 21), style=wx.SP_ARROW_KEYS)
-        self.aspaddingw.SetValue(self.aspadding)
-
-        return self.aspaddingw
 
     def choose_filter_type(self, event):
         fpanel = event.GetClientData()(self.panel, self.config)

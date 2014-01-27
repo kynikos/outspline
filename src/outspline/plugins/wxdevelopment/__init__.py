@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -46,14 +46,16 @@ class MenuDev(wx.Menu):
     def __init__(self):
         wx.Menu.__init__(self)
 
-        # Initialize self.ID_PRINT so it can be deleted at the beginning of
+        # Initialize self.ID_PRINT so it can be destroyed at the beginning of
         # self.handle_reset_menu_items
         self.ID_PRINT = wx.NewId()
+        self.PrependItem(wx.MenuItem(self, self.ID_PRINT, "INIT"))
 
         self.populate = self.Append(wx.NewId(), "&Populate database")
         self.simulator = self.AppendCheckItem(wx.NewId(), "&Run simulator")
 
-        wxgui_api.insert_menu_main_item('Develo&pment', 'Help', self)
+        wxgui_api.insert_menu_main_item('Develo&pment',
+                                    wxgui_api.get_menu_help_position(), self)
 
         wxgui_api.bind_to_menu(self.populate_tree, self.populate)
         wxgui_api.bind_to_menu(self.toggle_simulator, self.simulator)
@@ -66,8 +68,8 @@ class MenuDev(wx.Menu):
             self.reset_simulator_item()
 
     def reset_print_menu(self):
-        self.Delete(self.ID_PRINT)
-        self.ID_PRINT = wx.NewId()
+        self.DestroyId(self.ID_PRINT)
+
         self.printtb = wx.Menu()
         self.PrependMenu(self.ID_PRINT, "Print &databases", self.printtb)
 
@@ -163,50 +165,50 @@ class MenuDev(wx.Menu):
 
     def populate_tree(self, event):
         core_api.block_databases()
-        db = wxgui_api.get_active_database()
-        if db:
-            filename = db.get_filename()
-            if filename:
-                group = core_api.get_next_history_group(filename)
-                description = 'Populate tree'
+        filename = wxgui_api.get_selected_database_filename()
 
-                i = 0
-                while i < 10:
-                    dbitems = core_api.get_items_ids(filename)
+        # This method may be launched even if no database is open
+        if filename:
+            group = core_api.get_next_history_group(filename)
+            description = 'Populate tree'
 
-                    try:
-                        itemid = random.choice(dbitems)
-                    except IndexError:
-                        # No items in the database yet
-                        itemid = 0
+            i = 0
+            while i < 10:
+                dbitems = core_api.get_items_ids(filename)
 
-                    mode = random.choice(('child', 'sibling'))
+                try:
+                    itemid = random.choice(dbitems)
+                except IndexError:
+                    # No items in the database yet
+                    itemid = 0
 
-                    if mode == 'sibling' and itemid == 0:
-                        continue
+                mode = random.choice(('child', 'sibling'))
 
-                    i += 1
+                if mode == 'sibling' and itemid == 0:
+                    continue
 
-                    text = self._populate_tree_text()
+                i += 1
 
-                    id_ = self._populate_tree_item(mode, filename, itemid,
-                                                    group, text, description)
+                text = self._populate_tree_text()
 
-                    if organism_api and wxscheduler_basicrules_api and \
-                            filename in \
-                            organism_api.get_supported_open_databases():
-                        self._populate_tree_rules(filename, id_, group,
-                                                            description)
+                id_ = self._populate_tree_item(mode, filename, itemid,
+                                                group, text, description)
 
-                    self._populate_tree_gui(mode, filename, itemid, id_, text)
+                if organism_api and wxscheduler_basicrules_api and \
+                        filename in \
+                        organism_api.get_supported_open_databases():
+                    self._populate_tree_rules(filename, id_, group,
+                                                        description)
 
-                    # Links must be created *after* self._populate_tree_gui
-                    if links_api and wxlinks_api and filename in \
-                                    links_api.get_supported_open_databases():
-                            self._populate_tree_link(filename, id_, dbitems,
-                                                            group, description)
+                self._populate_tree_gui(mode, filename, itemid, id_, text)
 
-                wxgui_api.refresh_history(filename)
+                # Links must be created *after* self._populate_tree_gui
+                if links_api and wxlinks_api and len(dbitems) > 0 and \
+                        filename in links_api.get_supported_open_databases():
+                    self._populate_tree_link(filename, id_, dbitems, group,
+                                                                description)
+
+            wxgui_api.refresh_history(filename)
         core_api.release_databases()
 
     def _populate_tree_text(self):
@@ -294,8 +296,8 @@ class MenuDev(wx.Menu):
 
     def _populate_tree_link(self, filename, id_, dbitems, group, description):
         if random.randint(0, 8) == 0:
-            # This gives a chance that target will be the same as id_, but it's
-            # negligible, especially with large numbers of items
+            # Target can't the same as id_ because dbitems was assigned
+            # *before* the new item was appended
             target = random.choice(dbitems)
             links_api.make_link(filename, id_, target, group, description)
             wxlinks_api.update_items_formatting(filename)

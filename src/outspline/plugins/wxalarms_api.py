@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -29,7 +29,8 @@ def get_active_alarms():
 
 def simulate_set_snooze_time(number, unit):
     wxalarms.alarmswindow.number.SetValue(number)
-    wxalarms.alarmswindow.unit.SetValue(unit)
+    wxalarms.alarmswindow.unit.SetSelection(
+                                wxalarms.alarmswindow.unit.FindString(unit))
 
 
 def simulate_snooze_alarm(filename, alarmid):

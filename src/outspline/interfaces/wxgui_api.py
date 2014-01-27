@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -18,7 +18,7 @@
 
 import wx
 
-from wxgui import rootw, editor, menubar, tree, databases
+from wxgui import rootw, notebooks, editor, menubar, tree, databases
 
 
 ### DATABASE ###
@@ -124,19 +124,49 @@ def simulate_close_all_editors(ask='apply'):
 
 ### MENUBAR ###
 
-def get_menu():
-    return wx.GetApp().menu
+def get_menu_file():
+    return wx.GetApp().menu.file
 
 
-def insert_menu_main_item(title, before, menu):
-    return wx.GetApp().menu.Insert(wx.GetApp().menu.FindMenu(before),
-                                      menu, title)
+def get_menu_database():
+    return wx.GetApp().menu.database
 
 
-def insert_menu_item(menu, pos, item, id_=wx.ID_ANY, help='', sep='none',
-                     kind='normal', sub=None, icon=None):
-    return wx.GetApp().menu.insert_item(menu, pos, item, id_, help, sep, kind,
-                                        sub, icon)
+def get_menu_editor():
+    return wx.GetApp().menu.edit
+
+
+def get_menu_view():
+    return wx.GetApp().menu.view
+
+
+def get_menu_view_position():
+    return wx.GetApp().menu.FindMenu('View')
+
+
+def get_menu_help_position():
+    return wx.GetApp().menu.FindMenu('Help')
+
+
+def insert_menu_main_item(title, position, menu):
+    return wx.GetApp().menu.Insert(position, menu, title)
+
+
+def add_menu_file_item(item):
+    position = wx.GetApp().menu.file.GetMenuItemCount() - 1
+    return wx.GetApp().menu.file.InsertItem(position, item)
+
+
+def add_menu_database_item(item):
+    return wx.GetApp().menu.database.InsertItem(6, item)
+
+
+def add_menu_editor_item(item):
+    return wx.GetApp().menu.edit.InsertItem(0, item)
+
+
+def add_menu_view_item(item):
+    return wx.GetApp().menu.view.AppendItem(item)
 
 
 def bind_to_update_menu_items(handler, bind=True):
@@ -260,12 +290,23 @@ def get_selected_database_tab_index():
     return wx.GetApp().nb_left.get_selected_tab_index()
 
 
-def get_active_database():
-    return wx.GetApp().nb_left.get_selected_tab()
+def get_selected_database_filename():
+    dbtab = wx.GetApp().nb_left.get_selected_tab()
+
+    if dbtab:
+        return dbtab.get_filename()
+    else:
+        return False
 
 
 def get_right_nb():
     return wx.GetApp().nb_right
+
+
+def is_page_in_right_nb(window):
+    nb = wx.GetApp().nb_right
+    tabid = nb.GetPageIndex(window)
+    return True if tabid > -1 else False
 
 
 def select_editor_tab_index(index):
@@ -277,13 +318,17 @@ def get_selected_editor_tab_index():
     return wx.GetApp().nb_right.get_selected_tab_index()
 
 
-def get_active_editor():
+def get_selected_editor_identification():
     item = wx.GetApp().nb_right.get_selected_editor()
     tab = editor.tabs[item]
     return (tab.get_filename(), tab.get_id())
 
 
-def get_active_editor_tag():
+def get_selected_right_nb_tab():
+    return wx.GetApp().nb_right.get_selected_tab()
+
+
+def get_selected_editor():
     return wx.GetApp().nb_right.get_selected_editor()
 
 
@@ -291,9 +336,34 @@ def get_open_editors_tab_indexes():
     return wx.GetApp().nb_right.get_open_editors()
 
 
-def add_plugin_to_right_nb(window, caption, close=True):
+def add_plugin_to_right_nb(window, caption, select=True):
     return wx.GetApp().nb_right.add_plugin(window, caption=caption,
-                                              close=close)
+                                                                select=select)
+
+
+def add_page_to_right_nb(window, caption, select=True):
+    return wx.GetApp().nb_right.add_page(window, caption=caption,
+                                                                select=select)
+
+
+def hide_right_nb_page(window):
+    nb = wx.GetApp().nb_right
+    tabid = nb.GetPageIndex(window)
+    return nb.hide_page(tabid)
+
+
+def close_right_nb_page(window):
+    nb = wx.GetApp().nb_right
+    tabid = nb.GetPageIndex(window)
+    return nb.close_page(tabid)
+
+
+def set_right_nb_page_title(window, title):
+    return wx.GetApp().nb_right.set_page_title(window, title)
+
+
+def bind_to_plugin_close_event(handler, bind=True):
+    return notebooks.plugin_close_event.bind(handler, bind)
 
 
 ### ROOTW ###
@@ -306,20 +376,24 @@ def get_main_icon_bundle():
     return wx.GetApp().get_main_icon_bundle()
 
 
-def show_main_window(event=None):
-    return wx.GetApp().root.show(event=event)
+def show_main_window():
+    return wx.GetApp().root.show()
 
 
-def hide_main_window(event=None):
-    return wx.GetApp().root.hide(event=event)
+def hide_main_window():
+    return wx.GetApp().root.hide()
 
 
-def toggle_main_window(event=None):
-    return wx.GetApp().root.toggle_shown(event=event)
+def toggle_main_window():
+    return wx.GetApp().root.toggle_shown()
 
 
 def is_shown():
     return wx.GetApp().root.IsShown()
+
+
+def exit_application():
+    return wx.GetApp().exit_app()
 
 
 def bind_to_menu(handler, button):
@@ -328,6 +402,18 @@ def bind_to_menu(handler, button):
 
 def bind_to_application_loaded(handler, bind=True):
     return rootw.application_loaded_event.bind(handler, bind)
+
+
+def bind_to_show_main_window(handler, bind=True):
+    return rootw.show_main_window_event.bind(handler, bind)
+
+
+def bind_to_hide_main_window(handler, bind=True):
+    return rootw.hide_main_window_event.bind(handler, bind)
+
+
+def bind_to_close_window(handler):
+    return wx.GetApp().root.bind_to_close_event(handler)
 
 
 def bind_to_exit_application(handler, bind=True):
@@ -350,6 +436,14 @@ def add_item_to_selection(filename, id_):
     return tree.dbs[filename].add_item_to_selection(treeitem)
 
 
+def get_tree_item_id(filename, treeitem):
+    return tree.dbs[filename].get_item_id(treeitem)
+
+
+def get_root_tree_item(filename):
+    return tree.dbs[filename].get_root()
+
+
 def append_item(filename, baseid, id_, text):
     label = tree.dbs[filename].make_item_title(text)
     base = tree.dbs[filename].find_item(baseid)
@@ -362,6 +456,22 @@ def insert_item_after(filename, baseid, id_, text):
     return tree.dbs[filename].insert_item(base, 'after', label=label, id_=id_)
 
 
+def append_tree_item(filename, baseid, id_):
+    return tree.dbs[filename].insert_item(baseid, 'append', id_=id_)
+
+
+def insert_tree_item_after(filename, baseid, id_):
+    return tree.dbs[filename].insert_item(baseid, 'after', id_=id_)
+
+
+def create_tree(filename, treeroot):
+    return tree.dbs[filename].create(base=treeroot)
+
+
+def remove_tree_items(filename, treeitems):
+    return tree.dbs[filename].remove_items(treeitems)
+
+
 def set_item_font(filename, id_, wxfont):
     try:
         treeitem = tree.dbs[filename].find_item(id_)
@@ -371,11 +481,12 @@ def set_item_font(filename, id_, wxfont):
         return tree.dbs[filename].set_item_font(treeitem, wxfont)
 
 
-def insert_tree_context_menu_item(filename, pos, item, id_=wx.ID_ANY, help='',
-                                  sep='none', kind='normal', sub=None,
-                                  icon=None):
-    return tree.dbs[filename].cmenu.insert_item(pos, item, id_, help, sep,
-                                                kind, sub, icon)
+def get_tree_context_menu(filename):
+    return tree.dbs[filename].cmenu
+
+
+def add_tree_context_menu_item(filename, item):
+    return tree.dbs[filename].cmenu.InsertItem(3, item)
 
 
 def refresh_history(filename):

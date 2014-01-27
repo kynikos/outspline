@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -46,9 +46,9 @@ class TextArea():
         self.tmrunning = False
         # Do not set the text now, otherwise for example URLs won't be
         # highlighted in blue
-        self.area = TextUrlCtrl(editor.tabs[item].panel, '',
-                   style=wx.BORDER_NONE | wx.TE_PROCESS_TAB | wx.TE_MULTILINE |
-                                              wx.TE_NOHIDESEL | wx.TE_DONTWRAP)
+        self.area = TextUrlCtrl(editor.tabs[item].panel, value='',
+                                    style=wx.TE_PROCESS_TAB | wx.TE_MULTILINE |
+                                    wx.TE_NOHIDESEL | wx.TE_DONTWRAP)
 
         font = self.area.GetFont()
         font = wx.Font(font.GetPointSize(), wx.FONTFAMILY_TELETYPE,

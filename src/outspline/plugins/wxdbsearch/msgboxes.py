@@ -20,11 +20,22 @@ import wx
 
 import outspline.interfaces.wxgui_api as wxgui_api
 
-generic = "Some rule parameters are not set correctly."
-end_time = "End time must be greater than start time."
-short_months = "Some selected months do not have enough days."
+
+def bad_regular_expression():
+    return wx.MessageDialog(wxgui_api.get_main_frame(),
+                        'Bad regular expression.',
+                        caption="Search", style=wx.OK | wx.ICON_EXCLAMATION)
 
 
-def warn_bad_rule(message):
-    return wx.MessageDialog(wxgui_api.get_main_frame(), message,
-                    caption="Create rule", style=wx.OK | wx.ICON_EXCLAMATION)
+def some_items_not_found():
+    return wx.MessageDialog(wxgui_api.get_main_frame(),
+                    'Some selected search result items do not exist '
+                    'anymore. Re-execute the search for up-to-date results.',
+                    caption="Search", style=wx.OK | wx.ICON_EXCLAMATION)
+
+
+def all_items_not_found():
+    return wx.MessageDialog(wxgui_api.get_main_frame(),
+                    'All the selected search result items do not exist '
+                    'anymore. Re-execute the search for up-to-date results.',
+                    caption="Search", style=wx.OK | wx.ICON_EXCLAMATION)

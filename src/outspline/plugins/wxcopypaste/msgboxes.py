@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -18,10 +18,12 @@
 
 import wx
 
+import outspline.interfaces.wxgui_api as wxgui_api
+
 
 def unsafe_paste_confirm():
-    return wx.MessageDialog(wx.GetApp().root, 'The destination database does '
-                    'not support all the data copied from the origin database: '
-                          'consider upgrading the destination database first.\n'
-                     'Paste the items anyway, discarding the unsupported data?',
-           caption="Paste items", style=wx.OK | wx.CANCEL | wx.ICON_EXCLAMATION)
+    return wx.MessageDialog(wxgui_api.get_main_frame(), 'The destination '
+        'database does not support all the data copied from the origin '
+        'database: consider upgrading the destination database first.\n'
+        'Paste the items anyway, discarding the unsupported data?',
+        caption="Paste items", style=wx.OK | wx.CANCEL | wx.ICON_EXCLAMATION)

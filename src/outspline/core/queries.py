@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -80,6 +80,8 @@ items_select_id_haschildren = 'SELECT I_id FROM Items WHERE I_parent=? LIMIT 1'
 
 items_select_parent = ('SELECT I_id, I_text FROM Items WHERE I_parent=? AND '
                        'I_previous=? LIMIT 1')
+
+items_select_search = 'SELECT I_id, I_text FROM Items'
 
 items_insert = ('INSERT INTO Items (I_id, I_parent, I_previous, I_text) '
                 'VALUES ({}, {}, {}, ?)')

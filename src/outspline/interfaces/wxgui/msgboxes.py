@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -82,13 +82,6 @@ def close_db_ask(filename):
                             'closing?'.format(filename),
                             caption="Save database",
                             style=wx.YES_NO | wx.CANCEL | wx.ICON_QUESTION)
-
-
-def delete_items_confirm(n):
-    return wx.MessageDialog(wx.GetApp().root, '{} item{P0s} {P0is} going to '
-                            'be deleted.'.format(n, **plural.set((n, ), )),
-                            caption="Delete items",
-                            style=wx.OK | wx.CANCEL | wx.ICON_EXCLAMATION)
 
 
 def close_tab_ask():

@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -29,7 +29,7 @@ insert_rule_event = Event()
 create_rule_event = Event()
 edit_rule_event = Event()
 choose_rule_event = Event()
-check_maker_event = Event()
+check_editor_event = Event()
 
 items = {}
 
@@ -38,63 +38,177 @@ class Scheduler():
     filename = None
     id_ = None
     fpanel = None
-    rpanel = None
-    rbox = None
-    rlist = None
-    rulesl = None
-    origrules = None
-    rules = None
-    rmaker = None
-    rmaker_ref = None
-    mbox = None
-    mrules = None
-    mmode = None
-    mpanel = None
-    choice = None
-    choices = None
+    panel = None
+    rule_list = None
+    rule_editor = None
 
     def __init__(self, filename, id_):
         self.filename = filename
         self.id_ = id_
 
         self.fpanel = wxgui_api.add_plugin_to_editor(filename, id_,
-                                                     'Schedule rules')
-
-        self.rpanel = wx.Panel(self.fpanel)
-        self.rbox = wx.BoxSizer(wx.VERTICAL)
-        self.rpanel.SetSizer(self.rbox)
-
-        wxgui_api.add_window_to_plugin(filename, id_, self.fpanel, self.rpanel)
+                                                            'Schedule rules')
 
     def post_init(self):
-        self.choices = ()
+        self.panel = wx.Panel(self.fpanel)
+        box = wx.BoxSizer(wx.VERTICAL)
+        self.panel.SetSizer(box)
 
-        self._init_rules_list()
-        self._init_rule_maker()
+        self.rule_list = RuleList(self, self.filename, self.id_)
+        self.rule_editor = RuleEditor(self, self.filename, self.id_)
+        self.rule_list.post_init()
+        self.rule_editor.post_init()
 
-        self.refresh_mod_state()
+        box.Add(self.rule_list.panel, flag=wx.EXPAND | wx.BOTTOM, border=4)
+        box.Add(self.rule_editor.panel, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.resize_rpanel()
+        wxgui_api.add_window_to_plugin(self.filename, self.id_, self.fpanel,
+                                                                    self.panel)
+        self.resize()
 
-        if not self.rules:
-            wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel)
-            wxgui_api.resize_foldpanelbar(self.filename, self.id_)
+        # Must be done *after* resizing
+        if not self.rule_list.rules:
+            self.collapse_foldpanel()
+
+    def resize(self):
+        # This is necessary for letting the fold panel adapt to the variable
+        # height
+        self.panel.SetMinSize((-1, -1))
+        self.panel.Fit()
+        wxgui_api.expand_panel(self.filename, self.id_, self.fpanel)
+        wxgui_api.resize_foldpanelbar(self.filename, self.id_)
+
+    def collapse_foldpanel(self):
+        wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel)
+        wxgui_api.resize_foldpanelbar(self.filename, self.id_)
+
+    def show_list(self):
+        self.rule_editor.panel.Show(False)
+        self.rule_list.panel.Show()
+        self.resize()
+
+    def show_editor(self):
+        self.rule_list.panel.Show(False)
+        self.rule_editor.panel.Show()
+        self.resize()
+
+    @staticmethod
+    def make_itemid(filename, id_):
+        return '_'.join((filename, str(id_)))
+
+
+class RuleList():
+    parent = None
+    filename = None
+    id_ = None
+    panel = None
+    listview = None
+    origrules = None
+    rules = None
+    mrules = None
+    mmode = None
+    button_up = None
+    button_remove = None
+    button_add = None
+    button_down = None
+    button_edit = None
+
+    def __init__(self, parent, filename, id_):
+        self.parent = parent
+        self.filename = filename
+        self.id_ = id_
+        self.panel = wx.Panel(parent.panel)
+
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(hbox)
+
+        # Do not allow multiple selections, so that it's possible to move rules
+        # up and down
+        # Initialize with a small size so that it will expand properly in the
+        # sizer
+        self.listview = wx.ListView(self.panel, size=(10, 10),
+                    style=wx.LC_REPORT | wx.LC_NO_HEADER | wx.LC_SINGLE_SEL)
+        self.listview.InsertColumn(0, 'Rules')
+        hbox.Add(self.listview, 1, flag=wx.EXPAND | wx.RIGHT, border=4)
+
+        self.rules = []
+
+        self.mmode = 'append'
+
+        pgrid = wx.GridSizer(3, 2, 4, 4)
+
+        self.button_up = wx.Button(self.panel, label='Move up', size=(-1, 24),
+                                                            style=wx.BU_LEFT)
+        pgrid.Add(self.button_up)
+
+        pgrid.AddSpacer(1)
+
+        self.button_remove = wx.Button(self.panel, label='Remove',
+                                            size=(-1, 24), style=wx.BU_LEFT)
+        pgrid.Add(self.button_remove)
+
+        self.button_add = wx.Button(self.panel, label='Add...', size=(-1, 24),
+                                                            style=wx.BU_LEFT)
+        pgrid.Add(self.button_add)
+
+        self.button_down = wx.Button(self.panel, label='Move down',
+                                            size=(-1, 24), style=wx.BU_LEFT)
+        pgrid.Add(self.button_down)
+
+        self.button_edit = wx.Button(self.panel, label='Edit...',
+                                            size=(-1, 24), style=wx.BU_LEFT)
+        pgrid.Add(self.button_edit)
+
+        self.update_buttons()
+
+        hbox.Add(pgrid, flag=wx.EXPAND)
+
+        self.panel.Bind(wx.EVT_BUTTON, self.add_rule, self.button_add)
+        self.panel.Bind(wx.EVT_BUTTON, self.edit_rule, self.button_edit)
+        self.panel.Bind(wx.EVT_BUTTON, self.remove_rule, self.button_remove)
+        self.panel.Bind(wx.EVT_BUTTON, self.move_rule_up, self.button_up)
+        self.panel.Bind(wx.EVT_BUTTON, self.move_rule_down, self.button_down)
+
+        self.listview.Bind(wx.EVT_LIST_ITEM_SELECTED, self._update_buttons)
+        self.listview.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._update_buttons)
+        self.listview.Bind(wx.EVT_LIST_DELETE_ITEM, self._update_buttons)
 
         wxgui_api.bind_to_apply_editor(self.handle_apply)
         wxgui_api.bind_to_check_editor_modified_state(
                                              self.handle_check_editor_modified)
         wxgui_api.bind_to_close_editor(self.handle_close)
 
+    def post_init(self):
+        oprules = organism_api.get_item_rules(self.filename, self.id_)
+
+        for rule in oprules:
+            insert_rule_event.signal(filename=self.filename, id_=self.id_,
+                                                                    rule=rule)
+
+        self.refresh_mod_state()
+
         init_rules_list_event.signal(filename=self.filename, id_=self.id_)
 
-        self.choice.SetSelection(0)
+    def _update_buttons(self, event):
+        self.update_buttons()
+
+    def update_buttons(self):
+        if self.listview.GetSelectedItemCount():
+            self.button_edit.Enable()
+            self.button_remove.Enable()
+            self.button_up.Enable()
+            self.button_down.Enable()
+        else:
+            self.button_edit.Enable(False)
+            self.button_remove.Enable(False)
+            self.button_up.Enable(False)
+            self.button_down.Enable(False)
 
     def handle_apply(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_ \
                                                         and self.is_modified():
             organism_api.update_item_rules(self.filename, self.id_,
-                                            self.rules, kwargs['group'],
-                                            kwargs['description'])
+                            self.rules, kwargs['group'], kwargs['description'])
             self.refresh_mod_state()
 
     def handle_check_editor_modified(self, kwargs):
@@ -112,188 +226,131 @@ class Scheduler():
                                       self.handle_check_editor_modified, False)
             wxgui_api.bind_to_close_editor(self.handle_close, False)
 
-    def resize_rpanel(self):
-        self.rpanel.Layout()
-        self.rpanel.Fit()
-        wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel)
-        wxgui_api.expand_panel(self.filename, self.id_, self.fpanel)
-        wxgui_api.resize_foldpanelbar(self.filename, self.id_)
-
     def is_modified(self):
         return self.origrules != self.rules
 
     def refresh_mod_state(self):
         self.origrules = self.rules[:]
 
-    def _init_rules_list(self):
-        self.rlist = wx.Panel(self.rpanel)
-        self.rbox.Add(self.rlist, proportion=1, flag=wx.EXPAND | wx.LEFT |
-                      wx.RIGHT | wx.BOTTOM, border=4)
-
-        pgrid = wx.GridBagSizer(4, 4)
-        self.rlist.SetSizer(pgrid)
-        pgrid.AddGrowableCol(0)
-
-        # Note this class inherits ListView, which is a LitsCtrl interface
-        # Do not allow multiple selections, so that it's possible to move rules
-        # up and down
-        self.rulesl = wx.ListView(self.rlist, style=wx.LC_REPORT |
-                                  wx.LC_NO_HEADER | wx.LC_SINGLE_SEL |
-                                  wx.SUNKEN_BORDER)
-        self.rulesl.InsertColumn(0, 'Rules')
-        pgrid.Add(self.rulesl, (0, 0), span=(3, 1), flag=wx.EXPAND)
-
-        self.rules = []
-
-        self.mmode = 'append'
-        oprules = organism_api.get_item_rules(self.filename, self.id_)
-        for rule in oprules:
-            insert_rule_event.signal(filename=self.filename, id_=self.id_,
-                                     rule=rule)
-
-        self.button_up = wx.Button(self.rlist, label='Move up', size=(-1, 24),
-                                   style=wx.BU_LEFT)
-        pgrid.Add(self.button_up, (0, 1))
-
-        self.button_remove = wx.Button(self.rlist, label='Remove',
-                                       size=(-1, 24), style=wx.BU_LEFT)
-        pgrid.Add(self.button_remove, (1, 1))
-
-        self.button_down = wx.Button(self.rlist, label='Move down',
-                                     size=(-1, 24), style=wx.BU_LEFT)
-        pgrid.Add(self.button_down, (2, 1))
-
-        self.button_add = wx.Button(self.rlist, label='Add...', size=(-1, 24),
-                                    style=wx.BU_LEFT)
-        pgrid.Add(self.button_add, (1, 2))
-
-        self.button_edit = wx.Button(self.rlist, label='Edit...',
-                                     size=(-1, 24), style=wx.BU_LEFT)
-        pgrid.Add(self.button_edit, (2, 2))
-
-        self.update_buttons()
-
-        self.rlist.Bind(wx.EVT_BUTTON, self.add_rule, self.button_add)
-        self.rlist.Bind(wx.EVT_BUTTON, self.edit_rule, self.button_edit)
-        self.rlist.Bind(wx.EVT_BUTTON, self.remove_rule, self.button_remove)
-        self.rlist.Bind(wx.EVT_BUTTON, self.move_rule_up, self.button_up)
-        self.rlist.Bind(wx.EVT_BUTTON, self.move_rule_down, self.button_down)
-
-        self.rulesl.Bind(wx.EVT_LIST_ITEM_SELECTED, self.update_buttons)
-        self.rulesl.Bind(wx.EVT_LIST_ITEM_DESELECTED, self.update_buttons)
-        self.rulesl.Bind(wx.EVT_LIST_DELETE_ITEM, self.update_buttons)
-
-    def update_buttons(self, event=None):
-        if self.rulesl.GetSelectedItemCount():
-            self.button_edit.Enable()
-            self.button_remove.Enable()
-            self.button_up.Enable()
-            self.button_down.Enable()
-        else:
-            self.button_edit.Enable(False)
-            self.button_remove.Enable(False)
-            self.button_up.Enable(False)
-            self.button_down.Enable(False)
-
     def add_rule(self, event):
-        self.rlist.Show(False)
-
         self.mrules = {}
         self.mmode = 'append'
 
         create_rule_event.signal(filename=self.filename, id_=self.id_,
-                                                             parent=self.rmaker)
+                                    parent=self.parent.rule_editor.scwindow)
 
-        self.rmaker.Show()
-        self.resize_rpanel()
+        self.parent.show_editor()
 
     def edit_rule(self, event):
-        index = self.rulesl.GetFirstSelected()
-        if index != -1:
-            self.rlist.Show(False)
+        index = self.listview.GetFirstSelected()
 
+        if index != -1:
             self.mrules = self.rules[index]
             self.mmode = index
 
             edit_rule_event.signal(filename=self.filename, id_=self.id_,
-                                          parent=self.rmaker, ruled=self.mrules)
+                    parent=self.parent.rule_editor.scwindow, ruled=self.mrules)
 
-            self.rmaker.Show()
-            self.resize_rpanel()
+        self.parent.show_editor()
 
     def remove_rule(self, event):
-        index = self.rulesl.GetFirstSelected()
+        index = self.listview.GetFirstSelected()
+
         if index != -1:
-            self.rulesl.DeleteItem(index)
-            self.rulesl.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+            self.listview.DeleteItem(index)
+            self.listview.SetColumnWidth(0, wx.LIST_AUTOSIZE)
             del self.rules[index]
 
     def move_rule_up(self, event):
-        index = self.rulesl.GetFirstSelected()
+        index = self.listview.GetFirstSelected()
+
         if index not in (-1, 0):
-            self.rulesl.InsertStringItem(index - 1,
-                                         self.rulesl.GetItemText(index))
-            self.rulesl.DeleteItem(index + 1)
-            self.rulesl.Select(index - 1)
+            self.listview.InsertStringItem(index - 1,
+                                            self.listview.GetItemText(index))
+            self.listview.DeleteItem(index + 1)
+            self.listview.Select(index - 1)
 
             rule = self.rules.pop(index)
-            self.rulesl.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+            self.listview.SetColumnWidth(0, wx.LIST_AUTOSIZE)
             self.rules.insert(index - 1, rule)
 
     def move_rule_down(self, event):
-        index = self.rulesl.GetFirstSelected()
-        if index not in (-1, self.rulesl.GetItemCount() - 1):
-            self.rulesl.InsertStringItem(index + 2,
-                                         self.rulesl.GetItemText(index))
-            self.rulesl.DeleteItem(index)
+        index = self.listview.GetFirstSelected()
+
+        if index not in (-1, self.listview.GetItemCount() - 1):
+            self.listview.InsertStringItem(index + 2,
+                                            self.listview.GetItemText(index))
+            self.listview.DeleteItem(index)
             # Select *after* DeleteItem because DeleteItem deselects the
             # currently selected item (this doesn't happen in move_rule_up)
-            self.rulesl.Select(index + 1)
+            self.listview.Select(index + 1)
 
             rule = self.rules.pop(index)
-            self.rulesl.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+            self.listview.SetColumnWidth(0, wx.LIST_AUTOSIZE)
             self.rules.insert(index + 1, rule)
 
     def insert_rule(self, ruled, label):
         if self.mmode == 'append':
-            self.rulesl.InsertStringItem(sys.maxint, label)
+            self.listview.InsertStringItem(sys.maxint, label)
 
             # append relies on the use of sys.maxint in InsertStringItem
             self.rules.append(ruled)
 
         elif isinstance(self.mmode, int):
-            self.rulesl.DeleteItem(self.mmode)
-            self.rulesl.InsertStringItem(self.mmode, label)
+            self.listview.DeleteItem(self.mmode)
+            self.listview.InsertStringItem(self.mmode, label)
 
             self.rules[self.mmode] = ruled
 
-        self.rulesl.SetColumnWidth(0, wx.LIST_AUTOSIZE)
+        self.listview.SetColumnWidth(0, wx.LIST_AUTOSIZE)
 
-    def _init_rule_maker(self):
-        self.rmaker = wx.Panel(self.rpanel)
-        self.rbox.Add(self.rmaker, proportion=1, flag=wx.EXPAND | wx.LEFT |
-                      wx.RIGHT | wx.BOTTOM, border=4)
-        self.rmaker.Show(False)
 
-        self.mbox = wx.BoxSizer(wx.VERTICAL)
-        self.rmaker.SetSizer(self.mbox)
+class RuleEditor():
+    parent = None
+    filename = None
+    id_ = None
+    panel = None
+    choice = None
+    scwindow = None
+    scbox = None
+    rmaker_ref = None
+    mpanel = None
+
+    def __init__(self, parent, filename, id_):
+        self.parent = parent
+        self.filename = filename
+        self.id_ = id_
+        self.panel = wx.Panel(parent.panel)
+
+        self.panel.Show(False)
+
+        mbox = wx.BoxSizer(wx.VERTICAL)
+        self.panel.SetSizer(mbox)
 
         mbox2 = wx.BoxSizer(wx.HORIZONTAL)
-        self.mbox.Add(mbox2, flag=wx.EXPAND | wx.BOTTOM, border=4)
+        mbox.Add(mbox2, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.choice = wx.Choice(self.rmaker, size=(-1, 24),
-                                choices=self.choices)
+        self.choice = wx.Choice(self.panel, size=(-1, 24), choices=())
         mbox2.Add(self.choice, 1, flag=wx.EXPAND)
 
-        button_cancel = wx.Button(self.rmaker, label='Cancel', size=(60, 24))
+        button_cancel = wx.Button(self.panel, label='Cancel', size=(60, 24))
         mbox2.Add(button_cancel, flag=wx.LEFT | wx.RIGHT, border=4)
 
-        button_ok = wx.Button(self.rmaker, label='OK', size=(60, 24))
+        button_ok = wx.Button(self.panel, label='OK', size=(60, 24))
         mbox2.Add(button_ok)
 
-        self.rmaker.Bind(wx.EVT_CHOICE, self.choose_rule, self.choice)
-        self.rmaker.Bind(wx.EVT_BUTTON, self.cancel_maker, button_cancel)
-        self.rmaker.Bind(wx.EVT_BUTTON, self.check_maker, button_ok)
+        self.scwindow = wx.ScrolledWindow(self.panel, style=wx.BORDER_NONE)
+        self.scwindow.SetScrollRate(20, 20)
+        self.scbox = wx.BoxSizer(wx.VERTICAL)
+        self.scwindow.SetSizer(self.scbox)
+        mbox.Add(self.scwindow, 1, flag=wx.EXPAND)
+
+        self.panel.Bind(wx.EVT_CHOICE, self.choose_rule, self.choice)
+        self.panel.Bind(wx.EVT_BUTTON, self.cancel, button_cancel)
+        self.panel.Bind(wx.EVT_BUTTON, self.check, button_ok)
+
+    def post_init(self):
+        self.choice.SetSelection(0)
 
     def display_rule(self, description, rule):
         self.choice.Append(description, clientData=rule)
@@ -309,36 +366,35 @@ class Scheduler():
 
     def choose_rule(self, event):
         choose_rule_event.signal(filename=self.filename, id_=self.id_,
-                               parent=self.rmaker, choice=event.GetClientData(),
-                                                              ruled=self.mrules)
+                            parent=self.scwindow, choice=event.GetClientData(),
+                            ruled=self.parent.rule_list.mrules)
 
     def change_rule(self, window):
         if self.mpanel:
-            self.mbox.Remove(self.mpanel)
+            self.scbox.Clear(True)
+
         self.mpanel = window
-        self.mbox.Add(self.mpanel, 1, flag=wx.EXPAND)
-        self.resize_rpanel()
+        self.scbox.Add(self.mpanel, 1, flag=wx.EXPAND)
+        # Do not allocate space for the horizontal scroll bar, otherwise
+        # when/if the user expands the window and the scroll bar disappears,
+        # an ugly gap would be left shown in place of the scroll bar, unless
+        # some complicated size-updating algorithm is used (which is not the
+        # case of this application)
+        self.scwindow.SetMinSize((-1,
+                                self.mpanel.GetBestVirtualSize().GetHeight()))
+        self.parent.resize()
 
-    def cancel_maker(self, event):
-        self.rmaker.Show(False)
-        self.rlist.Show()
-        self.resize_rpanel()
+    def cancel(self, event):
+        self.parent.show_list()
 
-    def check_maker(self, event):
-        check_maker_event.signal(filename=self.filename, id_=self.id_,
-                                 rule=self.choice.GetClientData(
-                                                    self.choice.GetSelection()),
-                                 object_=self.rmaker_ref)
+    def check(self, event):
+        check_editor_event.signal(filename=self.filename, id_=self.id_,
+                    rule=self.choice.GetClientData(self.choice.GetSelection()),
+                    object_=self.rmaker_ref)
 
-    def apply_maker(self, ruled, label):
-        self.rmaker.Show(False)
-        self.insert_rule(ruled, label)
-        self.rlist.Show()
-        self.resize_rpanel()
-
-    @staticmethod
-    def make_itemid(filename, id_):
-        return '_'.join((filename, str(id_)))
+    def apply_(self, ruled, label):
+        self.parent.rule_list.insert_rule(ruled, label)
+        self.parent.show_list()
 
 
 def handle_open_editor(kwargs):
@@ -346,9 +402,12 @@ def handle_open_editor(kwargs):
     id_ = kwargs['id_']
 
     if filename in organism_api.get_supported_open_databases():
+        itemid = Scheduler.make_itemid(filename, id_)
+
         global items
-        items[Scheduler.make_itemid(filename, id_)] = Scheduler(filename, id_)
-        items[Scheduler.make_itemid(filename, id_)].post_init()
+        items[itemid] = Scheduler(filename, id_)
+
+        items[itemid].post_init()
 
 
 def main():

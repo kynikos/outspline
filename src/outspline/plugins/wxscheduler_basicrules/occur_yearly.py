@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -370,7 +370,7 @@ class Rule():
             else:
                 break
 
-        rstart = random.randint(0, 1440) * 60
+        rstart = random.randint(0, 1439) * 60
 
         endtype = random.randint(0, 2)
 

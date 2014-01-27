@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -224,6 +224,10 @@ def get_item_ancestors(filename, id_):
 
 def get_item_text(filename, id_):
     return databases.dbs[filename].items[id_].get_text()
+
+
+def get_all_items_text(filename):
+    return databases.dbs[filename].get_all_items_text()
 
 
 def get_history_descriptions(filename):

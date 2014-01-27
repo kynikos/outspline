@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -74,7 +74,7 @@ class AlarmsWindow():
         box = wx.BoxSizer(wx.VERTICAL)
         self.window.SetSizer(box)
 
-        self.panel = wx.ScrolledWindow(self.window, style=wx.BORDER_SUNKEN)
+        self.panel = wx.ScrolledWindow(self.window, style=wx.BORDER_THEME)
         self.panel.SetScrollRate(20, 20)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
@@ -90,17 +90,16 @@ class AlarmsWindow():
         self.window.SetMinSize((minwidth + 20, _ALARMS_MIN_HEIGHT))
 
         self.ID_SHOW = wx.NewId()
-        self.menushow = wxgui_api.insert_menu_item('View',
-                                               self.config.get_int('menu_pos'),
-                                               'Show &alarms\tCTRL+SHIFT+r',
-                                               id_=self.ID_SHOW,
-                                               help='Open the alarms window',
-                                               kind='check',
-                                               sep=self.config['menu_sep'])
+
+        self.menushow = wx.MenuItem(wxgui_api.get_menu_view(), self.ID_SHOW,
+                        "Show &alarms\tCTRL+SHIFT+r", "Open the alarms window",
+                        kind=wx.ITEM_CHECK)
+
+        self.menushow = wxgui_api.add_menu_view_item(self.menushow)
 
         parent.Bind(wx.EVT_MENU, self.toggle_shown, self.menushow)
 
-        self.window.Bind(wx.EVT_CLOSE, self.hide)
+        self.window.Bind(wx.EVT_CLOSE, self.handle_close)
 
         organism_alarms_api.bind_to_alarm(self.handle_alarm)
         organism_alarms_api.bind_to_alarm_off(self.handle_alarm_off)
@@ -111,15 +110,13 @@ class AlarmsWindow():
             wxtrayicon_api.bind_to_create_menu(self.handle_create_tray_menu)
             wxtrayicon_api.bind_to_reset_menu(self.handle_reset_tray_menu)
 
-    def update_menu_items(self, event):
+    def update_menu_items(self, kwargs):
         self.menushow.Check(check=self.window.IsShown())
 
     def handle_create_tray_menu(self, kwargs):
-        self.traymenushow = wxtrayicon_api.insert_menu_item(
-                                           self.config.get_int('traymenu_pos'),
-                                           'Show &alarms', id_=self.ID_SHOW,
-                                           kind='check',
-                                           sep=self.config['traymenu_sep'])
+        item = wx.MenuItem(kwargs['menu'], self.ID_SHOW, "Show &alarms",
+                                                            kind=wx.ITEM_CHECK)
+        self.traymenushow = wxtrayicon_api.add_menu_item(item)
 
         wxtrayicon_api.bind_to_tray_menu(self.toggle_shown, self.traymenushow)
 
@@ -145,20 +142,23 @@ class AlarmsWindow():
         self.bottom.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                       border=4)
 
-        self.unit = wx.ComboBox(self.window, value='minutes', size=(100, 21),
-                                 choices=('minutes', 'hours', 'days', 'weeks'),
-                                                          style=wx.CB_READONLY)
+        self.unit = wx.Choice(self.window,
+                choices=('minutes', 'hours', 'days', 'weeks'), size=(100, 21))
+        self.unit.SetSelection(0)
         self.bottom.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                       border=4)
 
         self.window.Bind(wx.EVT_BUTTON, self.snooze_all, button_s)
         self.window.Bind(wx.EVT_BUTTON, self.dismiss_all, button_d)
 
-    def show(self, event=None):
+    def handle_close(self, event):
+        self.hide()
+
+    def show(self):
         self.window.Show(True)
         self.window.Centre()
 
-    def hide(self, event=None):
+    def hide(self):
         self.window.Show(False)
 
     def toggle_shown(self, event):
@@ -247,7 +247,8 @@ class AlarmsWindow():
                 'hours': 3600,
                 'days': 86400,
                 'weeks': 604800}
-        stime = self.number.GetValue() * mult[self.unit.GetValue()]
+        stime = self.number.GetValue() * mult[self.unit.GetString(
+                                                    self.unit.GetSelection())]
         return stime
 
     def get_alarms_dictionary(self):

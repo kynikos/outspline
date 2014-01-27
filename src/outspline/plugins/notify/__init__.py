@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -89,7 +89,7 @@ class BlinkingTrayIcon():
 
     def __init__(self):
         self.ref_id = wx.NewId()
-        self.icon = wx.ArtProvider.GetIcon('@alarms', wx.ART_FRAME_ICON)
+        self.icon = wx.ArtProvider.GetIcon('@alarms', wx.ART_OTHER)
         self.DELAY = 50
         # Set SDELAY shorter than DELAY, so that if an alarm is activated at
         # the same time an alarm is dismissed, there's a better chance that
@@ -104,12 +104,12 @@ class BlinkingTrayIcon():
 
         self._update_tooltip()
 
-        organism_alarms_api.bind_to_alarm(self._blink_later)
-        organism_alarms_api.bind_to_alarm_off(self._stop_later)
-        wxgui_api.bind_to_close_database(self._stop_later)
+        organism_alarms_api.bind_to_alarm(self._blink_after)
+        organism_alarms_api.bind_to_alarm_off(self._stop_after)
+        wxgui_api.bind_to_close_database(self._stop_after)
         core_api.bind_to_exit_app_2(self._exit)
 
-    def _blink_later(self, kwargs):
+    def _blink_after(self, kwargs):
         # Instead of self.blink, bind _this_ function to events that can be
         # signalled many times in a loop, so that self.blink is executed only
         # once after the last signal
@@ -129,6 +129,11 @@ class BlinkingTrayIcon():
         else:
             return False
 
+        # self._blink_later uses wx.CallLater, which cannot be called from
+        # other threads than the main one
+        wx.CallAfter(self._blink_later)
+
+    def _blink_later(self):
         self.delay.Stop()
         self.delay = wx.CallLater(self.DELAY, self._blink)
 
@@ -136,7 +141,7 @@ class BlinkingTrayIcon():
         wxtrayicon_api.start_blinking(self.ref_id, self.icon)
         self._update_tooltip()
 
-    def _stop_later(self, kwargs):
+    def _stop_after(self, kwargs):
         # Instead of self.stop, bind _this_ function to events that can be
         # signalled many times in a loop, so that self.stop is executed only
         # once after the last signal
@@ -161,6 +166,11 @@ class BlinkingTrayIcon():
                 if len(self.active_alarms[filename]) == 0:
                     del self.active_alarms[filename]
 
+        # self._blink_later uses wx.CallLater, which cannot be called from
+        # other threads than the main one
+        wx.CallAfter(self._stop_later)
+
+    def _stop_later(self):
         # Always stop blinking when handling an alarm off event, even in the
         # remote case that no alarm was found in self.active_alarms above
         self.sdelay.Stop()
@@ -181,11 +191,11 @@ class BlinkingTrayIcon():
         wxtrayicon_api.set_tooltip_value(self.ref_id, tooltip)
         return nalarms
 
-    def _exit(self, event):
+    def _exit(self, kwargs):
         # Unbind the handlers whose timers could race with the application
         # closure
-        organism_alarms_api.bind_to_alarm_off(self._stop_later, False)
-        wxgui_api.bind_to_close_database(self._stop_later, False)
+        organism_alarms_api.bind_to_alarm_off(self._stop_after, False)
+        wxgui_api.bind_to_close_database(self._stop_after, False)
         self.delay.Stop()
         self.sdelay.Stop()
 

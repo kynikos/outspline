@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -34,13 +34,13 @@ mredo = None
 
 
 def undo_text(event):
-    tab = wxgui_api.get_active_editor_tag()
+    tab = wxgui_api.get_selected_editor()
     if tab:
         areas[tab].undo()
 
 
 def redo_text(event):
-    tab = wxgui_api.get_active_editor_tag()
+    tab = wxgui_api.get_selected_editor()
     if tab:
         areas[tab].redo()
 
@@ -81,18 +81,21 @@ def main():
     ID_REDO = wx.NewId()
 
     global mundo, mredo
-    mundo = wxgui_api.insert_menu_item('Editor',
-                                       config.get_int('menuundo_pos'),
-                                       '&Undo\tCTRL+z', id_=ID_UNDO,
-                                       help='Undo the previous text edit',
-                                       sep=config['menuundo_sep'],
-                                       icon='@undo')
-    mredo = wxgui_api.insert_menu_item('Editor',
-                                       config.get_int('menuredo_pos'),
-                                       '&Redo\tCTRL+y', id_=ID_REDO,
-                                       help='Redo the next text edit',
-                                       sep=config['menuredo_sep'],
-                                       icon='@redo')
+    mundo = wx.MenuItem(wxgui_api.get_menu_editor(), ID_UNDO,
+                                '&Undo\tCTRL+z', 'Undo the previous text edit')
+    mredo = wx.MenuItem(wxgui_api.get_menu_editor(), ID_REDO,
+                                    '&Redo\tCTRL+y', 'Redo the next text edit')
+
+    mundo.SetBitmap(wx.ArtProvider.GetBitmap('@undo', wx.ART_MENU))
+    mredo.SetBitmap(wx.ArtProvider.GetBitmap('@redo', wx.ART_MENU))
+
+    separator = wx.MenuItem(wxgui_api.get_menu_editor(),
+                                                        kind=wx.ITEM_SEPARATOR)
+
+    # Add in reverse order
+    wxgui_api.add_menu_editor_item(separator)
+    wxgui_api.add_menu_editor_item(mredo)
+    wxgui_api.add_menu_editor_item(mundo)
 
     wxgui_api.bind_to_menu(undo_text, mundo)
     wxgui_api.bind_to_menu(redo_text, mredo)
