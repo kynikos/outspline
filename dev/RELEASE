@@ -18,7 +18,7 @@
   - *.setup.py
   - Copyright dates
   - docstrings (@version, @date...)
-  - *.PKGBUILD
+  - *.PKGBUILD (no hashes)
   - *.install
   - release.py
 * If database structure has changed, update upgrade mechanism

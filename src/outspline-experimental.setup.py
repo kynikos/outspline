@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -62,7 +62,7 @@ def compose_package_metadata(head):
 
 def compose_metadata():
     meta = {'name': 'outspline-experimental',
-            'version': '0.2.0',
+            'version': '0.4.0',
             'description': 'Experimental component for Outspline.',
             'author': 'Dario Giovannetti',
             'author_email': 'dev@dariogiovannetti.net',

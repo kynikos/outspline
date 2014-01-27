@@ -1,5 +1,5 @@
 # wxClasses
-# Copyright (C) 2013 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2013-2014 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of wxClasses.
 #
