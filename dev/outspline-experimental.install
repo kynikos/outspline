@@ -1,5 +1,0 @@
-post_install() {
-    echo "All the included plugins are enabled by default, but"
-    echo "you will likely want to customize the index of their menu"
-    echo "entries in ~/.config/outspline/outspline.conf."
-}
