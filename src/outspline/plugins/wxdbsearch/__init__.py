@@ -24,6 +24,8 @@ import threading
 import wx
 from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin, ColumnSorterMixin
 
+from outspline.static.activestate.tco import tail_call_optimized
+
 from outspline.coreaux_api import log
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
@@ -199,6 +201,10 @@ class SearchView():
         thread.start()
         self.threads += 1
 
+    # use tail call optimization to avoid Python's limit to recursions
+    # (sys.getrecursionlimit()), which would lead to an exception in case of
+    # databases with more items than such limit
+    @tail_call_optimized
     def _search_threaded_continue(self, regexp, filename, iterator, results,
                                                                 search_start):
         try:
@@ -263,14 +269,15 @@ class SearchView():
                     except StopIteration:
                         break
                     else:
-                        # Don't use >= because if looking for an expression that
-                        # starts with '\n', the one starting at
+                        # Don't use >= because if looking for an expression
+                        # that starts with '\n', the one starting at
                         # previous_line_end_index (which is always a '\n'
-                        # character except at the last iteration) will have been
-                        # found at the previous iteration
+                        # character except at the last iteration) will have
+                        # been found at the previous iteration
                         if match.start() > previous_line_end_index:
-                            line, previous_line_end_index = self._find_match_line(
-                                    text, previous_line_end_index, match.start())
+                            line, previous_line_end_index = \
+                                        self._find_match_line(text,
+                                        previous_line_end_index, match.start())
                             results.append((id_, heading, line))
 
         return results
