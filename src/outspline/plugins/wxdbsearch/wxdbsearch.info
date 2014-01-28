@@ -1,5 +1,5 @@
 author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.2
+version = 0.3
 description = Lets search for some item content in the databases.
 website = https://github.com/kynikos/outspline/
 affects_database = no
