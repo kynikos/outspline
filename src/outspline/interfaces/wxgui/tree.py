@@ -292,11 +292,6 @@ class Database(wx.SplitterWindow):
     def show_history(self):
         self.SplitHorizontally(self.treec, self.history.scwindow)
         self.SetSashGravity(1.0)
-
-        # The same workaround for http://trac.wxwidgets.org/ticket/9821
-        # (self.SendSizeEvent()) used in rootw, here would set sash position to
-        # min pane size
-
         self.SetSashPosition(-80)
 
     def hide_history(self):
