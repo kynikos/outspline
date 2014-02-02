@@ -105,7 +105,7 @@ class LinkManager():
 
     def _init_buttons(self):
         self.button_link = wx.Button(self.lpanel,
-                                  label='Link to selected item', size=(-1, 24))
+                                                label='Link to selected item')
 
         self.lpanel.Bind(wx.EVT_BUTTON, self._link_to_selection,
                                                               self.button_link)

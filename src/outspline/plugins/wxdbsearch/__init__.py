@@ -328,11 +328,11 @@ class SearchFilters():
         label = wx.StaticText(mainview.panel, label='Search for:')
         sbox.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
-        self.text = wx.TextCtrl(mainview.panel, size=(-1, 24))
+        self.text = wx.TextCtrl(mainview.panel)
         sbox.Add(self.text, 1, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
-        self.search = wx.Button(mainview.panel, label='Search', size=(-1, 24))
+        self.search = wx.Button(mainview.panel, label='Search')
         sbox.Add(self.search, flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.box.Add(sbox, flag=wx.EXPAND | wx.BOTTOM, border=4)

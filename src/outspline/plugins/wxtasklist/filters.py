@@ -22,6 +22,8 @@ import datetime as _datetime
 from collections import OrderedDict
 
 from outspline.static.wxclasses.time import DateHourCtrl, TimeSpanCtrl
+from outspline.static.wxclasses.misc import NarrowSpinCtrl
+
 import outspline.coreaux_api as coreaux_api
 import outspline.extensions.organism_timer_api as organism_timer_api
 import outspline.interfaces.wxgui_api as wxgui_api
@@ -209,20 +211,24 @@ class FilterEditor():
 
     def _init_header(self):
         sheader = wx.BoxSizer(wx.HORIZONTAL)
-        self.fbox.Add(sheader, flag=wx.EXPAND)
 
-        self.name = wx.TextCtrl(self.panel, value=self.config['name'],
-                                                                 size=(-1, 24))
-        sheader.Add(self.name, 1, flag=wx.BOTTOM, border=4)
+        label = wx.StaticText(self.panel, label='Name:')
+        sheader.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
-        button_save = wx.Button(self.panel, label='Save', size=(60, 24))
-        sheader.Add(button_save, flag=wx.LEFT | wx.BOTTOM, border=4)
+        self.name = wx.TextCtrl(self.panel, value=self.config['name'])
+        sheader.Add(self.name, 1, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                    border=4)
 
-        button_preview = wx.Button(self.panel, label='Preview', size=(60, 24))
-        sheader.Add(button_preview, flag=wx.LEFT | wx.BOTTOM, border=4)
+        button_save = wx.Button(self.panel, label='Save')
+        sheader.Add(button_save, flag=wx.RIGHT, border=4)
 
-        button_cancel = wx.Button(self.panel, label='Cancel', size=(60, 24))
-        sheader.Add(button_cancel, flag=wx.LEFT | wx.BOTTOM, border=4)
+        button_preview = wx.Button(self.panel, label='Preview')
+        sheader.Add(button_preview, flag=wx.RIGHT, border=4)
+
+        button_cancel = wx.Button(self.panel, label='Cancel')
+        sheader.Add(button_cancel)
+
+        self.fbox.Add(sheader, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         self.panel.Bind(wx.EVT_BUTTON, self.save, button_save)
         self.panel.Bind(wx.EVT_BUTTON, self.preview, button_preview)
@@ -285,7 +291,7 @@ class FilterEditor():
         self.parent.GetSizer().Layout()
 
     def _init_filter_types(self):
-        self.choice = wx.Choice(self.panel, size=(-1, 24), choices=())
+        self.choice = wx.Choice(self.panel, choices=())
 
         self.choice.Append("Relative interval (dnyamic)",
                                             clientData=FilterRelativeInterface)
@@ -601,21 +607,21 @@ class FilterMonthStaticInterface():
         monthlabel = wx.StaticText(self.panel, label='Low month:')
         self.fgrid.Add(monthlabel, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        self.month = wx.Choice(self.panel, size=(-1, 24), choices=('January',
+        self.month = wx.Choice(self.panel, choices=('January',
                            'February', 'March', 'April', 'May', 'June', 'July',
                      'August', 'September', 'October', 'November', 'December'))
         self.month.SetSelection(self.values['month'] - 1)
         self.fgrid.Add(self.month)
 
-        self.year = wx.SpinCtrl(self.panel, min=1970, max=9999,
-                                         size=(60, 24), style=wx.SP_ARROW_KEYS)
+        self.year = NarrowSpinCtrl(self.panel, min=1970, max=9999,
+                                                        style=wx.SP_ARROW_KEYS)
         self.year.SetValue(self.values['year'])
         self.fgrid.Add(self.year)
 
         spanlabel = wx.StaticText(self.panel, label='Months span:')
         self.fgrid.Add(spanlabel, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        self.span = wx.SpinCtrl(self.panel, min=1, max=999, size=(48, 21),
+        self.span = NarrowSpinCtrl(self.panel, min=1, max=999,
                                                         style=wx.SP_ARROW_KEYS)
         self.span.SetValue(self.values['span'])
         self.fgrid.Add(self.span)
@@ -669,7 +675,7 @@ class FilterMonthDynamicInterface():
         monthlabel = wx.StaticText(self.panel, label='Low month sample:')
         self.fgrid.Add(monthlabel, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        self.month = wx.Choice(self.panel, size=(-1, 24), choices=('January',
+        self.month = wx.Choice(self.panel, choices=('January',
                            'February', 'March', 'April', 'May', 'June', 'July',
                      'August', 'September', 'October', 'November', 'December'))
         today = _datetime.date.today()
@@ -681,7 +687,7 @@ class FilterMonthDynamicInterface():
 
         # Note that FilterMonthDynamic.compute_limits only supports spans
         # <= 12 months
-        self.span = wx.SpinCtrl(self.panel, min=1, max=12, size=(40, 21),
+        self.span = NarrowSpinCtrl(self.panel, min=1, max=12,
                                                         style=wx.SP_ARROW_KEYS)
         self.span.SetValue(self.values['span'])
         self.fgrid.Add(self.span)
@@ -691,7 +697,7 @@ class FilterMonthDynamicInterface():
 
         # Note that FilterMonthDynamic.compute_limits only supports intervals
         # <= 12 months
-        self.advance = wx.SpinCtrl(self.panel, min=1, max=12, size=(40, 21),
+        self.advance = NarrowSpinCtrl(self.panel, min=1, max=12,
                                                         style=wx.SP_ARROW_KEYS)
         self.advance.SetValue(self.values['advance'])
         self.fgrid.Add(self.advance)

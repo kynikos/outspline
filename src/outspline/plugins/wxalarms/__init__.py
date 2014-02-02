@@ -20,6 +20,8 @@ import os as _os
 import time as _time
 import wx
 
+from outspline.static.wxclasses.misc import NarrowSpinCtrl
+
 from outspline.coreaux_api import log
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
@@ -124,10 +126,10 @@ class AlarmsWindow():
         self.traymenushow.Check(check=self.window.IsShown())
 
     def _init_bottom(self):
-        button_s = wx.Button(self.window, label='Snooze all', size=(-1, 24))
+        button_s = wx.Button(self.window, label='Snooze all')
         self.bottom.Add(button_s, flag=wx.RIGHT, border=4)
 
-        button_d = wx.Button(self.window, label='Dismiss all', size=(-1, 24))
+        button_d = wx.Button(self.window, label='Dismiss all')
         self.bottom.Add(button_d, flag=wx.RIGHT, border=4)
 
         self.bottom.AddStretchSpacer()
@@ -136,14 +138,14 @@ class AlarmsWindow():
         self.bottom.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                       border=4)
 
-        self.number = wx.SpinCtrl(self.window, min=1, max=999, size=(48, 21),
+        self.number = NarrowSpinCtrl(self.window, min=1, max=999,
                                                         style=wx.SP_ARROW_KEYS)
         self.number.SetValue(5)
         self.bottom.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                       border=4)
 
         self.unit = wx.Choice(self.window,
-                choices=('minutes', 'hours', 'days', 'weeks'), size=(100, 21))
+                                choices=('minutes', 'hours', 'days', 'weeks'))
         self.unit.SetSelection(0)
         self.bottom.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                       border=4)
@@ -308,13 +310,13 @@ class Alarm():
                                 '%Y.%m.%d %H:%M', _time.localtime(self.start)))
         hbox.Add(startdate, 1, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        button_s = wx.Button(parent, label='Snooze', size=(-1, 24))
+        button_s = wx.Button(parent, label='Snooze')
         hbox.Add(button_s)
 
-        button_d = wx.Button(parent, label='Dismiss', size=(-1, 24))
+        button_d = wx.Button(parent, label='Dismiss')
         hbox.Add(button_d, flag=wx.LEFT, border=4)
 
-        button_e = wx.Button(parent, label='Open', size=(-1, 24))
+        button_e = wx.Button(parent, label='Open')
         hbox.Add(button_e, flag=wx.LEFT, border=4)
 
         # wx.CP_NO_TLW_RESIZE in conjunction with
@@ -332,7 +334,7 @@ class Alarm():
         self.cpane.SetSizer(self.cbox)
 
 
-        line = wx.StaticLine(parent, size=(1, 1), style=wx.LI_HORIZONTAL)
+        line = wx.StaticLine(parent, style=wx.LI_HORIZONTAL)
         self.pbox.Add(line, flag=wx.EXPAND)
 
         core_api.bind_to_update_item(self.update_info)
@@ -374,7 +376,7 @@ class Alarm():
                 # explicitly
                 ancestor.SetLabel(anc.get_text().partition('\n')[0].replace(
                                                                     '&', '&&'))
-                self.cbox.Add(ancestor, flag=wx.LEFT, border=4)
+                self.cbox.Add(ancestor, flag=wx.LEFT | wx.TOP, border=4)
 
             dbname = wx.StaticText(self.cpane)
             # Setting the label directly when instantiating StaticText through
@@ -382,7 +384,7 @@ class Alarm():
             # mnemonic shortcuts, like in menus
             dbname.SetLabel(_os.path.basename(self.filename).replace('&',
                                                                          '&&'))
-            self.cbox.Add(dbname, flag=wx.LEFT, border=4)
+            self.cbox.Add(dbname, flag=wx.LEFT | wx.TOP, border=4)
 
             # Without these operations, the panel's expanded height would
             # always be the one of its previous state (0 at the first expansion

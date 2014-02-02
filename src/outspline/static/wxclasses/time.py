@@ -19,6 +19,7 @@
 import wx
 
 from choices import MultipleChoiceCtrl
+from misc import NarrowSpinCtrl
 
 
 class HourCtrl():
@@ -31,14 +32,14 @@ class HourCtrl():
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
 
-        self.hourctrl = wx.SpinCtrl(self.panel, min=0, max=23, size=(40, 21),
+        self.hourctrl = NarrowSpinCtrl(self.panel, min=0, max=23,
                                            style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
         box.Add(self.hourctrl, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
 
         slabel = wx.StaticText(self.panel, label=':')
         box.Add(slabel, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        self.minutectrl = wx.SpinCtrl(self.panel, min=0, max=59, size=(40, 21),
+        self.minutectrl = NarrowSpinCtrl(self.panel, min=0, max=59,
                                            style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
         box.Add(self.minutectrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
@@ -71,8 +72,7 @@ class WeekDayCtrl():
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
 
-        self.dayctrl = wx.Choice(self.panel, choices=self.choices,
-                                                                size=(100, 21))
+        self.dayctrl = wx.Choice(self.panel, choices=self.choices)
 
     def set_day(self, day):
         self.dayctrl.SetSelection(self.dayctrl.FindString(day))
@@ -113,15 +113,13 @@ class MonthDayCtrl():
     # Defining value and size here lets derive other classes from this one more
     # easily
     value = '1st'
-    size = (60, 21)
     panel = None
     dayctrl = None
 
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
 
-        self.dayctrl = wx.Choice(self.panel, choices=self.choices,
-                                                                size=self.size)
+        self.dayctrl = wx.Choice(self.panel, choices=self.choices)
 
     def set_day(self, day):
         self.dayctrl.SetSelection(day - 1)
@@ -147,7 +145,6 @@ class MonthInverseDayCtrl(MonthDayCtrl):
                '21st', '22nd', '23rd', '24th', '25th', '26th', '27th', '28th',
                '29th', '30th', '31st')]
     value = 'last'
-    size = (110, 21)
 
     def get_day(self):
         try:
@@ -243,7 +240,7 @@ class DateHourCtrl():
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
 
-        self.datectrl = wx.DatePickerCtrl(self.panel, size=(-1, 21))
+        self.datectrl = wx.DatePickerCtrl(self.panel)
         box.Add(self.datectrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.hourctrl = HourCtrl(self.panel)
@@ -445,16 +442,12 @@ class TimeSpanCtrl():
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
 
-        # Note that min_number's length includes also the minus sign, if
-        # negative
-        width = 8 * max((len(str(min_number)), len(str(max_number)))) + 24
-
-        self.numberctrl = wx.SpinCtrl(self.panel, min=min_number,
-                      max=max_number, size=(width, 21), style=wx.SP_ARROW_KEYS)
+        self.numberctrl = NarrowSpinCtrl(self.panel, min=min_number,
+                                        max=max_number, style=wx.SP_ARROW_KEYS)
         box.Add(self.numberctrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.unitctrl = wx.Choice(self.panel,
-                choices=('minutes', 'hours', 'days', 'weeks'), size=(100, 21))
+                                choices=('minutes', 'hours', 'days', 'weeks'))
         box.Add(self.unitctrl, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT |
                                                             wx.LEFT, border=12)
 

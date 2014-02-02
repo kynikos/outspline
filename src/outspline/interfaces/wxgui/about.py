@@ -28,7 +28,7 @@ _SIZE = 600
 class AboutWindow(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, wx.GetApp().root, title='About Outspline',
-                          size=(_SIZE, _SIZE - 192),
+                          size=(_SIZE, _SIZE * 2 // 3),
                           style=wx.DEFAULT_FRAME_STYLE ^ (wx.RESIZE_BORDER |
                                                           wx.MINIMIZE_BOX |
                                                           wx.MAXIMIZE_BOX) |

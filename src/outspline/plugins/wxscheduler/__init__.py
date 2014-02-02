@@ -126,7 +126,7 @@ class RuleList():
         # up and down
         # Initialize with a small size so that it will expand properly in the
         # sizer
-        self.listview = wx.ListView(self.panel, size=(10, 10),
+        self.listview = wx.ListView(self.panel, size=(1, 1),
                     style=wx.LC_REPORT | wx.LC_NO_HEADER | wx.LC_SINGLE_SEL)
         self.listview.InsertColumn(0, 'Rules')
         hbox.Add(self.listview, 1, flag=wx.EXPAND | wx.RIGHT, border=4)
@@ -137,26 +137,21 @@ class RuleList():
 
         pgrid = wx.GridSizer(3, 2, 4, 4)
 
-        self.button_up = wx.Button(self.panel, label='Move up', size=(-1, 24),
-                                                            style=wx.BU_LEFT)
+        self.button_up = wx.Button(self.panel, label='Move up')
         pgrid.Add(self.button_up)
 
         pgrid.AddSpacer(1)
 
-        self.button_remove = wx.Button(self.panel, label='Remove',
-                                            size=(-1, 24), style=wx.BU_LEFT)
+        self.button_remove = wx.Button(self.panel, label='Remove')
         pgrid.Add(self.button_remove)
 
-        self.button_add = wx.Button(self.panel, label='Add...', size=(-1, 24),
-                                                            style=wx.BU_LEFT)
+        self.button_add = wx.Button(self.panel, label='Add...')
         pgrid.Add(self.button_add)
 
-        self.button_down = wx.Button(self.panel, label='Move down',
-                                            size=(-1, 24), style=wx.BU_LEFT)
+        self.button_down = wx.Button(self.panel, label='Move down')
         pgrid.Add(self.button_down)
 
-        self.button_edit = wx.Button(self.panel, label='Edit...',
-                                            size=(-1, 24), style=wx.BU_LEFT)
+        self.button_edit = wx.Button(self.panel, label='Edit...')
         pgrid.Add(self.button_edit)
 
         self.update_buttons()
@@ -330,13 +325,13 @@ class RuleEditor():
         mbox2 = wx.BoxSizer(wx.HORIZONTAL)
         mbox.Add(mbox2, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.choice = wx.Choice(self.panel, size=(-1, 24), choices=())
-        mbox2.Add(self.choice, 1, flag=wx.EXPAND)
+        self.choice = wx.Choice(self.panel, choices=())
+        mbox2.Add(self.choice, 1, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        button_cancel = wx.Button(self.panel, label='Cancel', size=(60, 24))
+        button_cancel = wx.Button(self.panel, label='Cancel')
         mbox2.Add(button_cancel, flag=wx.LEFT | wx.RIGHT, border=4)
 
-        button_ok = wx.Button(self.panel, label='OK', size=(60, 24))
+        button_ok = wx.Button(self.panel, label='OK')
         mbox2.Add(button_ok)
 
         self.scwindow = wx.ScrolledWindow(self.panel, style=wx.BORDER_NONE)

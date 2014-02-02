@@ -24,6 +24,8 @@ import wx
 from outspline.static.wxclasses.choices import WidgetChoiceCtrl
 from outspline.static.wxclasses.time import (HourCtrl, DateHourCtrl,
                                                                   TimeSpanCtrl)
+from outspline.static.wxclasses.misc import NarrowSpinCtrl
+
 import outspline.extensions.organism_basicrules_api as organism_basicrules_api
 import outspline.plugins.wxscheduler_api as wxscheduler_api
 
@@ -89,7 +91,7 @@ class Rule():
         box.Add(self.ilabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                       border=4)
 
-        self.intervalw = wx.SpinCtrl(self.mpanel, min=1, max=99, size=(48, 21),
+        self.intervalw = NarrowSpinCtrl(self.mpanel, min=1, max=99,
                                                         style=wx.SP_ARROW_KEYS)
         self.intervalw.SetValue(self.original_values['interval'])
         box.Add(self.intervalw, flag=wx.ALIGN_CENTER_VERTICAL)

@@ -19,6 +19,7 @@
 import wx
 
 from outspline.static.wxclasses.time import TimeSpanCtrl
+from outspline.static.wxclasses.misc import NarrowSpinCtrl
 
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
@@ -692,13 +693,13 @@ class SnoozeDialog(wx.Dialog):
         label = wx.StaticText(self, label='Snooze for:')
         ssizer.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
-        self.number = wx.SpinCtrl(self, min=1, max=999, size=(48, 21),
+        self.number = NarrowSpinCtrl(self, min=1, max=999,
                                                         style=wx.SP_ARROW_KEYS)
         self.number.SetValue(5)
         ssizer.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
-        self.unit = wx.ComboBox(self, value='minutes', size=(100, 21),
+        self.unit = wx.ComboBox(self, value='minutes',
                                 choices=('minutes', 'hours', 'days', 'weeks'),
                                 style=wx.CB_READONLY)
         ssizer.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL)

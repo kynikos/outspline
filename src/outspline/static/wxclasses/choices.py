@@ -32,11 +32,11 @@ class WidgetChoiceCtrl():
 
         self.choices = choices
 
-        self.choicectrl = wx.Choice(self.panel, size=(-1, 21),
+        self.choicectrl = wx.Choice(self.panel,
                                      choices=[choice[0] for choice in choices])
         self.choicectrl.Select(initchoice)
         self.box.Add(self.choicectrl, flag=wx.ALIGN_CENTER_VERTICAL |
-                                          wx.EXPAND | wx.RIGHT, border=rborder)
+                                                    wx.RIGHT, border=rborder)
         # Do not call self._update here, in fact classcall will very likely have
         # to use this very object, which at this stage hasn;'t been instantiated
         # yet; call self.force_update after the object is created, instead
@@ -58,7 +58,7 @@ class WidgetChoiceCtrl():
 
         # self.activectrl is None if sel == 0
         if self.activectrl:
-            self.box.Add(self.activectrl)
+            self.box.Add(self.activectrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
         # self.panel.Layout() isn't enough...
         self.panel.GetParent().Layout()
