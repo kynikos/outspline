@@ -153,10 +153,10 @@ class SearchView():
         self.search_threaded_action = self._search_threaded_continue
         self.finish_search_action = self._finish_search_dummy
 
-        if self.filters.option5.GetValue():
-            flags = 0
-        else:
-            flags = re.IGNORECASE
+        flags = re.MULTILINE
+
+        if not self.filters.option5.GetValue():
+            flags |= re.IGNORECASE
 
         try:
             regexp = re.compile(string, flags)
