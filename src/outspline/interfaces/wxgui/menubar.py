@@ -225,7 +225,7 @@ class MenuFile(wx.Menu):
             filename = treedb.get_filename()
             if core_api.check_pending_changes(filename):
                 core_api.save_database(filename)
-                treedb.history.refresh()
+                treedb.dbhistory.refresh()
         core_api.release_databases()
 
     def save_all_databases(self, event):
@@ -233,7 +233,7 @@ class MenuFile(wx.Menu):
         for filename in tuple(tree.dbs.keys()):
             if core_api.check_pending_changes(filename):
                 core_api.save_database(filename)
-                tree.dbs[filename].history.refresh()
+                tree.dbs[filename].dbhistory.refresh()
         core_api.release_databases()
 
     def save_database_as(self, event):
@@ -458,7 +458,7 @@ class MenuDatabase(wx.Menu):
                 else:
                     filename = tab.get_filename()
                     core_api.undo_tree(filename)
-                    tab.history.refresh()
+                    tab.dbhistory.refresh()
                     undo_tree_event.signal(filename=filename, items=read)
 
         core_api.release_databases()
@@ -478,7 +478,7 @@ class MenuDatabase(wx.Menu):
                 else:
                     filename = tab.get_filename()
                     core_api.redo_tree(filename)
-                    tab.history.refresh()
+                    tab.dbhistory.refresh()
                     redo_tree_event.signal(filename=filename, items=read)
 
         core_api.release_databases()
@@ -521,7 +521,7 @@ class MenuDatabase(wx.Menu):
 
                 treedb.select_item(item)
 
-                treedb.history.refresh()
+                treedb.dbhistory.refresh()
 
         core_api.release_databases()
 
@@ -545,7 +545,7 @@ class MenuDatabase(wx.Menu):
 
                 treedb.select_item(item)
 
-                treedb.history.refresh()
+                treedb.dbhistory.refresh()
 
         core_api.release_databases()
 
@@ -569,7 +569,7 @@ class MenuDatabase(wx.Menu):
 
                     treedb.select_item(newitem)
 
-                    treedb.history.refresh()
+                    treedb.dbhistory.refresh()
 
                     move_item_event.signal(filename=filename)
 
@@ -598,7 +598,7 @@ class MenuDatabase(wx.Menu):
 
                     treedb.select_item(newitem)
 
-                    treedb.history.refresh()
+                    treedb.dbhistory.refresh()
 
                     move_item_event.signal(filename=filename)
 
@@ -622,7 +622,7 @@ class MenuDatabase(wx.Menu):
 
                     treedb.select_item(newitem)
 
-                    treedb.history.refresh()
+                    treedb.dbhistory.refresh()
 
                     move_item_event.signal(filename=filename)
 
@@ -665,7 +665,7 @@ class MenuDatabase(wx.Menu):
                                       ''.format(len(items)))
 
                 treedb.remove_items(selection)
-                treedb.history.refresh()
+                treedb.dbhistory.refresh()
                 delete_items_event.signal()
 
         core_api.release_databases()
@@ -902,21 +902,21 @@ class MenuView(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self.toggle_history, self.history)
 
     def update_items(self):
-        self.history.Check(check=history.is_shown())
+        self.history.Check(check=wx.GetApp().history.is_shown())
         menu_view_update_event.signal()
 
     def toggle_history(self, event):
         # Set history.set_shown() here, and not in each
         # tree.dbs[].show_history()... so that this method works also if there
         # aren't open databases
-        if history.is_shown():
+        if wx.GetApp().history.is_shown():
             for filename in tree.dbs:
                 tree.dbs[filename].hide_history()
-            history.set_shown(False)
+            wx.GetApp().history.set_shown(False)
         else:
             for filename in tree.dbs:
                 tree.dbs[filename].show_history()
-            history.set_shown(True)
+            wx.GetApp().history.set_shown(True)
 
 
 class MenuHelp(wx.Menu):

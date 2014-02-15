@@ -21,25 +21,29 @@ import wx
 import outspline.core_api as core_api
 import outspline.coreaux_api as coreaux_api
 
-config = coreaux_api.get_interface_configuration('wxgui')
 
-# Use a copy of the original constant, so that every time a database is opened
-# it reads the current value, and not the one stored in the configuration
-# Do not put this into the class, since it must be an instance-independent
-# value
-_show_history = config.get_bool('show_history')
+class History(object):
+    def __init__(self):
+        config = coreaux_api.get_interface_configuration('wxgui')
+
+        # Use a copy of the original constant, so that every time a database is
+        # opened it reads the current value, and not the one stored in the
+        # configuration
+        # Do not put this into the DatabaseHistory class, since it must be a
+        # database-independent value
+        self.show_status = config.get_bool('show_history')
+
+    def is_shown(self):
+        return self.show_status
+
+    def set_shown(self, flag=True):
+        self.show_status = flag
 
 
-class History():
-    filename = None
-    scwindow = None
-    grid = None
-    colors = None
-    format_action = None
-    cmenu = None
-
+class DatabaseHistory(object):
     def __init__(self, parent, filename):
         self.filename = filename
+        self.config = coreaux_api.get_interface_configuration('wxgui')
         bgcolor = parent.treec.GetBackgroundColour()
 
         self.scwindow = wx.ScrolledWindow(parent, style=wx.BORDER_THEME)
@@ -50,9 +54,9 @@ class History():
         self.grid.AddGrowableCol(1, 1)
         self.scwindow.SetSizer(self.grid)
 
-        self.set_colors(bgcolor)
+        self._set_colors(bgcolor)
 
-        if config.get_bool('debug_history'):
+        if self.config.get_bool('debug_history'):
             self.format_action = lambda row: "".join(("[",
                             str(row['H_status']), "] ", row['H_description']))
         else:
@@ -60,14 +64,14 @@ class History():
 
         self.cmenu = ContextMenu(filename)
 
-        self.scwindow.Bind(wx.EVT_CONTEXT_MENU, self.popup_context_menu)
+        self.scwindow.Bind(wx.EVT_CONTEXT_MENU, self._popup_context_menu)
 
         self.refresh()
 
-    def set_colors(self, bgcolor):
-        coldone = config['history_color_done']
-        colundone = config['history_color_undone']
-        colsaved = config['history_color_saved']
+    def _set_colors(self, bgcolor):
+        coldone = self.config['history_color_done']
+        colundone = self.config['history_color_undone']
+        colsaved = self.config['history_color_saved']
 
         if coldone == 'none':
             colordone = bgcolor
@@ -119,17 +123,12 @@ class History():
 
         self.scwindow.Layout()
 
-    def popup_context_menu(self, event):
+    def _popup_context_menu(self, event):
         self.cmenu.update_items()
         self.scwindow.PopupMenu(self.cmenu)
 
 
 class ContextMenu(wx.Menu):
-    filename = None
-    hide = None
-    undo = None
-    redo = None
-
     def __init__(self, filename):
         wx.Menu.__init__(self)
         self.filename = filename
@@ -150,24 +149,15 @@ class ContextMenu(wx.Menu):
         self.AppendItem(self.undo)
         self.AppendItem(self.redo)
 
-    def reset_items(self):
+    def _reset_items(self):
         self.undo.Enable(False)
         self.redo.Enable(False)
 
     def update_items(self):
-        self.reset_items()
+        self._reset_items()
 
         if core_api.preview_undo_tree(self.filename):
             self.undo.Enable()
 
         if core_api.preview_redo_tree(self.filename):
             self.redo.Enable()
-
-
-def is_shown():
-    return _show_history
-
-
-def set_shown(flag=True):
-    global _show_history
-    _show_history = flag

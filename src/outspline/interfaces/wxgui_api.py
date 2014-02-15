@@ -504,7 +504,7 @@ def update_item_image(filename, id_):
 
 
 def refresh_history(filename):
-    return tree.dbs[filename].history.refresh()
+    return tree.dbs[filename].dbhistory.refresh()
 
 
 def bind_to_creating_tree(handler, bind=True):

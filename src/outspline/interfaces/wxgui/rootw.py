@@ -41,6 +41,7 @@ _ROOT_MIN_SIZE = (600, 408)
 class GUI(wx.App):
     MAIN_ICON_BUNDLE = None
     root = None
+    history = None
     menu = None
     nb_left = None
     nb_right = None
@@ -69,6 +70,7 @@ class GUI(wx.App):
                                                              wx.ART_OTHER))
 
         self.root = MainFrame()
+        self.history = history.History()
 
         self.menu = self.root.menu
         self.nb_left = self.root.mainpanes.nb_left
@@ -93,7 +95,7 @@ class GUI(wx.App):
         # else: event.Veto() doesn't work here
 
     def export_options(self):
-        config['show_history'] = 'yes' if history.is_shown() else 'no'
+        config['show_history'] = 'yes' if self.history.is_shown() else 'no'
         config.export_upgrade(coreaux_api.get_user_config_file())
 
     def handle_uncaught_exception(self, kwargs):

@@ -45,7 +45,7 @@ class Database(wx.SplitterWindow):
     titems = None
     cmenu = None
     ctabmenu = None
-    history = None
+    dbhistory = None
     properties = None
 
     def __init__(self, filename):
@@ -66,8 +66,8 @@ class Database(wx.SplitterWindow):
         self.cmenu = ContextMenu(self)
         self.ctabmenu = TabContextMenu(self.filename)
 
-        self.history = history.History(self, self.filename)
-        self.history.scwindow.Show(False)
+        self.dbhistory = history.DatabaseHistory(self, self.filename)
+        self.dbhistory.scwindow.Show(False)
 
         self.properties = Properties(self.treec)
         self.base_properties = DatabaseProperties(self.properties)
@@ -111,7 +111,7 @@ class Database(wx.SplitterWindow):
         # automatically by the wxsession plugin (those opened manually aren't
         # affected) will have the sash of the SplitterWindow not correctly
         # positioned (only if using SetSashGravity)
-        if history.is_shown():
+        if wx.GetApp().history.is_shown():
             self.show_history()
 
     def veto_label_edit(self, event):
@@ -312,12 +312,12 @@ class Database(wx.SplitterWindow):
         del dbs[self.filename]
 
     def show_history(self):
-        self.SplitHorizontally(self.treec, self.history.scwindow)
+        self.SplitHorizontally(self.treec, self.dbhistory.scwindow)
         self.SetSashGravity(1.0)
         self.SetSashPosition(-80)
 
     def hide_history(self):
-        self.Unsplit(self.history.scwindow)
+        self.Unsplit(self.dbhistory.scwindow)
 
     def get_filename(self):
         return self.filename
