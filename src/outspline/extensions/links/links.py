@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+from outspline.coreaux_api import Event
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
@@ -23,6 +24,10 @@ organism_api = coreaux_api.import_optional_extension_api('organism')
 
 import queries
 import exceptions
+
+upsert_link_event = Event()
+delete_link_event = Event()
+break_link_event = Event()
 
 cdbs = set()
 
@@ -97,6 +102,8 @@ def upsert_link(filename, id_, target, group, description='Insert link',
 
         cursor.execute(query_redo)
     else:
+        oldtarget = False
+
         # Allow the creation of a broken link
         query_redo = queries.links_insert.format(id_, target
                                              if target is not None else 'NULL')
@@ -108,6 +115,9 @@ def upsert_link(filename, id_, target, group, description='Insert link',
 
     core_api.insert_history(filename, group, id_, 'link_upsert', description,
                                             query_redo, None, query_undo, None)
+
+    upsert_link_event.signal(filename=filename, id_=id_, target=target,
+                                                        oldtarget=oldtarget)
 
 
 def synchronize_links_text(filename, target, text, group, description):
@@ -136,6 +146,8 @@ def delete_link(filename, id_, group, description='Delete link'):
 
         core_api.insert_history(filename, group, id_, 'link_delete',
                    description, query_redo, None, query_undo, None)
+
+        delete_link_event.signal(filename=filename, id_=id_, oldtarget=target)
     else:
         core_api.give_connection(filename, qconn)
 
@@ -154,8 +166,11 @@ def break_links(filename, id_, group, description='Break links'):
     cursor = qconn.cursor()
     cursor.execute(queries.links_select_target, (id_, ))
 
+    ids = set()
+
     for row in cursor.fetchall():
         linkid = row['L_id']
+        ids.add(linkid)
 
         query_redo = queries.links_update_id.format('NULL', linkid)
         query_undo = queries.links_update_id.format(id_, linkid)
@@ -171,6 +186,8 @@ def break_links(filename, id_, group, description='Break links'):
         cursor = qconn.cursor()
 
     core_api.give_connection(filename, qconn)
+
+    break_link_event.signal(filename=filename, ids=ids, oldtarget=id_)
 
 
 def break_copied_links(filename, id_):

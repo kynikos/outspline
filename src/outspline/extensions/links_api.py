@@ -53,3 +53,15 @@ def find_broken_links(filename):
 
 def find_first_broken_link(filename):
     return links.find_first_broken_link(filename)
+
+
+def bind_to_upsert_link(handler, bind=True):
+    return links.upsert_link_event.bind(handler, bind)
+
+
+def bind_to_delete_link(handler, bind=True):
+    return links.delete_link_event.bind(handler, bind)
+
+
+def bind_to_break_link(handler, bind=True):
+    return links.break_link_event.bind(handler, bind)
