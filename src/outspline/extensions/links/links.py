@@ -52,22 +52,31 @@ def upsert_link(filename, id_, target, group, description='Insert link',
             if event:
                 core_api.update_item_text(filename, id_, tgttext, group=group,
                                                     description=description)
+
+                # Drop any rules
+                if organism_api:
+                    organism_api.update_item_rules(filename, id_, [],
+                                        group=group, description=description)
             else:
                 core_api.update_item_text_no_event(filename, id_, tgttext,
                                         group=group, description=description)
 
-            # Drop any rules
-            if organism_api:
-                organism_api.update_item_rules(filename, id_, [], group=group,
-                                                       description=description)
+                # Drop any rules
+                if organism_api:
+                    organism_api.update_item_rules_no_event(filename, id_, [],
+                                        group=group, description=description)
     else:
         # Force target = None if the given target no longer exists
         target = None
 
         # Drop any rules
         if organism_api:
-            organism_api.update_item_rules(filename, id_, [], group=group,
+            if event:
+                organism_api.update_item_rules(filename, id_, [], group=group,
                                                        description=description)
+            else:
+                organism_api.update_item_rules_no_event(filename, id_, [],
+                                        group=group, description=description)
 
     # Note that exceptions.CircularLinksError could be raised before getting
     # here
@@ -288,9 +297,9 @@ def paste_link(filename, id_, oldid, group, description):
 
             # Do not emit an update event when pasting links (affects only
             # pasting in the same database), otherwise the interface will react
-            # trying to update the text of the item in the tree, but the item
-            # hasn't been created yet in the tree, resulting in an exception
-            # (KeyError)
+            # trying to update the text and icon of the item in the tree, but
+            # the item hasn't been created yet in the tree, resulting in an
+            # exception (KeyError)
             # Right because the item is inserted in the tree *after* updating
             # its text, it will be added already with the correct text, so
             # there's no need to handle an update event in that case
