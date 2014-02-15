@@ -26,7 +26,7 @@ import notebooks
 import editor
 import textarea
 import msgboxes
-import history
+import logs
 import tree
 import about
 

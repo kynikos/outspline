@@ -26,7 +26,7 @@ import art
 import menubar
 import notebooks
 import msgboxes
-import history
+import logs
 
 config = coreaux_api.get_interface_configuration('wxgui')
 
@@ -70,7 +70,7 @@ class GUI(wx.App):
                                                              wx.ART_OTHER))
 
         self.root = MainFrame()
-        self.logs_configuration = history.LogsConfiguration()
+        self.logs_configuration = logs.LogsConfiguration()
 
         self.menu = self.root.menu
         self.nb_left = self.root.mainpanes.nb_left

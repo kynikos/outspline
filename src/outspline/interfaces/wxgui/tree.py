@@ -23,7 +23,7 @@ from outspline.coreaux_api import Event
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 
-import history
+import logs
 
 creating_tree_event = Event()
 reset_context_menu_event = Event()
@@ -66,7 +66,7 @@ class Database(wx.SplitterWindow):
         self.cmenu = ContextMenu(self)
         self.ctabmenu = TabContextMenu(self.filename)
 
-        self.dbhistory = history.DatabaseHistory(self, self.filename)
+        self.dbhistory = logs.DatabaseHistory(self, self.filename)
         self.dbhistory.scwindow.Show(False)
 
         self.properties = Properties(self.treec)
