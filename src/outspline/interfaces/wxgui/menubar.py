@@ -926,7 +926,7 @@ class MenuHelp(wx.Menu):
         wx.Menu.__init__(self)
 
         self.about = self.Append(wx.ID_ABOUT, '&About Outspline',
-                                 'Information about Outspline and its license')
+                    'Information about Outspline and the installed add-ons')
 
         wx.GetApp().Bind(wx.EVT_MENU, self.show_about, self.about)
 
