@@ -62,22 +62,23 @@ def paste_items(filename, baseid, mode, group, description='Paste items'):
     qmemory = core_api.get_memory_connection()
     cursor = qmemory.cursor()
     cursor.execute(queries.copy_select_parent_roots)
-    roots = cursor.fetchall()
+    old_roots = cursor.fetchall()
     core_api.give_memory_connection(qmemory)
 
-    ids = {}
+    old_to_new_ids = {}
 
     def recurse(baseid, previd):
         cursor.execute(queries.copy_select_parent, (baseid, previd))
         child = cursor.fetchone()
+
         if child:
             id_ = child['C_id']
 
-            ids[id_] = core_api.append_item(filename, ids[baseid], group=group,
-                                            text=child['C_text'],
-                                            description=description)
+            old_to_new_ids[id_] = core_api.append_item(
+                                filename, old_to_new_ids[baseid], group=group,
+                                text=child['C_text'], description=description)
 
-            item_paste_event.signal(filename=filename, id_=ids[id_],
+            item_paste_event.signal(filename=filename, id_=old_to_new_ids[id_],
                                     oldid=id_, group=group,
                                     description=description)
 
@@ -85,39 +86,37 @@ def paste_items(filename, baseid, mode, group, description='Paste items'):
             recurse(baseid, id_)
 
     if mode == 'siblings':
-        roots.reverse()
+        old_roots.reverse()
 
-    for root in roots:
+    for root in old_roots:
         if mode == 'children':
-            ids[root['C_id']] = core_api.append_item(filename, baseid,
-                                                     group=group,
-                                                     text=root['C_text'],
-                                                     description=description)
+            old_to_new_ids[root['C_id']] = core_api.append_item(
+                                filename, baseid, group=group,
+                                text=root['C_text'], description=description)
         elif mode == 'siblings':
-            ids[root['C_id']] = core_api.insert_item_after(filename, baseid,
-                                                       group=group,
-                                                       text=root['C_text'],
-                                                       description=description)
+            old_to_new_ids[root['C_id']] = core_api.insert_item_after(
+                                filename, baseid, group=group,
+                                text=root['C_text'], description=description)
 
-        item_paste_event.signal(filename=filename, id_=ids[root['C_id']],
-                                oldid=root['C_id'], group=group,
-                                description=description)
+        item_paste_event.signal(filename=filename,
+                                            id_=old_to_new_ids[root['C_id']],
+                                            oldid=root['C_id'], group=group,
+                                            description=description)
 
         recurse(root['C_id'], 0)
 
+    new_ids = old_to_new_ids.values()
+    new_roots = [old_to_new_ids[root['C_id']] for root in old_roots]
+
     items_pasted_event.signal()
 
-    newroots = []
-    for r in roots:
-        newroots.append(ids[r['C_id']])
-
-    return newroots
+    return (new_roots, new_ids)
 
 
 def can_paste_safely(filename):
     try:
         paste_check_event.signal(filename=filename,
-                                                   exception=UnsafePasteWarning)
+                                                exception=UnsafePasteWarning)
     except UnsafePasteWarning:
         return False
     else:
