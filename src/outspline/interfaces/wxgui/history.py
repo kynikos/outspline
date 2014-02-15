@@ -22,7 +22,7 @@ import outspline.core_api as core_api
 import outspline.coreaux_api as coreaux_api
 
 
-class History(object):
+class LogsConfiguration(object):
     def __init__(self):
         config = coreaux_api.get_interface_configuration('wxgui')
 
@@ -31,7 +31,7 @@ class History(object):
         # configuration
         # Do not put this into the DatabaseHistory class, since it must be a
         # database-independent value
-        self.show_status = config.get_bool('show_history')
+        self.show_status = config.get_bool('show_logs')
 
     def is_shown(self):
         return self.show_status
@@ -133,14 +133,14 @@ class ContextMenu(wx.Menu):
         wx.Menu.__init__(self)
         self.filename = filename
 
-        self.hide = wx.MenuItem(self, wx.GetApp().menu.view.ID_HISTORY,
-                                                            "&Hide history")
+        self.hide = wx.MenuItem(self, wx.GetApp().menu.view.ID_LOGS,
+                                                                "&Hide logs")
         self.undo = wx.MenuItem(self, wx.GetApp().menu.database.ID_UNDO,
                                                                     "&Undo")
         self.redo = wx.MenuItem(self, wx.GetApp().menu.database.ID_REDO,
                                                                     "&Redo")
 
-        self.hide.SetBitmap(wx.ArtProvider.GetBitmap('@history', wx.ART_MENU))
+        self.hide.SetBitmap(wx.ArtProvider.GetBitmap('@logs', wx.ART_MENU))
         self.undo.SetBitmap(wx.ArtProvider.GetBitmap('@undo', wx.ART_MENU))
         self.redo.SetBitmap(wx.ArtProvider.GetBitmap('@redo', wx.ART_MENU))
 

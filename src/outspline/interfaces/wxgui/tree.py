@@ -106,13 +106,13 @@ class Database(wx.SplitterWindow):
         nb_left = wx.GetApp().nb_left
         nb_left.add_page(self, os.path.basename(self.filename), select=True)
 
-        # The history panel must be shown only *after* adding the page to the
+        # The logs panel must be shown only *after* adding the page to the
         # notebook, otherwise *for*some*reason* the databases opened
         # automatically by the wxsession plugin (those opened manually aren't
         # affected) will have the sash of the SplitterWindow not correctly
         # positioned (only if using SetSashGravity)
-        if wx.GetApp().history.is_shown():
-            self.show_history()
+        if wx.GetApp().logs_configuration.is_shown():
+            self.show_logs()
 
     def veto_label_edit(self, event):
         event.Veto()
@@ -311,12 +311,12 @@ class Database(wx.SplitterWindow):
         global dbs
         del dbs[self.filename]
 
-    def show_history(self):
+    def show_logs(self):
         self.SplitHorizontally(self.treec, self.dbhistory.scwindow)
         self.SetSashGravity(1.0)
         self.SetSashPosition(-80)
 
-    def hide_history(self):
+    def hide_logs(self):
         self.Unsplit(self.dbhistory.scwindow)
 
     def get_filename(self):

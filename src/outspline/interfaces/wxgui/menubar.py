@@ -887,36 +887,36 @@ class MenuEdit(wx.Menu):
 
 
 class MenuView(wx.Menu):
-    ID_HISTORY = None
-    history = None
+    ID_LOGS = None
+    logs = None
 
     def __init__(self):
         wx.Menu.__init__(self)
 
-        self.ID_HISTORY = wx.NewId()
+        self.ID_LOGS = wx.NewId()
 
-        self.history = self.AppendCheckItem(self.ID_HISTORY,
-                                            "Show &history\tCTRL+SHIFT+h",
-                                            "Show history frame")
+        self.logs = self.AppendCheckItem(self.ID_LOGS,
+                                            "Show &logs\tCTRL+SHIFT+l",
+                                            "Show logs panel")
 
-        wx.GetApp().Bind(wx.EVT_MENU, self.toggle_history, self.history)
+        wx.GetApp().Bind(wx.EVT_MENU, self.toggle_logs, self.logs)
 
     def update_items(self):
-        self.history.Check(check=wx.GetApp().history.is_shown())
+        self.logs.Check(check=wx.GetApp().logs_configuration.is_shown())
         menu_view_update_event.signal()
 
-    def toggle_history(self, event):
-        # Set history.set_shown() here, and not in each
-        # tree.dbs[].show_history()... so that this method works also if there
+    def toggle_logs(self, event):
+        # Set logs_configuration.set_shown() here, and not in each
+        # tree.dbs[].show_logs()... so that this method works also if there
         # aren't open databases
-        if wx.GetApp().history.is_shown():
+        if wx.GetApp().logs_configuration.is_shown():
             for filename in tree.dbs:
-                tree.dbs[filename].hide_history()
-            wx.GetApp().history.set_shown(False)
+                tree.dbs[filename].hide_logs()
+            wx.GetApp().logs_configuration.set_shown(False)
         else:
             for filename in tree.dbs:
-                tree.dbs[filename].show_history()
-            wx.GetApp().history.set_shown(True)
+                tree.dbs[filename].show_logs()
+            wx.GetApp().logs_configuration.set_shown(True)
 
 
 class MenuHelp(wx.Menu):
