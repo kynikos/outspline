@@ -44,12 +44,24 @@ def update_item_rules(filename, id_, rules, group,
                                    description=description)
 
 
+def update_item_rules_no_event(filename, id_, rules, group,
+                                            description='Update item rules'):
+    # See update_item_rules for guidelines
+    return items.update_item_rules_no_event(filename, id_, rules, group,
+                                                    description=description)
+
+
 def get_supported_open_databases():
     return items.cdbs
 
 
 def get_item_rules(filename, id_):
     return items.get_item_rules(filename, id_)
+
+
+def get_all_item_rules(filename):
+    return {row['R_id']: items.string_to_rules(row['R_rules']) for row in \
+                                            items.get_all_item_rules(filename)}
 
 
 def get_occurrences_range(mint, maxt):

@@ -341,6 +341,16 @@ def get_item_rules(filename, id_):
     return string_to_rules(row['R_rules'])
 
 
+def get_all_item_rules(filename):
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+    cursor.execute(queries.rules_select)
+    rows = cursor.fetchall()
+    core_api.give_connection(filename, qconn)
+
+    return rows
+
+
 def rules_to_string(rules):
     # rules should always be a list, never equal to None
     return json.dumps(rules, separators=(',',':'))
