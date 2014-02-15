@@ -21,8 +21,11 @@ import wx
 from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin
 
 from outspline.coreaux_api import Event
+import outspline.coreaux_api as coreaux_api
+import outspline.core_api as core_api
 import outspline.extensions.organism_api as organism_api
 import outspline.interfaces.wxgui_api as wxgui_api
+wxcopypaste_api = coreaux_api.import_optional_plugin_api('wxcopypaste')
 
 init_rules_list_event = Event()
 insert_rule_event = Event()
@@ -31,7 +34,53 @@ edit_rule_event = Event()
 choose_rule_event = Event()
 check_editor_event = Event()
 
-items = {}
+base = None
+
+
+class Main(object):
+    def __init__(self):
+        self.items = {}
+        self.itemicons = {}
+
+        wxgui_api.bind_to_creating_tree(self._handle_creating_tree)
+        wxgui_api.bind_to_close_database(self._handle_close_database)
+        wxgui_api.bind_to_open_editor(self._handle_open_editor)
+        wxgui_api.bind_to_close_editor(self._handle_close_editor)
+
+    def _handle_creating_tree(self, kwargs):
+        filename = kwargs['filename']
+
+        if filename in organism_api.get_supported_open_databases():
+            self.itemicons[filename] = TreeItemIcons(filename)
+
+    def _handle_close_database(self, kwargs):
+        try:
+            del self.itemicons[kwargs['filename']]
+        except KeyError:
+            pass
+
+    def _handle_open_editor(self, kwargs):
+        filename = kwargs['filename']
+
+        if filename in organism_api.get_supported_open_databases():
+            id_ = kwargs['id_']
+            itemid = self._make_itemid(filename, id_)
+            self.items[itemid] = Scheduler(filename, id_)
+            self.items[itemid].post_init()
+
+    def _handle_close_editor(self, kwargs):
+        itemid = self._make_itemid(kwargs['filename'], kwargs['id_'])
+
+        try:
+            del self.items[itemid]
+        except KeyError:
+            pass
+
+    def get_scheduler(self, filename, id_):
+        return self.items[self._make_itemid(filename, id_)]
+
+    def _make_itemid(self, filename, id_):
+        return '_'.join((filename, str(id_)))
 
 
 class Scheduler():
@@ -91,10 +140,6 @@ class Scheduler():
         self.rule_list.panel.Show(False)
         self.rule_editor.panel.Show()
         self.resize()
-
-    @staticmethod
-    def make_itemid(filename, id_):
-        return '_'.join((filename, str(id_)))
 
 
 class RuleList():
@@ -392,18 +437,70 @@ class RuleEditor():
         self.parent.show_list()
 
 
-def handle_open_editor(kwargs):
-    filename = kwargs['filename']
-    id_ = kwargs['id_']
+class TreeItemIcons(object):
+    def __init__(self, filename):
+        self.filename = filename
 
-    if filename in organism_api.get_supported_open_databases():
-        itemid = Scheduler.make_itemid(filename, id_)
+        config = coreaux_api.get_plugin_configuration('wxscheduler')
+        char = config['icon_rules']
 
-        global items
-        items[itemid] = Scheduler(filename, id_)
+        if char != '':
+            bits_to_colour = {1: wx.Colour()}
+            bits_to_colour[1].SetFromString(config['icon_rules_color'])
 
-        items[itemid].post_init()
+            self.property_shift, self.property_mask = \
+                                            wxgui_api.add_item_property(
+                                            filename, 1, char, bits_to_colour)
+
+            organism_api.bind_to_update_item_rules_conditional(
+                                                    self._handle_update_rules)
+
+            wxgui_api.bind_to_open_database(self._handle_open_database)
+            wxgui_api.bind_to_undo_tree(self._handle_history)
+            wxgui_api.bind_to_redo_tree(self._handle_history)
+
+            if wxcopypaste_api:
+                wxcopypaste_api.bind_to_items_pasted(self._handle_paste)
+
+    def _handle_open_database(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            self._update_all_items()
+
+    def _handle_update_rules(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            self._update_item(kwargs['id_'], kwargs['rules'])
+
+    def _handle_history(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            for id_ in kwargs['items']:
+                # The history action may have deleted the item
+                if core_api.is_item(self.filename, id_):
+                    rules = organism_api.get_item_rules(self.filename, id_)
+                    self._update_item(id_, rules)
+
+    def _handle_paste(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            for id_ in kwargs['ids']:
+                rules = organism_api.get_item_rules(self.filename, id_)
+                self._update_item(id_, rules)
+
+    def _update_all_items(self):
+        itemrules = organism_api.get_all_item_rules(self.filename)
+
+        for id_ in itemrules:
+            self._update_item(id_, itemrules[id_])
+
+    def _update_item(self, id_, rules):
+        if len(rules) > 0:
+            bits = 1 << self.property_shift
+        else:
+            bits = 0 << self.property_shift
+
+        wxgui_api.update_item_properties(self.filename, id_, bits,
+                                                            self.property_mask)
+        wxgui_api.update_item_image(self.filename, id_)
 
 
 def main():
-    wxgui_api.bind_to_open_editor(handle_open_editor)
+    global base
+    base = Main()

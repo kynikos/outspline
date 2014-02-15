@@ -194,13 +194,14 @@ class MenuDev(wx.Menu):
                 id_ = self._populate_tree_item(mode, filename, itemid,
                                                 group, text, description)
 
+                self._populate_tree_gui(mode, filename, itemid, id_, text)
+
+                # Rules must be created *after* self._populate_tree_gui
                 if organism_api and wxscheduler_basicrules_api and \
                         filename in \
                         organism_api.get_supported_open_databases():
                     self._populate_tree_rules(filename, id_, group,
                                                         description)
-
-                self._populate_tree_gui(mode, filename, itemid, id_, text)
 
                 # Links must be created *after* self._populate_tree_gui
                 if links_api and wxlinks_api and len(dbitems) > 0 and \
