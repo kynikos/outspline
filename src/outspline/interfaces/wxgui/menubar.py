@@ -459,7 +459,7 @@ class MenuDatabase(wx.Menu):
                     filename = tab.get_filename()
                     core_api.undo_tree(filename)
                     tab.history.refresh()
-                    undo_tree_event.signal(filename=filename)
+                    undo_tree_event.signal(filename=filename, items=read)
 
         core_api.release_databases()
 
@@ -479,7 +479,7 @@ class MenuDatabase(wx.Menu):
                     filename = tab.get_filename()
                     core_api.redo_tree(filename)
                     tab.history.refresh()
-                    redo_tree_event.signal(filename=filename)
+                    redo_tree_event.signal(filename=filename, items=read)
 
         core_api.release_databases()
 
@@ -496,26 +496,28 @@ class MenuDatabase(wx.Menu):
 
             # If multiple items are selected, selection will be bool (False)
             if isinstance(selection, list):
+                text = 'New item'
+
                 if len(selection) > 0:
                     base = selection[0]
                     baseid = treedb.get_item_id(base)
 
                     id_ = core_api.create_sibling(filename=filename,
                                                     baseid=baseid,
-                                                    text='New item',
+                                                    text=text,
                                                     description='Insert item')
 
-                    item = treedb.insert_item(base, 'after', id_=id_)
+                    item = treedb.insert_item(base, 'after', id_, text=text)
                 else:
                     base = treedb.get_root()
                     baseid = None
 
                     id_ = core_api.create_child(filename=filename,
                                                     baseid=baseid,
-                                                    text='New item',
+                                                    text=text,
                                                     description='Insert item')
 
-                    item = treedb.insert_item(base, 'append', id_=id_)
+                    item = treedb.insert_item(base, 'append', id_, text=text)
 
                 treedb.select_item(item)
 
@@ -533,12 +535,13 @@ class MenuDatabase(wx.Menu):
                 base = selection[0]
                 filename = treedb.get_filename()
                 baseid = treedb.get_item_id(base)
+                text = 'New item'
 
                 id_ = core_api.create_child(filename=filename, baseid=baseid,
-                                            text='New item',
+                                            text=text,
                                             description='Insert sub-item')
 
-                item = treedb.insert_item(base, 'append', id_=id_)
+                item = treedb.insert_item(base, 'append', id_, text=text)
 
                 treedb.select_item(item)
 

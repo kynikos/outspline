@@ -20,10 +20,12 @@ import os
 import wx
 
 from outspline.coreaux_api import Event
+import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 
 import history
 
+creating_tree_event = Event()
 reset_context_menu_event = Event()
 popup_context_menu_event = Event()
 
@@ -44,9 +46,11 @@ class Database(wx.SplitterWindow):
     cmenu = None
     ctabmenu = None
     history = None
+    properties = None
 
-    def __init__(self, filename, parent):
-        wx.SplitterWindow.__init__(self, parent, style=wx.SP_LIVE_UPDATE)
+    def __init__(self, filename):
+        wx.SplitterWindow.__init__(self, wx.GetApp().nb_left,
+                                                    style=wx.SP_LIVE_UPDATE)
 
         # Prevent the window from unsplitting when dragging the sash to the
         # border
@@ -55,7 +59,7 @@ class Database(wx.SplitterWindow):
         self.filename = filename
 
         self.treec = Tree(self)
-        data = wx.TreeItemData(0)
+        data = wx.TreeItemData((0, 0))
         self.root = self.treec.AddRoot(text='root', data=data)
         self.titems = {0: data}
 
@@ -65,9 +69,10 @@ class Database(wx.SplitterWindow):
         self.history = history.History(self, self.filename)
         self.history.scwindow.Show(False)
 
-        self.Initialize(self.treec)
+        self.properties = Properties(self.treec)
+        self.base_properties = DatabaseProperties(self.properties)
 
-        self.create()
+        self.Initialize(self.treec)
 
         self.treec.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.veto_label_edit)
         self.treec.Bind(wx.EVT_TREE_ITEM_MENU, self.popup_item_menu)
@@ -80,6 +85,35 @@ class Database(wx.SplitterWindow):
         core_api.bind_to_history_update(self.handle_history_update)
         core_api.bind_to_history_remove(self.handle_history_remove)
 
+    def post_init(self):
+        creating_tree_event.signal(filename=self.filename)
+
+        # Assign an ImageList only *after* instantiating the class, because its
+        # size must be calculated after the various plugins have added their
+        # properties, which requires the filename to be in the dictionary
+        # Use a separate ImageList for each database, as they may support a
+        # different subset of the installed plugins
+        # Maintaining a common ImageList would be impossible anyway, because an
+        # ImageList can be assigned only once per TreeCtrl
+        imagelist = self.properties.get_empty_image_list()
+        self.treec.AssignImageList(imagelist)
+
+        # Create the tree only *after* instantiating the class (and assigning
+        # an ImageList), because actions like the creation of item images rely
+        # on the filename to be in the dictionary
+        self.create()
+
+        nb_left = wx.GetApp().nb_left
+        nb_left.add_page(self, os.path.basename(self.filename), select=True)
+
+        # The history panel must be shown only *after* adding the page to the
+        # notebook, otherwise *for*some*reason* the databases opened
+        # automatically by the wxsession plugin (those opened manually aren't
+        # affected) will have the sash of the SplitterWindow not correctly
+        # positioned (only if using SetSashGravity)
+        if history.is_shown():
+            self.show_history()
+
     def veto_label_edit(self, event):
         event.Veto()
 
@@ -90,8 +124,8 @@ class Database(wx.SplitterWindow):
         # item and not its text
         if kwargs['filename'] == self.filename and kwargs['text'] is not None:
             treeitem = self.find_item(kwargs['id_'])
-            title = self.make_item_title(kwargs['text'])
-            self.set_item_title(treeitem, title)
+            self.set_item_label(treeitem, kwargs['text'])
+            self.update_item_image(treeitem)
 
     def handle_history_insert(self, kwargs):
         filename = kwargs['filename']
@@ -103,12 +137,10 @@ class Database(wx.SplitterWindow):
 
             if previous == 0:
                 par = self.find_item(parent)
-                label = self.make_item_title(text)
-                self.insert_item(par, 0, label=label, id_=id_)
+                self.insert_item(par, 0, id_, text=text)
             else:
                 prev = self.find_item(previous)
-                label = self.make_item_title(text)
-                self.insert_item(prev, 'after', label=label, id_=id_)
+                self.insert_item(prev, 'after', id_, text=text)
 
     def handle_history_update(self, kwargs):
         filename = kwargs['filename']
@@ -120,13 +152,12 @@ class Database(wx.SplitterWindow):
 
             item = self.find_item(id_)
 
-            # Reset the label before moving the item, otherwise the item has to
-            # be found again, or the program crashes
-            label = self.make_item_title(text)
-            self.set_item_title(item, label)
+            # Reset label and image before moving the item, otherwise the item
+            # has to be found again, or the program crashes
+            self.set_item_label(item, text)
+            self.update_item_image(item)
 
-            if self.get_item_id(
-                                self.get_item_parent(item)) != parent or \
+            if self.get_item_id(self.get_item_parent(item)) != parent or \
                                 (self.get_item_previous(item).IsOk() and \
                                 self.get_item_id(
                                 self.get_item_previous(item)) != previous) or \
@@ -149,62 +180,53 @@ class Database(wx.SplitterWindow):
 
     @classmethod
     def open(cls, filename):
-        nb_left = wx.GetApp().nb_left
         global dbs
-        dbs[filename] = cls(filename, nb_left)
+        dbs[filename] = cls(filename)
 
-        nb_left.add_page(dbs[filename], os.path.basename(filename),
-                         select=True)
+        dbs[filename].post_init()
 
-        # The history panel must be shown only *after* adding the page to the
-        # notebook, otherwise *for*some*reason* the databases opened
-        # automatically by the wxsession plugin (those opened manually aren't
-        # affected) will have the sash of the SplitterWindow not correctly
-        # positioned (only if using SetSashGravity)
-        if history.is_shown():
-            dbs[filename].show_history()
+    def insert_item(self, base, mode, id_, text=None, label=None,
+                                            properties=None, imageindex=None):
+        if label is None or properties is None or imageindex is None:
+            label = self.make_item_label(text)
+            multiline_bits, multiline_mask = \
+                    self.base_properties.get_item_multiline_state(text, label)
+            properties = self._compute_property_bits(0, multiline_bits,
+                                                                multiline_mask)
+            imageindex = self.properties.get_image(properties)
 
-    def insert_item(self, base, mode, label=None, data=None, id_=None):
-        # The empty string is a valid label
-        if not label and label != '':
-            label = self.make_item_title(core_api.get_item_text(self.filename,
-                                                                id_))
-
-        if not data:
-            data = wx.TreeItemData(id_)
-
-        if id_ == None:
-            id_ = data.GetData()
-
+        data = wx.TreeItemData((id_, properties))
         self.titems[id_] = data
 
+        # If no ImageList is assigned, or if it's empty, setting
+        # image=imageindex has no effect
         if mode == 'append':
-            return self.treec.AppendItem(base, text=label, data=data)
+            return self.treec.AppendItem(base, text=label, image=imageindex,
+                                                                    data=data)
         elif mode == 'after':
             return self.treec.InsertItem(self.get_item_parent(base),
-                                         idPrevious=base,
-                                         text=label, data=data)
+                    idPrevious=base, text=label, image=imageindex, data=data)
         elif mode == 'before':
             return self.treec.InsertItemBefore(self.get_item_parent(base),
-                                         self.get_item_index(base), text=label,
-                                         data=data)
+                                        self.get_item_index(base), text=label,
+                                        image=imageindex, data=data)
         elif isinstance(mode, int):
             return self.treec.InsertItemBefore(base, mode, text=label,
-                                               data=data)
+                                                image=imageindex, data=data)
         else:
             return False
 
     def create(self, base=None, previd=0):
         if not base:
             base = self.treec.GetRootItem()
-        baseid = self.get_item_id(base)
 
+        baseid = self.get_item_id(base)
         child = core_api.get_tree_item(self.filename, baseid, previd)
+
         if child:
             id_ = child['id_']
-            title = self.make_item_title(child['text'])
 
-            titem = self.insert_item(base, 'append', label=title, id_=id_)
+            titem = self.insert_item(base, 'append', id_, text=child['text'])
 
             self.create(base=titem, previd=0)
             self.create(base=base, previd=id_)
@@ -222,11 +244,11 @@ class Database(wx.SplitterWindow):
             for item in selection:
                 for ancestor in self.get_item_ancestors(item):
                     if ancestor in selection:
-                        # Note that UnselectItem may actually select if the item
-                        # is not selected, see
+                        # Note that UnselectItem may actually select if the
+                        # item is not selected, see
                         # http://trac.wxwidgets.org/ticket/11157
-                        # However in this case the item has just been checked if
-                        # selected, so no further checks must be done
+                        # However in this case the item has just been checked
+                        # if selected, so no further checks must be done
                         self.treec.UnselectItem(item)
         elif descendants == True:
             for item in selection:
@@ -234,28 +256,28 @@ class Database(wx.SplitterWindow):
                     # If the descendant is already selected, SelectItem would
                     # actually deselect it, see
                     # http://trac.wxwidgets.org/ticket/11157
-                    # This would e.g. generate the following bug: create an item
-                    # (A), create a sibling (B) of A, create a child (C) of B,
-                    # select *all* three items (thus expanding B) and try to
-                    # delete them: without the IsSelected check it would go in
-                    # an infinite loop since C gets deselected and the function
-                    # that deletes items has to start from the items that do not
-                    # have children
+                    # This would e.g. generate the following bug: create an
+                    # item (A), create a sibling (B) of A, create a child (C)
+                    # of B, select *all* three items (thus expanding B) and try
+                    # to delete them: without the IsSelected check it would go
+                    # in an infinite loop since C gets deselected and the
+                    # function that deletes items has to start from the items
+                    # that do not have children
                     if not self.treec.IsSelected(descendant):
                         self.treec.SelectItem(descendant)
 
         return self.treec.GetSelections()
 
     def move_item(self, treeitem, base, mode='append'):
-        title = self.treec.GetItemText(treeitem)
-        # Do not just copy data with self.treec.GetItemData() because it causes
-        # crashes even without throwing exceptions or errors in console!
-        data = wx.TreeItemData(self.treec.GetPyData(treeitem))
+        label = self.treec.GetItemText(treeitem)
+        id_, properties = self.treec.GetItemPyData(treeitem)
+        imageindex = self.treec.GetItemImage(treeitem)
 
         if mode in ('append', 'after', 'before') or isinstance(mode, int):
             # When moving down, add 1 to the destination index, because the
             # move method first copies the item, and only afterwards deletes it
-            newtreeitem = self.insert_item(base, mode, label=title, data=data)
+            newtreeitem = self.insert_item(base, mode, id_, label=label,
+                                properties=properties, imageindex=imageindex)
         else:
             raise ValueError()
 
@@ -278,7 +300,7 @@ class Database(wx.SplitterWindow):
             for item in treeitems:
                 if not self.treec.ItemHasChildren(item):
                     del treeitems[treeitems.index(item)]
-                    id_ = self.treec.GetPyData(item)
+                    id_ = self.treec.GetItemPyData(item)[0]
                     self.treec.Delete(item)
                     del self.titems[id_]
 
@@ -304,7 +326,7 @@ class Database(wx.SplitterWindow):
         return self.treec.GetRootItem()
 
     def get_item_id(self, treeitem):
-        return self.treec.GetPyData(treeitem)
+        return self.treec.GetItemPyData(treeitem)[0]
 
     def get_item_index(self, treeitem):
         parent = self.get_item_parent(treeitem)
@@ -353,11 +375,37 @@ class Database(wx.SplitterWindow):
         recurse(treeitem)
         return descendants
 
-    def set_item_title(self, treeitem, title):
-        self.treec.SetItemText(treeitem, title)
+    @staticmethod
+    def make_item_label(text):
+        return text.partition('\n')[0]
 
-    def set_item_font(self, treeitem, wxfont):
-        self.treec.SetItemFont(treeitem, wxfont)
+    def set_item_label(self, treeitem, text):
+        label = self.make_item_label(text)
+        self.treec.SetItemText(treeitem, label)
+        multiline_bits, multiline_mask = \
+                    self.base_properties.get_item_multiline_state(text, label)
+        self.update_item_properties(treeitem, multiline_bits, multiline_mask)
+
+    def update_item_image(self, treeitem):
+        bits = self.treec.GetItemPyData(treeitem)[1]
+        imageindex = self.properties.get_image(bits)
+        # If no ImageList is assigned, or if it's empty, SetItemImage has
+        # no effect
+        self.treec.SetItemImage(treeitem, imageindex)
+
+    @staticmethod
+    def _compute_property_bits(old_property_bits, new_property_bits,
+                                                                property_mask):
+        return (old_property_bits & ~property_mask) | new_property_bits
+
+    def update_item_properties(self, treeitem, property_bits, property_mask):
+        data = self.treec.GetItemPyData(treeitem)
+        new_bits = self._compute_property_bits(data[1], property_bits,
+                                                                property_mask)
+        self.treec.SetItemPyData(treeitem, (data[0], new_bits))
+
+    def get_properties(self):
+        return self.properties
 
     def select_item(self, treeitem):
         self.treec.UnselectAll()
@@ -381,11 +429,6 @@ class Database(wx.SplitterWindow):
         # http://trac.wxwidgets.org/ticket/11157
         if self.treec.IsSelected(treeitem):
             self.treec.UnselectItem(treeitem)
-
-    @staticmethod
-    def make_item_title(text):
-        title = text.partition('\n')[0]
-        return title
 
     def is_database_root(self, treeitem):
         return self.treec.GetItemParent(treeitem) == self.treec.GetRootItem()
@@ -422,6 +465,161 @@ class Database(wx.SplitterWindow):
     def get_tab_context_menu(self):
         self.ctabmenu.update()
         return self.ctabmenu
+
+
+class DatabaseProperties(object):
+    def __init__(self, properties):
+        config = coreaux_api.get_interface_configuration('wxgui')
+        multichar = config['icon_multiline']
+
+        if multichar != '':
+            bits_to_colour = {
+                1: wx.Colour(),
+            }
+            bits_to_colour[1].SetFromString(config['icon_multiline_color'])
+
+            self.multiline_shift, self.multiline_mask = properties.add(1,
+                                                    multichar, bits_to_colour)
+
+    def get_item_multiline_state(self, text, label):
+        if text != label:
+            bits = 1 << self.multiline_shift
+        else:
+            bits = 0
+
+        return (bits, self.multiline_mask)
+
+
+class Properties(object):
+    def __init__(self, widget):
+        self.widget = widget
+
+        self.SPACING = 2
+        self.bitsn = 0
+        # Use a list also to preserve the order of the properties
+        self.char_data = []
+        self.bits_to_image = {}
+
+        self._init_font()
+        self._compute_off_colour()
+
+    def _init_font(self):
+        self.font = self.widget.GetFont()
+        self.font.SetWeight(wx.FONTWEIGHT_BOLD)
+
+    def _compute_off_colour(self):
+        self.bgcolour = self.widget.GetBackgroundColour()
+        avg = (self.bgcolour.Red() + self.bgcolour.Green() +
+                                                    self.bgcolour.Blue()) // 3
+        DIFF = 16
+
+        if avg > 127:
+            self.off_colour = wx.Colour(max((self.bgcolour.Red() - DIFF, 0)),
+                                      max((self.bgcolour.Green() - DIFF, 0)),
+                                      max((self.bgcolour.Blue() - DIFF, 0)))
+        else:
+            self.off_colour = wx.Colour(min((self.bgcolour.Red() + DIFF, 255)),
+                                    min((self.bgcolour.Green() + DIFF, 255)),
+                                    min((self.bgcolour.Blue() + DIFF, 255)))
+
+    def add(self, bitsn, character, bits_to_colour):
+        dc = wx.MemoryDC()
+        dc.SelectObject(wx.NullBitmap)
+        dc.SetFont(self.font)
+        extent = dc.GetTextExtent(character)
+
+        # Be safe and only check the width, because if in future versions of
+        # wxPython, dc.GetTextExtent returned a Size object instead of a tuple,
+        # it would never match (0, 0)
+        if extent[0] != 0:
+            shift = self.bitsn
+            mask = int('1' * bitsn) << shift
+            self.bitsn += bitsn
+            shifted_bits_to_colour = {}
+
+            for bits in bits_to_colour:
+                shifted_bits_to_colour[bits << shift] = bits_to_colour[bits]
+
+            self.char_data.append((mask, character, extent,
+                                                    shifted_bits_to_colour))
+
+        return (shift, mask)
+
+    def _compute_required_size(self):
+        width = 0
+        height = 0
+
+        for data in self.char_data:
+            width += data[2][0] + self.SPACING
+            height = max((height, data[2][1]))
+
+        width -= self.SPACING
+
+        return (width, height)
+
+    def get_empty_image_list(self):
+        # Sort char_data by character to make sure that the icons always appear
+        # in the same order regardless of race conditions when loading the
+        # plugins
+        self.char_data.sort(key=lambda data: data[1])
+
+        self.required_size = self._compute_required_size()
+
+        # required_size is 0 if no properties have been added, or if they've
+        # been added with empty strings
+        if self.required_size == (0, 0):
+            self.get_image = self._get_image_dummy
+        else:
+            self.get_image = self._get_image_real
+
+        return wx.ImageList(*self.required_size)
+
+    def _get_image_real(self, bits):
+        try:
+            imageindex = self.bits_to_image[bits]
+        except KeyError:
+            bitmap = self._make_image(bits)
+            imagelist = self.widget.GetImageList()
+            imageindex = imagelist.Add(bitmap)
+            self.bits_to_image[bits] = imageindex
+
+        return imageindex
+
+    def _get_image_dummy(self, bits):
+        # If no properties have been added, use the default image index (-1)
+        return -1
+
+    def _make_image(self, item_bits):
+        bitmap = wx.EmptyBitmap(*self.required_size, depth=32)
+
+        dc = wx.MemoryDC()
+        dc.SelectObject(bitmap)
+        dc.SetBackground(wx.Brush(self.bgcolour))
+        dc.Clear()
+
+        gc = wx.GraphicsContext.Create(dc)
+
+        x = 0
+
+        for property_bits, character, extent, bits_to_colour in self.char_data:
+            bits = (property_bits & item_bits)
+
+            try:
+                colour = bits_to_colour[bits]
+            except KeyError:
+                colour = self.off_colour
+
+            gc.SetFont(gc.CreateFont(self.font, colour))
+
+            y = self.required_size[1] - extent[1]
+            gc.DrawText(character, x, y)
+
+            x += extent[0] + self.SPACING
+
+        bitmap.SetMaskColour(self.bgcolour)
+        dc.SelectObject(wx.NullBitmap)
+
+        return bitmap
 
 
 class ContextMenu(wx.Menu):

@@ -18,6 +18,8 @@
 
 import wx
 
+import outspline.core_api as core_api
+
 from wxgui import rootw, notebooks, editor, menubar, tree, databases
 
 
@@ -235,7 +237,7 @@ def simulate_close_database(no_confirm=False):
 
 def simulate_close_all_databases(no_confirm=False):
     return wx.GetApp().menu.file.close_all_databases(None,
-                                                          no_confirm=no_confirm)
+                                                        no_confirm=no_confirm)
 
 
 def simulate_undo_tree(no_confirm=False):
@@ -445,23 +447,23 @@ def get_root_tree_item(filename):
 
 
 def append_item(filename, baseid, id_, text):
-    label = tree.dbs[filename].make_item_title(text)
     base = tree.dbs[filename].find_item(baseid)
-    return tree.dbs[filename].insert_item(base, 'append', label=label, id_=id_)
+    return tree.dbs[filename].insert_item(base, 'append', id_, text=text)
 
 
 def insert_item_after(filename, baseid, id_, text):
-    label = tree.dbs[filename].make_item_title(text)
     base = tree.dbs[filename].find_item(baseid)
-    return tree.dbs[filename].insert_item(base, 'after', label=label, id_=id_)
+    return tree.dbs[filename].insert_item(base, 'after', id_, text=text)
 
 
 def append_tree_item(filename, baseid, id_):
-    return tree.dbs[filename].insert_item(baseid, 'append', id_=id_)
+    text = core_api.get_item_text(filename, id_)
+    return tree.dbs[filename].insert_item(baseid, 'append', id_, text=text)
 
 
 def insert_tree_item_after(filename, baseid, id_):
-    return tree.dbs[filename].insert_item(baseid, 'after', id_=id_)
+    text = core_api.get_item_text(filename, id_)
+    return tree.dbs[filename].insert_item(baseid, 'after', id_, text=text)
 
 
 def create_tree(filename, treeroot):
@@ -472,15 +474,6 @@ def remove_tree_items(filename, treeitems):
     return tree.dbs[filename].remove_items(treeitems)
 
 
-def set_item_font(filename, id_, wxfont):
-    try:
-        treeitem = tree.dbs[filename].find_item(id_)
-    except KeyError:
-        return False
-    else:
-        return tree.dbs[filename].set_item_font(treeitem, wxfont)
-
-
 def get_tree_context_menu(filename):
     return tree.dbs[filename].cmenu
 
@@ -489,8 +482,33 @@ def add_tree_context_menu_item(filename, item):
     return tree.dbs[filename].cmenu.InsertItem(3, item)
 
 
+def add_item_property(filename, bitsn, character, bits_to_colour):
+    return tree.dbs[filename].get_properties().add(bitsn, character,
+                                                                bits_to_colour)
+
+
+def update_item_properties(filename, id_, property_bits, property_mask):
+    try:
+        treeitem = tree.dbs[filename].find_item(id_)
+    except KeyError:
+        return False
+    else:
+        tree.dbs[filename].update_item_properties(treeitem, property_bits,
+                                                                property_mask)
+        return True
+
+
+def update_item_image(filename, id_):
+    treeitem = tree.dbs[filename].find_item(id_)
+    return tree.dbs[filename].update_item_image(treeitem)
+
+
 def refresh_history(filename):
     return tree.dbs[filename].history.refresh()
+
+
+def bind_to_creating_tree(handler, bind=True):
+    return tree.creating_tree_event.bind(handler, bind)
 
 
 def bind_to_reset_tree_context_menu(handler, bind=True):
