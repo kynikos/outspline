@@ -301,7 +301,6 @@ class MenuDev(wx.Menu):
             # *before* the new item was appended
             target = random.choice(dbitems)
             links_api.make_link(filename, id_, target, group, description)
-            wxlinks_api.update_items_formatting(filename)
 
     def _populate_tree_gui(self, mode, filename, itemid, id_, text):
         if mode == 'child':

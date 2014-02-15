@@ -18,28 +18,64 @@
 
 import wx
 
-from outspline.coreaux_api import Event
 import outspline.coreaux_api as coreaux_api
 import outspline.extensions.links_api as links_api
 import outspline.interfaces.wxgui_api as wxgui_api
 wxcopypaste_api = coreaux_api.import_optional_plugin_api('wxcopypaste')
 
-items = {}
-formatted_items = {}
+base = None
 
 # See #214 for features left to be implemented ****************************************
 # https://github.com/kynikos/outspline/issues/214 *************************************
 
 
-class LinkManager():
-    filename = None
-    id_ = None
-    fpanel = None
-    lpanel = None
-    origtarget = None
-    target = None
-    button_link = None
+class Main(object):
+    def __init__(self):
+        self.items = {}
+        self.itemicons = {}
 
+        wxgui_api.bind_to_creating_tree(self._handle_creating_tree)
+        wxgui_api.bind_to_close_database(self._handle_close_database)
+        wxgui_api.bind_to_open_editor(self._handle_open_editor)
+        wxgui_api.bind_to_close_editor(self._handle_close_editor)
+
+    def _handle_creating_tree(self, kwargs):
+        filename = kwargs['filename']
+
+        if filename in links_api.get_supported_open_databases():
+            self.itemicons[filename] = TreeItemIcons(filename)
+
+    def _handle_close_database(self, kwargs):
+        try:
+            del self.itemicons[kwargs['filename']]
+        except KeyError:
+            pass
+
+    def _handle_open_editor(self, kwargs):
+        filename = kwargs['filename']
+
+        if filename in links_api.get_supported_open_databases():
+            id_ = kwargs['id_']
+            itemid = self._make_itemid(filename, id_)
+            self.items[itemid] = LinkManager(filename, id_)
+            self.items[itemid].post_init()
+
+    def _handle_close_editor(self, kwargs):
+        itemid = self._make_itemid(kwargs['filename'], kwargs['id_'])
+
+        try:
+            del self.items[itemid]
+        except KeyError:
+            pass
+
+    def get_link_manager(self, filename, id_):
+        return self.items[self._make_itemid(filename, id_)]
+
+    def _make_itemid(self, filename, id_):
+        return '_'.join((filename, str(id_)))
+
+
+class LinkManager(object):
     def __init__(self, filename, id_):
         self.filename = filename
         self.id_ = id_
@@ -55,52 +91,49 @@ class LinkManager():
         self.target = links_api.find_link_target(self.filename, self.id_)
 
         self._init_buttons()
-
-        self.refresh_mod_state()
-
-        self.resize_lpanel()
+        self._refresh_mod_state()
+        self._resize_lpanel()
 
         if not self.target:
             wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel)
             wxgui_api.resize_foldpanelbar(self.filename, self.id_)
 
-        wxgui_api.bind_to_apply_editor(self.handle_apply)
+        wxgui_api.bind_to_apply_editor(self._handle_apply)
         wxgui_api.bind_to_check_editor_modified_state(
-                                             self.handle_check_editor_modified)
-        wxgui_api.bind_to_close_editor(self.handle_close)
+                                            self._handle_check_editor_modified)
+        wxgui_api.bind_to_close_editor(self._handle_close)
 
-    def handle_apply(self, kwargs):
+    def _handle_apply(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_ \
-                                                        and self.is_modified():
+                                                    and self._is_modified():
             links_api.make_link(self.filename, self.id_, self.target,
                                         kwargs['group'], kwargs['description'])
-            self.refresh_mod_state()
-            update_items_formatting(self.filename)
+            self._refresh_mod_state()
 
-    def handle_check_editor_modified(self, kwargs):
+    def _handle_check_editor_modified(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_ \
-                                                        and self.is_modified():
+                                                    and self._is_modified():
             wxgui_api.set_editor_modified(self.filename, self.id_)
 
-    def handle_close(self, kwargs):
+    def _handle_close(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_:
             # It's necessary to explicitly unbind the handlers, otherwise this
             # object will never be garbage-collected due to circular
             # references, and the automatic unbinding won't work
-            wxgui_api.bind_to_apply_editor(self.handle_apply, False)
+            wxgui_api.bind_to_apply_editor(self._handle_apply, False)
             wxgui_api.bind_to_check_editor_modified_state(
-                                      self.handle_check_editor_modified, False)
-            wxgui_api.bind_to_close_editor(self.handle_close, False)
+                                    self._handle_check_editor_modified, False)
+            wxgui_api.bind_to_close_editor(self._handle_close, False)
 
-    def resize_lpanel(self):
+    def _resize_lpanel(self):
         self.lpanel.Fit()
         wxgui_api.expand_panel(self.filename, self.id_, self.fpanel)
         wxgui_api.resize_foldpanelbar(self.filename, self.id_)
 
-    def is_modified(self):
+    def _is_modified(self):
         return self.origtarget != self.target
 
-    def refresh_mod_state(self):
+    def _refresh_mod_state(self):
         self.origtarget = self.target
 
     def _init_buttons(self):
@@ -124,75 +157,177 @@ class LinkManager():
                 self.target = wxgui_api.get_tree_item_id(filename,
                                                                 selection[0])
 
-    @staticmethod
-    def make_itemid(filename, id_):
-        return '_'.join((filename, str(id_)))
+
+class TreeItemIcons(object):
+    def __init__(self, filename):
+        self.filename = filename
+
+        config = coreaux_api.get_plugin_configuration('wxlinks')
+        char = config['icon_link']
+
+        if char != '':
+            bits_to_colour = {b: wx.Colour() for b in range(1, 6)}
+            bits_to_colour[1].SetFromString(config[
+                                        'icon_link_valid_color'])
+            bits_to_colour[2].SetFromString(config[
+                                        'icon_link_broken_color'])
+            bits_to_colour[3].SetFromString(config[
+                                        'icon_link_target_color'])
+            bits_to_colour[4].SetFromString(config[
+                                        'icon_link_valid_and_target_color'])
+            bits_to_colour[5].SetFromString(config[
+                                        'icon_link_broken_and_target_color'])
+
+            self.property_shift, self.property_mask = \
+                                            wxgui_api.add_item_property(
+                                            filename, 3, char, bits_to_colour)
+
+            links_api.bind_to_upsert_link(self._handle_upsert_link)
+            links_api.bind_to_delete_link(self._handle_delete_link)
+            links_api.bind_to_break_link(self._handle_break_links)
+
+            wxgui_api.bind_to_open_database(self._handle_open_database)
+            wxgui_api.bind_to_undo_tree(self._handle_history)
+            wxgui_api.bind_to_redo_tree(self._handle_history)
+
+            if wxcopypaste_api:
+                wxcopypaste_api.bind_to_items_pasted(self._handle_paste)
+
+    def _handle_open_database(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            rows = links_api.get_existing_links(self.filename)
+            links = set()
+            broken_links = set()
+            targets = set()
+
+            for row in rows:
+                target = row['L_target']
+
+                if target is not None:
+                    links.add(row['L_id'])
+                    targets.add(target)
+                else:
+                    broken_links.add(row['L_id'])
+
+            shift = self.property_shift
+            mask = self.property_mask
+
+            for rbits, set_ in ((1, links - targets),
+                                (2, broken_links - targets),
+                                (3, targets - links - broken_links),
+                                (4, links & targets),
+                                (5, broken_links & targets)):
+                for id_ in set_:
+                    self._update_item(id_, rbits)
+
+    def _handle_upsert_link(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            id_ = kwargs['id_']
+            target = kwargs['target']
+            backlinks = links_api.find_back_links(self.filename, id_)
+            target_target = links_api.find_link_target(self.filename, target)
+
+            if target is None:
+                rbits = 5 if len(backlinks) > 0 else 2
+            else:
+                rbits = 4 if len(backlinks) > 0 else 1
+
+            if target_target is False:
+                target_rbits = 3
+            elif target_target is None:
+                target_rbits = 5
+            else:
+                target_rbits = 4
+
+            self._update_item(id_, rbits)
+            self._update_item(target, target_rbits)
+            self._reset_item(kwargs['oldtarget'])
+
+    def _handle_delete_link(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            id_ = kwargs['id_']
+            backlinks = links_api.find_back_links(self.filename, id_)
+            rbits = 3 if len(backlinks) > 0 else 0
+
+            # id_ may not exist anymore, but wxgui_api.update_item_properties
+            # is protected against KeyError
+            self._update_item(id_, rbits)
+            self._reset_item(kwargs['oldtarget'])
+
+    def _handle_break_links(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            for id_ in kwargs['ids']:
+                backlinks = links_api.find_back_links(self.filename, id_)
+                rbits = 5 if len(backlinks) > 0 else 2
+                self._update_item(id_, rbits)
+
+            self._reset_item(kwargs['oldtarget'])
+
+    def _handle_history(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            for id_ in kwargs['items']:
+                # id_ may not exist anymore, but
+                # wxgui_api.update_item_properties is protected against
+                # KeyError
+                # The history event may have effects also on target and
+                # backlinks
+                backlinks = links_api.find_back_links(self.filename, id_)
+                target = links_api.find_link_target(self.filename, id_)
+
+                if target is False:
+                    rbits = 3 if len(backlinks) > 0 else 0
+                elif target is None:
+                    rbits = 5 if len(backlinks) > 0 else 2
+                else:
+                    rbits = 4 if len(backlinks) > 0 else 1
+
+                    target_target = links_api.find_link_target(self.filename,
+                                                                        target)
+                    if target_target is False:
+                        target_rbits = 3
+                    elif target_target is None:
+                        target_rbits = 5
+                    else:
+                        target_rbits = 4
+
+                    self._update_item(target, target_rbits)
+
+                self._update_item(id_, rbits)
+
+                for blink in backlinks:
+                    blink_backlinks = links_api.find_back_links(self.filename,
+                                                                        blink)
+                    blink_rbits = 4 if len(blink_backlinks) > 0 else 1
+                    self._update_item(blink, blink_rbits)
+
+    def _handle_paste(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            for id_ in kwargs['ids']:
+                self._reset_item(id_)
+
+    def _reset_item(self, id_):
+        backlinks = links_api.find_back_links(self.filename, id_)
+        target = links_api.find_link_target(self.filename, id_)
+
+        if target is False:
+            rbits = 3 if len(backlinks) > 0 else 0
+        elif target is None:
+            rbits = 5 if len(backlinks) > 0 else 2
+        else:
+            rbits = 4 if len(backlinks) > 0 else 1
+
+        self._update_item(id_, rbits)
 
 
-def update_items_formatting(filename):
-    new_formatted_items = set()
-    wxfont = wxgui_api.get_main_frame().GetFont()
+    def _update_item(self, id_, rbits):
+        bits = rbits << self.property_shift
 
-    rows = links_api.get_existing_links(filename)
-
-    for row in rows:
-        id_ = row['L_id']
-        wxfont.SetStyle(wx.FONTSTYLE_ITALIC)
-        wxgui_api.set_item_font(filename, id_, wxfont)
-        new_formatted_items.add(id_)
-
-    # Also remove italic from items that are no longer links (e.g. after
-    # undoing a linking action)
-    for oldid in formatted_items[filename] - new_formatted_items:
-        wxfont.SetStyle(wx.FONTSTYLE_NORMAL)
-        # oldid may not exist anymore, however wxgui_api.set_item_font is
-        # protected against KeyError
-        wxgui_api.set_item_font(filename, oldid, wxfont)
-
-    formatted_items[filename] = new_formatted_items
-
-
-def handle_open_database(kwargs):
-    filename = kwargs['filename']
-
-    if filename in links_api.get_supported_open_databases():
-        formatted_items[filename] = set()
-        update_items_formatting(filename)
-
-
-def handle_close_database(kwargs):
-    try:
-        del formatted_items[kwargs['filename']]
-    except KeyError:
-        pass
-
-
-def handle_tree_creation(kwargs):
-    filename = kwargs['filename']
-
-    if filename in links_api.get_supported_open_databases():
-        update_items_formatting(filename)
-
-
-def handle_open_editor(kwargs):
-    filename = kwargs['filename']
-
-    if filename in links_api.get_supported_open_databases():
-        id_ = kwargs['id_']
-        itemid = LinkManager.make_itemid(filename, id_)
-
-        global items
-        items[itemid] = LinkManager(filename, id_)
-        items[itemid].post_init()
-
+        # self._handle_delete_link and self._handle_history may pass a
+        # no-longer-existing id_
+        if wxgui_api.update_item_properties(self.filename, id_, bits,
+                                                        self.property_mask):
+            wxgui_api.update_item_image(self.filename, id_)
 
 def main():
-    wxgui_api.bind_to_open_database(handle_open_database)
-    wxgui_api.bind_to_close_database(handle_close_database)
-    wxgui_api.bind_to_open_editor(handle_open_editor)
-    wxgui_api.bind_to_undo_tree(handle_tree_creation)
-    wxgui_api.bind_to_redo_tree(handle_tree_creation)
-    wxgui_api.bind_to_move_item(handle_tree_creation)
-
-    if wxcopypaste_api:
-        wxcopypaste_api.bind_to_items_pasted(handle_tree_creation)
+    global base
+    base = Main()
