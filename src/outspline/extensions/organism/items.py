@@ -234,7 +234,8 @@ def update_item_rules(filename, id_, rules, group,
 
     # Note that update_item_rules_no_event can be called directly, thus not
     # signalling this event
-    update_item_rules_conditional_event.signal(filename=filename, id_=id_)
+    update_item_rules_conditional_event.signal(filename=filename, id_=id_,
+                                                                rules=rules)
 
 
 def update_item_rules_no_event(filename, id_, rules, group,
