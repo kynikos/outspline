@@ -223,7 +223,7 @@ def find_broken_links(filename):
     return [row['L_id'] for row in cursor.fetchall()]
 
 
-def find_next_broken_link(filename):
+def find_first_broken_link(filename):
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
     cursor.execute(queries.links_select_target_broken)

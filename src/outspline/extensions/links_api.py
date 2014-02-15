@@ -51,5 +51,5 @@ def find_broken_links(filename):
     return links.find_broken_links(filename)
 
 
-def find_next_broken_link(filename):
-    return links.find_next_broken_link(filename)
+def find_first_broken_link(filename):
+    return links.find_first_broken_link(filename)
