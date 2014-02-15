@@ -149,9 +149,9 @@ def insert_history(filename, group, id_, type, description, query_redo,
 def preview_undo_tree(filename):
     read = databases.dbs[filename].read_history('undo')
     if read:
-        items = []
+        items = set()
         for row in read['history']:
-            items.append(row['H_item'])
+            items.add(row['H_item'])
         return items
     else:
         return False
@@ -160,9 +160,9 @@ def preview_undo_tree(filename):
 def preview_redo_tree(filename):
     read = databases.dbs[filename].read_history('redo')
     if read:
-        items = []
+        items = set()
         for row in read['history']:
-            items.append(row['H_item'])
+            items.add(row['H_item'])
         return items
     else:
         return False
