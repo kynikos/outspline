@@ -503,6 +503,15 @@ def update_item_image(filename, id_):
     return tree.dbs[filename].update_item_image(treeitem)
 
 
+def get_logs_parent(filename):
+    return tree.dbs[filename].get_logs_panel().get_window()
+
+
+def add_log(filename, sizer, label, icon, menu_items, menu_update):
+    return tree.dbs[filename].get_logs_panel().add_log(sizer, label, icon,
+                                                    menu_items, menu_update)
+
+
 def refresh_history(filename):
     return tree.dbs[filename].dbhistory.refresh()
 

@@ -45,6 +45,7 @@ class Database(wx.SplitterWindow):
     titems = None
     cmenu = None
     ctabmenu = None
+    logspanel = None
     dbhistory = None
     properties = None
 
@@ -66,8 +67,9 @@ class Database(wx.SplitterWindow):
         self.cmenu = ContextMenu(self)
         self.ctabmenu = TabContextMenu(self.filename)
 
-        self.dbhistory = logs.DatabaseHistory(self, self.filename)
-        self.dbhistory.scwindow.Show(False)
+        self.logspanel = logs.LogsPanel(self, self.filename)
+        self.dbhistory = logs.DatabaseHistory.create(self.logspanel,
+                            self.filename, self.treec.GetBackgroundColour())
 
         self.properties = Properties(self.treec)
         self.base_properties = DatabaseProperties(self.properties)
@@ -102,6 +104,10 @@ class Database(wx.SplitterWindow):
         # an ImageList), because actions like the creation of item images rely
         # on the filename to be in the dictionary
         self.create()
+
+        # Initialize the logs panel *after* signalling creating_tree_event,
+        # which is used to add plugin logs
+        self.logspanel.initialize()
 
         nb_left = wx.GetApp().nb_left
         nb_left.add_page(self, os.path.basename(self.filename), select=True)
@@ -312,12 +318,12 @@ class Database(wx.SplitterWindow):
         del dbs[self.filename]
 
     def show_logs(self):
-        self.SplitHorizontally(self.treec, self.dbhistory.scwindow)
+        self.SplitHorizontally(self.treec, self.logspanel.get_panel())
         self.SetSashGravity(1.0)
         self.SetSashPosition(-80)
 
     def hide_logs(self):
-        self.Unsplit(self.dbhistory.scwindow)
+        self.Unsplit(self.logspanel.get_panel())
 
     def get_filename(self):
         return self.filename
@@ -406,6 +412,9 @@ class Database(wx.SplitterWindow):
 
     def get_properties(self):
         return self.properties
+
+    def get_logs_panel(self):
+        return self.logspanel
 
     def select_item(self, treeitem):
         self.treec.UnselectAll()
