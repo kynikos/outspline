@@ -19,6 +19,7 @@
 import os as _os
 import random
 import wx
+import wx.lib.inspection
 
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
@@ -47,16 +48,18 @@ class MenuDev(wx.Menu):
         wx.Menu.__init__(self)
 
         # Initialize self.ID_PRINT so it can be destroyed at the beginning of
-        # self.handle_reset_menu_items
+        # self.reset_print_menu
         self.ID_PRINT = wx.NewId()
         self.PrependItem(wx.MenuItem(self, self.ID_PRINT, "INIT"))
 
+        self.inspection = self.Append(wx.NewId(), "&Inspection tool")
         self.populate = self.Append(wx.NewId(), "&Populate database")
         self.simulator = self.AppendCheckItem(wx.NewId(), "&Run simulator")
 
         wxgui_api.insert_menu_main_item('Develo&pment',
                                     wxgui_api.get_menu_help_position(), self)
 
+        wxgui_api.bind_to_menu(self.show_inspection_tool, self.inspection)
         wxgui_api.bind_to_menu(self.populate_tree, self.populate)
         wxgui_api.bind_to_menu(self.toggle_simulator, self.simulator)
 
@@ -162,6 +165,9 @@ class MenuDev(wx.Menu):
         core_api.block_databases()
         development_api.print_all_tables(filename)
         core_api.release_databases()
+
+    def show_inspection_tool(self, event):
+        wx.lib.inspection.InspectionTool().Show()
 
     def populate_tree(self, event):
         core_api.block_databases()
