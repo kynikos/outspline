@@ -48,6 +48,7 @@ class LogsPanel(object):
         self.box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(self.box)
 
+        # TB_FLAT and BORDER_NONE seem to have no effect (bug #273)
         self.toolbar = wx.ToolBar(self.panel, style=wx.TB_VERTICAL |
                                                 wx.TB_FLAT | wx.BORDER_NONE)
         self.box.Add(self.toolbar, flag=wx.EXPAND)
@@ -188,6 +189,8 @@ class DatabaseHistory(object):
         self.undo, self.redo = items
 
     def _handle_paint(self, event):
+        # For some reason EVT_PAINT is always called twice every time the log
+        # is refreshed (bug #274)
         dc = wx.PaintDC(self.panel)
         gc = wx.GraphicsContext.Create(dc)
         ypos = self.statusheights['total']
