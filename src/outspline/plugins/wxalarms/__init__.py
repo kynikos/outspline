@@ -258,13 +258,19 @@ class AlarmsWindow():
 
         for a in self.alarms:
             filename = self.alarms[a].get_filename()
+            id_ = self.alarms[a].get_id()
 
             try:
                 alarmsd[filename]
             except KeyError:
-                alarmsd[filename] = []
+                alarmsd[filename] = {id_: []}
+            else:
+                try:
+                    alarmsd[filename][id_]
+                except KeyError:
+                    alarmsd[filename][id_] = []
 
-            alarmsd[filename].append(self.alarms[a].get_alarmid())
+            alarmsd[filename][id_].append(self.alarms[a].get_alarmid())
 
         return alarmsd
 
@@ -401,8 +407,8 @@ class Alarm():
     def snooze(self, event):
         core_api.block_databases()
 
-        organism_alarms_api.snooze_alarms({self.filename: [self.alarmid, ]},
-                                          stime=self.awindow.get_snooze_time())
+        organism_alarms_api.snooze_alarms({self.filename: {self.id_:
+                    [self.alarmid, ]}}, stime=self.awindow.get_snooze_time())
         # Let the alarm off event close the alarm
 
         core_api.release_databases()
@@ -410,7 +416,8 @@ class Alarm():
     def dismiss(self, event):
         core_api.block_databases()
 
-        organism_alarms_api.dismiss_alarms({self.filename: [self.alarmid, ]})
+        organism_alarms_api.dismiss_alarms({self.filename: {self.id_:
+                                                            [self.alarmid, ]}})
         # Let the alarm off event close the alarm
 
         core_api.release_databases()
