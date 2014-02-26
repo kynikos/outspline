@@ -519,13 +519,18 @@ class OccurrencesView():
         self.cmenu.update()
         self.listview.PopupMenu(self.cmenu)
 
-    def add_active_alarm(self, filename, alarmid):
+    def add_active_alarm(self, filename, id_, alarmid):
         try:
             self.activealarms[filename]
         except KeyError:
-            self.activealarms[filename] = []
+            self.activealarms[filename] = {id_: []}
+        else:
+            try:
+                self.activealarms[filename][id_]
+            except KeyError:
+                self.activealarms[filename][id_] = []
 
-        self.activealarms[filename].append(alarmid)
+        self.activealarms[filename][id_].append(alarmid)
 
     def get_selected_active_alarms(self):
         sel = self.listview.GetFirstSelected()
@@ -534,14 +539,23 @@ class OccurrencesView():
         while sel > -1:
             item = self.occs[self.listview.GetItemData(sel)]
             filename = item.filename
+            id_ = item.id_
 
+            # Do not simply check if item.filename is None because that could
+            # be true not only for ListAuxiliaryItem instances, but also for
+            # ListItem instances that are not active alarms
             if item.alarmid is not None:
                 try:
                     alarmsd[filename]
                 except KeyError:
-                    alarmsd[filename] = []
+                    alarmsd[filename] = {id_: []}
+                else:
+                    try:
+                        alarmsd[filename][id_]
+                    except KeyError:
+                        alarmsd[filename][id_] = []
 
-                alarmsd[filename].append(item.alarmid)
+                alarmsd[filename][id_].append(item.alarmid)
 
             sel = self.listview.GetNextSelected(sel)
 
@@ -759,7 +773,7 @@ class ListItem():
         elif self.alarm is False:
             alarmdate = 'active'
             self.alarmid = occ['alarmid']
-            occview.add_active_alarm(self.filename, self.alarmid)
+            occview.add_active_alarm(self.filename, self.id_, self.alarmid)
             # Note that the assignment of the active color must come after any
             # previous color assignment, in order to override them
             listview.SetItemTextColour(index, occview.colors['active'])
