@@ -37,7 +37,7 @@ def get_snoozed_alarms(last_search, filename, occs):
     if filename in cdbs:
         conn = core_api.get_connection(filename)
         cur = conn.cursor()
-        cur.execute(queries.alarms_select_alarms)
+        cur.execute(queries.alarms_select)
         core_api.give_connection(filename, conn)
 
         for row in cur:
@@ -156,7 +156,7 @@ def get_alarms(mint, maxt, filename, occs):
     if filename in cdbs:
         conn = core_api.get_connection(filename)
         cur = conn.cursor()
-        cur.execute(queries.alarms_select_alarms)
+        cur.execute(queries.alarms_select)
         core_api.give_connection(filename, conn)
 
         for row in cur:
@@ -298,11 +298,11 @@ def paste_alarms(filename, id_, oldid):
                          occ['CA_alarm'], occ['CA_snooze'])
 
 
-def delete_alarms(filename, id_, hid):
+def delete_alarms(filename, id_):
     if filename in cdbs:
         qconn = core_api.get_connection(filename)
         cursor = qconn.cursor()
-        cursor.execute(queries.alarms_update_id_delete, (hid, id_))
+        cursor.execute(queries.alarms_delete_id, (id_, ))
         core_api.give_connection(filename, qconn)
 
         # Signal the event after updating the database, so, for example,
@@ -310,27 +310,9 @@ def delete_alarms(filename, id_, hid):
         alarm_off_event.signal(filename=filename, id_=id_)
 
 
-def undelete_alarms(filename, id_, hid):
-    if filename in cdbs:
-        qconn = core_api.get_connection(filename)
-        cursor = qconn.cursor()
-        cursor.execute(queries.alarms_update_id_undelete, (id_, hid))
-        core_api.give_connection(filename, qconn)
 
 
-def clean_deleted_alarms(filename):
-    if filename in cdbs:
-        qconn = core_api.get_connection(filename)
-        cursor = qconn.cursor()
-        cursor.execute(queries.alarms_delete_clean)
-        core_api.give_connection(filename, qconn)
-
-
-def clean_old_history_alarms(filename, hids):
-    if filename in cdbs:
         qconn = sqlite3.connect(filename)
         cursor = qconn.cursor()
-        for hid in hids:
-            cursor.execute(queries.alarms_delete_clean_soft, (hid[0], ))
         qconn.commit()
         qconn.close()

@@ -50,7 +50,7 @@ def handle_create_database(kwargs):
 def handle_open_database_dirty(kwargs):
     info = coreaux_api.get_addons_info()
     dependencies = info(_ADDON_NAME[0])(_ADDON_NAME[1]
-                                     )['database_dependency_group_1'].split(' ')
+                                    )['database_dependency_group_1'].split(' ')
 
     if not set(dependencies) - set(kwargs['dependencies']):
         alarmsmod.cdbs.add(kwargs['filename'])
@@ -73,7 +73,7 @@ def handle_check_pending_changes(kwargs):
         conn = core_api.get_connection(filename)
         cur = conn.cursor()
         change_state = alarmsmod.changes[filename] != [row for row in
-                                             cur.execute(queries.alarms_select)]
+                                            cur.execute(queries.alarms_select)]
         core_api.give_connection(filename, conn)
 
         if change_state or alarmsmod.dismiss_state[filename]:
@@ -87,7 +87,7 @@ def handle_reset_modified_state(kwargs):
         conn = core_api.get_connection(filename)
         cur = conn.cursor()
         alarmsmod.changes[filename] = [row for row in cur.execute(
-                                                         queries.alarms_select)]
+                                                        queries.alarms_select)]
         core_api.give_connection(filename, conn)
 
         alarmsmod.dismiss_state[filename] = False
@@ -134,38 +134,30 @@ def handle_safe_paste_check(kwargs):
 
 
 def handle_delete_item(kwargs):
-    alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'], kwargs['hid'])
-
-
-def handle_history_insert(kwargs):
-    alarmsmod.undelete_alarms(kwargs['filename'], kwargs['id_'], kwargs['hid'])
+    alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'])
 
 
 def handle_history_remove(kwargs):
-    alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'], kwargs['hid'])
-
-
-def handle_history_clean_groups(kwargs):
-    alarmsmod.clean_deleted_alarms(kwargs['filename'])
+    alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'])
 
 
 def handle_history_clean(kwargs):
-    alarmsmod.clean_old_history_alarms(kwargs['filename'], kwargs['hids'])
+    alarmsmod.clean_alarms_log(kwargs['filename'])
 
 
 def handle_get_alarms(kwargs):
     alarmsmod.get_alarms(kwargs['mint'], kwargs['maxt'], kwargs['filename'],
-                                                                 kwargs['occs'])
+                                                                kwargs['occs'])
 
 
 def handle_get_next_occurrences(kwargs):
     alarmsmod.get_snoozed_alarms(kwargs['base_time'], kwargs['filename'],
-                                                                 kwargs['occs'])
+                                                                kwargs['occs'])
 
 
 def handle_activate_occurrences_range(kwargs):
     alarmsmod.activate_alarms_range(kwargs['filename'], kwargs['mint'],
-                                                kwargs['maxt'], kwargs['occsd'])
+                                            kwargs['maxt'], kwargs['occsd'])
 
 
 def handle_activate_old_occurrences(kwargs):
@@ -186,19 +178,19 @@ def main():
     core_api.bind_to_close_database(handle_close_database)
     core_api.bind_to_save_database_copy(handle_save_database_copy)
     core_api.bind_to_delete_item(handle_delete_item)
-    core_api.bind_to_history_insert(handle_history_insert)
     core_api.bind_to_history_remove(handle_history_remove)
-    core_api.bind_to_history_clean_groups(handle_history_clean_groups)
     core_api.bind_to_history_clean(handle_history_clean)
 
     organism_api.bind_to_get_alarms(handle_get_alarms)
 
-    organism_timer_api.bind_to_get_next_occurrences(handle_get_next_occurrences)
+    organism_timer_api.bind_to_get_next_occurrences(
+                                                handle_get_next_occurrences)
     organism_timer_api.bind_to_activate_occurrences_range(
-                                              handle_activate_occurrences_range)
+                                            handle_activate_occurrences_range)
     organism_timer_api.bind_to_activate_old_occurrences(
-                                                handle_activate_old_occurrences)
-    organism_timer_api.bind_to_activate_occurrences(handle_activate_occurrences)
+                                            handle_activate_old_occurrences)
+    organism_timer_api.bind_to_activate_occurrences(
+                                                handle_activate_occurrences)
 
     if copypaste_api:
         copypaste_api.bind_to_copy_items(handle_copy_items)

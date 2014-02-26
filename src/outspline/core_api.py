@@ -342,10 +342,6 @@ def bind_to_history_clean(handler, bind=True):
     return history.history_clean_event.bind(handler, bind)
 
 
-def bind_to_history_clean_groups(handler, bind=True):
-    return history.history_clean_groups_event.bind(handler, bind)
-
-
 def bind_to_exit_app_1(handler, bind=True):
     return databases.exit_app_event_1.bind(handler, bind)
 

@@ -31,15 +31,12 @@ history_update_event = Event()
 history_remove_event = Event()
 history_other_event = Event()
 history_clean_event = Event()
-history_clean_groups_event = Event()
 
 
 class DBHistory():
     modified = None
 
     def get_next_history_group(self):
-        history_clean_groups_event.signal(filename=self.filename)
-
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.history_delete_status)
