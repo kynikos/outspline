@@ -43,6 +43,7 @@ def handle_create_database(kwargs):
     conn = sqlite3.connect(kwargs['filename'])
     cur = conn.cursor()
     cur.execute(queries.alarms_create)
+    cur.execute(queries.alarmsofflog_create)
     conn.commit()
     conn.close()
 
@@ -64,6 +65,7 @@ def handle_close_database(kwargs):
         pass
     else:
         alarmsmod.cdbs.discard(kwargs['filename'])
+        alarmsmod.tempcdbs.add(kwargs['filename'])
 
 
 def handle_check_pending_changes(kwargs):
@@ -105,6 +107,10 @@ def handle_save_database_copy(kwargs):
         cur.execute(queries.alarms_select)
         for row in cur:
             curd.execute(queries.alarms_insert_copy, tuple(row))
+
+        cur.execute(queries.alarmsofflog_select)
+        for row in cur:
+            curd.execute(queries.alarmsofflog_insert_copy, tuple(row))
 
         core_api.give_connection(origin, qconn)
 

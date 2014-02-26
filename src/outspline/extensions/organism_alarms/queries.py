@@ -57,3 +57,22 @@ copyalarms_insert = ('INSERT INTO CopyAlarms (CA_id, CA_item, CA_start, '
                      'CA_end, CA_alarm, CA_snooze) VALUES (?, ?, ?, ?, ?, ?)')
 
 copyalarms_delete = 'DELETE FROM CopyAlarms'
+
+alarmsofflog_create = ("CREATE TABLE AlarmsOffLog ("
+                                                "AOL_id INTEGER PRIMARY KEY, "
+                                                "AOL_item INTEGER, "
+                                                "AOL_tstamp INTEGER, "
+                                                "AOL_reason INTEGER)")
+
+alarmsofflog_select = 'SELECT * FROM AlarmsOffLog'
+
+alarmsofflog_insert = ('INSERT INTO AlarmsOffLog (AOL_id, AOL_item, '
+        'AOL_tstamp, AOL_reason) VALUES (NULL, ?, strftime("%s", "now"), ?)')
+
+alarmsofflog_insert_copy = ('INSERT INTO AlarmsOffLog (AOL_id, AOL_item, '
+                                'AOL_tstamp, AOL_reason) VALUES (?, ?, ?, ?)')
+
+# DELETE FROM AlarmsOffLog ORDER BY AOL_tstamp DESC LIMIT -1 OFFSET ?
+alarmsofflog_delete_clean = ('DELETE FROM AlarmsOffLog '
+                        'WHERE AOL_id NOT IN (SELECT AOL_id FROM AlarmsOffLog '
+                        'ORDER BY AOL_tstamp DESC LIMIT ?)')
