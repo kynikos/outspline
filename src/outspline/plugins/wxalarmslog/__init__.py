@@ -17,6 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import wx
+# Temporary workaround for bug #279
 import time as time_
 
 import outspline.core_api as core_api
@@ -61,8 +62,13 @@ class AlarmsLog(object):
         self.filename = filename
 
         self.view = wx.dataview.DataViewListCtrl(parent,
+                        # Temporary workaround for bug #278
+                        #style=wx.dataview.DV_MULTIPLE |
                         style=wx.dataview.DV_SINGLE |
                         wx.dataview.DV_ROW_LINES | wx.dataview.DV_NO_HEADER)
+        # Temporary workaround for bug #279
+        #self.view.AppendDateColumn('Timestamp', 0,
+        #        width=wx.COL_WIDTH_AUTOSIZE, align=wx.ALIGN_CENTER_VERTICAL)
         self.view.AppendTextColumn('Timestamp', 0, width=wx.COL_WIDTH_AUTOSIZE)
         self.view.AppendTextColumn('Action', 1, width=wx.COL_WIDTH_AUTOSIZE)
         self.view.AppendTextColumn('Item', 2)
@@ -73,12 +79,16 @@ class AlarmsLog(object):
 
         cmenu = ContextMenu(mainmenu, self.view)
 
+        # Temporary workaround for bug #278
+        #menu_items, popup_cmenu = wxgui_api.add_log(filename, self.view,
         menu_items, self._popup_cmenu = wxgui_api.add_log(filename, self.view,
                     "Alarms", wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU),
                     cmenu.get_items(), cmenu.update)
         cmenu.store_items(menu_items)
 
         self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
+                                            # Temporary workaround for bug #278
+                                                    #popup_cmenu)
                                                     self._delay_popup_cmenu)
         self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_START_EDITING,
                                                     self._handle_item_editing)
@@ -88,7 +98,9 @@ class AlarmsLog(object):
         self._refresh()
 
     def _delay_popup_cmenu(self, event):
+        # Temporary workaround for bug #278
         self._popup_cmenu(event)
+        #event.Skip()
 
     def _handle_item_editing(self, event):
         event.Veto()
@@ -112,6 +124,8 @@ class AlarmsLog(object):
                                                         data=row['AOL_item'])
 
     def _format_values(self, row):
+        # Temporary workaround for bug #279
+        #tstamp = wx.DateTime().SetTimeT(row['AOL_tstamp'])
         tstamp = time_.strftime('%Y-%m-%d %H:%M', time_.localtime(
                                                             row['AOL_tstamp']))
         reason = self.reasons[row['AOL_reason']]
@@ -131,7 +145,8 @@ class LogsMenu(object):
         self.alarms = wx.MenuItem(wxgui_api.get_menu_logs(), self.ID_ALARMS,
                             '&Alarms', 'Alarms log commands', subMenu=submenu)
         self.find = wx.MenuItem(submenu, self.ID_FIND,
-                "&Find in database",
+        # Temporary workaround for bug #280
+                "&Find in database",#"\tCTRL+F5",
                 "Select the database items associated to the selected entries")
 
         self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
