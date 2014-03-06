@@ -23,82 +23,87 @@ import texthistory
 import outspline.coreaux_api as coreaux_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
-config = coreaux_api.get_plugin_configuration('wxtexthistory')
 
-areas = {}
+class TextHistory(object):
+    def __init__(self):
+        self.config = coreaux_api.get_plugin_configuration('wxtexthistory')
+        self.areas = {}
+        Menu(self)
 
-ID_UNDO = None
-mundo = None
-ID_REDO = None
-mredo = None
+        wxgui_api.bind_to_open_textctrl(self._handle_open_textctrl)
 
+    def _handle_open_textctrl(self, kwargs):
+        self.areas[kwargs['item']] = texthistory.WxTextHistory(
+                    wxgui_api.get_textctrl(kwargs['filename'], kwargs['id_']),
+                    kwargs['text'], self.config.get_int('max_undos'),
+                    self.config.get_int('min_update_interval'))
 
-def undo_text(event):
-    tab = wxgui_api.get_selected_editor()
-    if tab:
-        areas[tab].undo()
+    def get_area(self, item):
+        return self.areas[item]
 
+    def undo_text(self, event):
+        tab = wxgui_api.get_selected_editor()
 
-def redo_text(event):
-    tab = wxgui_api.get_selected_editor()
-    if tab:
-        areas[tab].redo()
+        if tab:
+            self.areas[tab].undo()
 
+    def redo_text(self, event):
+        tab = wxgui_api.get_selected_editor()
 
-def handle_open_textctrl(kwargs):
-    areas[kwargs['item']] = texthistory.WxTextHistory(
-                                         wxgui_api.get_textctrl(
-                                                        kwargs['filename'],
-                                                        kwargs['id_']),
-                                         kwargs['text'],
-                                         config.get_int('max_undos'),
-                                         config.get_int('min_update_interval'))
-
-
-def handle_reset_menu_items(kwargs):
-    # Re-enable all the actions so they are available for their accelerators
-    mundo.Enable()
-    mredo.Enable()
+        if tab:
+            self.areas[tab].redo()
 
 
-def handle_enable_textarea_menus(kwargs):
-    item = kwargs['item']
+class Menu(object):
+    def __init__(self, plugin):
+        self.plugin = plugin
 
-    mundo.Enable(False)
-    mredo.Enable(False)
+        self.ID_UNDO = wx.NewId()
+        self.ID_REDO = wx.NewId()
 
-    # item is None is no editor is open
-    if item:
-        if areas[item].can_undo():
-            mundo.Enable()
-        if areas[item].can_redo():
-            mredo.Enable()
+        self.mundo = wx.MenuItem(wxgui_api.get_menu_editor(), self.ID_UNDO,
+                                '&Undo\tCTRL+z', 'Undo the previous text edit')
+        self.mredo = wx.MenuItem(wxgui_api.get_menu_editor(), self.ID_REDO,
+                                '&Redo\tCTRL+y', 'Redo the next text edit')
+        separator = wx.MenuItem(wxgui_api.get_menu_editor(),
+                                                        kind=wx.ITEM_SEPARATOR)
+
+        self.mundo.SetBitmap(wx.ArtProvider.GetBitmap('@undo', wx.ART_MENU))
+        self.mredo.SetBitmap(wx.ArtProvider.GetBitmap('@redo', wx.ART_MENU))
+
+        # Add in reverse order
+        wxgui_api.add_menu_editor_item(separator)
+        wxgui_api.add_menu_editor_item(self.mredo)
+        wxgui_api.add_menu_editor_item(self.mundo)
+
+        wxgui_api.bind_to_menu(self.plugin.undo_text, self.mundo)
+        wxgui_api.bind_to_menu(self.plugin.redo_text, self.mredo)
+
+        wxgui_api.bind_to_reset_menu_items(self._reset)
+        wxgui_api.bind_to_menu_edit_update(self._update)
+
+    def _reset(self, kwargs):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.mundo.Enable()
+        self.mredo.Enable()
+
+    def _update(self, kwargs):
+        item = kwargs['item']
+
+        self.mundo.Enable(False)
+        self.mredo.Enable(False)
+
+        # item is None is no editor is open
+        if item:
+            area = self.plugin.get_area(item)
+
+            if area.can_undo():
+                self.mundo.Enable()
+
+            if area.can_redo():
+                self.mredo.Enable()
 
 
 def main():
-    global ID_UNDO, ID_REDO
-    ID_UNDO = wx.NewId()
-    ID_REDO = wx.NewId()
-
-    global mundo, mredo
-    mundo = wx.MenuItem(wxgui_api.get_menu_editor(), ID_UNDO,
-                                '&Undo\tCTRL+z', 'Undo the previous text edit')
-    mredo = wx.MenuItem(wxgui_api.get_menu_editor(), ID_REDO,
-                                    '&Redo\tCTRL+y', 'Redo the next text edit')
-
-    mundo.SetBitmap(wx.ArtProvider.GetBitmap('@undo', wx.ART_MENU))
-    mredo.SetBitmap(wx.ArtProvider.GetBitmap('@redo', wx.ART_MENU))
-
-    separator = wx.MenuItem(wxgui_api.get_menu_editor(),
-                                                        kind=wx.ITEM_SEPARATOR)
-
-    # Add in reverse order
-    wxgui_api.add_menu_editor_item(separator)
-    wxgui_api.add_menu_editor_item(mredo)
-    wxgui_api.add_menu_editor_item(mundo)
-
-    wxgui_api.bind_to_menu(undo_text, mundo)
-    wxgui_api.bind_to_menu(redo_text, mredo)
-    wxgui_api.bind_to_open_textctrl(handle_open_textctrl)
-    wxgui_api.bind_to_reset_menu_items(handle_reset_menu_items)
-    wxgui_api.bind_to_menu_edit_update(handle_enable_textarea_menus)
+    TextHistory()
