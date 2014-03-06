@@ -51,7 +51,7 @@ def cut_items(event, no_confirm=False):
 
     filename = wxgui_api.get_selected_database_filename()
 
-    # This method may be launched by the menu accelerator, but not database
+    # This method may be launched by the menu accelerator, but no database
     # may be open
     if filename:
         # select() arguments must be compatible with delete_items()
