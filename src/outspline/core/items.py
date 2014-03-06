@@ -64,10 +64,13 @@ class Item():
         cursor.execute(queries.items_insert.format('NULL', parent, previous, ),
                        (text, ))
         id_ = cursor.lastrowid
+        # For the moment it's necessary to insert 'text' for both the redo and
+        # undo queries, because it's needed also when an history action removes
+        # an item
         cursor.execute(queries.history_insert,
                         (group, id_, 'insert', description,
                          queries.items_insert.format(id_, parent, previous, ),
-                         text, queries.items_delete_id.format(id_), ''))
+                         text, queries.items_delete_id.format(id_), text))
 
         databases.dbs[filename].connection.give(qconn)
 
@@ -158,10 +161,12 @@ class Item():
                       current_values['I_parent'], current_values['I_previous'])
 
         cursor.execute(query_redo)
+        # For the moment it's necessary to insert current_values['I_text'] for
+        # both the redo and undo queries, because it's needed also when an
+        # history action removes an item
         cursor.execute(queries.history_insert, (group, self.id_, 'delete',
-                                                description, query_redo, '',
-                                                query_undo,
-                                                current_values['I_text']))
+                            description, query_redo, current_values['I_text'],
+                            query_undo, current_values['I_text']))
 
         self.database.connection.give(qconn)
 
@@ -169,8 +174,8 @@ class Item():
 
         # This event is designed to be signalled _after_ self.remove()
         item_delete_event.signal(filename=self.filename, id_=self.id_,
-                                 hid=cursor.lastrowid, group=group,
-                                 description=description)
+                         hid=cursor.lastrowid, text=current_values['I_text'],
+                         group=group, description=description)
 
     def remove(self):
         del self.database.items[self.id_]
