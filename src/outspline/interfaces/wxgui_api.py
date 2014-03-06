@@ -138,12 +138,12 @@ def get_menu_editor():
     return wx.GetApp().menu.edit
 
 
-def get_menu_view():
-    return wx.GetApp().menu.view
+def get_menu_logs():
+    return wx.GetApp().menu.logs
 
 
-def get_menu_view_position():
-    return wx.GetApp().menu.FindMenu('View')
+def get_menu_logs_position():
+    return wx.GetApp().menu.FindMenu('Logs')
 
 
 def get_menu_help_position():
@@ -167,8 +167,8 @@ def add_menu_editor_item(item):
     return wx.GetApp().menu.edit.InsertItem(0, item)
 
 
-def add_menu_view_item(item):
-    return wx.GetApp().menu.view.AppendItem(item)
+def add_menu_logs_item(item):
+    return wx.GetApp().menu.logs.AppendItem(item)
 
 
 def bind_to_update_menu_items(handler, bind=True):
@@ -187,8 +187,8 @@ def bind_to_menu_edit_update(handler, bind=True):
     return menubar.menu_edit_update_event.bind(handler, bind)
 
 
-def bind_to_menu_view_update(handler, bind=True):
-    return menubar.menu_view_update_event.bind(handler, bind)
+def bind_to_menu_logs_update(handler, bind=True):
+    return menubar.menu_logs_update_event.bind(handler, bind)
 
 
 def bind_to_open_database(handler, bind=True):

@@ -34,7 +34,7 @@ update_menu_items_event = Event()
 reset_menu_items_event = Event()
 menu_database_update_event = Event()
 menu_edit_update_event = Event()
-menu_view_update_event = Event()
+menu_logs_update_event = Event()
 undo_tree_event = Event()
 redo_tree_event = Event()
 move_item_event = Event()
@@ -45,7 +45,7 @@ class RootMenu(wx.MenuBar):
     file = None
     database = None
     edit = None
-    view = None
+    logs = None
     help = None
 
     def __init__(self):
@@ -57,13 +57,13 @@ class RootMenu(wx.MenuBar):
         self.file = MenuFile()
         self.database = MenuDatabase()
         self.edit = MenuEdit()
-        self.view = MenuView()
+        self.logs = MenuLogs()
         self.help = MenuHelp()
 
         self.Append(self.file, "&File")
         self.Append(self.database, "&Database")
         self.Append(self.edit, "&Editor")
-        self.Append(self.view, "&View")
+        self.Append(self.logs, "&Logs")
         self.Append(self.help, "&Help")
 
     def update_menus(self, event):
@@ -75,8 +75,8 @@ class RootMenu(wx.MenuBar):
             self.database.update_items()
         elif menu is self.edit:
             self.edit.update_items()
-        elif menu is self.view:
-            self.view.update_items()
+        elif menu is self.logs:
+            self.logs.update_items()
         else:
             update_menu_items_event.signal(menu=menu)
 
@@ -886,7 +886,7 @@ class MenuEdit(wx.Menu):
         core_api.release_databases()
 
 
-class MenuView(wx.Menu):
+class MenuLogs(wx.Menu):
     ID_LOGS = None
     logs = None
 
@@ -896,14 +896,14 @@ class MenuView(wx.Menu):
         self.ID_LOGS = wx.NewId()
 
         self.logs = self.AppendCheckItem(self.ID_LOGS,
-                                            "Show &logs\tCTRL+SHIFT+l",
+                                            "Show &panel\tCTRL+SHIFT+l",
                                             "Show logs panel")
 
         wx.GetApp().Bind(wx.EVT_MENU, self.toggle_logs, self.logs)
 
     def update_items(self):
         self.logs.Check(check=wx.GetApp().logs_configuration.is_shown())
-        menu_view_update_event.signal()
+        menu_logs_update_event.signal()
 
     def toggle_logs(self, event):
         # Set logs_configuration.set_shown() here, and not in each
