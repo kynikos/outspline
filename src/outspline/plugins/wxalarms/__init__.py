@@ -55,9 +55,7 @@ class AlarmsWindow():
     pbox = None
     snooze = None
     bottom = None
-    ID_SHOW = None
-    menushow = None
-    traymenushow = None
+    mainmenu = None
     number = None
     unit = None
     alarms = None
@@ -91,39 +89,14 @@ class AlarmsWindow():
         minwidth = self.bottom.ComputeFittingWindowSize(self.window).GetWidth()
         self.window.SetMinSize((minwidth + 20, _ALARMS_MIN_HEIGHT))
 
-        self.ID_SHOW = wx.NewId()
-
-        self.menushow = wx.MenuItem(wxgui_api.get_menu_view(), self.ID_SHOW,
-                        "Show &alarms\tCTRL+SHIFT+r", "Open the alarms window",
-                        kind=wx.ITEM_CHECK)
-
-        self.menushow = wxgui_api.add_menu_view_item(self.menushow)
-
-        parent.Bind(wx.EVT_MENU, self.toggle_shown, self.menushow)
+        self.mainmenu = MainMenu(self)
+        TrayMenu(self)
 
         self.window.Bind(wx.EVT_CLOSE, self.handle_close)
 
         organism_alarms_api.bind_to_alarm(self.handle_alarm)
         organism_alarms_api.bind_to_alarm_off(self.handle_alarm_off)
         wxgui_api.bind_to_close_database(self.handle_close_db)
-        wxgui_api.bind_to_menu_view_update(self.update_menu_items)
-
-        if wxtrayicon_api:
-            wxtrayicon_api.bind_to_create_menu(self.handle_create_tray_menu)
-            wxtrayicon_api.bind_to_reset_menu(self.handle_reset_tray_menu)
-
-    def update_menu_items(self, kwargs):
-        self.menushow.Check(check=self.window.IsShown())
-
-    def handle_create_tray_menu(self, kwargs):
-        item = wx.MenuItem(kwargs['menu'], self.ID_SHOW, "Show &alarms",
-                                                            kind=wx.ITEM_CHECK)
-        self.traymenushow = wxtrayicon_api.add_menu_item(item)
-
-        wxtrayicon_api.bind_to_tray_menu(self.toggle_shown, self.traymenushow)
-
-    def handle_reset_tray_menu(self, kwargs):
-        self.traymenushow.Check(check=self.window.IsShown())
 
     def _init_bottom(self):
         button_s = wx.Button(self.window, label='Snooze all')
@@ -162,6 +135,9 @@ class AlarmsWindow():
 
     def hide(self):
         self.window.Show(False)
+
+    def is_shown(self):
+        return self.window.IsShown()
 
     def toggle_shown(self, event):
         if self.window.IsShown():
@@ -273,6 +249,9 @@ class AlarmsWindow():
             alarmsd[filename][id_].append(self.alarms[a].get_alarmid())
 
         return alarmsd
+
+    def get_show_menu_id(self):
+        return self.mainmenu.get_show_id()
 
 
 class Alarm():
@@ -451,6 +430,54 @@ class Alarm():
 
     def get_alarmid(self):
         return self.alarmid
+
+
+class MainMenu(wx.Menu):
+    def __init__(self, alarmswindow):
+        wx.Menu.__init__(self)
+        self.alarmswindow = alarmswindow
+
+        self.ID_SHOW = wx.NewId()
+
+        self.menushow = wx.MenuItem(self, self.ID_SHOW,
+                        "&Show window\tCTRL+SHIFT+a", "Show the alarms window",
+                        kind=wx.ITEM_CHECK)
+
+        self.AppendItem(self.menushow)
+
+        wxgui_api.bind_to_menu(alarmswindow.toggle_shown, self.menushow)
+        wxgui_api.bind_to_update_menu_items(self._update_items)
+
+        wxgui_api.insert_menu_main_item('&Alarms',
+                                    wxgui_api.get_menu_logs_position(), self)
+
+    def _update_items(self, kwargs):
+        if kwargs['menu'] is self:
+            self.menushow.Check(check=self.alarmswindow.is_shown())
+
+    def get_show_id(self):
+        return self.ID_SHOW
+
+
+class TrayMenu(object):
+    def __init__(self, alarmswindow):
+        self.alarmswindow = alarmswindow
+
+        if wxtrayicon_api:
+            wxtrayicon_api.bind_to_create_menu(self._handle_create_tray_menu)
+            wxtrayicon_api.bind_to_reset_menu(self._handle_reset_tray_menu)
+
+    def _handle_create_tray_menu(self, kwargs):
+        item = wx.MenuItem(kwargs['menu'],
+                                        self.alarmswindow.get_show_menu_id(),
+                                        "Show &alarms", kind=wx.ITEM_CHECK)
+        self.traymenushow = wxtrayicon_api.add_menu_item(item)
+
+        wxtrayicon_api.bind_to_tray_menu(self.alarmswindow.toggle_shown,
+                                                            self.traymenushow)
+
+    def _handle_reset_tray_menu(self, kwargs):
+        self.traymenushow.Check(check=self.alarmswindow.is_shown())
 
 
 def main():
