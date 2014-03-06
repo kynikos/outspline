@@ -504,7 +504,7 @@ def update_item_image(filename, id_):
 
 
 def get_logs_parent(filename):
-    return tree.dbs[filename].get_logs_panel().get_window()
+    return tree.dbs[filename].get_logs_panel().get_panel()
 
 
 def add_log(filename, sizer, label, icon, menu_items, menu_update):

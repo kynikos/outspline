@@ -68,8 +68,9 @@ class Database(wx.SplitterWindow):
         self.ctabmenu = TabContextMenu(self.filename)
 
         self.logspanel = logs.LogsPanel(self, self.filename)
-        self.dbhistory = logs.DatabaseHistory.create(self.logspanel,
-                            self.filename, self.treec.GetBackgroundColour())
+        self.dbhistory = logs.DatabaseHistory(self.logspanel,
+                                    self.logspanel.get_panel(), self.filename,
+                                    self.treec.GetBackgroundColour())
 
         self.properties = Properties(self.treec)
         self.base_properties = DatabaseProperties(self.properties)

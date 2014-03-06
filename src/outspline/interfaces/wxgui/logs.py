@@ -17,6 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import wx
+import wx.dataview
 
 import outspline.core_api as core_api
 import outspline.coreaux_api as coreaux_api
@@ -53,14 +54,7 @@ class LogsPanel(object):
                                                 wx.TB_FLAT | wx.BORDER_NONE)
         self.box.Add(self.toolbar, flag=wx.EXPAND)
 
-        self.scwindow = wx.ScrolledWindow(self.panel, style=wx.BORDER_THEME)
-        self.scwindow.SetScrollRate(20, 20)
-        self.box.Add(self.scwindow, 1, flag=wx.EXPAND)
-
-        self.box2 = wx.BoxSizer(wx.HORIZONTAL)
-        self.scwindow.SetSizer(self.box2)
-
-        self.logwindows = []
+        self.logviews = []
 
         # Hide, otherwise the children windows will be shown even if panel is
         # hidden in the configuration
@@ -69,75 +63,77 @@ class LogsPanel(object):
         self.toolbar.Bind(wx.EVT_TOOL, self._handle_tool)
 
     def _handle_tool(self, event):
-        old_window = self.logwindows[self.selection]
-        window = self.logwindows[event.GetId()]
+        old_view = self.logviews[self.selection]
+        view = self.logviews[event.GetId()]
 
-        old_window.Show(False)
-        self.box2.Replace(old_window, window)
-        window.Show()
-
-        self.scwindow.SetBackgroundColour(window.GetBackgroundColour())
+        old_view.Show(False)
+        self.box.Replace(old_view, view)
+        view.Show()
 
         self.selection = event.GetId()
 
-        # Update scroll bars
-        self.scwindow.SetVirtualSize(window.GetVirtualSize())
+        self.panel.Layout()
 
     def get_panel(self):
         return self.panel
 
-    def get_window(self):
-        return self.scwindow
-
-    def add_log(self, window, label, icon, menu_items, menu_update):
-        self.logwindows.append(window)
-        window.Show(False)
+    def add_log(self, view, label, icon, menu_items, menu_update):
+        self.logviews.append(view)
+        view.Show(False)
 
         # Labels will appear for example in the dropdown menu that appears when
         # there's not enough room to display all the tools
-        self.toolbar.AddLabelTool(len(self.logwindows) - 1, label, icon,
+        self.toolbar.AddLabelTool(len(self.logviews) - 1, label, icon,
                                                             shortHelp=label)
         self.toolbar.Realize()
 
-        cmenu = ContextMenu(window, self.filename, menu_items, menu_update)
+        cmenu = ContextMenu(view, self.filename, menu_items, menu_update)
 
-        return cmenu.get_added_items()
+        return cmenu.get_items_and_popup()
 
     def initialize(self):
         self.selection = 0
-        window = self.logwindows[self.selection]
-        self.box2.Add(window, 1, flag=wx.EXPAND)
-        window.Show()
+        view = self.logviews[self.selection]
+        self.box.Add(view, 1, flag=wx.EXPAND)
+        view.Show()
 
-        self.scwindow.SetBackgroundColour(window.GetBackgroundColour())
-
-        if len(self.logwindows) < 2:
+        if len(self.logviews) < 2:
             self.toolbar.Show(False)
 
 
 class DatabaseHistory(object):
-    def __init__(self, parent, filename, bgcolor):
+    def __init__(self, logspanel, parent, filename, bgcolor):
         self.filename = filename
         self.config = coreaux_api.get_interface_configuration('wxgui')
 
-        self.panel = wx.Panel(parent)
-        self.panel.SetBackgroundColour(bgcolor)
-        self.box = wx.BoxSizer(wx.VERTICAL)
-        self.panel.SetSizer(self.box)
+        statusflags = 0 if self.config.get_bool('debug_history') else \
+                                                wx.dataview.DATAVIEW_COL_HIDDEN
 
-        self._set_colors(bgcolor)
+        self.view = wx.dataview.DataViewListCtrl(parent,
+                        style=wx.dataview.DV_SINGLE |
+                        wx.dataview.DV_ROW_LINES | wx.dataview.DV_NO_HEADER)
+        self.view.AppendBitmapColumn('Icon', 0, width=wx.COL_WIDTH_AUTOSIZE)
+        self.view.AppendTextColumn('Status', 1, width=wx.COL_WIDTH_AUTOSIZE,
+                                                            flags=statusflags)
+        self.view.AppendTextColumn('Description', 2)
 
-        if self.config.get_bool('debug_history'):
-            self._format_action = lambda row: "".join(("[",
-                            str(row['H_status']), "] ", row['H_description']))
-        else:
-            self._format_action = lambda row: row['H_description']
+        self._make_icons(bgcolor)
 
-        self.panel.Bind(wx.EVT_PAINT, self._handle_paint)
+        menu_items, popup_cmenu = logspanel.add_log(self.view, "Items",
+                                wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU),
+                                self._init_context_menu_items(),
+                                self._update_context_menu)
+        self._store_context_menu_items(menu_items)
+
+        self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, popup_cmenu)
+        self.view.Bind(wx.dataview.EVT_DATAVIEW_SELECTION_CHANGED,
+                                                        self._handle_selection)
+        self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_START_EDITING,
+                                                    self._handle_item_editing)
 
         self.refresh()
 
-    def _set_colors(self, bgcolor):
+    def _make_icons(self, bgcolor):
         coldone = self.config['history_color_done']
         colundone = self.config['history_color_undone']
         colsaved = self.config['history_color_saved']
@@ -160,14 +156,29 @@ class DatabaseHistory(object):
             colorsaved = wx.Colour()
             colorsaved.SetFromString(colsaved)
 
-        self.colors = {
-            0: colorundone,
-            1: colordone,
-            2: colorundone,
-            3: colordone,
-            4: colorundone,
-            5: colorsaved,
+        height = self.view.GetFont().GetPixelSize().GetHeight()
+
+        dc = wx.MemoryDC()
+
+        self.icons = {
+            0: self._make_bitmap(dc, height, colorundone),
+            1: self._make_bitmap(dc, height, colordone),
+            2: self._make_bitmap(dc, height, colorundone),
+            3: self._make_bitmap(dc, height, colordone),
+            4: self._make_bitmap(dc, height, colorundone),
+            5: self._make_bitmap(dc, height, colorsaved),
         }
+
+        dc.SelectObject(wx.NullBitmap)
+
+    def _make_bitmap(self, dc, height, color):
+        bitmap = wx.EmptyBitmap(6, height)
+
+        dc.SelectObject(bitmap)
+        dc.SetBackground(wx.Brush(color))
+        dc.Clear()
+
+        return bitmap
 
     def _init_context_menu_items(self):
         return ((wx.GetApp().menu.database.ID_UNDO, "&Undo",
@@ -188,65 +199,32 @@ class DatabaseHistory(object):
     def _store_context_menu_items(self, items):
         self.undo, self.redo = items
 
-    def _handle_paint(self, event):
-        # For some reason EVT_PAINT is always called twice every time the log
-        # is refreshed (bug #274)
-        dc = wx.PaintDC(self.panel)
-        gc = wx.GraphicsContext.Create(dc)
-        ypos = self.statusheights['total']
+    def _handle_selection(self, event):
+        self.view.UnselectAll()
 
-        for status in (5, 4, 3, 2, 1, 0):
-            height = self.statusheights[status]
-            ypos -= height
-            gc.SetBrush(gc.CreateBrush(wx.Brush(self.colors[status])))
-            gc.DrawRectangle(0, ypos, 6, height)
-
-    @classmethod
-    def create(cls, logspanel, filename, bgcolor):
-        obj = cls(logspanel.get_window(), filename, bgcolor)
-        menu_items = logspanel.add_log(obj.panel, "Items",
-                                wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU),
-                                obj._init_context_menu_items(),
-                                obj._update_context_menu)
-        obj._store_context_menu_items(menu_items)
-
-        return obj
+    def _handle_item_editing(self, event):
+        event.Veto()
 
     def refresh(self):
-        # Don't use self.panel.DestroyChildren() because it wouldn't also
-        # delete the spacer; moreover, while refreshing, all the StaticText
-        # items would appear all overlapping until the Layout, which doesn't
-        # happen with self.box.Clear(True)
-        self.box.Clear(True)
+        self.view.DeleteAllItems()
 
         descriptions = core_api.get_history_descriptions(self.filename)
 
-        self.statusheights = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
-
         for row in descriptions:
-            text = wx.StaticText(self.panel, label=self._format_action(row))
-            self.box.Add(text, flag=wx.LEFT, border=10)
-            # Some of the platforms supported by wxPython (most notably GTK),
-            # do not consider StaticText as a separate widget; instead, the
-            # label is just drawn on its parent window. For this reason it's
-            # impossible to drawn on StaticText and e.g. GenStaticText should
-            # be used.
-            self.statusheights[row['H_status']] += text.GetRect().GetHeight()
-
-        self.statusheights['total'] = sum(self.statusheights.values())
-
-        self.panel.Layout()
+            item = self.view.AppendItem((self.icons[row['H_status']],
+                                    "".join(("[", str(row['H_status']), "]")),
+                                    row['H_description']))
 
 
 class ContextMenu(wx.Menu):
-    def __init__(self, window, filename, items, update):
+    def __init__(self, view, filename, items, update):
         wx.Menu.__init__(self)
-        self.window = window
+        self.view = view
         self.filename = filename
         self._update = update
         self.added_items = []
 
-        self.hide = wx.MenuItem(self, wx.GetApp().menu.view.ID_LOGS,
+        self.hide = wx.MenuItem(self, wx.GetApp().menu.logs.ID_LOGS,
                                                                 "&Hide logs")
         self.hide.SetBitmap(wx.ArtProvider.GetBitmap('@logs', wx.ART_MENU))
 
@@ -259,11 +237,12 @@ class ContextMenu(wx.Menu):
             self.AppendItem(item)
             self.added_items.append(item)
 
-        self.window.Bind(wx.EVT_CONTEXT_MENU, self._popup)
-
     def _popup(self, event):
         self._update()
-        self.window.PopupMenu(self)
+        self.view.PopupMenu(self)
 
-    def get_added_items(self):
-        return self.added_items
+        # Skipping the event lets right clicks behave correctly
+        event.Skip()
+
+    def get_items_and_popup(self):
+        return (self.added_items, self._popup)
