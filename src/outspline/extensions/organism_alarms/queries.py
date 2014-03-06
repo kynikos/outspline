@@ -62,15 +62,17 @@ alarmsofflog_create = ("CREATE TABLE AlarmsOffLog ("
                                                 "AOL_id INTEGER PRIMARY KEY, "
                                                 "AOL_item INTEGER, "
                                                 "AOL_tstamp INTEGER, "
-                                                "AOL_reason INTEGER)")
+                                                "AOL_reason INTEGER, "
+                                                "AOL_text TEXT)")
 
 alarmsofflog_select = 'SELECT * FROM AlarmsOffLog'
 
 alarmsofflog_insert = ('INSERT INTO AlarmsOffLog (AOL_id, AOL_item, '
-        'AOL_tstamp, AOL_reason) VALUES (NULL, ?, strftime("%s", "now"), ?)')
+                            'AOL_tstamp, AOL_reason, AOL_text) '
+                            'VALUES (NULL, ?, strftime("%s", "now"), ?, ?)')
 
 alarmsofflog_insert_copy = ('INSERT INTO AlarmsOffLog (AOL_id, AOL_item, '
-                                'AOL_tstamp, AOL_reason) VALUES (?, ?, ?, ?)')
+                    'AOL_tstamp, AOL_reason, AOL_text) VALUES (?, ?, ?, ?, ?)')
 
 # DELETE FROM AlarmsOffLog ORDER BY AOL_tstamp DESC LIMIT -1 OFFSET ?
 alarmsofflog_delete_clean = ('DELETE FROM AlarmsOffLog '

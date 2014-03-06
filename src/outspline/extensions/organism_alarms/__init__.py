@@ -140,11 +140,11 @@ def handle_safe_paste_check(kwargs):
 
 
 def handle_delete_item(kwargs):
-    alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'])
+    alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'], kwargs['text'])
 
 
 def handle_history_remove(kwargs):
-    alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'])
+    alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'], kwargs['text'])
 
 
 def handle_history_clean(kwargs):

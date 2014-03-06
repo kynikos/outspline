@@ -211,10 +211,12 @@ def snooze_alarms(alarmsd, stime):
     for filename in alarmsd:
         for id_ in alarmsd[filename]:
             for alarmid in alarmsd[filename][id_]:
+                text = core_api.get_item_text(filename, id_)
+
                 qconn = core_api.get_connection(filename)
                 cursor = qconn.cursor()
                 cursor.execute(queries.alarms_update_id, (newalarm, alarmid))
-                cursor.execute(queries.alarmsofflog_insert, (id_, 0))
+                cursor.execute(queries.alarmsofflog_insert, (id_, 0, text))
                 core_api.give_connection(filename, qconn)
 
                 # Signal the event after updating the database, so, for
@@ -232,10 +234,12 @@ def dismiss_alarms(alarmsd):
     for filename in alarmsd:
         for id_ in alarmsd[filename]:
             for alarmid in alarmsd[filename][id_]:
+                text = core_api.get_item_text(filename, id_)
+
                 qconn = core_api.get_connection(filename)
                 cursor = qconn.cursor()
                 cursor.execute(queries.alarms_delete_id, (alarmid, ))
-                cursor.execute(queries.alarmsofflog_insert, (id_, 1))
+                cursor.execute(queries.alarmsofflog_insert, (id_, 1, text))
                 core_api.give_connection(filename, qconn)
 
                 # It's necessary to change the dismiss status, otherwise it's
@@ -303,18 +307,23 @@ def paste_alarms(filename, id_, oldid):
                          occ['CA_alarm'], occ['CA_snooze'])
 
 
-def delete_alarms(filename, id_):
+def delete_alarms(filename, id_, text):
     if filename in cdbs:
         qconn = core_api.get_connection(filename)
         cursor = qconn.cursor()
         cursor.execute(queries.alarms_delete_id, (id_, ))
-        cursor.execute(queries.alarmsofflog_insert, (id_, 2))
-        core_api.give_connection(filename, qconn)
 
-        # Signal the event after updating the database, so, for example,
-        # the tasklist can be correctly updated
-        alarm_off_event.signal(filename=filename, id_=id_,
-                                                alarms_count=cursor.rowcount)
+        if cursor.rowcount > 0:
+            # Also store the text, otherwise it won't be possible to retrieve
+            # it, since the item has been deleted
+            cursor.execute(queries.alarmsofflog_insert, (id_, 2, text))
+            core_api.give_connection(filename, qconn)
+
+            # Signal the event after updating the database, so, for example,
+            # the tasklist can be correctly updated
+            alarm_off_event.signal(filename=filename, id_=id_)
+        else:
+            core_api.give_connection(filename, qconn)
 
 
 def clean_alarms_log(filename):
