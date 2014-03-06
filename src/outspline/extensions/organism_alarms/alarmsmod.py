@@ -326,6 +326,15 @@ def delete_alarms(filename, id_, text):
             core_api.give_connection(filename, qconn)
 
 
+def select_alarms_log(filename):
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+    cursor.execute(queries.alarmsofflog_select_order)
+    core_api.give_connection(filename, qconn)
+
+    return cursor
+
+
 def clean_alarms_log(filename):
     LIMIT = coreaux_api.get_extension_configuration('organism_alarms'
                                                 ).get_int('default_log_limit')

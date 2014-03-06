@@ -35,6 +35,10 @@ def dismiss_alarms(alarmsd):
     return alarmsmod.dismiss_alarms(alarmsd)
 
 
+def get_alarms_log(filename):
+    return alarmsmod.select_alarms_log(filename)
+
+
 def bind_to_alarm(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
     # (Check for race conditions)

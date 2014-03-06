@@ -67,6 +67,9 @@ alarmsofflog_create = ("CREATE TABLE AlarmsOffLog ("
 
 alarmsofflog_select = 'SELECT * FROM AlarmsOffLog'
 
+alarmsofflog_select_order = ('SELECT * FROM AlarmsOffLog '
+                                                    'ORDER BY AOL_tstamp DESC')
+
 alarmsofflog_insert = ('INSERT INTO AlarmsOffLog (AOL_id, AOL_item, '
                             'AOL_tstamp, AOL_reason, AOL_text) '
                             'VALUES (NULL, ?, strftime("%s", "now"), ?, ?)')
