@@ -27,12 +27,10 @@ import menus
 
 
 class TaskListPanel(wx.Panel):
-    ctabmenu = None
-
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)
 
-    def _init_tab_menu(self, tasklist):
+    def init_tab_menu(self, tasklist):
         self.ctabmenu = menus.TabContextMenu(tasklist)
 
     def get_tab_context_menu(self):
@@ -40,16 +38,7 @@ class TaskListPanel(wx.Panel):
         return self.ctabmenu
 
 
-class TaskList():
-    panel = None
-    pbox = None
-    config = None
-    mainmenu = None
-    list_ = None
-    filters = None
-    ID_SHOW = None
-    menushow = None
-
+class TaskList(object):
     def __init__(self, parent):
         # Note that the remaining border is due to the SplitterWindow, whose
         # border cannot be removed because it's used to highlight the sash
@@ -69,42 +58,51 @@ class TaskList():
         self.list_ = list_.OccurrencesView(self)
 
         self.mainmenu = menus.MainMenu(self)
-        self.panel._init_tab_menu(self)
+        self.panel.init_tab_menu(self)
         self.list_._init_context_menu(self.mainmenu)
 
         self.pbox.Add(self.list_.listview, 1, flag=wx.EXPAND)
 
-        wxgui_api.bind_to_plugin_close_event(self.handle_tab_hide)
-        wxgui_api.bind_to_show_main_window(self.handle_show_main_window)
-        wxgui_api.bind_to_hide_main_window(self.handle_hide_main_window)
-        wxgui_api.bind_to_exit_application(self.handle_exit_application)
+        wxgui_api.bind_to_plugin_close_event(self._handle_tab_hide)
+        wxgui_api.bind_to_show_main_window(self._handle_show_main_window)
+        wxgui_api.bind_to_hide_main_window(self._handle_hide_main_window)
+        wxgui_api.bind_to_open_database(self._handle_open_database)
+        wxgui_api.bind_to_exit_application(self._handle_exit_application)
 
-    def handle_tab_hide(self, kwargs):
+    def _handle_tab_hide(self, kwargs):
         if kwargs['page'] is self.panel:
-            self.hide()
+            self._hide()
+
+    def _handle_show_main_window(self, kwargs):
+        if self.is_shown():
+            self._enable()
+
+    def _handle_hide_main_window(self, kwargs):
+        if self.is_shown():
+            self._disable()
+
+    def _handle_open_database(self, kwargs):
+        # Do not add the plugin if there's no database open, otherwise strange
+        # bugs will happen, like the keyboard menu shortcuts not working until
+        # a database is opened. Add the plugin only when the first database is
+        # opened.
+        wxgui_api.add_plugin_to_right_nb(self.panel, self._get_tab_title())
+        wxgui_api.bind_to_open_database(self._handle_open_database, False)
 
     def is_shown(self):
         return wxgui_api.is_page_in_right_nb(self.panel)
 
-    def handle_show_main_window(self, kwargs):
-        if self.is_shown():
-            self._enable()
-
-    def handle_hide_main_window(self, kwargs):
-        if self.is_shown():
-            self._disable()
-
     def toggle_shown(self, event):
         if self.is_shown():
-            self.hide()
+            self._hide()
         else:
-            self.show()
+            self._show()
 
-    def show(self):
-        wxgui_api.add_plugin_to_right_nb(self.panel, self.get_tab_title())
+    def _show(self):
+        wxgui_api.add_plugin_to_right_nb(self.panel, self._get_tab_title())
         self._enable()
 
-    def hide(self):
+    def _hide(self):
         # Showing/hiding is the correct behaviour: allowing multiple instances
         # of tasklist notebook tabs would need finding a way to refresh only
         # one at a time, probably only the selected one, thus requiring to
@@ -120,11 +118,11 @@ class TaskList():
     def _disable(self):
         self.list_.disable_refresh()
 
-    def get_tab_title(self):
+    def _get_tab_title(self):
         return self.filters.get_filter_configuration(
                                     self.filters.get_selected_filter())['name']
 
-    def handle_exit_application(self, kwargs):
+    def _handle_exit_application(self, kwargs):
         configfile = coreaux_api.get_user_config_file()
         self.list_.save_configuration()
         # Reset the Filters section because some filters may have been removed
@@ -133,6 +131,4 @@ class TaskList():
 
 
 def main():
-    nb = wxgui_api.get_right_nb()
-    tasklist = TaskList(nb)
-    wxgui_api.add_plugin_to_right_nb(tasklist.panel, tasklist.get_tab_title())
+    TaskList(wxgui_api.get_right_nb())
