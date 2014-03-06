@@ -28,11 +28,11 @@ def get_number_of_active_alarms():
 
 
 def snooze_alarms(alarmsd, stime):
-    alarmsmod.snooze_alarms(alarmsd, stime)
+    return alarmsmod.snooze_alarms(alarmsd, stime)
 
 
 def dismiss_alarms(alarmsd):
-    alarmsmod.dismiss_alarms(alarmsd)
+    return alarmsmod.dismiss_alarms(alarmsd)
 
 
 def bind_to_alarm(handler, bind=True):
