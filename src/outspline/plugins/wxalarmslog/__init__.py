@@ -62,9 +62,7 @@ class AlarmsLog(object):
         self.filename = filename
 
         self.view = wx.dataview.DataViewListCtrl(parent,
-                        # Temporary workaround for bug #278
-                        #style=wx.dataview.DV_MULTIPLE |
-                        style=wx.dataview.DV_SINGLE |
+                        style=wx.dataview.DV_MULTIPLE |
                         wx.dataview.DV_ROW_LINES | wx.dataview.DV_NO_HEADER)
         # Temporary workaround for bug #279
         #self.view.AppendDateColumn('Timestamp', 0,
@@ -79,28 +77,21 @@ class AlarmsLog(object):
 
         cmenu = ContextMenu(mainmenu, self.view)
 
-        # Temporary workaround for bug #278
-        #menu_items, popup_cmenu = wxgui_api.add_log(filename, self.view,
-        menu_items, self._popup_cmenu = wxgui_api.add_log(filename, self.view,
+        menu_items, popup_cmenu = wxgui_api.add_log(filename, self.view,
                     "Alarms", wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU),
                     cmenu.get_items(), cmenu.update)
         cmenu.store_items(menu_items)
 
-        self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
-                                            # Temporary workaround for bug #278
-                                                    #popup_cmenu)
-                                                    self._delay_popup_cmenu)
+        # Disable context menu (temporary workaround for bug #278)
+        #self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
+                                                                #popup_cmenu)
+
         self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_START_EDITING,
                                                     self._handle_item_editing)
         organism_alarms_api.bind_to_alarm_off(self._handle_alarm_off)
         wxgui_api.bind_to_close_database(self._handle_close_database)
 
         self._refresh()
-
-    def _delay_popup_cmenu(self, event):
-        # Temporary workaround for bug #278
-        self._popup_cmenu(event)
-        #event.Skip()
 
     def _handle_item_editing(self, event):
         event.Veto()
@@ -145,9 +136,13 @@ class LogsMenu(object):
         self.alarms = wx.MenuItem(wxgui_api.get_menu_logs(), self.ID_ALARMS,
                             '&Alarms', 'Alarms log commands', subMenu=submenu)
         self.find = wx.MenuItem(submenu, self.ID_FIND,
-        # Temporary workaround for bug #280
-                "&Find in database",#"\tCTRL+F5",
+                "&Find in database\tCTRL+F5",
                 "Select the database items associated to the selected entries")
+
+        # Use an explicit accelerator (temporary workaround for bug #280)
+        accel = wx.AcceleratorEntry(wx.ACCEL_CTRL, wx.WXK_F5, self.ID_FIND)
+        accelt = wx.AcceleratorTable([accel, ])
+        wx.GetApp().root.SetAcceleratorTable(accelt)
 
         self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
