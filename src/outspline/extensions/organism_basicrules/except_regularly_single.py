@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import time as _time
-
 from exceptions import BadRuleError
 
 _RULE_NAME = 'except_regularly_single'
