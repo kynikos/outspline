@@ -394,8 +394,8 @@ def is_shown():
     return wx.GetApp().root.IsShown()
 
 
-def exit_application():
-    return wx.GetApp().exit_app()
+def exit_application(event):
+    return wx.GetApp().exit_app(event)
 
 
 def bind_to_menu(handler, button):

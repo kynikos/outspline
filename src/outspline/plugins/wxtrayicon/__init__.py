@@ -195,7 +195,7 @@ class TrayMenu(wx.Menu):
         wxgui_api.toggle_main_window()
 
     def exit_application(self, event):
-        wxgui_api.exit_application()
+        wxgui_api.exit_application(event)
 
     def reset_items(self):
         self.restore.Check(check=wxgui_api.is_shown())
