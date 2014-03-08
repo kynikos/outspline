@@ -132,6 +132,16 @@ class Database(history.DBHistory):
         qconn = conn.get()
         qconn.row_factory = _sql.Row
         cursor = qconn.cursor()
+
+        try:
+            # In order to test if the database is locked (open by another
+            # instance of Outspline), a SELECT query is not enough
+            cursor.execute(queries.properties_insert_dummy)
+        except _sql.OperationalError:
+            raise exceptions.DatabaseLocked()
+        else:
+            cursor.execute(queries.properties_delete_dummy)
+
         dbitems = cursor.execute(queries.items_select_tree)
         conn.give(qconn)
 

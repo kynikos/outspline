@@ -79,6 +79,9 @@ def open_database(filename=None, startup=False):
         except core_api.DatabaseNotValidError:
             msgboxes.open_db_incompatible(filename).ShowModal()
             return False
+        except core_api.DatabaseLocked:
+            msgboxes.open_db_locked(filename).ShowModal()
+            return False
         else:
             tree.Database.open(filename)
             open_database_event.signal(filename=filename, startup=startup)

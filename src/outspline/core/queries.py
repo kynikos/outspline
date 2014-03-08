@@ -28,6 +28,9 @@ properties_select = 'SELECT * FROM Properties'
 properties_select_history = ('SELECT P_max_history FROM Properties '
                              'WHERE P_max_history IS NOT NULL LIMIT 1')
 
+properties_insert_dummy = ('INSERT INTO Properties (P_id, P_max_history) '
+                                                        'VALUES (NULL, NULL)')
+
 properties_insert_init = ('INSERT INTO Properties (P_id, P_max_history) '
                           'VALUES (NULL, ?)')
 
@@ -35,6 +38,8 @@ properties_insert_copy = ('INSERT INTO Properties (P_id, P_max_history) '
                           'VALUES (?, ?)')
 
 properties_delete = 'DELETE FROM Properties'
+
+properties_delete_dummy = 'DELETE FROM Properties WHERE P_max_history IS NULL'
 
 compatibility_create = ('CREATE TABLE CoMpatibility ('
                                                   'CM_id INTEGER PRIMARY KEY, '

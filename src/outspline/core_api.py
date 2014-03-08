@@ -19,7 +19,7 @@
 from core import databases, items, history, queries
 from core.exceptions import (AccessDeniedError, DatabaseAlreadyOpenError,
                              DatabaseNotAccessibleError, DatabaseNotValidError,
-                             CannotMoveItemError)
+                             DatabaseLocked, CannotMoveItemError)
 
 
 def get_memory_connection():
