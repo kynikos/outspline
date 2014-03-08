@@ -311,7 +311,7 @@ def delete_alarms(filename, id_, text):
     if filename in cdbs:
         qconn = core_api.get_connection(filename)
         cursor = qconn.cursor()
-        cursor.execute(queries.alarms_delete_id, (id_, ))
+        cursor.execute(queries.alarms_delete_item, (id_, ))
 
         if cursor.rowcount > 0:
             # Also store the text, otherwise it won't be possible to retrieve

@@ -41,6 +41,8 @@ alarms_update_id = 'UPDATE Alarms SET A_snooze=? WHERE A_id=?'
 
 alarms_delete_id = 'DELETE FROM Alarms WHERE A_id=?'
 
+alarms_delete_item = 'DELETE FROM Alarms WHERE A_item=?'
+
 copyalarms_create = ("CREATE TABLE CopyAlarms (CA_id INTEGER, "
                                               "CA_item INTEGER, "
                                               "CA_start INTEGER, "
