@@ -32,12 +32,16 @@ trayicon = None
 
 class TrayIcon(wx.TaskBarIcon):
     ID_MINIMIZE = None
+    ID_RESTORE = None
     icon = None
     menu = None
 
     def __init__(self):
         wx.TaskBarIcon.__init__(self)
         self.ID_MINIMIZE = wx.NewId()
+        # Let self.restore have a different ID from menumin in the main menu,
+        # in fact this is a check item, while the other is a normal item
+        self.ID_RESTORE = wx.NewId()
 
         config = coreaux_api.get_plugin_configuration('wxtrayicon')
 
@@ -77,7 +81,7 @@ class TrayIcon(wx.TaskBarIcon):
     def CreatePopupMenu(self):
         # TrayMenu must be instantiated here, everytime CreatePopupMenu is
         # called
-        self.menu = TrayMenu(self)
+        self.menu = TrayMenu(self, self.ID_RESTORE)
 
         create_menu_event.signal(menu=self.menu)
 
@@ -174,18 +178,13 @@ class BlinkingIcon():
 
 
 class TrayMenu(wx.Menu):
-    ID_RESTORE = None
     restore = None
     exit_ = None
 
-    def __init__(self, parent):
+    def __init__(self, parent, ID_RESTORE):
         wx.Menu.__init__(self)
 
-        # Let self.restore have a different ID from menumin in the main menu,
-        # in fact this is a check item, while the other is a normal item
-        self.ID_RESTORE = wx.NewId()
-
-        self.restore = self.AppendCheckItem(self.ID_RESTORE, "&Show Outspline")
+        self.restore = self.AppendCheckItem(ID_RESTORE, "&Show Outspline")
         self.AppendSeparator()
         self.exit_ = self.Append(wx.ID_EXIT, "E&xit\tCTRL+q")
 
