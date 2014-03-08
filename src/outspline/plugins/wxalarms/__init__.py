@@ -210,7 +210,15 @@ class AlarmsWindow():
                                    alarm)
             self.update_title()
             self.window.Layout()
-            self.show()
+
+            if not self.window.IsShown():
+                # Centre only if not already shown; using ShowWithoutActivating
+                # *before* the self.window.IsShown() test would never verify
+                # the condition
+                self.window.ShowWithoutActivating()
+                self.window.Centre()
+
+            self.window.RequestUserAttention()
 
     def update_title(self):
         self.window.SetTitle(''.join(('Outspline - ', str(len(self.alarms)),
