@@ -48,7 +48,7 @@ def handle_create_database(kwargs):
 def handle_open_database_dirty(kwargs):
     info = coreaux_api.get_addons_info()
     dependencies = info(_ADDON_NAME[0])(_ADDON_NAME[1]
-                                     )['database_dependency_group_1'].split(' ')
+                                    )['database_dependency_group_1'].split(' ')
 
     if not set(dependencies) - set(kwargs['dependencies']):
         items.cdbs.add(kwargs['filename'])
@@ -77,12 +77,12 @@ def handle_close_database(kwargs):
 
 def handle_insert_item(kwargs):
     items.insert_item(kwargs['filename'], kwargs['id_'], kwargs['group'],
-                                                          kwargs['description'])
+                                                        kwargs['description'])
 
 
 def handle_delete_item(kwargs):
-    items.delete_item_rules(kwargs['filename'], kwargs['id_'], kwargs['group'],
-                                                          kwargs['description'])
+    items.delete_item_rules(kwargs['filename'], kwargs['id_'], kwargs['text'],
+                                        kwargs['group'], kwargs['description'])
 
 
 def handle_copy_items(kwargs):
@@ -100,7 +100,7 @@ def handle_copy_item(kwargs):
 
 def handle_paste_item(kwargs):
     items.paste_item_rules(kwargs['filename'], kwargs['id_'], kwargs['oldid'],
-                                         kwargs['group'], kwargs['description'])
+                                        kwargs['group'], kwargs['description'])
 
 
 def handle_safe_paste_check(kwargs):

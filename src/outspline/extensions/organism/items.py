@@ -27,6 +27,7 @@ from exceptions import (BadOccurrenceError, BadExceptRuleError,
                                                    ConflictingRuleHandlerError)
 
 update_item_rules_conditional_event = Event()
+delete_item_rules_event = Event()
 get_alarms_event = Event()
 
 rule_handlers = {}
@@ -308,7 +309,8 @@ def paste_item_rules(filename, id_, oldid, group, description):
                                                             group, description)
 
 
-def delete_item_rules(filename, id_, group, description='Delete item rules'):
+def delete_item_rules(filename, id_, text, group,
+                                            description='Delete item rules'):
     if filename in cdbs:
         qconn = core_api.get_connection(filename)
         cursor = qconn.cursor()
@@ -326,8 +328,10 @@ def delete_item_rules(filename, id_, group, description='Delete item rules'):
 
         core_api.give_connection(filename, qconn)
 
-        return core_api.insert_history(filename, group, id_, 'rules_delete',
+        core_api.insert_history(filename, group, id_, 'rules_delete',
                       description, query_redo, None, query_undo, current_rules)
+
+        delete_item_rules_event.signal(filename=filename, id_=id_, text=text)
 
 
 def get_item_rules(filename, id_):

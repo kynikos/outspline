@@ -139,7 +139,7 @@ def handle_safe_paste_check(kwargs):
     alarmsmod.can_paste_safely(kwargs['filename'], kwargs['exception'])
 
 
-def handle_delete_item(kwargs):
+def handle_delete_item_rules(kwargs):
     alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'], kwargs['text'])
 
 
@@ -183,10 +183,13 @@ def main():
     core_api.bind_to_reset_modified_state(handle_reset_modified_state)
     core_api.bind_to_close_database(handle_close_database)
     core_api.bind_to_save_database_copy(handle_save_database_copy)
-    core_api.bind_to_delete_item(handle_delete_item)
     core_api.bind_to_history_remove(handle_history_remove)
     core_api.bind_to_history_clean(handle_history_clean)
 
+    # Do not bind directly to core_api.bind_to_delete_item because it would
+    # create a race hazard with organism.items.delete_item_rules, which is
+    # bound to the same event
+    organism_api.bind_to_delete_item_rules(handle_delete_item_rules)
     organism_api.bind_to_get_alarms(handle_get_alarms)
 
     organism_timer_api.bind_to_get_next_occurrences(
