@@ -2,8 +2,14 @@
   Test with only some components enabled
   Test with only some addons enabled
   Test with different values of critical configuration options
+  Test in different time zones:
+  - non-DST (Australia/Perth)
+  - UTC
+  - DST (Europe/Paris)
+    - with a non-DST time
+    - with a DST time
   If backward compatibility has to be kept, also test with databases created
-  with the previous release
+    with the previous release
   Test interfaces with various GTK themes
 * Check code with the pep8 tool
 * Update and release any library that is maintained in external repos
