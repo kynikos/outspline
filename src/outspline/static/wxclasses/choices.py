@@ -19,18 +19,14 @@
 import wx
 
 
-class WidgetChoiceCtrl():
-    panel = None
-    box = None
-    choicectrl = None
-    activectrl = None
-
+class WidgetChoiceCtrl(object):
     def __init__(self, parent, choices, initchoice, rborder):
         self.panel = wx.Panel(parent)
         self.box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(self.box)
 
         self.choices = choices
+        self.activectrl = None
 
         self.choicectrl = wx.Choice(self.panel,
                                      choices=[choice[0] for choice in choices])
@@ -80,10 +76,7 @@ class WidgetChoiceCtrl():
         return self.choicectrl.GetSizeTuple()[0]
 
 
-class MultipleChoiceCtrl():
-    panel = None
-    cbctrls = None
-
+class MultipleChoiceCtrl(object):
     def __init__(self, parent, choices):
         self.panel = wx.Panel(parent)
         box = wx.BoxSizer(wx.HORIZONTAL)
