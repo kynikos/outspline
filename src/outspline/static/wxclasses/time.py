@@ -90,12 +90,12 @@ class WeekDayCtrl(object):
         }[self.get_day()]
 
     @classmethod
-    def _compute_widget_day(cls, timew):
+    def compute_widget_day(cls, timew):
         # Any check that 0 <= number <= 6 should be done outside of here
         return cls.choices[timew]
 
     @classmethod
-    def _compute_day_label(cls, day):
+    def compute_day_label(cls, day):
         return cls.choices.index(day)
 
 
@@ -123,7 +123,7 @@ class MonthDayCtrl(object):
         return self.get_day() * 86400 - 86400
 
     @classmethod
-    def _compute_day_label(cls, day):
+    def compute_day_label(cls, day):
         return cls.choices[day - 1]
 
 
@@ -142,7 +142,7 @@ class MonthInverseDayCtrl(MonthDayCtrl):
             return 1
 
     @classmethod
-    def _compute_day_label(cls, day):
+    def compute_day_label(cls, day):
         return cls.choices[day - 1].replace(' ', '-')
 
 
@@ -199,16 +199,16 @@ class MonthWeekdayCtrl(object):
         return self.dayctrl.get_day()
 
     @classmethod
-    def _compute_weekday_number_label(cls, number):
-        return cls.mwnctrl._compute_day_label(number)
+    def compute_weekday_number_label(cls, number):
+        return cls.mwnctrl.compute_day_label(number)
 
     @staticmethod
-    def _compute_weekday_label(day):
-        return WeekDayCtrl._compute_day_label(day)
+    def compute_weekday_label(day):
+        return WeekDayCtrl.compute_day_label(day)
 
     @staticmethod
-    def _compute_widget_weekday(day):
-        return WeekDayCtrl._compute_widget_day(day)
+    def compute_widget_weekday(day):
+        return WeekDayCtrl.compute_widget_day(day)
 
 
 class MonthInverseWeekdayCtrl(MonthWeekdayCtrl):
@@ -261,7 +261,7 @@ class DateHourCtrl(object):
         return self.hourctrl.get_minute()
 
     @staticmethod
-    def _compute_month_label(month):
+    def compute_month_label(month):
         # Hardcode the names since only English is supported for the moment
         # anyway
         return ('January', 'February', 'March', 'April', 'May', 'June', 'July',
@@ -308,8 +308,8 @@ class WeekDayHourCtrl(object):
         return rday + rhour
 
     @staticmethod
-    def _compute_widget_day(timew):
-        return WeekDayCtrl._compute_widget_day(timew)
+    def compute_widget_day(timew):
+        return WeekDayCtrl.compute_widget_day(timew)
 
 
 class MonthDayHourCtrl(object):
@@ -351,8 +351,8 @@ class MonthDayHourCtrl(object):
         return rday + rhour
 
     @classmethod
-    def _compute_day_label(cls, day):
-        return cls.mdctrl._compute_day_label(day)
+    def compute_day_label(cls, day):
+        return cls.mdctrl.compute_day_label(day)
 
 
 class MonthDayHourSafeCtrl(MonthDayHourCtrl):
@@ -390,16 +390,16 @@ class MonthWeekdayHourCtrl(MonthDayHourCtrl):
         return self.dayctrl.get_weekday()
 
     @classmethod
-    def _compute_weekday_number_label(cls, number):
-        return cls.mdctrl._compute_weekday_number_label(number)
+    def compute_weekday_number_label(cls, number):
+        return cls.mdctrl.compute_weekday_number_label(number)
 
     @classmethod
-    def _compute_weekday_label(cls, day):
-        return cls.mdctrl._compute_weekday_label(day)
+    def compute_weekday_label(cls, day):
+        return cls.mdctrl.compute_weekday_label(day)
 
     @classmethod
-    def _compute_widget_weekday(cls, day):
-        return cls.mdctrl._compute_widget_weekday(day)
+    def compute_widget_weekday(cls, day):
+        return cls.mdctrl.compute_widget_weekday(day)
 
 
 class MonthInverseWeekdayHourCtrl(MonthWeekdayHourCtrl):
@@ -450,7 +450,7 @@ class TimeSpanCtrl(object):
         return number * mult[unit]
 
     @staticmethod
-    def _compute_widget_values(diff):
+    def compute_widget_values(diff):
         if diff == 0:
             return (0, 'minutes')
         else:
@@ -483,7 +483,7 @@ class WeekdaysCtrl(MultipleChoiceCtrl):
         return self.get_values()
 
     @classmethod
-    def _compute_day_name(cls, day):
+    def compute_day_name(cls, day):
         return cls.dnames[day - 1]
 
 
@@ -502,5 +502,5 @@ class MonthsCtrl(MultipleChoiceCtrl):
         return self.get_values()
 
     @classmethod
-    def _compute_month_name(cls, month):
+    def compute_month_name(cls, month):
         return cls.mnames[month - 1]
