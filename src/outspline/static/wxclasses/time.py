@@ -117,7 +117,7 @@ class MonthDayCtrl(object):
         return self.panel
 
     def get_day(self):
-        return int(self.dayctrl.GetString(self.dayctrl.GetSelection())[:-2])
+        return self.dayctrl.GetSelection() + 1
 
     def get_relative_time(self):
         return self.get_day() * 86400 - 86400
@@ -135,11 +135,7 @@ class MonthInverseDayCtrl(MonthDayCtrl):
                '29th', '30th', '31st')]
 
     def get_day(self):
-        try:
-            return int(self.dayctrl.GetString(self.dayctrl.GetSelection())
-                                                                        [:-10])
-        except ValueError:
-            return 1
+        return self.dayctrl.GetSelection() + 1
 
     @classmethod
     def compute_day_label(cls, day):
