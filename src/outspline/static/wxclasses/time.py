@@ -340,11 +340,14 @@ class MonthDayHourCtrl(object):
     def get_minute(self):
         return self.hourctrl.get_minute()
 
-    def get_relative_time(self):
+    def get_relative_month_time(self):
         rday = self.dayctrl.get_relative_time()
         rhour = self.hourctrl.get_relative_time()
 
         return rday + rhour
+
+    def get_relative_time(self):
+        return self.hourctrl.get_relative_time()
 
     @classmethod
     def compute_day_label(cls, day):
@@ -358,7 +361,7 @@ class MonthDayHourSafeCtrl(MonthDayHourCtrl):
 class MonthInverseDayHourCtrl(MonthDayHourCtrl):
     mdctrl = MonthInverseDayCtrl
 
-    def get_relative_time(self):
+    def get_relative_month_time(self):
         rday = self.dayctrl.get_relative_time()
         rhour = self.hourctrl.get_relative_time()
 
