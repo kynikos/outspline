@@ -323,7 +323,7 @@ def bind_to_history_update(handler, bind=True):
 
 
 def bind_to_history_remove(handler, bind=True):
-    return history.history_remove_event.bind(handler, bind)
+    return history.history_delete_event.bind(handler, bind)
 
 
 def bind_to_history_other(handler, bind=True):

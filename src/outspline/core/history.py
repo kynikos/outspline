@@ -28,7 +28,7 @@ reset_modified_state_event = Event()
 history_event = Event()
 history_insert_event = Event()
 history_update_event = Event()
-history_remove_event = Event()
+history_delete_event = Event()
 history_other_event = Event()
 history_clean_event = Event()
 
@@ -197,39 +197,71 @@ class DBHistory(object):
 
         filename = self.filename
 
-        if (action == 'undo' and type_ == 'insert') or (action == 'redo' and
-                                                            type_ == 'delete'):
-            self.items[itemid].remove()
+        hactions = {
+            'insert': {
+                'undo': self._do_history_row_delete,
+                'redo': self._do_history_row_insert,
+            },
+            'update': {
+                'undo': self._do_history_row_update,
+                'redo': self._do_history_row_update,
+            },
+            'delete': {
+                'undo': self._do_history_row_insert,
+                'redo': self._do_history_row_delete,
+            },
+            None: {
+                'undo': self._do_history_row_other,
+                'redo': self._do_history_row_other,
+            },
+        }
 
-            history_remove_event.signal(filename=filename, id_=itemid, hid=hid,
-                                                                    text=text)
-        elif type_ in ('insert', 'update', 'delete'):
-            qconn = self.connection.get()
-            cursor = qconn.cursor()
-            cursor.execute(queries.items_select_id, (itemid, ))
-            select = cursor.fetchone()
-            self.connection.give(qconn)
+        try:
+            haction = hactions[type_]
+        except KeyError:
+            haction = hactions[None]
 
-            if type_ == 'update':
-                history_update_event.signal(filename=filename, id_=itemid,
-                                            parent=select['I_parent'],
-                                            previous=select['I_previous'],
-                                            text=select['I_text'])
+        haction[action](type_, action, filename, itemid, hid, text)
 
-            if (action == 'undo' and type_ == 'delete') or \
-                                    (action == 'redo' and type_ == 'insert'):
-                self.items[itemid] = items.Item(database=self,
-                                                filename=filename,
-                                                id_=itemid)
+    def _do_history_row_insert(self, type_, action, filename, itemid, hid,
+                                                                        text):
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+        cursor.execute(queries.items_select_id, (itemid, ))
+        select = cursor.fetchone()
+        self.connection.give(qconn)
 
-                history_insert_event.signal(filename=filename, id_=itemid,
-                                            parent=select['I_parent'],
-                                            previous=select['I_previous'],
-                                            text=select['I_text'], hid=hid)
-        else:
-            # Other types are processed here
-            history_other_event.signal(type_=type_, action=action,
-                                       filename=filename, id_=itemid, hid=hid)
+        self.items[itemid] = items.Item(database=self, filename=filename,
+                                                                    id_=itemid)
+
+        history_insert_event.signal(filename=filename, id_=itemid,
+                                                parent=select['I_parent'],
+                                                previous=select['I_previous'],
+                                                text=select['I_text'], hid=hid)
+
+    def _do_history_row_update(self, type_, action, filename, itemid, hid,
+                                                                        text):
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+        cursor.execute(queries.items_select_id, (itemid, ))
+        select = cursor.fetchone()
+        self.connection.give(qconn)
+
+        history_update_event.signal(filename=filename, id_=itemid,
+                                                parent=select['I_parent'],
+                                                previous=select['I_previous'],
+                                                text=select['I_text'])
+
+    def _do_history_row_delete(self, type_, action, filename, itemid, hid,
+                                                                        text):
+        self.items[itemid].remove()
+        history_delete_event.signal(filename=filename, id_=itemid, hid=hid,
+                                                                text=text)
+
+    def _do_history_row_other(self, type_, action, filename, itemid, hid,
+                                                                        text):
+        history_other_event.signal(type_=type_, action=action,
+                                        filename=filename, id_=itemid, hid=hid)
 
     def clean_history(self):
         # This operation must be performed on a different connection than
