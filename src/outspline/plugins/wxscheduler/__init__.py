@@ -211,7 +211,6 @@ class RuleList():
 
         self.listview.Bind(wx.EVT_LIST_ITEM_SELECTED, self._update_buttons)
         self.listview.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._update_buttons)
-        self.listview.Bind(wx.EVT_LIST_DELETE_ITEM, self._update_buttons)
 
         wxgui_api.bind_to_apply_editor(self.handle_apply)
         wxgui_api.bind_to_check_editor_modified_state(
@@ -300,6 +299,11 @@ class RuleList():
             self.listview.DeleteItem(index)
             self.listview.SetColumnWidth(0, wx.LIST_AUTOSIZE)
             del self.rules[index]
+
+            # Do not update the buttons on EVT_LIST_DELETE_ITEM because
+            # GetSelectedItemCount would still return > 0 and the buttons would
+            # be left enabled
+            self.update_buttons()
 
     def move_rule_up(self, event):
         index = self.listview.GetFirstSelected()
