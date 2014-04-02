@@ -25,8 +25,8 @@ wxcopypaste_api = coreaux_api.import_optional_plugin_api('wxcopypaste')
 
 base = None
 
-# See #214 for features left to be implemented ****************************************
-# https://github.com/kynikos/outspline/issues/214 *************************************
+# See #214 for features left to be implemented
+# https://github.com/kynikos/outspline/issues/214
 
 
 class Main(object):
