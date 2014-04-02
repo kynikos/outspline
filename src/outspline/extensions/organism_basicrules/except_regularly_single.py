@@ -18,10 +18,11 @@
 
 from exceptions import BadRuleError
 
-_RULE_NAME = 'except_regularly_single'
+_RULE_NAMES = {'local': 'except_regularly_single_local',
+               'UTC': 'except_regularly_single_UTC'}
 
 
-def make_rule(refstart, interval, rend, inclusive, guiconfig):
+def make_rule(refstart, interval, rend, inclusive, standard, guiconfig):
     """
     @param refstart: A sample except period Unix start time.
     @param interval: The interval in seconds between two consecutive except
@@ -31,19 +32,21 @@ def make_rule(refstart, interval, rend, inclusive, guiconfig):
     @param inclusive: If False, only occurrences that start in the period will
                       be excepted; if True, any occurrence whose period
                       overlaps the except period will be excepted.
+    @param standard: The time standard to be used, either 'local' or 'UTC'.
     @param guiconfig: A place to store any configuration needed only by the
                       interface.
     """
     # Make sure this rule can only produce occurrences compliant with the
-    # requirements defined in organism_api.update_item_rules
+    #   requirements defined in organism_api.update_item_rules
+    # There's no need to check standard because it's imposed by the API
     if isinstance(refstart, int) and refstart >= 0 and \
-                               isinstance(interval, int) and interval > 0 and \
+            isinstance(interval, int) and interval > 0 and \
             isinstance(rend, int) and rend > 0 and isinstance(inclusive, bool):
         refmax = refstart + rend
         refspan = refmax - refstart
 
         return {
-            'rule': _RULE_NAME,
+            'rule': _RULE_NAMES[standard],
             '#': (
                 refmax,
                 refspan,
@@ -156,7 +159,42 @@ def _compute_min_time(reftime, refmax, refspan, interval):
     return reftime + (refmax - reftime) % interval - refspan
 
 
-def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
+def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
+                                                                        occs):
+    limits = occs.get_item_time_span(filename, id_)
+
+    if limits:
+        minstart, maxend = limits
+
+        interval = rule['#'][2]
+        rend = rule['#'][3]
+        inclusive = rule['#'][4]
+
+        # start can't be based on mint, in fact an except rule can affect an
+        # occurrence even if its start and end times are out of the time range
+        start = _compute_min_time(minstart, rule['#'][0], rule['#'][1],
+                                                                      interval)
+        while True:
+            end = start + rend
+
+            if start > maxend:
+                break
+            elif end >= minstart:
+                # Every timestamp can have a different UTC offset, depending
+                # whether it's in a DST period or not
+                offset = utcoffset.compute(start)
+
+                sstart = start + offset
+                send = end + offset
+
+                # The rule is checked in make_rule, no need to use occs.except_
+                occs.except_safe(filename, id_, sstart, send, inclusive)
+
+            start += interval
+
+
+def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
+                                                                        occs):
     limits = occs.get_item_time_span(filename, id_)
 
     if limits:
@@ -182,7 +220,47 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
             start += interval
 
 
-def get_next_item_occurrences(base_time, filename, id_, rule, occs):
+def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
+                                                                        occs):
+    limits = occs.get_item_time_span(filename, id_)
+
+    if limits:
+        minstart, maxend = limits
+
+        interval = rule['#'][2]
+        rend = rule['#'][3]
+        inclusive = rule['#'][4]
+
+        # start can't be based on base_time, in fact an except rule can affect
+        # an occurrence even if its start and end times are out of the time
+        # range
+        start = _compute_min_time(minstart, rule['#'][0], rule['#'][1],
+                                                                      interval)
+
+        while True:
+            end = start + rend
+
+            next_occ = occs.get_next_occurrence_time()
+
+            if not next_occ or start > next_occ:
+                break
+
+            if start <= maxend and end >= minstart:
+                # Every timestamp can have a different UTC offset, depending
+                # whether it's in a DST period or not
+                offset = utcoffset.compute(start)
+
+                sstart = start + offset
+                send = end + offset
+
+                # The rule is checked in make_rule, no need to use occs.except_
+                occs.except_safe(filename, id_, sstart, send, inclusive)
+
+            start += interval
+
+
+def get_next_item_occurrences_UTC(base_time, utcoffset, filename, id_, rule,
+                                                                        occs):
     limits = occs.get_item_time_span(filename, id_)
 
     if limits:

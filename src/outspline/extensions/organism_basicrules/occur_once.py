@@ -18,17 +18,19 @@
 
 from exceptions import BadRuleError
 
-_RULE_NAME = 'occur_once'
+_RULE_NAMES = {'local': 'occur_once_local',
+               'UTC': 'occur_once_UTC'}
 
 
-def make_rule(start, end, alarm, guiconfig):
+def make_rule(start, end, alarm, standard, guiconfig):
     # Make sure this rule can only produce occurrences compliant with the
-    # requirements defined in organism_api.update_item_rules
+    #   requirements defined in organism_api.update_item_rules
+    # There's no need to check standard because it's imposed by the API
     if isinstance(start, int) and \
-                   (end is None or (isinstance(end, int) and end > start)) and \
-                                      (alarm is None or isinstance(alarm, int)):
+                (end is None or (isinstance(end, int) and end > start)) and \
+                (alarm is None or isinstance(alarm, int)):
         return {
-            'rule': _RULE_NAME,
+            'rule': _RULE_NAMES[standard],
             '#': (
                 start,
                 end,
@@ -40,7 +42,36 @@ def make_rule(start, end, alarm, guiconfig):
         raise BadRuleError()
 
 
-def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
+def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
+                                                                        occs):
+    # The rule is checked in make_rule, no need to use occs.add
+    start = rule['#'][0]
+    end = rule['#'][1]
+    alarm = rule['#'][2]
+
+    offset = utcoffset.compute(start)
+
+    sstart = start + offset
+
+    try:
+        send = end + offset
+    except TypeError:
+        send = end
+
+    try:
+        salarm = alarm + offset
+    except TypeError:
+        salarm = alarm
+
+    occs.add_safe({'filename': filename,
+                   'id_': id_,
+                   'start': sstart,
+                   'end': send,
+                   'alarm': salarm})
+
+
+def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
+                                                                        occs):
     # The rule is checked in make_rule, no need to use occs.add
     occs.add_safe({'filename': filename,
                    'id_': id_,
@@ -48,7 +79,35 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
                    'end': rule['#'][1],
                    'alarm': rule['#'][2]})
 
-def get_next_item_occurrences(base_time, filename, id_, rule, occs):
+def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
+                                                                        occs):
+    # The rule is checked in make_rule, no need to use occs.add
+    start = rule['#'][0]
+    end = rule['#'][1]
+    alarm = rule['#'][2]
+
+    offset = utcoffset.compute(start)
+
+    sstart = start + offset
+
+    try:
+        send = end + offset
+    except TypeError:
+        send = end
+
+    try:
+        salarm = alarm + offset
+    except TypeError:
+        salarm = alarm
+
+    occs.add_safe(base_time, {'filename': filename,
+                              'id_': id_,
+                              'start': sstart,
+                              'end': send,
+                              'alarm': salarm})
+
+def get_next_item_occurrences_UTC(base_time, utcoffset, filename, id_, rule,
+                                                                        occs):
     # The rule is checked in make_rule, no need to use occs.add
     occs.add_safe(base_time, {'filename': filename,
                               'id_': id_,

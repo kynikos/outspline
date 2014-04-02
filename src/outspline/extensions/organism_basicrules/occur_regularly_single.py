@@ -18,10 +18,11 @@
 
 from exceptions import BadRuleError
 
-_RULE_NAME = 'occur_regularly_single'
+_RULE_NAMES = {'local': 'occur_regularly_single_local',
+               'UTC': 'occur_regularly_single_UTC'}
 
 
-def make_rule(refstart, interval, rend, ralarm, guiconfig):
+def make_rule(refstart, interval, rend, ralarm, standard, guiconfig):
     """
     @param refstart: A sample occurrence Unix start time.
     @param interval: The interval in seconds between two consecutive occurrence
@@ -31,15 +32,17 @@ def make_rule(refstart, interval, rend, ralarm, guiconfig):
     @param ralarm: The difference in seconds between the sample start time and
                    the sample alarm time; it is negative if the alarm is set
                    later than the start time.
+    @param standard: The time standard to be used, either 'local' or 'UTC'.
     @param guiconfig: A place to store any configuration needed only by the
                       interface.
     """
     # Make sure this rule can only produce occurrences compliant with the
-    # requirements defined in organism_api.update_item_rules
+    #   requirements defined in organism_api.update_item_rules
+    # There's no need to check standard because it's imposed by the API
     if isinstance(refstart, int) and refstart >= 0 and \
-                                isinstance(interval, int) and interval > 0 and \
-                    (rend is None or (isinstance(rend, int) and rend > 0)) and \
-                                    (ralarm is None or isinstance(ralarm, int)):
+                isinstance(interval, int) and interval > 0 and \
+                (rend is None or (isinstance(rend, int) and rend > 0)) and \
+                (ralarm is None or isinstance(ralarm, int)):
         if ralarm is None:
             refmin = refstart
             refmax = refstart + max((rend, 0))
@@ -51,7 +54,7 @@ def make_rule(refstart, interval, rend, ralarm, guiconfig):
         rstart = refstart - refmin
 
         return {
-            'rule': _RULE_NAME,
+            'rule': _RULE_NAMES[standard],
             '#': (
                 refmax,
                 refspan,
@@ -305,7 +308,46 @@ def _compute_min_time(reftime, refmax, refspan, interval):
         return mintime
 
 
-def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
+def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
+                                                                        occs):
+    interval = rule['#'][2]
+    mintime = _compute_min_time(mint, rule['#'][0], rule['#'][1], interval)
+    start = mintime + rule['#'][3]
+    rend = rule['#'][4]
+    ralarm = rule['#'][5]
+
+    while True:
+        # Every timestamp can have a different UTC offset, depending whether
+        # it's in a DST period or not
+        offset = utcoffset.compute(start)
+
+        sstart = start + offset
+
+        try:
+            send = sstart + rend
+        except TypeError:
+            send = None
+
+        try:
+            salarm = sstart - ralarm
+        except TypeError:
+            salarm = None
+
+        if start > maxt and (salarm is None or salarm > maxt + offset):
+            break
+
+        # The rule is checked in make_rule, no need to use occs.add
+        occs.add_safe({'filename': filename,
+                       'id_': id_,
+                       'start': sstart,
+                       'end': send,
+                       'alarm': salarm})
+
+        start += interval
+
+
+def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
+                                                                        occs):
     interval = rule['#'][2]
     mintime = _compute_min_time(mint, rule['#'][0], rule['#'][1], interval)
     start = mintime + rule['#'][3]
@@ -336,9 +378,54 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
         start += interval
 
 
-def get_next_item_occurrences(base_time, filename, id_, rule, occs):
+def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
+                                                                        occs):
     interval = rule['#'][2]
-    mintime = _compute_min_time(base_time, rule['#'][0], rule['#'][1], interval)
+    mintime = _compute_min_time(base_time, rule['#'][0], rule['#'][1],
+                                                                    interval)
+    start = mintime + rule['#'][3]
+    rend = rule['#'][4]
+    ralarm = rule['#'][5]
+
+    while True:
+        # Every timestamp can have a different UTC offset, depending whether
+        # it's in a DST period or not
+        offset = utcoffset.compute(start)
+
+        sstart = start + offset
+
+        try:
+            send = sstart + rend
+        except TypeError:
+            send = None
+
+        try:
+            salarm = sstart - ralarm
+        except TypeError:
+            salarm = None
+
+        occd = {'filename': filename,
+                'id_': id_,
+                'start': sstart,
+                'end': send,
+                'alarm': salarm}
+
+        next_occ = occs.get_next_occurrence_time()
+
+        # The rule is checked in make_rule, no need to use occs.add
+        if occs.add_safe(base_time, occd) or (next_occ and \
+                            start > next_occ and \
+                            (salarm is None or salarm > next_occ + offset)):
+            break
+
+        start += interval
+
+
+def get_next_item_occurrences_UTC(base_time, utcoffset, filename, id_, rule,
+                                                                        occs):
+    interval = rule['#'][2]
+    mintime = _compute_min_time(base_time, rule['#'][0], rule['#'][1],
+                                                                    interval)
     start = mintime + rule['#'][3]
     rend = rule['#'][4]
     ralarm = rule['#'][5]
@@ -363,8 +450,8 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
         next_occ = occs.get_next_occurrence_time()
 
         # The rule is checked in make_rule, no need to use occs.add
-        if occs.add_safe(base_time, occd) or (next_occ and start > next_occ and
-                                           (alarm is None or alarm > next_occ)):
+        if occs.add_safe(base_time, occd) or (next_occ and \
+                    start > next_occ and (alarm is None or alarm > next_occ)):
             break
 
         start += interval

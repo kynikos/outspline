@@ -23,10 +23,11 @@ import bisect
 
 from exceptions import BadRuleError
 
-_RULE_NAME = 'occur_yearly_group'
+_RULE_NAMES = {'local': 'occur_yearly_group_local',
+               'UTC': 'occur_yearly_group_UTC'}
 
 
-def make_rule(occs, occsl, rend, ralarm, guiconfig):
+def make_rule(occs, occsl, rend, ralarm, standard, guiconfig):
     """
     @param occs: A dictionary whose keys are the selected months (1-12); each
                  value is a dictionary whose keys are the selected start days
@@ -44,6 +45,7 @@ def make_rule(occs, occsl, rend, ralarm, guiconfig):
     @param ralarm: The difference in seconds between the relative start time
                    and the relative alarm time; it is negative if the alarm is
                    set later than the start time.
+    @param standard: The time standard to be used, either 'local' or 'UTC'.
     @param guiconfig: A place to store any configuration needed only by the
                       interface.
     """
@@ -52,10 +54,11 @@ def make_rule(occs, occsl, rend, ralarm, guiconfig):
     # of February si variable)
 
     # Make sure this rule can only produce occurrences compliant with the
-    # requirements defined in organism_api.update_item_rules
+    #   requirements defined in organism_api.update_item_rules
+    # There's no need to check standard because it's imposed by the API
     if isinstance(occs, dict) and isinstance(occsl, dict) and \
-                    (rend is None or (isinstance(rend, int) and rend > 0)) and \
-                                    (ralarm is None or isinstance(ralarm, int)):
+                (rend is None or (isinstance(rend, int) and rend > 0)) and \
+                (ralarm is None or isinstance(ralarm, int)):
         for m in occs:
             for d in occs[m]:
                 for H in occs[m][d]:
@@ -89,11 +92,11 @@ def make_rule(occs, occsl, rend, ralarm, guiconfig):
 
         occs1 = [int(''.join(('1', str(d).zfill(2), str(H).zfill(2),
                  str(M).zfill(2)))) for d in occs[1] for H in occs[1][d]
-                                    for M in occs[1][d][H]] if 1 in occs else []
+                                for M in occs[1][d][H]] if 1 in occs else []
 
         occs2 = [int(''.join(('2', str(d).zfill(2), str(H).zfill(2),
                  str(M).zfill(2)))) for d in occs[2] for H in occs[2][d]
-                                    for M in occs[2][d][H]] if 2 in occs else []
+                                for M in occs[2][d][H]] if 2 in occs else []
 
         occs2l = [int(''.join(('2', str(d).zfill(2), str(H).zfill(2),
                   str(M).zfill(2)))) for d in occsl for H in occsl[d]
@@ -117,7 +120,7 @@ def make_rule(occs, occsl, rend, ralarm, guiconfig):
             span = max(srend, ralarm * -1)
 
         return {
-            'rule': _RULE_NAME,
+            'rule': _RULE_NAMES[standard],
             '#': (
                 span,
                 occs1,
@@ -133,7 +136,8 @@ def make_rule(occs, occsl, rend, ralarm, guiconfig):
         raise BadRuleError()
 
 
-def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
+def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
+                                                                        occs):
     # Go back by span in order to keep into account any occurrence that still
     # has to end
     mintime = mint - rule['#'][0]
@@ -154,7 +158,83 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
         occsf = occs1 + occs2 + occs3
 
     i = bisect.bisect_left(occsf, int(''.join((str(sdate.month),
-                          str(sdate.day), str(sdate.hour), str(sdate.minute)))))
+                        str(sdate.day), str(sdate.hour), str(sdate.minute)))))
+
+    while True:
+        try:
+            socc = occsf[i]
+        except IndexError:
+            y += 1
+
+            if calendar.isleap(y):
+                occsf = occs1 + occs2l + occs3
+            else:
+                occsf = occs1 + occs2 + occs3
+
+            # 0 will always be a valid index because make_rule makes sure
+            # there's at least an occurrence every year
+            i = 0
+            socc = occsf[0]
+
+        m, mr = divmod(socc, 1000000)
+        d, dr = divmod(mr, 10000)
+        H, M = divmod(dr, 100)
+
+        sdate = _datetime.datetime(y, m, d, H, M)
+        start = int(_time.mktime(sdate.timetuple()))
+
+        # Every timestamp can have a different UTC offset, depending whether
+        # it's in a DST period or not
+        offset = utcoffset.compute(start)
+
+        sstart = start + offset
+
+        try:
+            send = sstart + rend
+        except TypeError:
+            send = None
+
+        try:
+            salarm = sstart - ralarm
+        except TypeError:
+            salarm = None
+
+        if start > maxt and (salarm is None or salarm > maxt + offset):
+            break
+
+        # The rule is checked in make_rule, no need to use occs.add
+        occs.add_safe({'filename': filename,
+                       'id_': id_,
+                       'start': sstart,
+                       'end': send,
+                       'alarm': salarm})
+
+        i += 1
+
+
+def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
+                                                                        occs):
+    # Go back by span in order to keep into account any occurrence that still
+    # has to end
+    mintime = mint - rule['#'][0]
+    occs1 = rule['#'][1]
+    occs2 = rule['#'][2]
+    occs2l = rule['#'][3]
+    occs3 = rule['#'][4]
+    rend = rule['#'][5]
+    ralarm = rule['#'][6]
+
+    sdate = _datetime.datetime.fromtimestamp(mintime)
+
+    y = sdate.year
+
+    if calendar.isleap(y):
+        occsf = occs1 + occs2l + occs3
+    else:
+        occsf = occs1 + occs2 + occs3
+
+    i = bisect.bisect_left(occsf, int(''.join((str(sdate.month),
+                        str(sdate.day), str(sdate.hour), str(sdate.minute)))))
 
     while True:
         try:
@@ -202,7 +282,8 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
         i += 1
 
 
-def get_next_item_occurrences(base_time, filename, id_, rule, occs):
+def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
+                                                                        occs):
     # Go back by span in order to keep into account any occurrence that still
     # has to end
     mintime = base_time - rule['#'][0]
@@ -223,7 +304,87 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
         occsf = occs1 + occs2 + occs3
 
     i = bisect.bisect_left(occsf, int(''.join((str(sdate.month),
-                          str(sdate.day), str(sdate.hour), str(sdate.minute)))))
+                        str(sdate.day), str(sdate.hour), str(sdate.minute)))))
+
+    while True:
+        try:
+            socc = occsf[i]
+        except IndexError:
+            y += 1
+
+            if calendar.isleap(y):
+                occsf = occs1 + occs2l + occs3
+            else:
+                occsf = occs1 + occs2 + occs3
+
+            # 0 will always be a valid index because make_rule makes sure
+            # there's at least an occurrence every year
+            i = 0
+            socc = occsf[0]
+
+        m, mr = divmod(socc, 1000000)
+        d, dr = divmod(mr, 10000)
+        H, M = divmod(dr, 100)
+
+        sdate = _datetime.datetime(y, m, d, H, M)
+        start = int(_time.mktime(sdate.timetuple()))
+
+        # Every timestamp can have a different UTC offset, depending whether
+        # it's in a DST period or not
+        offset = utcoffset.compute(start)
+
+        sstart = start + offset
+
+        try:
+            send = sstart + rend
+        except TypeError:
+            send = None
+
+        try:
+            salarm = sstart - ralarm
+        except TypeError:
+            salarm = None
+
+        occd = {'filename': filename,
+                'id_': id_,
+                'start': sstart,
+                'end': send,
+                'alarm': salarm}
+
+        next_occ = occs.get_next_occurrence_time()
+
+        # The rule is checked in make_rule, no need to use occs.add
+        if occs.add_safe(base_time, occd) or \
+                            (next_occ and start > next_occ and
+                            (salarm is None or salarm > next_occ + offset)):
+            break
+
+        i += 1
+
+
+def get_next_item_occurrences_UTC(base_time, utcoffset, filename, id_, rule,
+                                                                        occs):
+    # Go back by span in order to keep into account any occurrence that still
+    # has to end
+    mintime = base_time - rule['#'][0]
+    occs1 = rule['#'][1]
+    occs2 = rule['#'][2]
+    occs2l = rule['#'][3]
+    occs3 = rule['#'][4]
+    rend = rule['#'][5]
+    ralarm = rule['#'][6]
+
+    sdate = _datetime.datetime.fromtimestamp(mintime)
+
+    y = sdate.year
+
+    if calendar.isleap(y):
+        occsf = occs1 + occs2l + occs3
+    else:
+        occsf = occs1 + occs2 + occs3
+
+    i = bisect.bisect_left(occsf, int(''.join((str(sdate.month),
+                        str(sdate.day), str(sdate.hour), str(sdate.minute)))))
 
     while True:
         try:
@@ -267,8 +428,9 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
         next_occ = occs.get_next_occurrence_time()
 
         # The rule is checked in make_rule, no need to use occs.add
-        if occs.add_safe(base_time, occd) or (next_occ and start > next_occ and
-                                           (alarm is None or alarm > next_occ)):
+        if occs.add_safe(base_time, occd) or \
+                                        (next_occ and start > next_occ and
+                                        (alarm is None or alarm > next_occ)):
             break
 
         i += 1
