@@ -543,7 +543,7 @@ class Properties(object):
         # it would never match (0, 0)
         if extent[0] != 0:
             shift = self.bitsn
-            mask = int('1' * bitsn) << shift
+            mask = int('1' * bitsn, 2) << shift
             self.bitsn += bitsn
             shifted_bits_to_colour = {}
 
