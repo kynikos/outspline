@@ -300,6 +300,13 @@ class RuleList():
             self.listview.SetColumnWidth(0, wx.LIST_AUTOSIZE)
             del self.rules[index]
 
+            count = self.listview.GetItemCount()
+
+            if count > index:
+                self.listview.Select(index)
+            elif count > 0:
+                self.listview.Select(count - 1)
+
             # Do not update the buttons on EVT_LIST_DELETE_ITEM because
             # GetSelectedItemCount would still return > 0 and the buttons would
             # be left enabled
