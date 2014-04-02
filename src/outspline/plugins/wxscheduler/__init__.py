@@ -392,7 +392,7 @@ class RuleEditor():
     def post_init(self):
         self.choice.SetSelection(0)
 
-    def display_rule(self, description, rule):
+    def display_rule(self, rule, description):
         self.choice.Append(description, clientData=rule)
 
     def select_rule(self, interface_name):

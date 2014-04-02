@@ -21,9 +21,9 @@ import outspline.interfaces.wxgui_api as wxgui_api
 import wxscheduler
 
 
-def display_rule(filename, id_, description, rule):
+def display_rule(filename, id_, rule, description):
     return wxscheduler.base.get_scheduler(filename, id_
-                                ).rule_editor.display_rule(description, rule)
+                                ).rule_editor.display_rule(rule, description)
 
 
 def select_rule(filename, id_, interface_name):
