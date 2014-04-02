@@ -34,6 +34,26 @@ history_clean_event = Event()
 
 
 class DBHistory(object):
+    def __init__(self):
+        self.hactions = {
+            'insert': {
+                'undo': self._do_history_row_delete,
+                'redo': self._do_history_row_insert,
+            },
+            'update': {
+                'undo': self._do_history_row_update,
+                'redo': self._do_history_row_update,
+            },
+            'delete': {
+                'undo': self._do_history_row_insert,
+                'redo': self._do_history_row_delete,
+            },
+            None: {
+                'undo': self._do_history_row_other,
+                'redo': self._do_history_row_other,
+            },
+        }
+
     def get_next_history_group(self):
         qconn = self.connection.get()
         cursor = qconn.cursor()
@@ -195,33 +215,12 @@ class DBHistory(object):
             cursor.execute(query, (text, ))
         self.connection.give(qconn)
 
-        filename = self.filename
-
-        hactions = {
-            'insert': {
-                'undo': self._do_history_row_delete,
-                'redo': self._do_history_row_insert,
-            },
-            'update': {
-                'undo': self._do_history_row_update,
-                'redo': self._do_history_row_update,
-            },
-            'delete': {
-                'undo': self._do_history_row_insert,
-                'redo': self._do_history_row_delete,
-            },
-            None: {
-                'undo': self._do_history_row_other,
-                'redo': self._do_history_row_other,
-            },
-        }
-
         try:
-            haction = hactions[type_]
+            haction = self.hactions[type_]
         except KeyError:
-            haction = hactions[None]
+            haction = self.hactions[None]
 
-        haction[action](type_, action, filename, itemid, hid, text)
+        haction[action](type_, action, self.filename, itemid, hid, text)
 
     def _do_history_row_insert(self, type_, action, filename, itemid, hid,
                                                                         text):

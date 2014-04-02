@@ -115,6 +115,7 @@ class MemoryDB(DBQueue):
 
 class Database(history.DBHistory):
     def __init__(self, filename):
+        super(Database, self).__init__()
         self.connection = DBQueue()
         self.filename = filename
         self.items = {}
