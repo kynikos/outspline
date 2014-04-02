@@ -27,7 +27,9 @@ class NarrowSpinCtrl(wx.SpinCtrl):
         dc = wx.WindowDC(self)
         dc.SetFont(font)
         swidth = dc.GetTextExtent("0")[0]
-        ARROWS = 24
+        # Some skins have arrows wider than others: Elegant Brit and Orion are
+        #   the largest I've found
+        ARROWS = 28
 
         # Note that min_number's length includes also the minus sign, if
         # negative
