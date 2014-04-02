@@ -19,322 +19,175 @@
 import time as _time
 import datetime as _datetime
 import random
-import wx
 
-from outspline.static.wxclasses.choices import WidgetChoiceCtrl
-from outspline.static.wxclasses.time import HourCtrl, TimeSpanCtrl, WeekdaysCtrl
+from outspline.static.wxclasses.timectrls import TimeSpanCtrl, WeekdaysCtrl
 import outspline.extensions.organism_basicrules_api as organism_basicrules_api
 import outspline.plugins.wxscheduler_api as wxscheduler_api
 
+import interface
 import msgboxes
 
-_RULE_DESC = 'Occur on selected days of the week'
 
-
-class Rule():
-    original_values = None
-    mpanel = None
-    pbox = None
-    dlabel = None
-    daysw = None
-    slabel = None
-    startw = None
-    endchoicew = None
-    endw = None
-    alarmchoicew = None
-    alarmw = None
-
-    def __init__(self, parent, filename, id_, rule):
-        self.original_values = self._compute_values(rule)
-
-        self._create_widgets(parent)
-
-        wxscheduler_api.change_rule(filename, id_, self.mpanel)
-
-    def _create_widgets(self, parent):
-        self.mpanel = wx.Panel(parent)
-
-        self.pbox = wx.BoxSizer(wx.VERTICAL)
-        self.mpanel.SetSizer(self.pbox)
-
-        self._create_widgets_days()
-        self._create_widgets_start()
-        self._create_widgets_end()
-        self._create_widgets_alarm()
-
-        self._align_first_column()
-
-    def _create_widgets_days(self):
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        self.pbox.Add(box, flag=wx.BOTTOM, border=4)
-
-        self.dlabel = wx.StaticText(self.mpanel, label='Days:')
-        box.Add(self.dlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
-                                                                      border=4)
-
-        self.daysw = WeekdaysCtrl(self.mpanel)
-        self.daysw.set_days(self.original_values['sdays'])
-        box.Add(self.daysw.get_main_panel())
-
-    def _create_widgets_start(self):
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        self.pbox.Add(box, flag=wx.BOTTOM, border=4)
-
-        self.slabel = wx.StaticText(self.mpanel, label='Start time:')
-        box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
-                                                                      border=4)
-
-        self.startw = HourCtrl(self.mpanel)
-        self.startw.set_values(self.original_values['rstartH'],
-                               self.original_values['rstartM'])
-        box.Add(self.startw.get_main_panel())
-
-    def _create_widgets_end(self):
-        self.endchoicew = WidgetChoiceCtrl(self.mpanel, (('No duration', None),
-                                   ('Duration:', self._create_duration_widget),
-                                  ('End time:', self._create_end_time_widget)),
-                                            self.original_values['endtype'], 4)
-        self.endchoicew.force_update()
-        self.pbox.Add(self.endchoicew.get_main_panel(), flag=wx.BOTTOM,
-                                                                      border=4)
-
-    def _create_duration_widget(self):
-        self.endw = TimeSpanCtrl(self.endchoicew.get_main_panel(), 1, 999)
-        self.endw.set_values(self.original_values['rendn'],
-                             self.original_values['rendu'])
-
-        return self.endw.get_main_panel()
-
-    def _create_end_time_widget(self):
-        self.endw = HourCtrl(self.endchoicew.get_main_panel())
-        self.endw.set_values(self.original_values['rendH'],
-                             self.original_values['rendM'])
-
-        return self.endw.get_main_panel()
-
-    def _create_widgets_alarm(self):
-        self.alarmchoicew = WidgetChoiceCtrl(self.mpanel, (('No alarm', None),
-                         ('Alarm advance:', self._create_alarm_advance_widget),
-                              ('Alarm time:', self._create_alarm_time_widget)),
-                                          self.original_values['alarmtype'], 4)
-        self.alarmchoicew.force_update()
-        self.pbox.Add(self.alarmchoicew.get_main_panel())
-
-    def _create_alarm_advance_widget(self):
-        self.alarmw = TimeSpanCtrl(self.alarmchoicew.get_main_panel(), 0, 999)
-        self.alarmw.set_values(self.original_values['ralarmn'],
-                               self.original_values['ralarmu'])
-
-        return self.alarmw.get_main_panel()
-
-    def _create_alarm_time_widget(self):
-        self.alarmw = HourCtrl(self.alarmchoicew.get_main_panel())
-        self.alarmw.set_values(self.original_values['ralarmH'],
-                               self.original_values['ralarmM'])
-
-        return self.alarmw.get_main_panel()
-
-    def _align_first_column(self):
-        dminw = self.dlabel.GetSizeTuple()[0]
-        sminw = self.slabel.GetSizeTuple()[0]
-        eminw = self.endchoicew.get_choice_width()
-        aminw = self.alarmchoicew.get_choice_width()
-
-        maxw = max((dminw, sminw, eminw, aminw))
-
-        dminh = self.dlabel.GetMinHeight()
-        self.dlabel.SetMinSize((maxw, dminh))
-
-        sminh = self.slabel.GetMinHeight()
-        self.slabel.SetMinSize((maxw, sminh))
-
-        self.endchoicew.set_choice_min_width(maxw)
-
-        self.alarmchoicew.set_choice_min_width(maxw)
+class Rule(object):
+    def __init__(self, parent, filename, id_, standard, rule):
+        self.original_values = self._compute_values(standard, rule)
+        self.ui = interface.Interface(parent, filename, id_,
+                                            (interface.WeekDays,
+                                            interface.StartTime,
+                                            interface.EndTime,
+                                            interface.AlarmTime,
+                                            interface.Standard),
+                                      self.original_values)
 
     def apply_rule(self, filename, id_):
-        sdays = self.daysw.get_days()
-
-        rstart = self.startw.get_relative_time()
-        rstartH = self.startw.get_hour()
-        rstartM = self.startw.get_minute()
-
-        endtype = self.endchoicew.get_selection()
-
-        if endtype == 1:
-            rend = self.endw.get_time_span()
-            fend = False
-            rendn = self.endw.get_number()
-            rendu = self.endw.get_unit()
-            rendH = None
-            rendM = None
-        elif endtype == 2:
-            endrt = self.endw.get_relative_time()
-
-            # If time is set earlier than or equal to start, interpret it as
-            # referring to the following day
-            if endrt > rstart:
-                rend = endrt - rstart
-                fend = False
-            else:
-                rend = 86400 - rstart + endrt
-                fend = True
-
-            rendn = None
-            rendu = None
-            rendH = self.endw.get_hour()
-            rendM = self.endw.get_minute()
-        else:
-            rend = None
-            fend = False
-            rendn = None
-            rendu = None
-            rendH = None
-            rendM = None
-
-        alarmtype = self.alarmchoicew.get_selection()
-
-        if alarmtype == 1:
-            ralarm = self.alarmw.get_time_span()
-            palarm = False
-            ralarmn = self.alarmw.get_number()
-            ralarmu = self.alarmw.get_unit()
-            ralarmH = None
-            ralarmM = None
-        elif alarmtype == 2:
-            alarmrt = self.alarmw.get_relative_time()
-
-            # If time is set later than start, interpret it as referring to
-            # the previous day
-            if alarmrt <= rstart:
-                ralarm = rstart - alarmrt
-                palarm = False
-            else:
-                ralarm = 86400 - alarmrt + rstart
-                palarm = True
-
-            ralarmn = None
-            ralarmu = None
-            ralarmH = self.alarmw.get_hour()
-            ralarmM = self.alarmw.get_minute()
-        else:
-            ralarm = None
-            palarm = False
-            ralarmn = None
-            ralarmu = None
-            ralarmH = None
-            ralarmM = None
+        values = self.ui.get_values()
+        sdays = values['selected_weekdays']
+        rstart = values['start_relative_time']
+        rstartH = values['start_hour']
+        rstartM = values['start_minute']
+        endtype = values['end_type']
+        rend = values['end_relative_time']
+        fend = values['end_next_day']
+        rendn = values['end_relative_number']
+        rendu = values['end_relative_unit']
+        rendH = values['end_hour']
+        rendM = values['end_minute']
+        alarmtype = values['alarm_type']
+        ralarm = values['alarm_relative_time']
+        palarm = values['alarm_previous_day']
+        ralarmn = values['alarm_relative_number']
+        ralarmu = values['alarm_relative_unit']
+        ralarmH = values['alarm_hour']
+        ralarmM = values['alarm_minute']
+        standard = values['time_standard']
 
         rstarts = [(d - sdays[0]) * 86400 for d in sdays]
 
         refstart = (int(_time.time()) // 604800 * 7 + 3 + sdays[0]) * 86400 + \
-                                                         rstart + _time.altzone
+                                                                        rstart
 
         try:
-            ruled = organism_basicrules_api.make_occur_regularly_group_rule(
-                                       refstart, 604800, rstarts, rend, ralarm,
-                                                    ('sw', endtype, alarmtype))
+            if standard == 'UTC':
+                ruled = organism_basicrules_api.make_occur_regularly_group_rule_UTC(
+                                    refstart, 604800, rstarts, rend, ralarm,
+                                    ('sw', endtype, alarmtype))
+            else:
+                ruled = organism_basicrules_api.make_occur_regularly_group_rule_local(
+                                    refstart, 604800, rstarts, rend, ralarm,
+                                    ('sw', endtype, alarmtype))
         except organism_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule(msgboxes.generic).ShowModal()
         else:
             label = self._make_label(sdays, rstartH, rstartM, rendH, rendM,
-                                       ralarmH, ralarmM, rendn, rendu, ralarmn,
-                                     ralarmu, endtype, alarmtype, fend, palarm)
+                        ralarmH, ralarmM, rendn, rendu, ralarmn,
+                        ralarmu, endtype, alarmtype, fend, palarm, standard)
             wxscheduler_api.apply_rule(filename, id_, ruled, label)
 
     @classmethod
     def insert_rule(cls, filename, id_, rule, rulev):
-        values = cls._compute_values(rulev)
-        label = cls._make_label(values['sdays'], values['rstartH'],
-                           values['rstartM'], values['rendH'], values['rendM'],
-                         values['ralarmH'], values['ralarmM'], values['rendn'],
-                         values['rendu'], values['ralarmn'], values['ralarmu'],
-                                        values['endtype'], values['alarmtype'],
-                                              values['fend'], values['palarm'])
+        standard = 'UTC' if rule['rule'] == 'occur_regularly_group_UTC' else \
+                                                                        'local'
+        values = cls._compute_values(standard, rulev)
+        label = cls._make_label(values['selected_weekdays'],
+                                values['start_hour'],
+                                values['start_minute'],
+                                values['end_hour'],
+                                values['end_minute'],
+                                values['alarm_hour'],
+                                values['alarm_minute'],
+                                values['end_relative_number'],
+                                values['end_relative_unit'],
+                                values['alarm_relative_number'],
+                                values['alarm_relative_unit'],
+                                values['end_type'],
+                                values['alarm_type'],
+                                values['end_next_day'],
+                                values['alarm_previous_day'],
+                                values['time_standard'])
         wxscheduler_api.insert_rule(filename, id_, rule, label)
 
     @classmethod
-    def _compute_values(cls, rule):
-        values = {}
-
+    def _compute_values(cls, standard, rule):
+        # Remember to support also time zones that differ from UTC by not
+        # exact hours (e.g. Australia/Adelaide)
         if not rule:
-            currdate = _datetime.datetime.now()
-            currw = currdate.weekday()
-            currH = currdate.hour
+            nextdate = _datetime.datetime.now() + _datetime.timedelta(hours=1)
+            rrstart = nextdate.hour * 3600
+            refstart = int(_time.time()) // 86400 * 86400 + rrstart
 
-            rrstart = currH * 3600 + 3600 if currH < 23 else 0
-
-            refstart = int(_time.time()) // 86400 * 86400 + _time.altzone + \
-                                                                        rrstart
-
-            values.update({
-                'rend': 3600,
-                'ralarm': 0,
-                'endtype': 0,
-                'alarmtype': 0,
-                'sdays': list(range(1, 8)),
-            })
+            values = {
+                'end_relative_time': 3600,
+                'alarm_relative_time': 0,
+                'end_type': 0,
+                'alarm_type': 0,
+                'selected_weekdays': list(range(1, 8)),
+                'time_standard': standard,
+            }
         else:
             values = {
-                'refmax': rule[0],
+                'reference_max': rule[0],
                 'interval': rule[1],
                 'irmaxs': rule[2],
                 'rmax': rule[3],
-                'rend': rule[4] if rule[4] is not None else 3600,
-                'ralarm': rule[5] if rule[5] is not None else 0,
-                'endtype': rule[6][1],
-                'alarmtype': rule[6][2],
+                'end_relative_time': rule[4] if rule[4] is not None else 3600,
+                'alarm_relative_time': rule[5] if rule[5] is not None else 0,
+                'end_type': rule[6][1],
+                'alarm_type': rule[6][2],
+                'time_standard': standard,
             }
 
-            refstart = values['refmax'] - values['irmaxs'][-1] - values['rmax']
-            rrstart = (refstart - _time.altzone) % 86400
+            refstart = values['reference_max'] - values['irmaxs'][-1] - \
+                                                                values['rmax']
+            rrstart = refstart % 86400
 
-            values['sdays'] = [_datetime.datetime.fromtimestamp(refstart +
-                                    values['irmaxs'][-1] - irmax).weekday() + 1
-                                                 for irmax in values['irmaxs']]
-            values['sdays'].reverse()
+            values['selected_weekdays'] = [_datetime.datetime.fromtimestamp(
+                        refstart + values['irmaxs'][-1] - irmax).weekday() + 1
+                        for irmax in values['irmaxs']]
+            values['selected_weekdays'].reverse()
 
-        values['rendn'], values['rendu'] = \
-                    TimeSpanCtrl._compute_widget_values(values['rend'])
+        values['end_relative_number'], values['end_relative_unit'] = \
+                                        TimeSpanCtrl.compute_widget_values(
+                                        values['end_relative_time'])
 
         # ralarm could be negative
-        values['ralarmn'], values['ralarmu'] = \
-                                   TimeSpanCtrl._compute_widget_values(
-                                                    max((0, values['ralarm'])))
+        values['alarm_relative_number'], values['alarm_relative_unit'] = \
+                                    TimeSpanCtrl.compute_widget_values(
+                                    max((0, values['alarm_relative_time'])))
 
-        rrend = rrstart + values['rend']
-        values['fend'] = False
+        rrend = rrstart + values['end_relative_time']
+        values['end_next_day'] = False
 
         # End time could be set after 23:59 of the start day
         if rrend > 86399:
             rrend = rrend % 86400
-            values['fend'] = True
+            values['end_next_day'] = True
 
-        rralarm = rrstart - values['ralarm']
-        values['palarm'] = False
+        rralarm = rrstart - values['alarm_relative_time']
+        values['alarm_previous_day'] = False
 
         # Alarm time could be set before 00:00 of the start day
         if rralarm < 0:
             rralarm = 86400 - abs(rralarm) % 86400
-            values['palarm'] = True
+            values['alarm_previous_day'] = True
 
         values.update({
-            'rstartH': rrstart // 3600,
-            'rstartM': rrstart % 3600 // 60,
-            'rendH': rrend // 3600,
-            'rendM': rrend % 3600 // 60,
-            'ralarmH': rralarm // 3600,
-            'ralarmM': rralarm % 3600 // 60,
+            'start_hour': rrstart // 3600,
+            'start_minute': rrstart % 3600 // 60,
+            'end_hour': rrend // 3600,
+            'end_minute': rrend % 3600 // 60,
+            'alarm_hour': rralarm // 3600,
+            'alarm_minute': rralarm % 3600 // 60,
         })
 
         return values
 
     @staticmethod
     def _make_label(sdays, rstartH, rstartM, rendH, rendM, ralarmH, ralarmM,
-             rendn, rendu, ralarmn, ralarmu, endtype, alarmtype, fend, palarm):
-        label = 'Occur every {} at {}:{}'.format(', '.join(
-                   [        WeekdaysCtrl._compute_day_name(d) for d in sdays]),
-                                  str(rstartH).zfill(2), str(rstartM).zfill(2))
+                                     rendn, rendu, ralarmn, ralarmu, endtype,
+                                     alarmtype, fend, palarm, standard):
+        label = 'Occur every {} at {}:{} ({})'.format(', '.join(
+                        [WeekdaysCtrl.compute_day_name(d) for d in sdays]),
+                        str(rstartH).zfill(2), str(rstartM).zfill(2), standard)
 
         if endtype == 1:
             label += ' for {} {}'.format(rendn, rendu)
@@ -385,6 +238,13 @@ class Rule():
         else:
             ralarm = random.randint(0, 360) * 60
 
-        return organism_basicrules_api.make_occur_regularly_group_rule(
+        stdn = random.randint(0, 1)
+
+        if stdn == 0:
+            return organism_basicrules_api.make_occur_regularly_group_rule_local(
+                                       refstart, 604800, rstarts, rend, ralarm,
+                                                    ('sw', endtype, alarmtype))
+        else:
+            return organism_basicrules_api.make_occur_regularly_group_rule_UTC(
                                        refstart, 604800, rstarts, rend, ralarm,
                                                     ('sw', endtype, alarmtype))
