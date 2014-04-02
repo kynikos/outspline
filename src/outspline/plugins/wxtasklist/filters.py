@@ -21,7 +21,7 @@ import time as _time
 import datetime as _datetime
 from collections import OrderedDict
 
-from outspline.static.wxclasses.time import DateHourCtrl, TimeSpanCtrl
+from outspline.static.wxclasses.timectrls import DateHourCtrl, TimeSpanCtrl
 from outspline.static.wxclasses.misc import NarrowSpinCtrl
 
 import outspline.coreaux_api as coreaux_api
@@ -351,7 +351,7 @@ class FilterRelativeInterface():
         # It must be possible to set up at least to 527039 minutes
         # (1 leap year - 1 minute)
         self.lowlimit = TimeSpanCtrl(self.panel, -999999, 999999)
-        self.lowlimit.set_values(*TimeSpanCtrl._compute_widget_values(
+        self.lowlimit.set_values(*TimeSpanCtrl.compute_widget_values(
                                                            self.values['low']))
         self.fgrid.Add(self.lowlimit.get_main_panel())
 
@@ -361,7 +361,7 @@ class FilterRelativeInterface():
         # It must be possible to set up at least to 527039 minutes
         # (1 leap year - 1 minute)
         self.highlimit = TimeSpanCtrl(self.panel, -999999, 999999)
-        self.highlimit.set_values(*TimeSpanCtrl._compute_widget_values(
+        self.highlimit.set_values(*TimeSpanCtrl.compute_widget_values(
                                                           self.values['high']))
         self.fgrid.Add(self.highlimit.get_main_panel())
 
@@ -530,7 +530,7 @@ class FilterRegularInterface():
         # It must be possible to set up at least to 527039 minutes
         # (1 leap year - 1 minute)
         self.span = TimeSpanCtrl(self.panel, 1, 999999)
-        self.span.set_values(*TimeSpanCtrl._compute_widget_values(
+        self.span.set_values(*TimeSpanCtrl.compute_widget_values(
                                                           self.values['span']))
         self.fgrid.Add(self.span.get_main_panel())
 
@@ -540,7 +540,7 @@ class FilterRegularInterface():
         # It must be possible to set up at least to 527039 minutes
         # (1 leap year - 1 minute)
         self.advance = TimeSpanCtrl(self.panel, 1, 999999)
-        self.advance.set_values(*TimeSpanCtrl._compute_widget_values(
+        self.advance.set_values(*TimeSpanCtrl.compute_widget_values(
                                                        self.values['advance']))
         self.fgrid.Add(self.advance.get_main_panel())
 

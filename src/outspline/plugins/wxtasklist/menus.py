@@ -18,7 +18,7 @@
 
 import wx
 
-from outspline.static.wxclasses.time import TimeSpanCtrl
+from outspline.static.wxclasses.timectrls import TimeSpanCtrl
 from outspline.static.wxclasses.misc import NarrowSpinCtrl
 
 import outspline.coreaux_api as coreaux_api
@@ -612,7 +612,7 @@ class _SnoozeConfigMenu(wx.Menu):
 
         for stime in snooze_times:
             time = int(stime) * 60
-            number, unit = TimeSpanCtrl._compute_widget_values(time)
+            number, unit = TimeSpanCtrl.compute_widget_values(time)
             # Duplicate time values are not supported, just make sure they
             # don't crash the application
             self.snoozetimes[time] = self.Append(wx.NewId(), "For " +
