@@ -19,6 +19,7 @@
 import json
 import time as _time
 
+from outspline.static.pyaux import timeaux
 from outspline.coreaux_api import log, Event
 import outspline.core_api as core_api
 
@@ -368,15 +369,15 @@ def string_to_rules(string):
 
 def get_occurrences_range(mint, maxt):
     occs = OccurrencesRange(mint, maxt)
-
+    utcoffset = timeaux.UTCOffset()
     search_start = (_time.time(), _time.clock())
 
     for filename in cdbs:
         for id_ in core_api.get_items_ids(filename):
             rules = get_item_rules(filename, id_)
             for rule in rules:
-                rule_handlers[rule['rule']](mint, maxt, filename, id_, rule,
-                                                                          occs)
+                rule_handlers[rule['rule']](mint, maxt, utcoffset, filename,
+                                                            id_, rule, occs)
 
         # Get active alarms *after* all occurrences, to avoid except rules
         get_alarms_event.signal(mint=mint, maxt=maxt, filename=filename,
