@@ -113,12 +113,13 @@ class MemoryDB(DBQueue):
         exit_app_event_2.signal()
 
 
-class Database(history.DBHistory):
+class Database(object):
     def __init__(self, filename):
-        super(Database, self).__init__()
         self.connection = DBQueue()
         self.filename = filename
         self.items = {}
+        self.dbhistory = history.DBHistory(self.filename, self.connection,
+                                                                    self.items)
 
         conn = self.connection
         # Enable multi-threading, as the database is protected with a queue
@@ -171,18 +172,18 @@ class Database(history.DBHistory):
                 # Only store major versions, as they are supposed to keep
                 # backward compatibility
                 cursor.execute(queries.compatibility_insert, ('Core', 'core',
-                                  int(float(coreaux_api.get_core_version())), ))
+                                int(float(coreaux_api.get_core_version())), ))
 
                 info = coreaux_api.get_addons_info(disabled=False)
 
                 for t in ('Extensions', 'Interfaces', 'Plugins'):
                     for a in info(t).get_sections():
                         if info(t)(a).get('affects_database', fallback=None
-                                                                      ) != 'no':
-                            # Only store major versions, as they are supposed to
-                            # keep backward compatibility
+                                                                    ) != 'no':
+                            # Only store major versions, as they are supposed
+                            # to keep backward compatibility
                             cursor.execute(queries.compatibility_insert, (t, a,
-                                          int(info(t)(a).get_float('version'))))
+                                        int(info(t)(a).get_float('version'))))
 
                 cursor.execute(queries.items_create)
 
@@ -211,12 +212,12 @@ class Database(history.DBHistory):
                 dbs[filename] = cls(filename)
 
                 open_database_dirty_event.signal(filename=filename,
-                                                            dependencies=compat)
+                                                        dependencies=compat)
 
-                # Reset modified state after instantiating the class, since this
-                # signals an event whose handlers might require the object to be
-                # already created
-                dbs[filename].reset_modified_state()
+                # Reset modified state after instantiating the class, since
+                # this signals an event whose handlers might require the object
+                # to be already created
+                dbs[filename].dbhistory.reset_modified_state()
 
                 open_database_event.signal(filename=filename)
                 return True
@@ -247,9 +248,9 @@ class Database(history.DBHistory):
                     # Only compare major versions, as they are supposed to keep
                     # backward compatibility
                     if row[3] == int(info(str(row[1]))(str(row[2])
-                                                        ).get_float('version')):
+                                                    ).get_float('version')):
                         compat.append('.'.join((row[1].lower(), row[2],
-                                                                  str(row[3]))))
+                                                                str(row[3]))))
                     else:
                         break
                 else:
@@ -257,9 +258,9 @@ class Database(history.DBHistory):
             else:
                 break
         else:
-            # Note that it's possible that there are other addons installed with
-            # the affects_database flag, however all addons are required to be
-            # able to ignore a database that doesn't support them
+            # Note that it's possible that there are other addons installed
+            # with the affects_database flag, however all addons are required
+            # to be able to ignore a database that doesn't support them
             qconn.close()
             return compat
 
@@ -274,7 +275,7 @@ class Database(history.DBHistory):
         qconn.commit()
         self.connection.give(qconn)
 
-        self.reset_modified_state()
+        self.dbhistory.reset_modified_state()
 
     def save_copy(self, destination):
         # Of course the original file cannot be simply copied, in fact in that
@@ -326,7 +327,7 @@ class Database(history.DBHistory):
 
         # Note that if the database has not been closed correctly, the history
         # is not cleaned
-        self.clean_history()
+        self.dbhistory.clean_history()
 
         return True
 

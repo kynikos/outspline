@@ -34,7 +34,11 @@ history_clean_event = Event()
 
 
 class DBHistory(object):
-    def __init__(self):
+    def __init__(self, filename, connection, items):
+        self.filename = filename
+        self.connection = connection
+        self.items = items
+
         self.hactions = {
             'insert': {
                 'undo': self._do_history_row_delete,
@@ -53,6 +57,16 @@ class DBHistory(object):
                 'redo': self._do_history_row_other,
             },
         }
+
+    def insert_history(self, group, id_, type_, description, query_redo,
+                                            text_redo, query_undo, text_undo):
+        qconn = self.connection.get()
+        cur = qconn.cursor()
+        cur.execute(queries.history_insert, (group, id_, type_, description,
+                                query_redo, text_redo, query_undo, text_undo))
+        self.connection.give(qconn)
+
+        return cur.lastrowid
 
     def get_next_history_group(self):
         qconn = self.connection.get()
