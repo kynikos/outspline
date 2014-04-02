@@ -98,8 +98,16 @@ class DBHistory(object):
 
         reset_modified_state_event.signal(filename=self.filename)
 
-    def read_history(self, action):
+    def read_history_undo(self):
+        return self._read_history(queries.history_select_status_undo,
+                                            queries.history_select_group_undo)
 
+    def read_history_redo(self):
+        return self._read_history(queries.history_select_status_redo,
+                                            queries.history_select_group_redo)
+
+    def _read_history(self, history_select_status_query,
+                                                history_select_group_query):
         # SavedStatus  CurrentStatus  Status
         # 0 unsaved    0 undone       0 unsaved and undone
         # 0 unsaved    1 done         1 unsaved and done
@@ -141,36 +149,35 @@ class DBHistory(object):
         # 1 0
         # 0
 
-        if action == 'undo':
-            query = queries.history_select_status_undo
-        elif action == 'redo':
-            query = queries.history_select_status_redo
         qconn = self.connection.get()
         cursor = qconn.cursor()
-        cursor.execute(query)
+        cursor.execute(history_select_status_query)
         self.connection.give(qconn)
         lastgroup = cursor.fetchone()
 
         if lastgroup:
-            if action == 'undo':
-                q = queries.history_select_group_undo
-            elif action == 'redo':
-                q = queries.history_select_group_redo
             qconn = self.connection.get()
             cursorm = qconn.cursor()
             # Create a list, because it has to be looped twice
-            history = tuple(cursorm.execute(q, (lastgroup['H_group'], )))
+            history = tuple(cursorm.execute(history_select_group_query,
+                                                    (lastgroup['H_group'], )))
             self.connection.give(qconn)
             return {'history': history,
                     'status': lastgroup['H_status']}
         else:
             return False
 
-    def do_history(self, action):
-        read = self.read_history(action)
+    def undo_history(self):
+        self._do_history(self.read_history_undo(), 'undo')
+
+    def redo_history(self):
+        self._do_history(self.read_history_redo(), 'redo')
+
+    def _do_history(self, read, action):
         if read:
             history = read['history']
             status = read['status']
+
             for row in history:
                 self._do_history_row(action, row[3], row[4], row['H_id'],
                                                 row['H_type'], row['H_item'])
