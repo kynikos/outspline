@@ -44,7 +44,7 @@ exit_app_event_2 = Event()
 dbs = {}
 
 
-class Protection():
+class Protection(object):
     # Avoid that an operation is started while the timer is doing something
     # In theory it could happen that, because the database connection is
     #   taken and released with .get() and .give() various times during an
@@ -65,9 +65,6 @@ class Protection():
     # Another advantage is that this class makes sure that when a function sets
     #     the history group, it's impossible that another function manages to
     #     set the same group
-    q = None
-    s = None
-
     def __init__(self):
         baton = True
         self.q = queue.Queue()
@@ -117,10 +114,6 @@ class MemoryDB(DBQueue):
 
 
 class Database(history.DBHistory):
-    connection = None
-    filename = None
-    items = None
-
     def __init__(self, filename):
         self.connection = DBQueue()
         self.filename = filename
@@ -209,7 +202,7 @@ class Database(history.DBHistory):
         elif not os.access(filename, os.W_OK):
             raise exceptions.DatabaseNotAccessibleError()
         else:
-            compat = cls.check_compatibility(filename)
+            compat = cls._check_compatibility(filename)
 
             if not compat:
                 raise exceptions.DatabaseNotValidError()
@@ -228,7 +221,7 @@ class Database(history.DBHistory):
                 return True
 
     @staticmethod
-    def check_compatibility(filename):
+    def _check_compatibility(filename):
         try:
             qconn = _sql.connect(filename)
             cursor = qconn.cursor()
@@ -321,7 +314,7 @@ class Database(history.DBHistory):
                                         destination=destination)
 
     def close(self):
-        self.remove()
+        self._remove()
 
         qconn = self.connection.get()
         qconn.close()
@@ -336,7 +329,7 @@ class Database(history.DBHistory):
 
         return True
 
-    def remove(self):
+    def _remove(self):
         for id_ in self.items.copy():
             item = self.items[id_]
             if item.get_filename() == self.filename:

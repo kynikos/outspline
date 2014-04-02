@@ -27,11 +27,7 @@ item_update_event = Event()
 item_delete_event = Event()
 
 
-class Item():
-    database = None
-    filename = None
-    id_ = None
-
+class Item(object):
     def __init__(self, database, filename, id_):
         self.database = database
         self.filename = filename
@@ -44,7 +40,7 @@ class Item():
 
         if not baseid:
             parent = 0
-            previous = cls.get_last_base_item_id(filename)
+            previous = cls._get_last_base_item_id(filename)
             updnext = False
         elif mode == 'child':
             base = items[baseid]
@@ -223,7 +219,7 @@ class Item():
                     lastchildid = lastchild.get_id()
                 else:
                     parent2id = 0
-                    lastchildid = self.get_last_base_item_id(filename)
+                    lastchildid = self._get_last_base_item_id(filename)
                 next_ = self.get_next()
                 if next_:
                     prev = self.get_previous()
@@ -364,7 +360,7 @@ class Item():
             return False
 
     @staticmethod
-    def get_last_base_item_id(filename):
+    def _get_last_base_item_id(filename):
         qconn =  databases.dbs[filename].connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_children, (0, ))

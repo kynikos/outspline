@@ -33,9 +33,7 @@ history_other_event = Event()
 history_clean_event = Event()
 
 
-class DBHistory():
-    modified = None
-
+class DBHistory(object):
     def get_next_history_group(self):
         qconn = self.connection.get()
         cursor = qconn.cursor()
@@ -60,7 +58,7 @@ class DBHistory():
 
         return cursor
 
-    def update_history_id(self, id_, status):
+    def _update_history_id(self, id_, status):
         if status == 0:
             newstatus = 1
         elif status == 1:
@@ -174,12 +172,12 @@ class DBHistory():
             history = read['history']
             status = read['status']
             for row in history:
-                self.do_history_row(action, row[3], row[4], row['H_id'],
+                self._do_history_row(action, row[3], row[4], row['H_id'],
                                                 row['H_type'], row['H_item'])
-                self.update_history_id(row['H_id'], status)
+                self._update_history_id(row['H_id'], status)
             history_event.signal(filename=self.filename)
 
-    def do_history_row(self, action, query, text, hid, type_, itemid):
+    def _do_history_row(self, action, query, text, hid, type_, itemid):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         # Update queries can or cannot have I_text=?, hence they accept or
