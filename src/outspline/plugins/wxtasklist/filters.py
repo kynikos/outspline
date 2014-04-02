@@ -272,8 +272,9 @@ class FilterEditor():
                 else:
                     newid += 1
 
+        # self.filters.select_filter will take care of closing the editor,
+        # don't call self.close here
         self.filters.select_filter(filter_, config)
-        self.close()
 
     def preview(self, event):
         config = self.compose_configuration()
