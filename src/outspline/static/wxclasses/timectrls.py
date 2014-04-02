@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with wxClasses.  If not, see <http://www.gnu.org/licenses/>.
 
+import time as time_
+import datetime as datetime_
 import wx
 
 from choices import MultipleChoiceCtrl
@@ -142,20 +144,6 @@ class MonthInverseDayCtrl(MonthDayCtrl):
         return cls.choices[day - 1].replace(' ', '-')
 
 
-class MonthDaySafeCtrl(MonthDayCtrl):
-    choices = ('1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th',
-               '10th', '11th', '12th', '13th', '14th', '15th', '16th', '17th',
-               '18th', '19th', '20th', '21st', '22nd', '23rd', '24th', '25th',
-               '26th', '27th', '28th')
-
-
-class MonthInverseDaySafeCtrl(MonthInverseDayCtrl):
-    choices = ['last', ] + [d + ' to last' for d in ('2nd', '3rd', '4th',
-               '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th',
-               '13th', '14th', '15th', '16th', '17th', '18th', '19th', '20th',
-               '21st', '22nd', '23rd', '24th', '25th', '26th', '27th', '28th')]
-
-
 class MonthWeekdayNumberCtrl(MonthDayCtrl):
     choices = ('1st', '2nd', '3rd', '4th', '5th')
 
@@ -235,11 +223,19 @@ class DateHourCtrl(object):
         return self.panel
 
     def get_unix_time(self):
-        date = self.datectrl.GetValue().GetTicks()
+        date = self.datectrl.GetValue()
         hour = self.hourctrl.get_hour()
         minute = self.hourctrl.get_minute()
 
-        return date + hour * 3600 + minute * 60
+        fdate = datetime_.datetime(date.GetYear(), date.GetMonth() + 1,
+                                                date.GetDay(), hour, minute)
+
+        # Don't do this because it behaves incorrectly if the date is a day
+        # in which the DST starts or ends
+        #date = self.datectrl.GetValue().GetTicks()
+        #return date + hour * 3600 + minute * 60
+
+        return int(time_.mktime(fdate.timetuple()))
 
     def get_year(self):
         return self.datectrl.GetValue().GetYear()
@@ -354,10 +350,6 @@ class MonthDayHourCtrl(object):
         return cls.mdctrl.compute_day_label(day)
 
 
-class MonthDayHourSafeCtrl(MonthDayHourCtrl):
-    mdctrl = MonthDaySafeCtrl
-
-
 class MonthInverseDayHourCtrl(MonthDayHourCtrl):
     mdctrl = MonthInverseDayCtrl
 
@@ -366,10 +358,6 @@ class MonthInverseDayHourCtrl(MonthDayHourCtrl):
         rhour = self.hourctrl.get_relative_time()
 
         return rday + 86400 - rhour
-
-
-class MonthInverseDayHourSafeCtrl(MonthInverseDayHourCtrl):
-    mdctrl = MonthInverseDaySafeCtrl
 
 
 class MonthWeekdayHourCtrl(MonthDayHourCtrl):
