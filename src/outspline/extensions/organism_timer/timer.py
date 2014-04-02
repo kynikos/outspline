@@ -227,6 +227,8 @@ def get_last_search_all():
 def set_last_search(filename, tstamp):
     conn = core_api.get_connection(filename)
     cur = conn.cursor()
+    # Use a UTC timestamp, so that even if the local time zone is changed on
+    # the system, the timer behaves properly
     cur.execute(queries.timerproperties_update, (tstamp, ))
     core_api.give_connection(filename, conn)
 
@@ -251,6 +253,8 @@ def set_last_search_all_safe(tstamp):
         # values would be updated to the lower value, thus possibly
         # reactivating old alarms
         if tstamp > last_search:
+            # Use a UTC timestamp, so that even if the local time zone is
+            # changed on the system, the timer behaves properly
             cur.execute(queries.timerproperties_update, (tstamp, ))
 
         core_api.give_connection(filename, conn)
