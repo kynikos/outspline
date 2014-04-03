@@ -61,14 +61,14 @@ class Item(object):
 
         cursor.execute(queries.items_insert, (None, parent, previous, text))
         id_ = cursor.lastrowid
-        # For the moment it's necessary to insert 'text' for both the redo and
-        # undo queries, because it's needed also when an history action removes
+        # For the moment it's necessary to pass 'text' for both the redo and
+        # undo queries, because it's needed also when a history action removes
         # an item
         cursor.execute(queries.history_insert,
                         (group, id_, 'insert', description,
                         json.dumps((id_, parent, previous, text),
-                                                        separators=(',',':')),
-                        None, queries.items_delete_id.format(id_), text))
+                                                separators=(',',':')), None,
+                        json.dumps((id_, text), separators=(',',':')), None))
 
         databases.dbs[filename].connection.give(qconn)
 
@@ -154,20 +154,20 @@ class Item(object):
         cursor.execute(queries.items_select_id, (self.id_, ))
         current_values = cursor.fetchone()
 
-        query_redo = queries.items_delete_id.format(self.id_)
+        # For the moment it's necessary to pass current_values['I_text'] for
+        # both the redo and undo queries, because it's needed also when a
+        # history action removes an item
+        query_redo = json.dumps((self.id_, current_values['I_text']),
+                                                        separators=(',',':'))
         query_undo = json.dumps((self.id_, current_values['I_parent'],
                     current_values['I_previous'], current_values['I_text']),
                     separators=(',',':'))
 
 
 
-        cursor.execute(query_redo)
-        # For the moment it's necessary to insert current_values['I_text'] for
-        # both the redo and undo queries, because it's needed also when an
-        # history action removes an item
+        cursor.execute(queries.items_delete_id, (self.id_, ))
         cursor.execute(queries.history_insert, (group, self.id_, 'delete',
-                            description, query_redo, current_values['I_text'],
-                            query_undo, None))
+                            description, query_redo, None, query_undo, None))
 
         self.database.connection.give(qconn)
 

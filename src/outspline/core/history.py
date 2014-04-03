@@ -263,21 +263,16 @@ class DBHistory(object):
                                                 text=select['I_text'])
 
     def _do_history_row_delete(self, action, query, text, hid, type_, itemid):
+        id_, text = json.loads(query)
+
         qconn = self.connection.get()
         cursor = qconn.cursor()
-
-        # Update queries can or cannot have I_text=?, hence they accept or
-        # don't accept a query binding
-        try:
-            cursor.execute(query)
-        except _sql.ProgrammingError:
-            cursor.execute(query, (text, ))
-
+        cursor.execute(queries.items_delete_id, (id_, ))
         self.connection.give(qconn)
 
         self.items[itemid].remove()
-        history_delete_event.signal(filename=self.filename, id_=itemid, hid=hid,
-                                                                text=text)
+        history_delete_event.signal(filename=self.filename, id_=itemid,
+                                                        hid=hid, text=text)
 
     def _do_history_row_other(self, action, query, text, hid, type_, itemid):
         qconn = self.connection.get()

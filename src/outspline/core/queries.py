@@ -96,7 +96,7 @@ items_insert_copy = ('INSERT INTO Items (I_id, I_parent, I_previous, I_text) '
 
 items_update_id = 'UPDATE Items SET {} WHERE I_id={}'
 
-items_delete_id = 'DELETE FROM Items WHERE I_id={}'
+items_delete_id = 'DELETE FROM Items WHERE I_id=?'
 
 history_create = ("CREATE TABLE History (H_id INTEGER PRIMARY KEY, "
                                         "H_group INTEGER, "
