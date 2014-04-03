@@ -226,9 +226,12 @@ class DBHistory(object):
             history_event.signal(filename=self.filename)
 
     def _do_history_row_insert(self, action, query, text, hid, type_, itemid):
+        params = [itemid, ]
+        params.extend(json.loads(query))
+
         qconn = self.connection.get()
         cursor = qconn.cursor()
-        cursor.execute(queries.items_insert, json.loads(query))
+        cursor.execute(queries.items_insert, params)
         cursor.execute(queries.items_select_id, (itemid, ))
         select = cursor.fetchone()
         self.connection.give(qconn)
@@ -263,16 +266,14 @@ class DBHistory(object):
                                                 text=select['I_text'])
 
     def _do_history_row_delete(self, action, query, text, hid, type_, itemid):
-        id_, text = json.loads(query)
-
         qconn = self.connection.get()
         cursor = qconn.cursor()
-        cursor.execute(queries.items_delete_id, (id_, ))
+        cursor.execute(queries.items_delete_id, (itemid, ))
         self.connection.give(qconn)
 
         self.items[itemid].remove()
         history_delete_event.signal(filename=self.filename, id_=itemid,
-                                                        hid=hid, text=text)
+                                                        hid=hid, text=query)
 
     def _do_history_row_other(self, action, query, text, hid, type_, itemid):
         qconn = self.connection.get()

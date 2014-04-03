@@ -65,10 +65,9 @@ class Item(object):
         # undo queries, because it's needed also when a history action removes
         # an item
         cursor.execute(queries.history_insert,
-                        (group, id_, 'insert', description,
-                        json.dumps((id_, parent, previous, text),
-                                                separators=(',',':')), None,
-                        json.dumps((id_, text), separators=(',',':')), None))
+                    (group, id_, 'insert', description,
+                    json.dumps((parent, previous, text), separators=(',',':')),
+                    None, text, None))
 
         databases.dbs[filename].connection.give(qconn)
 
@@ -157,9 +156,8 @@ class Item(object):
         # For the moment it's necessary to pass current_values['I_text'] for
         # both the redo and undo queries, because it's needed also when a
         # history action removes an item
-        query_redo = json.dumps((self.id_, current_values['I_text']),
-                                                        separators=(',',':'))
-        query_undo = json.dumps((self.id_, current_values['I_parent'],
+        query_redo = current_values['I_text']
+        query_undo = json.dumps((current_values['I_parent'],
                     current_values['I_previous'], current_values['I_text']),
                     separators=(',',':'))
 
