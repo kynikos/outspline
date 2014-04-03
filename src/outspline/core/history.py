@@ -234,47 +234,43 @@ class DBHistory(object):
         except KeyError:
             haction = self.hactions[None]
 
-        haction[action](type_, action, self.filename, itemid, hid, text)
+        haction[action](type_, action, itemid, hid, text)
 
-    def _do_history_row_insert(self, type_, action, filename, itemid, hid,
-                                                                        text):
+    def _do_history_row_insert(self, type_, action, itemid, hid, text):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id, (itemid, ))
         select = cursor.fetchone()
         self.connection.give(qconn)
 
-        self.items[itemid] = items.Item(database=self, filename=filename,
+        self.items[itemid] = items.Item(database=self, filename=self.filename,
                                                                     id_=itemid)
 
-        history_insert_event.signal(filename=filename, id_=itemid,
+        history_insert_event.signal(filename=self.filename, id_=itemid,
                                                 parent=select['I_parent'],
                                                 previous=select['I_previous'],
                                                 text=select['I_text'], hid=hid)
 
-    def _do_history_row_update(self, type_, action, filename, itemid, hid,
-                                                                        text):
+    def _do_history_row_update(self, type_, action, itemid, hid, text):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id, (itemid, ))
         select = cursor.fetchone()
         self.connection.give(qconn)
 
-        history_update_event.signal(filename=filename, id_=itemid,
+        history_update_event.signal(filename=self.filename, id_=itemid,
                                                 parent=select['I_parent'],
                                                 previous=select['I_previous'],
                                                 text=select['I_text'])
 
-    def _do_history_row_delete(self, type_, action, filename, itemid, hid,
-                                                                        text):
+    def _do_history_row_delete(self, type_, action, itemid, hid, text):
         self.items[itemid].remove()
-        history_delete_event.signal(filename=filename, id_=itemid, hid=hid,
+        history_delete_event.signal(filename=self.filename, id_=itemid, hid=hid,
                                                                 text=text)
 
-    def _do_history_row_other(self, type_, action, filename, itemid, hid,
-                                                                        text):
+    def _do_history_row_other(self, type_, action, itemid, hid, text):
         history_other_event.signal(type_=type_, action=action,
-                                        filename=filename, id_=itemid, hid=hid)
+                                filename=self.filename, id_=itemid, hid=hid)
 
     def clean_history(self):
         # This operation must be performed on a different connection than
