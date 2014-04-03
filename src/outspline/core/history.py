@@ -213,34 +213,31 @@ class DBHistory(object):
             status = read['status']
 
             for row in history:
-                self._do_history_row(action, row[3], row[4], row['H_id'],
+                try:
+                    haction = self.hactions[row['H_type']]
+                except KeyError:
+                    haction = self.hactions[None]
+
+                haction[action](action, row[3], row[4], row['H_id'],
                                                 row['H_type'], row['H_item'])
                 self._update_history_id(row['H_id'], status)
+
             history_event.signal(filename=self.filename)
 
-    def _do_history_row(self, action, query, text, hid, type_, itemid):
+    def _do_history_row_insert(self, action, query, text, hid, type_, itemid):
         qconn = self.connection.get()
         cursor = qconn.cursor()
+
         # Update queries can or cannot have I_text=?, hence they accept or
         # don't accept a query binding
         try:
             cursor.execute(query)
         except _sql.ProgrammingError:
             cursor.execute(query, (text, ))
-        self.connection.give(qconn)
 
-        try:
-            haction = self.hactions[type_]
-        except KeyError:
-            haction = self.hactions[None]
-
-        haction[action](type_, action, itemid, hid, text)
-
-    def _do_history_row_insert(self, type_, action, itemid, hid, text):
-        qconn = self.connection.get()
-        cursor = qconn.cursor()
         cursor.execute(queries.items_select_id, (itemid, ))
         select = cursor.fetchone()
+
         self.connection.give(qconn)
 
         self.items[itemid] = items.Item(database=self, filename=self.filename,
@@ -251,11 +248,20 @@ class DBHistory(object):
                                                 previous=select['I_previous'],
                                                 text=select['I_text'], hid=hid)
 
-    def _do_history_row_update(self, type_, action, itemid, hid, text):
+    def _do_history_row_update(self, action, query, text, hid, type_, itemid):
         qconn = self.connection.get()
         cursor = qconn.cursor()
+
+        # Update queries can or cannot have I_text=?, hence they accept or
+        # don't accept a query binding
+        try:
+            cursor.execute(query)
+        except _sql.ProgrammingError:
+            cursor.execute(query, (text, ))
+
         cursor.execute(queries.items_select_id, (itemid, ))
         select = cursor.fetchone()
+
         self.connection.give(qconn)
 
         history_update_event.signal(filename=self.filename, id_=itemid,
@@ -263,12 +269,36 @@ class DBHistory(object):
                                                 previous=select['I_previous'],
                                                 text=select['I_text'])
 
-    def _do_history_row_delete(self, type_, action, itemid, hid, text):
+    def _do_history_row_delete(self, action, query, text, hid, type_, itemid):
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+
+        # Update queries can or cannot have I_text=?, hence they accept or
+        # don't accept a query binding
+        try:
+            cursor.execute(query)
+        except _sql.ProgrammingError:
+            cursor.execute(query, (text, ))
+
+        self.connection.give(qconn)
+
         self.items[itemid].remove()
         history_delete_event.signal(filename=self.filename, id_=itemid, hid=hid,
                                                                 text=text)
 
-    def _do_history_row_other(self, type_, action, itemid, hid, text):
+    def _do_history_row_other(self, action, query, text, hid, type_, itemid):
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+
+        # Update queries can or cannot have I_text=?, hence they accept or
+        # don't accept a query binding
+        try:
+            cursor.execute(query)
+        except _sql.ProgrammingError:
+            cursor.execute(query, (text, ))
+
+        self.connection.give(qconn)
+
         history_other_event.signal(type_=type_, action=action,
                                 filename=self.filename, id_=itemid, hid=hid)
 
