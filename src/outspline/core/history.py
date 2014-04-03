@@ -17,6 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import sqlite3 as _sql
+import json
 
 from outspline.coreaux_api import Event
 
@@ -227,17 +228,9 @@ class DBHistory(object):
     def _do_history_row_insert(self, action, query, text, hid, type_, itemid):
         qconn = self.connection.get()
         cursor = qconn.cursor()
-
-        # Update queries can or cannot have I_text=?, hence they accept or
-        # don't accept a query binding
-        try:
-            cursor.execute(query)
-        except _sql.ProgrammingError:
-            cursor.execute(query, (text, ))
-
+        cursor.execute(queries.items_insert, json.loads(query))
         cursor.execute(queries.items_select_id, (itemid, ))
         select = cursor.fetchone()
-
         self.connection.give(qconn)
 
         self.items[itemid] = items.Item(database=self, filename=self.filename,

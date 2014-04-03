@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+
 from outspline.coreaux_api import Event
 
 import databases
@@ -57,16 +59,16 @@ class Item(object):
         qconn = databases.dbs[filename].connection.get()
         cursor = qconn.cursor()
 
-        cursor.execute(queries.items_insert.format('NULL', parent, previous, ),
-                       (text, ))
+        cursor.execute(queries.items_insert, (None, parent, previous, text))
         id_ = cursor.lastrowid
         # For the moment it's necessary to insert 'text' for both the redo and
         # undo queries, because it's needed also when an history action removes
         # an item
         cursor.execute(queries.history_insert,
                         (group, id_, 'insert', description,
-                         queries.items_insert.format(id_, parent, previous, ),
-                         text, queries.items_delete_id.format(id_), text))
+                        json.dumps((id_, parent, previous, text),
+                                                        separators=(',',':')),
+                        None, queries.items_delete_id.format(id_), text))
 
         databases.dbs[filename].connection.give(qconn)
 
@@ -153,8 +155,11 @@ class Item(object):
         current_values = cursor.fetchone()
 
         query_redo = queries.items_delete_id.format(self.id_)
-        query_undo = queries.items_insert.format(self.id_,
-                      current_values['I_parent'], current_values['I_previous'])
+        query_undo = json.dumps((self.id_, current_values['I_parent'],
+                    current_values['I_previous'], current_values['I_text']),
+                    separators=(',',':'))
+
+
 
         cursor.execute(query_redo)
         # For the moment it's necessary to insert current_values['I_text'] for
@@ -162,7 +167,7 @@ class Item(object):
         # history action removes an item
         cursor.execute(queries.history_insert, (group, self.id_, 'delete',
                             description, query_redo, current_values['I_text'],
-                            query_undo, current_values['I_text']))
+                            query_undo, None))
 
         self.database.connection.give(qconn)
 

@@ -89,7 +89,7 @@ items_select_parent = ('SELECT I_id, I_text FROM Items WHERE I_parent=? AND '
 items_select_search = 'SELECT I_id, I_text FROM Items'
 
 items_insert = ('INSERT INTO Items (I_id, I_parent, I_previous, I_text) '
-                'VALUES ({}, {}, {}, ?)')
+                'VALUES (?, ?, ?, ?)')
 
 items_insert_copy = ('INSERT INTO Items (I_id, I_parent, I_previous, I_text) '
                      'VALUES (?, ?, ?, ?)')
