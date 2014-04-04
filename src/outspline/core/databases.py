@@ -298,7 +298,7 @@ class Database(object):
 
         cursor.execute(queries.items_select)
         for row in cursor:
-            cursord.execute(queries.items_insert_copy, tuple(row))
+            cursord.execute(queries.items_insert, tuple(row))
 
         cursor.execute(queries.history_select)
         for row in cursor:
