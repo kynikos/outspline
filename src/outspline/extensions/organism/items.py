@@ -247,22 +247,19 @@ def update_item_rules_no_event(filename, id_, rules, group,
 
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
+
     cursor.execute(queries.rules_select_id, (id_, ))
     sel = cursor.fetchone()
 
     # The query should always return a result, so sel should never be None
     unrules = sel['R_rules']
 
-    query_redo = queries.rules_update_id.format(id_)
-    query_undo = queries.rules_update_id.format(id_)
-
-    cursor.execute(query_redo, (rules, ))
+    cursor.execute(queries.rules_update_id, (rules, id_))
 
     core_api.give_connection(filename, qconn)
 
     core_api.insert_history(filename, group, id_, 'rules_update', description,
-                    json.dumps((query_redo, rules), separators=(',',':')),
-                    json.dumps((query_undo, unrules), separators=(',',':')))
+                                                                rules, unrules)
 
 
 def copy_item_rules(filename, id_):
@@ -392,23 +389,14 @@ def get_occurrences_range(mint, maxt):
 def handle_history_insert(filename, action, jparams, hid, type_, itemid):
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
-    cursor.execute(queries.rules_insert, (itemid, jparams, ))
+    cursor.execute(queries.rules_insert, (itemid, jparams))
     core_api.give_connection(filename, qconn)
 
 
 def handle_history_update(filename, action, jparams, hid, type_, itemid):
-    query, rules = json.loads(jparams)
-
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
-
-    # Update queries can or cannot have rules, hence they accept or don't
-    # accept a query binding
-    try:
-        cursor.execute(query)
-    except sqlite3.ProgrammingError:
-        cursor.execute(query, (rules, ))
-
+    cursor.execute(queries.rules_update_id, (jparams, itemid))
     core_api.give_connection(filename, qconn)
 
 
