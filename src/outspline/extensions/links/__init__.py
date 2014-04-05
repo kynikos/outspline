@@ -54,6 +54,17 @@ def handle_open_database_dirty(kwargs):
         links.cdbs.add(kwargs['filename'])
 
 
+def handle_open_database(kwargs):
+    filename = kwargs['filename']
+
+    core_api.register_history_action_handlers(filename, 'link_upsert',
+                    links.handle_history_action, links.handle_history_action)
+    core_api.register_history_action_handlers(filename, 'link_delete',
+                    links.handle_history_action, links.handle_history_action)
+    core_api.register_history_action_handlers(filename, 'link_break',
+                    links.handle_history_action, links.handle_history_action)
+
+
 def handle_save_database_copy(kwargs):
     if kwargs['origin'] in links.cdbs:
         qconn = core_api.get_connection(kwargs['origin'])
@@ -134,6 +145,7 @@ def main():
 
     core_api.bind_to_create_database(handle_create_database)
     core_api.bind_to_open_database_dirty(handle_open_database_dirty)
+    core_api.bind_to_open_database(handle_open_database)
     core_api.bind_to_save_database_copy(handle_save_database_copy)
     core_api.bind_to_close_database(handle_close_database)
     core_api.bind_to_delete_item(handle_delete_item)

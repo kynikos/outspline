@@ -321,3 +321,10 @@ def paste_link(filename, id_, oldid, group, description):
             # its text, it will be added already with the correct text, so
             # there's no need to handle an update event in that case
             upsert_link(filename, id_, target, group, description, event=False)
+
+
+def handle_history_action(filename, action, jparams, hid, type_, itemid):
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+    cursor.execute(jparams)
+    core_api.give_connection(filename, qconn)
