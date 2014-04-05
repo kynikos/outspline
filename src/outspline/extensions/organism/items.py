@@ -18,6 +18,7 @@
 
 import json
 import time as _time
+import sqlite3
 
 from outspline.static.pyaux import timeaux
 from outspline.coreaux_api import log, Event
@@ -226,7 +227,9 @@ def insert_item(filename, id_, group, description='Insert item'):
         core_api.give_connection(filename, qconn)
 
         core_api.insert_history(filename, group, id_, 'rules_insert',
-                description, query_redo, rules_to_string([]), query_undo, None)
+                description, json.dumps((query_redo, rules_to_string([])),
+                                                        separators=(',',':')),
+                json.dumps((query_undo, ''), separators=(',',':')))
 
 
 def update_item_rules(filename, id_, rules, group,
@@ -261,7 +264,8 @@ def update_item_rules_no_event(filename, id_, rules, group,
     core_api.give_connection(filename, qconn)
 
     core_api.insert_history(filename, group, id_, 'rules_update', description,
-                            query_redo, rules, query_undo, unrules)
+                    json.dumps((query_redo, rules), separators=(',',':')),
+                    json.dumps((query_undo, unrules), separators=(',',':')))
 
 
 def copy_item_rules(filename, id_):
@@ -330,7 +334,8 @@ def delete_item_rules(filename, id_, text, group,
         core_api.give_connection(filename, qconn)
 
         core_api.insert_history(filename, group, id_, 'rules_delete',
-                      description, query_redo, None, query_undo, current_rules)
+              description, json.dumps((query_redo, ''), separators=(',',':')),
+              json.dumps((query_undo, current_rules), separators=(',',':')))
 
         delete_item_rules_event.signal(filename=filename, id_=id_, text=text)
 
@@ -389,3 +394,19 @@ def get_occurrences_range(mint, maxt):
     # Note that the list is practically unsorted: sorting its items is a duty
     # of the interface
     return occs
+
+
+def handle_history_action(filename, action, jparams, hid, type_, itemid):
+    query, rules = json.loads(jparams)
+
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+
+    # Update queries can or cannot have rules, hence they accept or don't
+    # accept a query binding
+    try:
+        cursor.execute(query)
+    except sqlite3.ProgrammingError:
+        cursor.execute(query, (rules, ))
+
+    core_api.give_connection(filename, qconn)
