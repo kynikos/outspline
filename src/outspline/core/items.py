@@ -17,6 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+from difflib import SequenceMatcher
 
 from outspline.coreaux_api import Event
 
@@ -102,23 +103,40 @@ class Item(object):
         cursor.execute(queries.items_select_id, (self.id_, ))
         current_values = cursor.fetchone()
 
-        kwparams = {'I_parent': parent,
-                    'I_previous': previous,
-                    'I_text': text}
-
-        hparams = {}
-        hunparams = {}
         set_fields = ''
         qparams = []
+        hparams = []
+        hunparams = []
 
-        for field in kwparams:
-            value = kwparams[field]
+        if parent is not None:
+            set_fields += '{}=?, '.format('I_parent')
+            qparams.append(parent)
+            hparams.append(parent)
+            hunparams.append(current_values['I_parent'])
+        else:
+            hparams.append(None)
+            hunparams.append(None)
 
-            if value is not None:
-                hparams[field] = value
-                hunparams[field] = current_values[field]
-                set_fields += '{}=?, '.format(field)
-                qparams.append(value)
+        if previous is not None:
+            set_fields += '{}=?, '.format('I_previous')
+            qparams.append(previous)
+            hparams.append(previous)
+            hunparams.append(current_values['I_previous'])
+        else:
+            hparams.append(None)
+            hunparams.append(None)
+
+        if text is not None:
+            set_fields += '{}=?, '.format('I_text')
+            qparams.append(text)
+
+            seq = SequenceMatcher(None, current_values['I_text'], text)
+            # Find a way to store it only once ************************************************
+            hparams.append(seq.get_opcodes())
+            hunparams.append(seq.get_opcodes())
+        else:
+            hparams.append(None)
+            hunparams.append(None)
 
         set_fields = set_fields[:-2]
         query = queries.items_update_id.format(set_fields)

@@ -250,31 +250,54 @@ class DBHistory(object):
         qconn = self.connection.get()
         cursor = qconn.cursor()
 
-        kwparams = json.loads(jparams)
+        cursor.execute(queries.items_select_id, (itemid, ))
+        select = cursor.fetchone()
+
+        parent, previous, textdiff = json.loads(jparams)
         set_fields = ''
         qparams = []
 
-        for field in kwparams:
-            value = kwparams[field]
+        if parent is not None:
+            set_fields += '{}=?, '.format('I_parent')
+            qparams.append(parent)
 
-            if value is not None:
-                set_fields += '{}=?, '.format(field)
-                qparams.append(value)
+        if previous is not None:
+            set_fields += '{}=?, '.format('I_previous')
+            qparams.append(previous)
+
+        if textdiff is not None:
+            set_fields += '{}=?, '.format('I_text')
+            text = ''
+
+            if action == 'undo':
+                # ********************************************************************************
+                for tag, i1, i2, j1, j2 in textdiff:
+                    print('UNDO', tag, i1, i2, j1, j2)
+                    # 'replace' a[i1:i2] should be replaced by b[j1:j2].
+                    # 'delete'  a[i1:i2] should be deleted. Note that j1 == j2 in this case.
+                    # 'insert'  b[j1:j2] should be inserted at a[i1:i1]. Note that i1 == i2 in this case.
+                    # 'equal'   a[i1:i2] == b[j1:j2] (the sub-sequences are equal).
+            else:
+                # ********************************************************************************
+                for tag, i1, i2, j1, j2 in textdiff:
+                    print('REDO', tag, i1, i2, j1, j2)
+                    # 'replace' a[i1:i2] should be replaced by b[j1:j2].
+                    # 'delete'  a[i1:i2] should be deleted. Note that j1 == j2 in this case.
+                    # 'insert'  b[j1:j2] should be inserted at a[i1:i1]. Note that i1 == i2 in this case.
+                    # 'equal'   a[i1:i2] == b[j1:j2] (the sub-sequences are equal).
+
+            qparams.append(text)
 
         set_fields = set_fields[:-2]
         query = queries.items_update_id.format(set_fields)
         qparams.append(itemid)
         cursor.execute(query, qparams)
 
-        cursor.execute(queries.items_select_id, (itemid, ))
-        select = cursor.fetchone()
-
         self.connection.give(qconn)
 
         history_update_event.signal(filename=self.filename, id_=itemid,
-                                                parent=select['I_parent'],
-                                                previous=select['I_previous'],
-                                                text=select['I_text'])
+                    parent=select['I_parent'], previous=select['I_previous'],
+                    text=select['I_text'])
 
     def _do_history_row_delete(self, filename, action, jparams, hid, type_,
                                                                     itemid):
