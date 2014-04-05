@@ -114,7 +114,7 @@ def upsert_link(filename, id_, target, group, description='Insert link',
     core_api.give_connection(filename, qconn)
 
     core_api.insert_history(filename, group, id_, 'link_upsert', description,
-                                            query_redo, None, query_undo, None)
+                                                        query_redo, query_undo)
 
     upsert_link_event.signal(filename=filename, id_=id_, target=target,
                                                         oldtarget=oldtarget)
@@ -145,7 +145,7 @@ def delete_link(filename, id_, group, description='Delete link'):
         core_api.give_connection(filename, qconn)
 
         core_api.insert_history(filename, group, id_, 'link_delete',
-                   description, query_redo, None, query_undo, None)
+                                        description, query_redo, query_undo)
 
         delete_link_event.signal(filename=filename, id_=id_, oldtarget=target)
     else:
@@ -180,7 +180,7 @@ def break_links(filename, id_, group, description='Break links'):
         core_api.give_connection(filename, qconn)
 
         core_api.insert_history(filename, group, id_, 'link_break',
-                   description, query_redo, None, query_undo, None)
+                                        description, query_redo, query_undo)
 
         qconn = core_api.get_connection(filename)
         cursor = qconn.cursor()

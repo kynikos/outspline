@@ -139,7 +139,7 @@ history_select_select = ('SELECT H_id FROM History '
                          'ORDER BY H_group DESC LIMIT ?)')
 
 history_insert = ('INSERT INTO History (H_id, H_group, H_status, '
-                  'H_item, H_type, H_description, H_redo, H_undo '
+                  'H_item, H_type, H_description, H_redo, H_undo) '
                   'VALUES (NULL, ?, 1, ?, ?, ?, ?, ?)')
 
 history_insert_copy = ('INSERT INTO History (H_id, H_group, H_status, H_item, '
