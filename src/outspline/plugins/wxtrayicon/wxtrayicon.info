@@ -4,6 +4,5 @@ description = Adds an icon in the system tray and lets the user hide and show th
 website = https://github.com/kynikos/outspline/
 affects_database = no
 provides_tables =
-provides_history_actions =
 dependency_1 = core 0
 dependency_2 = interfaces.wxgui 0

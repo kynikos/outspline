@@ -4,5 +4,4 @@ description = Development tools backend.
 website = https://github.com/kynikos/outspline/
 affects_database = no
 provides_tables =
-provides_history_actions =
 dependency_1 = core 0

@@ -4,4 +4,3 @@ description = Outspline, a highly modular and extensible outliner.
 website = https://github.com/kynikos/outspline/
 affects_database = yes
 provides_tables = Properties CoMpatibility Items History
-provides_history_actions = insert update delete

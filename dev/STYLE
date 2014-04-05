@@ -73,10 +73,6 @@ Info files:
     Names of the database tables managed by the extension
     If another extension provides some of those tables, Outspline won't load
     Required but can have an empty value
-- provides_history_actions:
-    Names of the history actions provided by the extension
-    If another extension provides some of those actions, Outspline won't load
-    Required but can have an empty value
 - dependency_N:
     N-th dependency for the addon
     If not all dependencies are satisfied, the addon is not loaded

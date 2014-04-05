@@ -4,7 +4,6 @@ description = Adds the backend for calculating when item occurrences happen and 
 website = https://github.com/kynikos/outspline/
 affects_database = yes
 provides_tables = TimerProperties
-provides_history_actions =
 dependency_1 = core 0
 dependency_2 = extensions.organism 0
 optional_dependency_1 = extensions.copypaste 0

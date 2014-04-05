@@ -4,7 +4,6 @@ description = Lets cut, copy and paste database items.
 website = https://github.com/kynikos/outspline/
 affects_database = no
 provides_tables =
-provides_history_actions =
 dependency_1 = core 0
 dependency_2 = extensions.copypaste 0
 dependency_3 = interfaces.wxgui 0

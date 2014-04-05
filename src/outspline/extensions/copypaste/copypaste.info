@@ -4,5 +4,4 @@ description = Adds the backend for cutting, copying and pasting database items.
 website = https://github.com/kynikos/outspline/
 affects_database = no
 provides_tables = Copy
-provides_history_actions =
 dependency_1 = core 0

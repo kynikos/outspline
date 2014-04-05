@@ -4,7 +4,6 @@ description = Adds the backend for managing alarm events.
 website = https://github.com/kynikos/outspline/
 affects_database = yes
 provides_tables = Alarms CopyAlarms AlarmsOffLog
-provides_history_actions =
 dependency_1 = core 0
 dependency_2 = extensions.organism 0
 dependency_3 = extensions.organism_timer 0

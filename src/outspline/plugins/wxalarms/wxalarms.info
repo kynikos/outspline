@@ -4,7 +4,6 @@ description = Shows an alarm window whenever an item occurrence happens, and giv
 website = https://github.com/kynikos/outspline/
 affects_database = no
 provides_tables =
-provides_history_actions =
 dependency_1 = core 0
 dependency_2 = extensions.organism_alarms 0
 dependency_3 = interfaces.wxgui 0
