@@ -33,6 +33,11 @@ break_link_event = Event()
 
 cdbs = set()
 
+# This dictionary keeps track of the last target for any link that has existed
+# It's *not* a mapping of the *current* links, for that use a proper query to
+# the database
+last_known_links = {}
+
 
 def select_links(filename):
     qconn = core_api.get_connection(filename)
@@ -41,6 +46,25 @@ def select_links(filename):
     core_api.give_connection(filename, qconn)
 
     return cursor.fetchall()
+
+
+def do_insert_link(filename, cursor, id_, target):
+    cursor.execute(queries.links_insert, (id_, target))
+
+    global last_known_links
+    last_known_links[filename][id_] = target
+
+
+def do_update_link(filename, cursor, target, id_):
+    cursor.execute(queries.links_update_id, (target, id_))
+
+    global last_known_links
+    last_known_links[filename][id_] = target
+
+
+def do_delete_link(cursor, id_):
+    cursor.execute(queries.links_delete_id, (id_, ))
+    # Do not update last_known_links here, otherwise it would lose its meaning
 
 
 def upsert_link(filename, id_, target, group, description='Insert link',
@@ -97,7 +121,7 @@ def upsert_link(filename, id_, target, group, description='Insert link',
     if res:
         oldtarget = res['L_target']
 
-        cursor.execute(queries.links_update_id, (target, id_))
+        do_update_link(filename, cursor, target, id_)
 
         core_api.give_connection(filename, qconn)
 
@@ -108,7 +132,7 @@ def upsert_link(filename, id_, target, group, description='Insert link',
         oldtarget = False
 
         # 'target' can be None, thus allowing the creation of a broken link
-        cursor.execute(queries.links_insert, (id_, target))
+        do_insert_link(filename, cursor, id_, target)
 
         core_api.give_connection(filename, qconn)
 
@@ -136,7 +160,7 @@ def delete_link(filename, id_, group, description='Delete link'):
     if res:
         target = res['L_target']
 
-        cursor.execute(queries.links_delete_id, (id_, ))
+        do_delete_link(cursor, id_)
 
         core_api.give_connection(filename, qconn)
 
@@ -168,7 +192,7 @@ def break_links(filename, id_, group, description='Break links'):
         linkid = row['L_id']
         ids.add(linkid)
 
-        cursor.execute(queries.links_update_id, (None, linkid))
+        do_update_link(filename, cursor, None, linkid)
 
         core_api.give_connection(filename, qconn)
 
@@ -319,21 +343,25 @@ def paste_link(filename, id_, oldid, group, description):
 def handle_history_insert(filename, action, jparams, hid, type_, itemid):
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
-    cursor.execute(queries.links_insert,
-                    (itemid, int(jparams) if jparams is not None else None))
+    do_insert_link(filename, cursor,
+                        itemid, int(jparams) if jparams is not None else None)
     core_api.give_connection(filename, qconn)
 
 
 def handle_history_update(filename, action, jparams, hid, type_, itemid):
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
-    cursor.execute(queries.links_update_id,
-                    (int(jparams) if jparams is not None else None, itemid))
+    do_update_link(filename, cursor,
+                        int(jparams) if jparams is not None else None, itemid)
     core_api.give_connection(filename, qconn)
 
 
 def handle_history_delete(filename, action, jparams, hid, type_, itemid):
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
-    cursor.execute(queries.links_delete_id, (itemid, ))
+    do_delete_link(cursor, itemid)
     core_api.give_connection(filename, qconn)
+
+
+def get_last_known_target(filename, id_):
+    return last_known_links[filename].get(id_)

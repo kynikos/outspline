@@ -27,6 +27,10 @@ def get_existing_links(filename):
     return links.select_links(filename)
 
 
+def get_last_known_target(filename, id_):
+    return links.get_last_known_target(filename, id_)
+
+
 def make_link(filename, id_, target, group, description='Make link'):
     try:
         return links.upsert_link(filename, id_, target, group,

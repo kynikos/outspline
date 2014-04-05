@@ -276,13 +276,28 @@ class TreeItemIcons(object):
 
                 if target is False:
                     rbits = 3 if len(backlinks) > 0 else 0
+
+                    # Find any possible old target and update it
+                    # This fixes for example the case of undoing the linking
+                    # of an item to another, which wouldn't update the tree
+                    # icon of the old target because this function would be
+                    # called *after* removing the link, so the old target
+                    # would not be retrievable through a database query
+                    old_target = links_api.get_last_known_target(self.filename,
+                                                                        id_)
+
+                    if old_target is not None:
+                        self._reset_item(old_target)
+
                 elif target is None:
                     rbits = 5 if len(backlinks) > 0 else 2
+
                 else:
                     rbits = 4 if len(backlinks) > 0 else 1
 
                     target_target = links_api.find_link_target(self.filename,
                                                                         target)
+
                     if target_target is False:
                         target_rbits = 3
                     elif target_target is None:

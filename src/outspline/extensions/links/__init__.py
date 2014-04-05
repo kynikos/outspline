@@ -58,6 +58,16 @@ def handle_open_database(kwargs):
     filename = kwargs['filename']
 
     if filename in links.cdbs:
+        links.last_known_links[filename] = {}
+
+        qconn = core_api.get_connection(filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.links_select)
+        core_api.give_connection(filename, qconn)
+
+        for row in cursor:
+            links.last_known_links[filename][row['L_id']] = row['L_target']
+
         core_api.register_history_action_handlers(filename, 'link_insert',
                     links.handle_history_insert, links.handle_history_delete)
         core_api.register_history_action_handlers(filename, 'link_update',
@@ -75,7 +85,8 @@ def handle_save_database_copy(kwargs):
 
         cur.execute(queries.links_select)
         for row in cur:
-            curd.execute(queries.links_insert, tuple(row))
+            do_insert_link(kwargs['destination'], curd, row['L_id'],
+                                                            row['L_target'])
 
         core_api.give_connection(kwargs['origin'], qconn)
 
@@ -84,6 +95,7 @@ def handle_save_database_copy(kwargs):
 
 
 def handle_close_database(kwargs):
+    del links.last_known_links[kwargs['filename']]
     links.cdbs.discard(kwargs['filename'])
 
 
