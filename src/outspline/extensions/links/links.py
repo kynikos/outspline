@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+
 from outspline.coreaux_api import Event
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
@@ -95,26 +97,24 @@ def upsert_link(filename, id_, target, group, description='Insert link',
     if res:
         oldtarget = res['L_target']
 
-        query_redo = queries.links_update_id.format(target
-                                        if target is not None else 'NULL', id_)
-        query_undo = queries.links_update_id.format(oldtarget
-                                     if oldtarget is not None else 'NULL', id_)
+        cursor.execute(queries.links_update_id, (target, id_))
 
-        cursor.execute(query_redo)
+        core_api.give_connection(filename, qconn)
+
+        core_api.insert_history(filename, group, id_, 'link_update',
+                    description, str(target) if target is not None else None,
+                    oldtarget if str(oldtarget) is not None else None)
     else:
         oldtarget = False
 
-        # Allow the creation of a broken link
-        query_redo = queries.links_insert.format(id_, target
-                                             if target is not None else 'NULL')
-        query_undo = queries.links_delete_id.format(id_)
+        # 'target' can be None, thus allowing the creation of a broken link
+        cursor.execute(queries.links_insert, (id_, target))
 
-        cursor.execute(query_redo)
+        core_api.give_connection(filename, qconn)
 
-    core_api.give_connection(filename, qconn)
-
-    core_api.insert_history(filename, group, id_, 'link_upsert', description,
-                                                        query_redo, query_undo)
+        core_api.insert_history(filename, group, id_, 'link_insert',
+                    description, str(target) if target is not None else None,
+                    None)
 
     upsert_link_event.signal(filename=filename, id_=id_, target=target,
                                                         oldtarget=oldtarget)
@@ -136,16 +136,12 @@ def delete_link(filename, id_, group, description='Delete link'):
     if res:
         target = res['L_target']
 
-        query_redo = queries.links_delete_id.format(id_)
-        query_undo = queries.links_insert.format(id_, target
-                                             if target is not None else 'NULL')
-
-        cursor.execute(query_redo)
+        cursor.execute(queries.links_delete_id, (id_, ))
 
         core_api.give_connection(filename, qconn)
 
         core_api.insert_history(filename, group, id_, 'link_delete',
-                                        description, query_redo, query_undo)
+                description, None, str(target) if target is not None else None)
 
         delete_link_event.signal(filename=filename, id_=id_, oldtarget=target)
     else:
@@ -172,15 +168,12 @@ def break_links(filename, id_, group, description='Break links'):
         linkid = row['L_id']
         ids.add(linkid)
 
-        query_redo = queries.links_update_id.format('NULL', linkid)
-        query_undo = queries.links_update_id.format(id_, linkid)
-
-        cursor.execute(query_redo)
+        cursor.execute(queries.links_update_id, (None, linkid))
 
         core_api.give_connection(filename, qconn)
 
-        core_api.insert_history(filename, group, id_, 'link_break',
-                                        description, query_redo, query_undo)
+        core_api.insert_history(filename, group, linkid, 'link_update',
+                                                description, None, str(id_))
 
         qconn = core_api.get_connection(filename)
         cursor = qconn.cursor()
@@ -323,8 +316,24 @@ def paste_link(filename, id_, oldid, group, description):
             upsert_link(filename, id_, target, group, description, event=False)
 
 
-def handle_history_action(filename, action, jparams, hid, type_, itemid):
+def handle_history_insert(filename, action, jparams, hid, type_, itemid):
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
-    cursor.execute(jparams)
+    cursor.execute(queries.links_insert,
+                    (itemid, int(jparams) if jparams is not None else None))
+    core_api.give_connection(filename, qconn)
+
+
+def handle_history_update(filename, action, jparams, hid, type_, itemid):
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+    cursor.execute(queries.links_update_id,
+                    (int(jparams) if jparams is not None else None, itemid))
+    core_api.give_connection(filename, qconn)
+
+
+def handle_history_delete(filename, action, jparams, hid, type_, itemid):
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+    cursor.execute(queries.links_delete_id, (itemid, ))
     core_api.give_connection(filename, qconn)

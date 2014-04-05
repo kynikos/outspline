@@ -28,13 +28,11 @@ links_select_target = 'SELECT L_id FROM Links WHERE L_target=?'
 links_select_target_broken = ('SELECT L_id FROM Links WHERE L_target=NULL '
                               'LIMIT 1')
 
-links_insert = 'INSERT INTO Links (L_id, L_target) VALUES ({}, {})'
+links_insert = 'INSERT INTO Links (L_id, L_target) VALUES (?, ?)'
 
-links_insert_copy = 'INSERT INTO Links (L_id, L_target) VALUES (?, ?)'
+links_update_id = 'UPDATE Links SET L_target=? WHERE L_id=?'
 
-links_update_id = 'UPDATE Links SET L_target={} WHERE L_id={}'
-
-links_delete_id = 'DELETE FROM Links WHERE L_id={}'
+links_delete_id = 'DELETE FROM Links WHERE L_id=?'
 
 copylinks_create = ("CREATE TABLE CopyLinks (CL_id INTEGER, "
                                             "CL_target INTEGER)")

@@ -57,12 +57,13 @@ def handle_open_database_dirty(kwargs):
 def handle_open_database(kwargs):
     filename = kwargs['filename']
 
-    core_api.register_history_action_handlers(filename, 'link_upsert',
-                    links.handle_history_action, links.handle_history_action)
-    core_api.register_history_action_handlers(filename, 'link_delete',
-                    links.handle_history_action, links.handle_history_action)
-    core_api.register_history_action_handlers(filename, 'link_break',
-                    links.handle_history_action, links.handle_history_action)
+    if filename in links.cdbs:
+        core_api.register_history_action_handlers(filename, 'link_insert',
+                    links.handle_history_insert, links.handle_history_delete)
+        core_api.register_history_action_handlers(filename, 'link_update',
+                    links.handle_history_update, links.handle_history_update)
+        core_api.register_history_action_handlers(filename, 'link_delete',
+                    links.handle_history_delete, links.handle_history_insert)
 
 
 def handle_save_database_copy(kwargs):
@@ -74,7 +75,7 @@ def handle_save_database_copy(kwargs):
 
         cur.execute(queries.links_select)
         for row in cur:
-            curd.execute(queries.links_insert_copy, tuple(row))
+            curd.execute(queries.links_insert, tuple(row))
 
         core_api.give_connection(kwargs['origin'], qconn)
 
