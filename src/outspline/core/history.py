@@ -248,12 +248,21 @@ class DBHistory(object):
         qconn = self.connection.get()
         cursor = qconn.cursor()
 
-        # Update queries can or cannot have I_text=?, hence they accept or
-        # don't accept a query binding
-        try:
-            cursor.execute(query)
-        except _sql.ProgrammingError:
-            cursor.execute(query, (text, ))
+        kwparams = json.loads(query)
+        set_fields = ''
+        qparams = []
+
+        for field in kwparams:
+            value = kwparams[field]
+
+            if value is not None:
+                set_fields += '{}=?, '.format(field)
+                qparams.append(value)
+
+        set_fields = set_fields[:-2]
+        query = queries.items_update_id.format(set_fields)
+        qparams.append(itemid)
+        cursor.execute(query, qparams)
 
         cursor.execute(queries.items_select_id, (itemid, ))
         select = cursor.fetchone()

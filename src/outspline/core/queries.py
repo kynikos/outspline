@@ -91,7 +91,7 @@ items_select_search = 'SELECT I_id, I_text FROM Items'
 items_insert = ('INSERT INTO Items (I_id, I_parent, I_previous, I_text) '
                 'VALUES (?, ?, ?, ?)')
 
-items_update_id = 'UPDATE Items SET {} WHERE I_id={}'
+items_update_id = 'UPDATE Items SET {} WHERE I_id=?'
 
 items_delete_id = 'DELETE FROM Items WHERE I_id=?'
 

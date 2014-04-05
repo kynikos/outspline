@@ -96,43 +96,40 @@ class Item(object):
 
     def update_no_event(self, group, parent=None, previous=None, text=None,
                                                     description='Update item'):
-        new_values = {'I_parent': parent,
-                      'I_previous': previous}
-
         qconn = self.database.connection.get()
         cursor = qconn.cursor()
+
         cursor.execute(queries.items_select_id, (self.id_, ))
         current_values = cursor.fetchone()
 
-        set = []
-        unset = []
-        for field in new_values:
-            if new_values[field] != None:
-                string = ''.join((field, '={}'))
-                set.append(string.format(new_values[field]))
-                unset.append(string.format(current_values[field]))
+        kwparams = {'I_parent': parent,
+                    'I_previous': previous,
+                    'I_text': text}
 
-        if text != None:
-            field = 'I_text=?'
-            set.append(field)
-            unset.append(field)
-            qtext = text
-            unqtext = current_values['I_text']
-        else:
-            qtext = ''
-            unqtext = ''
+        hparams = {}
+        hunparams = {}
+        set_fields = ''
+        qparams = []
 
-        query_redo = queries.items_update_id.format(', '.join(set), self.id_)
-        query_undo = queries.items_update_id.format(', '.join(unset), self.id_)
+        for field in kwparams:
+            value = kwparams[field]
 
-        if text != None:
-            cursor.execute(query_redo, (qtext, ))
-        else:
-            cursor.execute(query_redo)
+            if value is not None:
+                hparams[field] = value
+                hunparams[field] = current_values[field]
+                set_fields += '{}=?, '.format(field)
+                qparams.append(value)
 
+        set_fields = set_fields[:-2]
+        query = queries.items_update_id.format(set_fields)
+        qparams.append(self.id_)
+        cursor.execute(query, qparams)
+
+        jhparams = json.dumps(hparams, separators=(',',':'))
+        jhunparams = json.dumps(hunparams, separators=(',',':'))
         cursor.execute(queries.history_insert, (group, self.id_, 'update',
-                                                description, query_redo, qtext,
-                                                query_undo, unqtext))
+                                                description, jhparams, None,
+                                                jhunparams, None))
 
         self.database.connection.give(qconn)
 
