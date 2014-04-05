@@ -67,7 +67,7 @@ class Item(object):
         cursor.execute(queries.history_insert,
                     (group, id_, 'insert', description,
                     json.dumps((parent, previous, text), separators=(',',':')),
-                    None, text, None))
+                    text))
 
         databases.dbs[filename].connection.give(qconn)
 
@@ -128,8 +128,7 @@ class Item(object):
         jhparams = json.dumps(hparams, separators=(',',':'))
         jhunparams = json.dumps(hunparams, separators=(',',':'))
         cursor.execute(queries.history_insert, (group, self.id_, 'update',
-                                                description, jhparams, None,
-                                                jhunparams, None))
+                                            description, jhparams, jhunparams))
 
         self.database.connection.give(qconn)
 
@@ -162,7 +161,7 @@ class Item(object):
 
         cursor.execute(queries.items_delete_id, (self.id_, ))
         cursor.execute(queries.history_insert, (group, self.id_, 'delete',
-                            description, hparams, None, hunparams, None))
+                                            description, hparams, hunparams))
 
         self.database.connection.give(qconn)
 

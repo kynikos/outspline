@@ -136,9 +136,9 @@ def update_item_text_no_event(filename, id_, text, group=None,
 
 
 def insert_history(filename, group, id_, type, description, query_redo,
-                   text_redo, query_undo, text_undo):
+                                                                query_undo):
     return databases.dbs[filename].dbhistory.insert_history(group, id_, type,
-                    description, query_redo, text_redo, query_undo, text_undo)
+                                        description, query_redo, query_undo)
 
 
 def preview_undo_tree(filename):

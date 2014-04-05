@@ -60,11 +60,11 @@ class DBHistory(object):
         }
 
     def insert_history(self, group, id_, type_, description, query_redo,
-                                            text_redo, query_undo, text_undo):
+                                                                query_undo):
         qconn = self.connection.get()
         cur = qconn.cursor()
         cur.execute(queries.history_insert, (group, id_, type_, description,
-                                query_redo, text_redo, query_undo, text_undo))
+                                                    query_redo, query_undo))
         self.connection.give(qconn)
 
         return cur.lastrowid
@@ -219,15 +219,15 @@ class DBHistory(object):
                 except KeyError:
                     haction = self.hactions[None]
 
-                haction[action](action, row[3], row[4], row['H_id'],
-                                                row['H_type'], row['H_item'])
+                haction[action](action, row[3], row['H_id'], row['H_type'],
+                                                                row['H_item'])
                 self._update_history_id(row['H_id'], status)
 
             history_event.signal(filename=self.filename)
 
-    def _do_history_row_insert(self, action, query, text, hid, type_, itemid):
+    def _do_history_row_insert(self, action, jparams, hid, type_, itemid):
         params = [itemid, ]
-        params.extend(json.loads(query))
+        params.extend(json.loads(jparams))
 
         qconn = self.connection.get()
         cursor = qconn.cursor()
@@ -244,11 +244,11 @@ class DBHistory(object):
                                                 previous=select['I_previous'],
                                                 text=select['I_text'], hid=hid)
 
-    def _do_history_row_update(self, action, query, text, hid, type_, itemid):
+    def _do_history_row_update(self, action, jparams, hid, type_, itemid):
         qconn = self.connection.get()
         cursor = qconn.cursor()
 
-        kwparams = json.loads(query)
+        kwparams = json.loads(jparams)
         set_fields = ''
         qparams = []
 
@@ -274,7 +274,7 @@ class DBHistory(object):
                                                 previous=select['I_previous'],
                                                 text=select['I_text'])
 
-    def _do_history_row_delete(self, action, query, text, hid, type_, itemid):
+    def _do_history_row_delete(self, action, jparams, hid, type_, itemid):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_delete_id, (itemid, ))
@@ -282,9 +282,9 @@ class DBHistory(object):
 
         self.items[itemid].remove()
         history_delete_event.signal(filename=self.filename, id_=itemid,
-                                                        hid=hid, text=query)
+                                                        hid=hid, text=jparams)
 
-    def _do_history_row_other(self, action, query, text, hid, type_, itemid):
+    def _do_history_row_other(self, action, jparams, hid, type_, itemid):
         qconn = self.connection.get()
         cursor = qconn.cursor()
 
