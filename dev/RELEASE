@@ -5,7 +5,10 @@
   Test in different time zones:
   - non-DST (Australia/Perth)
   - UTC
-  - DST (Europe/Paris)
+  - DST (full hours) (Europe/Paris)
+    - with a non-DST time
+    - with a DST time
+  - DST (non-full hours) (Australia/Adelaide)
     - with a non-DST time
     - with a DST time
   If backward compatibility has to be kept, also test with databases created
