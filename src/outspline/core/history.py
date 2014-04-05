@@ -23,6 +23,7 @@ from outspline.coreaux_api import Event
 
 import queries
 import items
+import exceptions
 
 check_pending_changes_event = Event()
 reset_modified_state_event = Event()
@@ -30,7 +31,6 @@ history_event = Event()
 history_insert_event = Event()
 history_update_event = Event()
 history_delete_event = Event()
-history_other_event = Event()
 history_clean_event = Event()
 
 
@@ -53,11 +53,16 @@ class DBHistory(object):
                 'undo': self._do_history_row_insert,
                 'redo': self._do_history_row_delete,
             },
-            None: {
-                'undo': self._do_history_row_other,
-                'redo': self._do_history_row_other,
-            },
         }
+
+    def register_action_handlers(self, name, redo_handler, undo_handler):
+        if name not in self.hactions:
+            self.hactions[name] = {
+                'undo': undo_handler,
+                'redo': redo_handler,
+            }
+        else:
+            raise exceptions.ConflictingActionHandlersError()
 
     def insert_history(self, group, id_, type_, description, query_redo,
                                                                 query_undo):
@@ -214,18 +219,14 @@ class DBHistory(object):
             status = read['status']
 
             for row in history:
-                try:
-                    haction = self.hactions[row['H_type']]
-                except KeyError:
-                    haction = self.hactions[None]
-
-                haction[action](action, row[3], row['H_id'], row['H_type'],
-                                                                row['H_item'])
+                self.hactions[row['H_type']][action](self.filename, action,
+                            row[3], row['H_id'], row['H_type'], row['H_item'])
                 self._update_history_id(row['H_id'], status)
 
             history_event.signal(filename=self.filename)
 
-    def _do_history_row_insert(self, action, jparams, hid, type_, itemid):
+    def _do_history_row_insert(self, filename, action, jparams, hid, type_,
+                                                                    itemid):
         params = [itemid, ]
         params.extend(json.loads(jparams))
 
@@ -244,7 +245,8 @@ class DBHistory(object):
                                                 previous=select['I_previous'],
                                                 text=select['I_text'], hid=hid)
 
-    def _do_history_row_update(self, action, jparams, hid, type_, itemid):
+    def _do_history_row_update(self, filename, action, jparams, hid, type_,
+                                                                    itemid):
         qconn = self.connection.get()
         cursor = qconn.cursor()
 
@@ -274,7 +276,8 @@ class DBHistory(object):
                                                 previous=select['I_previous'],
                                                 text=select['I_text'])
 
-    def _do_history_row_delete(self, action, jparams, hid, type_, itemid):
+    def _do_history_row_delete(self, filename, action, jparams, hid, type_,
+                                                                    itemid):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_delete_id, (itemid, ))
@@ -283,22 +286,6 @@ class DBHistory(object):
         self.items[itemid].remove()
         history_delete_event.signal(filename=self.filename, id_=itemid,
                                                         hid=hid, text=jparams)
-
-    def _do_history_row_other(self, action, jparams, hid, type_, itemid):
-        qconn = self.connection.get()
-        cursor = qconn.cursor()
-
-        # Update queries can or cannot have I_text=?, hence they accept or
-        # don't accept a query binding
-        try:
-            cursor.execute(query)
-        except _sql.ProgrammingError:
-            cursor.execute(query, (text, ))
-
-        self.connection.give(qconn)
-
-        history_other_event.signal(type_=type_, action=action,
-                                filename=self.filename, id_=itemid, hid=hid)
 
     def clean_history(self):
         # This operation must be performed on a different connection than

@@ -135,6 +135,12 @@ def update_item_text_no_event(filename, id_, text, group=None,
                                             description=description, text=text)
 
 
+def register_history_action_handlers(filename, name, redo_handler,
+                                                                undo_handler):
+    return databases.dbs[filename].dbhistory.register_action_handlers(name,
+                                                    redo_handler, undo_handler)
+
+
 def insert_history(filename, group, id_, type, description, query_redo,
                                                                 query_undo):
     return databases.dbs[filename].dbhistory.insert_history(group, id_, type,
@@ -319,10 +325,6 @@ def bind_to_history_update(handler, bind=True):
 
 def bind_to_history_remove(handler, bind=True):
     return history.history_delete_event.bind(handler, bind)
-
-
-def bind_to_history_other(handler, bind=True):
-    return history.history_other_event.bind(handler, bind)
 
 
 def bind_to_check_pending_changes(handler, bind=True):

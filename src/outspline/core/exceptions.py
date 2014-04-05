@@ -41,3 +41,7 @@ class DatabaseLocked(OutsplineError):
 
 class CannotMoveItemError(OutsplineError):
     pass
+
+
+class ConflictingActionHandlersError(OutsplineError):
+    pass
