@@ -218,18 +218,17 @@ def install_rule_handler(rulename, handler):
 
 def insert_item(filename, id_, group, description='Insert item'):
     if filename in cdbs:
-        query_redo = queries.rules_insert.format(id_)
         query_undo = queries.rules_delete_id.format(id_)
+        srules = rules_to_string([])
 
         qconn = core_api.get_connection(filename)
         cursor = qconn.cursor()
-        cursor.execute(query_redo, (rules_to_string([]), ))
+        cursor.execute(queries.rules_insert, (id_, srules, ))
         core_api.give_connection(filename, qconn)
 
         core_api.insert_history(filename, group, id_, 'rules_insert',
-                description, json.dumps((query_redo, rules_to_string([])),
-                                                        separators=(',',':')),
-                json.dumps((query_undo, ''), separators=(',',':')))
+                            description, srules,
+                            json.dumps((query_undo, ''), separators=(',',':')))
 
 
 def update_item_rules(filename, id_, rules, group,
@@ -327,15 +326,13 @@ def delete_item_rules(filename, id_, text, group,
         current_rules = sel['R_rules']
 
         query_redo = queries.rules_delete_id.format(id_)
-        query_undo = queries.rules_insert.format(id_)
-
         cursor.execute(query_redo)
 
         core_api.give_connection(filename, qconn)
 
         core_api.insert_history(filename, group, id_, 'rules_delete',
               description, json.dumps((query_redo, ''), separators=(',',':')),
-              json.dumps((query_undo, current_rules), separators=(',',':')))
+              current_rules)
 
         delete_item_rules_event.signal(filename=filename, id_=id_, text=text)
 
@@ -396,7 +393,30 @@ def get_occurrences_range(mint, maxt):
     return occs
 
 
-def handle_history_action(filename, action, jparams, hid, type_, itemid):
+def handle_history_insert(filename, action, jparams, hid, type_, itemid):
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+    cursor.execute(queries.rules_insert, (itemid, jparams, ))
+    core_api.give_connection(filename, qconn)
+
+
+def handle_history_update(filename, action, jparams, hid, type_, itemid):
+    query, rules = json.loads(jparams)
+
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+
+    # Update queries can or cannot have rules, hence they accept or don't
+    # accept a query binding
+    try:
+        cursor.execute(query)
+    except sqlite3.ProgrammingError:
+        cursor.execute(query, (rules, ))
+
+    core_api.give_connection(filename, qconn)
+
+
+def handle_history_delete(filename, action, jparams, hid, type_, itemid):
     query, rules = json.loads(jparams)
 
     qconn = core_api.get_connection(filename)
