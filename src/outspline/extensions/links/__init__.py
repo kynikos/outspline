@@ -95,7 +95,11 @@ def handle_save_database_copy(kwargs):
 
 
 def handle_close_database(kwargs):
-    del links.last_known_links[kwargs['filename']]
+    try:
+        del links.last_known_links[kwargs['filename']]
+    except KeyError:
+        pass
+
     links.cdbs.discard(kwargs['filename'])
 
 
