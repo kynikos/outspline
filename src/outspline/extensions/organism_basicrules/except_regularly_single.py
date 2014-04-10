@@ -175,18 +175,18 @@ def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
         start = _compute_min_time(minstart, rule['#'][0], rule['#'][1],
                                                                       interval)
         while True:
-            end = start + rend
+            # Every timestamp can have a different UTC offset, depending
+            # whether it's in a DST period or not
+            offset = utcoffset.compute(start)
 
-            if start > maxend:
+            sstart = start + offset
+            send = sstart + rend
+
+            # Do compare sstart with maxend, *not* start
+            if sstart > maxend:
                 break
-            elif end >= minstart:
-                # Every timestamp can have a different UTC offset, depending
-                # whether it's in a DST period or not
-                offset = utcoffset.compute(start)
-
-                sstart = start + offset
-                send = end + offset
-
+            # Do compare send with minstart, *not* end
+            elif send >= minstart:
                 # The rule is checked in make_rule, no need to use occs.except_
                 occs.except_safe(filename, id_, sstart, send, inclusive)
 
@@ -238,21 +238,22 @@ def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
                                                                       interval)
 
         while True:
-            end = start + rend
+            # Every timestamp can have a different UTC offset, depending
+            # whether it's in a DST period or not
+            offset = utcoffset.compute(start)
+
+            sstart = start + offset
+            send = sstart + rend
 
             next_occ = occs.get_next_occurrence_time()
 
-            if not next_occ or start > next_occ:
+            # Do compare sstart with next_occ, *not* start
+            if not next_occ or sstart > next_occ:
                 break
 
-            if start <= maxend and end >= minstart:
-                # Every timestamp can have a different UTC offset, depending
-                # whether it's in a DST period or not
-                offset = utcoffset.compute(start)
-
-                sstart = start + offset
-                send = end + offset
-
+            # Do compare sstart with maxend and send with minstart, *not* start
+            # and end
+            if sstart <= maxend and send >= minstart:
                 # The rule is checked in make_rule, no need to use occs.except_
                 occs.except_safe(filename, id_, sstart, send, inclusive)
 

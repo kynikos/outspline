@@ -230,7 +230,8 @@ def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
             except TypeError:
                 salarm = None
 
-            if start > maxt and (salarm is None or salarm > maxt + offset):
+            # Do compare sstart and salarm with maxt, *not* start and alarm
+            if sstart > maxt and (salarm is None or salarm > maxt):
                 break
 
             # The rule is checked in make_rule, no need to use occs.add
@@ -409,9 +410,10 @@ def get_next_item_occurrences_UTC(base_time, utcoffset, filename, id_, rule,
             next_occ = occs.get_next_occurrence_time()
 
             # The rule is checked in make_rule, no need to use occs.add
+            # Do compare sstart and salarm with next_occ, *not* start and alarm
             if occs.add_safe(base_time, occd) or \
-                            (next_occ and start > next_occ and
-                            (salarm is None or salarm > next_occ + offset)):
+                            (next_occ and sstart > next_occ and
+                            (salarm is None or salarm > next_occ)):
                 break
 
         try:
