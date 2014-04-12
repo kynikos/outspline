@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-from organism_basicrules import (occur_once, occur_regularly_single,
+from organism_basicrules import (occur_once, occur_regularly,
                     occur_regularly_group, occur_monthly_number_direct,
                     occur_monthly_number_inverse, occur_monthly_weekday_direct,
-                    occur_monthly_weekday_inverse, occur_yearly_group,
-                    occur_yearly_single, except_once, except_regularly_single)
+                    occur_monthly_weekday_inverse, occur_yearly,
+                    except_once, except_regularly)
 from organism_basicrules.exceptions import BadRuleError
 
 
@@ -32,15 +32,15 @@ def make_occur_once_rule_UTC(start, end, alarm, guiconfig):
     return occur_once.make_rule(start, end, alarm, 'UTC', guiconfig)
 
 
-def make_occur_regularly_single_rule_local(refstart, interval, rend, ralarm,
+def make_occur_regularly_rule_local(refstart, interval, rend, ralarm,
                                                                     guiconfig):
-    return occur_regularly_single.make_rule(refstart, interval, rend, ralarm,
+    return occur_regularly.make_rule(refstart, interval, rend, ralarm,
                                                         'local', guiconfig)
 
 
-def make_occur_regularly_single_rule_UTC(refstart, interval, rend, ralarm,
+def make_occur_regularly_rule_UTC(refstart, interval, rend, ralarm,
                                                                     guiconfig):
-    return occur_regularly_single.make_rule(refstart, interval, rend, ralarm,
+    return occur_regularly.make_rule(refstart, interval, rend, ralarm,
                                                         'UTC', guiconfig)
 
 
@@ -104,26 +104,16 @@ def make_occur_monthly_weekday_inverse_rule_UTC(months, weekday, number,
                                 hour, minute, rend, ralarm, 'UTC', guiconfig)
 
 
-def make_occur_yearly_single_rule_local(interval, refyear, month, day, hour,
+def make_occur_yearly_rule_local(interval, refyear, month, day, hour,
                                             minute, rend, ralarm, guiconfig):
-    return occur_yearly_single.make_rule(interval, refyear, month, day, hour,
+    return occur_yearly.make_rule(interval, refyear, month, day, hour,
                                     minute, rend, ralarm, 'local', guiconfig)
 
 
-def make_occur_yearly_single_rule_UTC(interval, refyear, month, day, hour,
+def make_occur_yearly_rule_UTC(interval, refyear, month, day, hour,
                                             minute, rend, ralarm, guiconfig):
-    return occur_yearly_single.make_rule(interval, refyear, month, day, hour,
+    return occur_yearly.make_rule(interval, refyear, month, day, hour,
                                         minute, rend, ralarm, 'UTC', guiconfig)
-
-
-def make_occur_yearly_group_rule_local(occs, occsl, rend, ralarm, guiconfig):
-    return occur_yearly_group.make_rule(occs, occsl, rend, ralarm, 'local',
-                                                                    guiconfig)
-
-
-def make_occur_yearly_group_rule_UTC(occs, occsl, rend, ralarm, guiconfig):
-    return occur_yearly_group.make_rule(occs, occsl, rend, ralarm, 'UTC',
-                                                                    guiconfig)
 
 
 def make_except_once_rule_local(start, end, inclusive, guiconfig):
@@ -134,13 +124,13 @@ def make_except_once_rule_UTC(start, end, inclusive, guiconfig):
     return except_once.make_rule(start, end, inclusive, 'UTC', guiconfig)
 
 
-def make_except_regularly_single_rule_local(refstart, interval, rend,
+def make_except_regularly_rule_local(refstart, interval, rend,
                                                         inclusive, guiconfig):
-    return except_regularly_single.make_rule(refstart, interval, rend,
+    return except_regularly.make_rule(refstart, interval, rend,
                                                 inclusive, 'local', guiconfig)
 
 
-def make_except_regularly_single_rule_UTC(refstart, interval, rend, inclusive,
+def make_except_regularly_rule_UTC(refstart, interval, rend, inclusive,
                                                                     guiconfig):
-    return except_regularly_single.make_rule(refstart, interval, rend,
+    return except_regularly.make_rule(refstart, interval, rend,
                                                 inclusive, 'UTC', guiconfig)

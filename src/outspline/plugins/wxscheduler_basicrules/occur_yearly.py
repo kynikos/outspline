@@ -67,11 +67,11 @@ class Rule(object):
 
         try:
             if standard == 'UTC':
-                ruled = organism_basicrules_api.make_occur_yearly_single_rule_UTC(
+                ruled = organism_basicrules_api.make_occur_yearly_rule_UTC(
                             interval, refyear, month, day, rstartH, rstartM,
                             rend, ralarm, (endtype, alarmtype))
             else:
-                ruled = organism_basicrules_api.make_occur_yearly_single_rule_local(
+                ruled = organism_basicrules_api.make_occur_yearly_rule_local(
                             interval, refyear, month, day, rstartH, rstartM,
                             rend, ralarm, (endtype, alarmtype))
         except organism_basicrules_api.BadRuleError:
@@ -85,8 +85,7 @@ class Rule(object):
 
     @classmethod
     def insert_rule(cls, filename, id_, rule, rulev):
-        standard = 'UTC' if rule['rule'] == 'occur_yearly_single_UTC' else \
-                                                                        'local'
+        standard = 'UTC' if rule['rule'] == 'occur_yearly_UTC' else 'local'
         values = cls._compute_values(standard, rulev)
         label = cls._make_label(values['interval_years'],
                                 values['start_year'],
@@ -251,10 +250,10 @@ class Rule(object):
         stdn = random.randint(0, 1)
 
         if stdn == 0:
-            return organism_basicrules_api.make_occur_yearly_single_rule_local(
+            return organism_basicrules_api.make_occur_yearly_rule_local(
                                 interval, refyear, month, day, hour, minute,
                                 rend, ralarm, (endtype, alarmtype))
         else:
-            return organism_basicrules_api.make_occur_yearly_single_rule_UTC(
+            return organism_basicrules_api.make_occur_yearly_rule_UTC(
                                 interval, refyear, month, day, hour, minute,
                                 rend, ralarm, (endtype, alarmtype))

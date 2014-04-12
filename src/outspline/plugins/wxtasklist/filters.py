@@ -865,8 +865,8 @@ class FilterRegular():
     U) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % advance) - refspan + ((refspan // advance) * advance)
     V) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % advance) - refspan + ((refspan // advance) * advance) + advance
 
-    All cases from extensions.organism_basicrules.occur_regularly_single are
-    valid, except for the following:
+    All cases from extensions.organism_basicrules.occur_regularly are valid,
+    except for the following:
 
     --------(  *  )--------(     )--------[     |--------(     )--------(     )-----
     AGMS
@@ -1023,17 +1023,17 @@ class FilterRegular():
 
         if self.span == self.advance and rem == 0:
             # Use formula (T), see the examples above and in
-            # extensions.organism_basicrules.occur_regularly_single
+            # extensions.organism_basicrules.occur_regularly
             maxt = now + rem + self.advance
             mint = maxt - self.span
         elif self.span <= self.advance:
             # Use formula (S), see the examples above and in
-            # extensions.organism_basicrules.occur_regularly_single
+            # extensions.organism_basicrules.occur_regularly
             maxt = now + rem
             mint = maxt - self.span
         else:
             # Use formula (A), see the examples above and in
-            # extensions.organism_basicrules.occur_regularly_single
+            # extensions.organism_basicrules.occur_regularly
             mint = now - (now - self.base) % self.advance
             maxt = mint + self.span
 
@@ -1100,17 +1100,17 @@ class FilterMonthDynamic():
 
         if self.span == self.advance and rem == 0:
             # Use formula (T), see the examples in FilterRegular and in
-            # extensions.organism_basicrules.occur_regularly_single
+            # extensions.organism_basicrules.occur_regularly
             maxrmonth = nowrmonth + rem + self.advance
             minrmonth = maxrmonth - self.span
         elif self.span <= self.advance:
             # Use formula (S), see the examples in FilterRegular and in
-            # extensions.organism_basicrules.occur_regularly_single
+            # extensions.organism_basicrules.occur_regularly
             maxrmonth = nowrmonth + rem
             minrmonth = maxrmonth - self.span
         else:
             # Use formula (A), see the examples in FilterRegular and in
-            # extensions.organism_basicrules.occur_regularly_single
+            # extensions.organism_basicrules.occur_regularly
             minrmonth = nowrmonth - (nowrmonth - rmonth) % self.advance
             maxrmonth = minrmonth + self.span
 

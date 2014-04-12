@@ -21,8 +21,8 @@ import datetime as _datetime
 
 from exceptions import BadRuleError
 
-_RULE_NAMES = {'local': 'occur_yearly_single_local',
-               'UTC': 'occur_yearly_single_UTC'}
+_RULE_NAMES = {'local': 'occur_yearly_local',
+               'UTC': 'occur_yearly_UTC'}
 
 
 def make_rule(interval, refyear, month, day, hour, minute, rend, ralarm,

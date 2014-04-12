@@ -64,10 +64,10 @@ class Rule(object):
 
         try:
             if standard == 'UTC':
-                ruled = organism_basicrules_api.make_occur_regularly_single_rule_UTC(
+                ruled = organism_basicrules_api.make_occur_regularly_rule_UTC(
                     refstart, 604800, rend, ralarm, ('1w', endtype, alarmtype))
             else:
-                ruled = organism_basicrules_api.make_occur_regularly_single_rule_local(
+                ruled = organism_basicrules_api.make_occur_regularly_rule_local(
                     refstart, 604800, rend, ralarm, ('1w', endtype, alarmtype))
         except organism_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule(msgboxes.generic).ShowModal()
@@ -79,8 +79,7 @@ class Rule(object):
 
     @classmethod
     def insert_rule(cls, filename, id_, rule, rulev):
-        standard = 'UTC' if rule['rule'] == 'occur_regularly_single_UTC' else \
-                                                                        'local'
+        standard = 'UTC' if rule['rule'] == 'occur_regularly_UTC' else 'local'
         values = cls._compute_values(standard, rulev)
         label = cls._make_label(values['start_weekday'],
                                 values['start_hour'],
@@ -226,8 +225,8 @@ class Rule(object):
         stdn = random.randint(0, 1)
 
         if stdn == 0:
-            return organism_basicrules_api.make_occur_regularly_single_rule_local(
+            return organism_basicrules_api.make_occur_regularly_rule_local(
                     refstart, 604800, rend, ralarm, ('1w', endtype, alarmtype))
         else:
-            return organism_basicrules_api.make_occur_regularly_single_rule_UTC(
+            return organism_basicrules_api.make_occur_regularly_rule_UTC(
                     refstart, 604800, rend, ralarm, ('1w', endtype, alarmtype))

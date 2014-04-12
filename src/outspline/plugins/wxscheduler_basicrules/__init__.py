@@ -83,7 +83,7 @@ class Main(object):
         rules_to_data = {
             ('occur_once_local', 'occur_once_UTC'):
                 (None, {None: 'occur_once'}),
-            ('occur_regularly_single_local', 'occur_regularly_single_UTC'):
+            ('occur_regularly_local', 'occur_regularly_UTC'):
                 (6, {'1d': 'occur_every_day',
                      '1w': 'occur_every_week',
                      'sy': 'occur_every_synodic_month',
@@ -107,11 +107,11 @@ class Main(object):
                                         'occur_monthly_weekday_inverse_UTC'):
                 (8, {'1m': 'occur_every_month_weekday_inverse',
                      None: 'occur_selected_months_weekday_inverse'}),
-            ('occur_yearly_single_local', 'occur_yearly_single_UTC'):
+            ('occur_yearly_local', 'occur_yearly_UTC'):
                 (None, {None: 'occur_yearly'}),
             ('except_once_local', 'except_once_UTC'):
                 (None, {None: 'except_once'}),
-            ('except_regularly_single_local', 'except_regularly_single_UTC'):
+            ('except_regularly_local', 'except_regularly_UTC'):
                 (None, {None: 'except_every_interval'}),
         }
 

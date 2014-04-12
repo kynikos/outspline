@@ -84,7 +84,7 @@ def make_rule(refstart, interval, rstarts, rend, ralarm, standard, guiconfig):
 
 
 def _compute_relative_max_time(reftime, refmax, interval):
-    # Use formula (S), see the examples in occur_regularly_single
+    # Use formula (S), see the examples in occur_regularly
     return (refmax - reftime) % interval
 
 

@@ -18,8 +18,8 @@
 
 from exceptions import BadRuleError
 
-_RULE_NAMES = {'local': 'except_regularly_single_local',
-               'UTC': 'except_regularly_single_UTC'}
+_RULE_NAMES = {'local': 'except_regularly_local',
+               'UTC': 'except_regularly_UTC'}
 
 
 def make_rule(refstart, interval, rend, inclusive, standard, guiconfig):
@@ -84,7 +84,7 @@ T) mintime = reftime + ((refmax - reftime) % interval) + interval - refspan
 U) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % interval) - refspan + ((refspan // interval) * interval)
 V) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % interval) - refspan + ((refspan // interval) * interval) + interval
 
-All cases from occur_regularly_single are valid, except for the following:
+All cases from occur_regularly are valid, except for the following:
 
 --------(  *  )--------(     )--------[     |--------(     )--------(     )-----
 AGMS
@@ -155,7 +155,7 @@ CGOS
 
 
 def _compute_min_time(reftime, refmax, refspan, interval):
-    # Use formula (S), see the examples above and in occur_regularly_single
+    # Use formula (S), see the examples above and in occur_regularly
     return reftime + (refmax - reftime) % interval - refspan
 
 

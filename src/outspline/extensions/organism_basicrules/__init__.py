@@ -20,16 +20,15 @@ import outspline.extensions.organism_api as organism_api
 import outspline.extensions.organism_timer_api as organism_timer_api
 
 import occur_once
-import occur_regularly_single
+import occur_regularly
 import occur_regularly_group
 import occur_monthly_number_direct
 import occur_monthly_number_inverse
 import occur_monthly_weekday_direct
 import occur_monthly_weekday_inverse
-import occur_yearly_single
-import occur_yearly_group
+import occur_yearly
 import except_once
-import except_regularly_single
+import except_regularly
 
 
 def install_next_occurrence_handlers():
@@ -38,10 +37,10 @@ def install_next_occurrence_handlers():
                 occur_once.get_next_item_occurrences_local),
             (occur_once._RULE_NAMES['UTC'],
                 occur_once.get_next_item_occurrences_UTC),
-            (occur_regularly_single._RULE_NAMES['local'],
-                occur_regularly_single.get_next_item_occurrences_local),
-            (occur_regularly_single._RULE_NAMES['UTC'],
-                occur_regularly_single.get_next_item_occurrences_UTC),
+            (occur_regularly._RULE_NAMES['local'],
+                occur_regularly.get_next_item_occurrences_local),
+            (occur_regularly._RULE_NAMES['UTC'],
+                occur_regularly.get_next_item_occurrences_UTC),
             (occur_regularly_group._RULE_NAMES['local'],
                 occur_regularly_group.get_next_item_occurrences_local),
             (occur_regularly_group._RULE_NAMES['UTC'],
@@ -62,22 +61,18 @@ def install_next_occurrence_handlers():
                 occur_monthly_weekday_inverse.get_next_item_occurrences_local),
             (occur_monthly_weekday_inverse._RULE_NAMES['UTC'],
                 occur_monthly_weekday_inverse.get_next_item_occurrences_UTC),
-            (occur_yearly_single._RULE_NAMES['local'],
-                occur_yearly_single.get_next_item_occurrences_local),
-            (occur_yearly_single._RULE_NAMES['UTC'],
-                occur_yearly_single.get_next_item_occurrences_UTC),
-            (occur_yearly_group._RULE_NAMES['local'],
-                occur_yearly_group.get_next_item_occurrences_local),
-            (occur_yearly_group._RULE_NAMES['UTC'],
-                occur_yearly_group.get_next_item_occurrences_UTC),
+            (occur_yearly._RULE_NAMES['local'],
+                occur_yearly.get_next_item_occurrences_local),
+            (occur_yearly._RULE_NAMES['UTC'],
+                occur_yearly.get_next_item_occurrences_UTC),
             (except_once._RULE_NAMES['local'],
                 except_once.get_next_item_occurrences_local),
             (except_once._RULE_NAMES['UTC'],
                 except_once.get_next_item_occurrences_UTC),
-            (except_regularly_single._RULE_NAMES['local'],
-                except_regularly_single.get_next_item_occurrences_local),
-            (except_regularly_single._RULE_NAMES['UTC'],
-                except_regularly_single.get_next_item_occurrences_UTC),
+            (except_regularly._RULE_NAMES['local'],
+                except_regularly.get_next_item_occurrences_local),
+            (except_regularly._RULE_NAMES['UTC'],
+                except_regularly.get_next_item_occurrences_UTC),
             ):
         organism_timer_api.install_rule_handler(rulename, handler)
 
@@ -88,10 +83,10 @@ def install_occurrence_range_handlers():
                     occur_once.get_occurrences_range_local),
                 (occur_once._RULE_NAMES['UTC'],
                     occur_once.get_occurrences_range_UTC),
-                (occur_regularly_single._RULE_NAMES['local'],
-                    occur_regularly_single.get_occurrences_range_local),
-                (occur_regularly_single._RULE_NAMES['UTC'],
-                    occur_regularly_single.get_occurrences_range_UTC),
+                (occur_regularly._RULE_NAMES['local'],
+                    occur_regularly.get_occurrences_range_local),
+                (occur_regularly._RULE_NAMES['UTC'],
+                    occur_regularly.get_occurrences_range_UTC),
                 (occur_regularly_group._RULE_NAMES['local'],
                     occur_regularly_group.get_occurrences_range_local),
                 (occur_regularly_group._RULE_NAMES['UTC'],
@@ -112,22 +107,18 @@ def install_occurrence_range_handlers():
                     occur_monthly_weekday_inverse.get_occurrences_range_local),
                 (occur_monthly_weekday_inverse._RULE_NAMES['UTC'],
                     occur_monthly_weekday_inverse.get_occurrences_range_UTC),
-                (occur_yearly_single._RULE_NAMES['local'],
-                    occur_yearly_single.get_occurrences_range_local),
-                (occur_yearly_single._RULE_NAMES['UTC'],
-                    occur_yearly_single.get_occurrences_range_UTC),
-                (occur_yearly_group._RULE_NAMES['local'],
-                    occur_yearly_group.get_occurrences_range_local),
-                (occur_yearly_group._RULE_NAMES['UTC'],
-                    occur_yearly_group.get_occurrences_range_UTC),
+                (occur_yearly._RULE_NAMES['local'],
+                    occur_yearly.get_occurrences_range_local),
+                (occur_yearly._RULE_NAMES['UTC'],
+                    occur_yearly.get_occurrences_range_UTC),
                 (except_once._RULE_NAMES['local'],
                     except_once.get_occurrences_range_local),
                 (except_once._RULE_NAMES['UTC'],
                     except_once.get_occurrences_range_UTC),
-                (except_regularly_single._RULE_NAMES['local'],
-                    except_regularly_single.get_occurrences_range_local),
-                (except_regularly_single._RULE_NAMES['UTC'],
-                    except_regularly_single.get_occurrences_range_UTC),
+                (except_regularly._RULE_NAMES['local'],
+                    except_regularly.get_occurrences_range_local),
+                (except_regularly._RULE_NAMES['UTC'],
+                    except_regularly.get_occurrences_range_UTC),
             ):
         organism_api.install_rule_handler(rulename, handler)
 

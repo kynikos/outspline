@@ -18,8 +18,8 @@
 
 from exceptions import BadRuleError
 
-_RULE_NAMES = {'local': 'occur_regularly_single_local',
-               'UTC': 'occur_regularly_single_UTC'}
+_RULE_NAMES = {'local': 'occur_regularly_local',
+               'UTC': 'occur_regularly_UTC'}
 
 
 def make_rule(refstart, interval, rend, ralarm, standard, guiconfig):
