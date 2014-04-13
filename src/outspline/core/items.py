@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
+
 from outspline.coreaux_api import Event
 
 import databases
@@ -27,11 +29,7 @@ item_update_event = Event()
 item_delete_event = Event()
 
 
-class Item():
-    database = None
-    filename = None
-    id_ = None
-
+class Item(object):
     def __init__(self, database, filename, id_):
         self.database = database
         self.filename = filename
@@ -44,7 +42,7 @@ class Item():
 
         if not baseid:
             parent = 0
-            previous = cls.get_last_base_item_id(filename)
+            previous = cls._get_last_base_item_id(filename)
             updnext = False
         elif mode == 'child':
             base = items[baseid]
@@ -61,13 +59,15 @@ class Item():
         qconn = databases.dbs[filename].connection.get()
         cursor = qconn.cursor()
 
-        cursor.execute(queries.items_insert.format('NULL', parent, previous, ),
-                       (text, ))
+        cursor.execute(queries.items_insert, (None, parent, previous, text))
         id_ = cursor.lastrowid
+        # For the moment it's necessary to pass 'text' for both the redo and
+        # undo queries, because it's needed also when a history action removes
+        # an item
         cursor.execute(queries.history_insert,
-                        (group, id_, 'insert', description,
-                         queries.items_insert.format(id_, parent, previous, ),
-                         text, queries.items_delete_id.format(id_), ''))
+                    (group, id_, 'insert', description,
+                    json.dumps((parent, previous, text), separators=(',',':')),
+                    text))
 
         databases.dbs[filename].connection.give(qconn)
 
@@ -96,43 +96,39 @@ class Item():
 
     def update_no_event(self, group, parent=None, previous=None, text=None,
                                                     description='Update item'):
-        new_values = {'I_parent': parent,
-                      'I_previous': previous}
-
         qconn = self.database.connection.get()
         cursor = qconn.cursor()
+
         cursor.execute(queries.items_select_id, (self.id_, ))
         current_values = cursor.fetchone()
 
-        set = []
-        unset = []
-        for field in new_values:
-            if new_values[field] != None:
-                string = ''.join((field, '={}'))
-                set.append(string.format(new_values[field]))
-                unset.append(string.format(current_values[field]))
+        kwparams = {'I_parent': parent,
+                    'I_previous': previous,
+                    'I_text': text}
 
-        if text != None:
-            field = 'I_text=?'
-            set.append(field)
-            unset.append(field)
-            qtext = text
-            unqtext = current_values['I_text']
-        else:
-            qtext = ''
-            unqtext = ''
+        hparams = {}
+        hunparams = {}
+        set_fields = ''
+        qparams = []
 
-        query_redo = queries.items_update_id.format(', '.join(set), self.id_)
-        query_undo = queries.items_update_id.format(', '.join(unset), self.id_)
+        for field in kwparams:
+            value = kwparams[field]
 
-        if text != None:
-            cursor.execute(query_redo, (qtext, ))
-        else:
-            cursor.execute(query_redo)
+            if value is not None:
+                hparams[field] = value
+                hunparams[field] = current_values[field]
+                set_fields += '{}=?, '.format(field)
+                qparams.append(value)
 
+        set_fields = set_fields[:-2]
+        query = queries.items_update_id.format(set_fields)
+        qparams.append(self.id_)
+        cursor.execute(query, qparams)
+
+        jhparams = json.dumps(hparams, separators=(',',':'))
+        jhunparams = json.dumps(hunparams, separators=(',',':'))
         cursor.execute(queries.history_insert, (group, self.id_, 'update',
-                                                description, query_redo, qtext,
-                                                query_undo, unqtext))
+                                            description, jhparams, jhunparams))
 
         self.database.connection.give(qconn)
 
@@ -153,15 +149,19 @@ class Item():
         cursor.execute(queries.items_select_id, (self.id_, ))
         current_values = cursor.fetchone()
 
-        query_redo = queries.items_delete_id.format(self.id_)
-        query_undo = queries.items_insert.format(self.id_,
-                      current_values['I_parent'], current_values['I_previous'])
+        # For the moment it's necessary to pass current_values['I_text'] for
+        # both the redo and undo queries, because it's needed also when a
+        # history action removes an item
+        hparams = current_values['I_text']
+        hunparams = json.dumps((current_values['I_parent'],
+                    current_values['I_previous'], current_values['I_text']),
+                    separators=(',',':'))
 
-        cursor.execute(query_redo)
+
+
+        cursor.execute(queries.items_delete_id, (self.id_, ))
         cursor.execute(queries.history_insert, (group, self.id_, 'delete',
-                                                description, query_redo, '',
-                                                query_undo,
-                                                current_values['I_text']))
+                                            description, hparams, hunparams))
 
         self.database.connection.give(qconn)
 
@@ -169,8 +169,8 @@ class Item():
 
         # This event is designed to be signalled _after_ self.remove()
         item_delete_event.signal(filename=self.filename, id_=self.id_,
-                                 hid=cursor.lastrowid, group=group,
-                                 description=description)
+                         hid=cursor.lastrowid, text=current_values['I_text'],
+                         group=group, description=description)
 
     def remove(self):
         del self.database.items[self.id_]
@@ -218,7 +218,7 @@ class Item():
                     lastchildid = lastchild.get_id()
                 else:
                     parent2id = 0
-                    lastchildid = self.get_last_base_item_id(filename)
+                    lastchildid = self._get_last_base_item_id(filename)
                 next_ = self.get_next()
                 if next_:
                     prev = self.get_previous()
@@ -359,7 +359,7 @@ class Item():
             return False
 
     @staticmethod
-    def get_last_base_item_id(filename):
+    def _get_last_base_item_id(filename):
         qconn =  databases.dbs[filename].connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_children, (0, ))

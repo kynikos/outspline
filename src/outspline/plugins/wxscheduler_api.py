@@ -21,34 +21,34 @@ import outspline.interfaces.wxgui_api as wxgui_api
 import wxscheduler
 
 
-def display_rule(filename, id_, description, rule):
-    return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
-                             ].rule_editor.display_rule(description, rule)
+def display_rule(filename, id_, rule, description):
+    return wxscheduler.base.get_scheduler(filename, id_
+                                ).rule_editor.display_rule(rule, description)
 
 
 def select_rule(filename, id_, interface_name):
-    return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
-                             ].rule_editor.select_rule(interface_name)
+    return wxscheduler.base.get_scheduler(filename, id_
+                                    ).rule_editor.select_rule(interface_name)
 
 
 def initialize_rule(filename, id_, rule):
-    return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
-                             ].rule_editor.init_rule(rule)
+    return wxscheduler.base.get_scheduler(filename, id_).rule_editor.init_rule(
+                                                                        rule)
 
 
 def change_rule(filename, id_, sizer):
-    return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
-                             ].rule_editor.change_rule(sizer)
+    return wxscheduler.base.get_scheduler(filename, id_
+                                            ).rule_editor.change_rule(sizer)
 
 
 def insert_rule(filename, id_, ruled, label):
-    return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
-                             ].rule_list.insert_rule(ruled, label)
+    return wxscheduler.base.get_scheduler(filename, id_).rule_list.insert_rule(
+                                                                ruled, label)
 
 
 def apply_rule(filename, id_, ruled, label):
-    return wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
-                             ].rule_editor.apply_(ruled, label)
+    return wxscheduler.base.get_scheduler(filename, id_).rule_editor.apply_(
+                                                                ruled, label)
 
 
 def bind_to_init_rules_list(handler, bind=True):
@@ -76,13 +76,12 @@ def bind_to_insert_rule(handler, bind=True):
 
 
 def simulate_expand_rules_panel(filename, id_):
-    fpanel = wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)
-                                                                    ].fpanel
+    fpanel = wxscheduler.base.get_scheduler(filename, id_).fpanel
     wxgui_api.expand_panel(filename, id_, fpanel)
     wxgui_api.resize_foldpanelbar(filename, id_)
 
 def simulate_remove_all_rules(filename, id_):
-    sched = wxscheduler.items[wxscheduler.Scheduler.make_itemid(filename, id_)]
+    sched = wxscheduler.base.get_scheduler(filename, id_)
 
     while sched.rule_list.listview.GetItemCount() > 0:
         sched.rule_list.listview.Select(0)

@@ -21,7 +21,9 @@ import time as _time
 import datetime as _datetime
 from collections import OrderedDict
 
-from outspline.static.wxclasses.time import DateHourCtrl, TimeSpanCtrl
+from outspline.static.wxclasses.timectrls import DateHourCtrl, TimeSpanCtrl
+from outspline.static.wxclasses.misc import NarrowSpinCtrl
+
 import outspline.coreaux_api as coreaux_api
 import outspline.extensions.organism_timer_api as organism_timer_api
 import outspline.interfaces.wxgui_api as wxgui_api
@@ -209,20 +211,24 @@ class FilterEditor():
 
     def _init_header(self):
         sheader = wx.BoxSizer(wx.HORIZONTAL)
-        self.fbox.Add(sheader, flag=wx.EXPAND)
 
-        self.name = wx.TextCtrl(self.panel, value=self.config['name'],
-                                                                 size=(-1, 24))
-        sheader.Add(self.name, 1, flag=wx.BOTTOM, border=4)
+        label = wx.StaticText(self.panel, label='Name:')
+        sheader.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
-        button_save = wx.Button(self.panel, label='Save', size=(60, 24))
-        sheader.Add(button_save, flag=wx.LEFT | wx.BOTTOM, border=4)
+        self.name = wx.TextCtrl(self.panel, value=self.config['name'])
+        sheader.Add(self.name, 1, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                    border=4)
 
-        button_preview = wx.Button(self.panel, label='Preview', size=(60, 24))
-        sheader.Add(button_preview, flag=wx.LEFT | wx.BOTTOM, border=4)
+        button_save = wx.Button(self.panel, label='Save')
+        sheader.Add(button_save, flag=wx.RIGHT, border=4)
 
-        button_cancel = wx.Button(self.panel, label='Cancel', size=(60, 24))
-        sheader.Add(button_cancel, flag=wx.LEFT | wx.BOTTOM, border=4)
+        button_preview = wx.Button(self.panel, label='Preview')
+        sheader.Add(button_preview, flag=wx.RIGHT, border=4)
+
+        button_cancel = wx.Button(self.panel, label='Cancel')
+        sheader.Add(button_cancel)
+
+        self.fbox.Add(sheader, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         self.panel.Bind(wx.EVT_BUTTON, self.save, button_save)
         self.panel.Bind(wx.EVT_BUTTON, self.preview, button_preview)
@@ -266,8 +272,9 @@ class FilterEditor():
                 else:
                     newid += 1
 
+        # self.filters.select_filter will take care of closing the editor,
+        # don't call self.close here
         self.filters.select_filter(filter_, config)
-        self.close()
 
     def preview(self, event):
         config = self.compose_configuration()
@@ -285,7 +292,7 @@ class FilterEditor():
         self.parent.GetSizer().Layout()
 
     def _init_filter_types(self):
-        self.choice = wx.Choice(self.panel, size=(-1, 24), choices=())
+        self.choice = wx.Choice(self.panel, choices=())
 
         self.choice.Append("Relative interval (dnyamic)",
                                             clientData=FilterRelativeInterface)
@@ -345,7 +352,7 @@ class FilterRelativeInterface():
         # It must be possible to set up at least to 527039 minutes
         # (1 leap year - 1 minute)
         self.lowlimit = TimeSpanCtrl(self.panel, -999999, 999999)
-        self.lowlimit.set_values(*TimeSpanCtrl._compute_widget_values(
+        self.lowlimit.set_values(*TimeSpanCtrl.compute_widget_values(
                                                            self.values['low']))
         self.fgrid.Add(self.lowlimit.get_main_panel())
 
@@ -355,7 +362,7 @@ class FilterRelativeInterface():
         # It must be possible to set up at least to 527039 minutes
         # (1 leap year - 1 minute)
         self.highlimit = TimeSpanCtrl(self.panel, -999999, 999999)
-        self.highlimit.set_values(*TimeSpanCtrl._compute_widget_values(
+        self.highlimit.set_values(*TimeSpanCtrl.compute_widget_values(
                                                           self.values['high']))
         self.fgrid.Add(self.highlimit.get_main_panel())
 
@@ -524,7 +531,7 @@ class FilterRegularInterface():
         # It must be possible to set up at least to 527039 minutes
         # (1 leap year - 1 minute)
         self.span = TimeSpanCtrl(self.panel, 1, 999999)
-        self.span.set_values(*TimeSpanCtrl._compute_widget_values(
+        self.span.set_values(*TimeSpanCtrl.compute_widget_values(
                                                           self.values['span']))
         self.fgrid.Add(self.span.get_main_panel())
 
@@ -534,7 +541,7 @@ class FilterRegularInterface():
         # It must be possible to set up at least to 527039 minutes
         # (1 leap year - 1 minute)
         self.advance = TimeSpanCtrl(self.panel, 1, 999999)
-        self.advance.set_values(*TimeSpanCtrl._compute_widget_values(
+        self.advance.set_values(*TimeSpanCtrl.compute_widget_values(
                                                        self.values['advance']))
         self.fgrid.Add(self.advance.get_main_panel())
 
@@ -601,21 +608,21 @@ class FilterMonthStaticInterface():
         monthlabel = wx.StaticText(self.panel, label='Low month:')
         self.fgrid.Add(monthlabel, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        self.month = wx.Choice(self.panel, size=(-1, 24), choices=('January',
+        self.month = wx.Choice(self.panel, choices=('January',
                            'February', 'March', 'April', 'May', 'June', 'July',
                      'August', 'September', 'October', 'November', 'December'))
         self.month.SetSelection(self.values['month'] - 1)
         self.fgrid.Add(self.month)
 
-        self.year = wx.SpinCtrl(self.panel, min=1970, max=9999,
-                                         size=(60, 24), style=wx.SP_ARROW_KEYS)
+        self.year = NarrowSpinCtrl(self.panel, min=1970, max=9999,
+                                                        style=wx.SP_ARROW_KEYS)
         self.year.SetValue(self.values['year'])
         self.fgrid.Add(self.year)
 
         spanlabel = wx.StaticText(self.panel, label='Months span:')
         self.fgrid.Add(spanlabel, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        self.span = wx.SpinCtrl(self.panel, min=1, max=999, size=(48, 21),
+        self.span = NarrowSpinCtrl(self.panel, min=1, max=999,
                                                         style=wx.SP_ARROW_KEYS)
         self.span.SetValue(self.values['span'])
         self.fgrid.Add(self.span)
@@ -669,7 +676,7 @@ class FilterMonthDynamicInterface():
         monthlabel = wx.StaticText(self.panel, label='Low month sample:')
         self.fgrid.Add(monthlabel, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        self.month = wx.Choice(self.panel, size=(-1, 24), choices=('January',
+        self.month = wx.Choice(self.panel, choices=('January',
                            'February', 'March', 'April', 'May', 'June', 'July',
                      'August', 'September', 'October', 'November', 'December'))
         today = _datetime.date.today()
@@ -681,7 +688,7 @@ class FilterMonthDynamicInterface():
 
         # Note that FilterMonthDynamic.compute_limits only supports spans
         # <= 12 months
-        self.span = wx.SpinCtrl(self.panel, min=1, max=12, size=(40, 21),
+        self.span = NarrowSpinCtrl(self.panel, min=1, max=12,
                                                         style=wx.SP_ARROW_KEYS)
         self.span.SetValue(self.values['span'])
         self.fgrid.Add(self.span)
@@ -691,7 +698,7 @@ class FilterMonthDynamicInterface():
 
         # Note that FilterMonthDynamic.compute_limits only supports intervals
         # <= 12 months
-        self.advance = wx.SpinCtrl(self.panel, min=1, max=12, size=(40, 21),
+        self.advance = NarrowSpinCtrl(self.panel, min=1, max=12,
                                                         style=wx.SP_ARROW_KEYS)
         self.advance.SetValue(self.values['advance'])
         self.fgrid.Add(self.advance)
@@ -858,8 +865,8 @@ class FilterRegular():
     U) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % advance) - refspan + ((refspan // advance) * advance)
     V) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % advance) - refspan + ((refspan // advance) * advance) + advance
 
-    All cases from extensions.organism_basicrules.occur_regularly_single are
-    valid, except for the following:
+    All cases from extensions.organism_basicrules.occur_regularly are valid,
+    except for the following:
 
     --------(  *  )--------(     )--------[     |--------(     )--------(     )-----
     AGMS
@@ -1016,17 +1023,17 @@ class FilterRegular():
 
         if self.span == self.advance and rem == 0:
             # Use formula (T), see the examples above and in
-            # extensions.organism_basicrules.occur_regularly_single
+            # extensions.organism_basicrules.occur_regularly
             maxt = now + rem + self.advance
             mint = maxt - self.span
         elif self.span <= self.advance:
             # Use formula (S), see the examples above and in
-            # extensions.organism_basicrules.occur_regularly_single
+            # extensions.organism_basicrules.occur_regularly
             maxt = now + rem
             mint = maxt - self.span
         else:
             # Use formula (A), see the examples above and in
-            # extensions.organism_basicrules.occur_regularly_single
+            # extensions.organism_basicrules.occur_regularly
             mint = now - (now - self.base) % self.advance
             maxt = mint + self.span
 
@@ -1093,17 +1100,17 @@ class FilterMonthDynamic():
 
         if self.span == self.advance and rem == 0:
             # Use formula (T), see the examples in FilterRegular and in
-            # extensions.organism_basicrules.occur_regularly_single
+            # extensions.organism_basicrules.occur_regularly
             maxrmonth = nowrmonth + rem + self.advance
             minrmonth = maxrmonth - self.span
         elif self.span <= self.advance:
             # Use formula (S), see the examples in FilterRegular and in
-            # extensions.organism_basicrules.occur_regularly_single
+            # extensions.organism_basicrules.occur_regularly
             maxrmonth = nowrmonth + rem
             minrmonth = maxrmonth - self.span
         else:
             # Use formula (A), see the examples in FilterRegular and in
-            # extensions.organism_basicrules.occur_regularly_single
+            # extensions.organism_basicrules.occur_regularly
             minrmonth = nowrmonth - (nowrmonth - rmonth) % self.advance
             maxrmonth = minrmonth + self.span
 

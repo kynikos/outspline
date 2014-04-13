@@ -19,234 +19,141 @@
 import time as _time
 import datetime as _datetime
 import random
-import wx
 
-from outspline.static.wxclasses.choices import WidgetChoiceCtrl
-from outspline.static.wxclasses.time import DateHourCtrl, TimeSpanCtrl
+from outspline.static.wxclasses.timectrls import TimeSpanCtrl
 import outspline.extensions.organism_basicrules_api as organism_basicrules_api
 import outspline.plugins.wxscheduler_api as wxscheduler_api
 
+import interface
 import msgboxes
 
-_RULE_DESC = 'Except at regular time intervals'
 
-
-class Rule():
-    original_values = None
-    mpanel = None
-    pbox = None
-    slabel = None
-    startw = None
-    ilabel = None
-    intervalw = None
-    endchoicew = None
-    endw = None
-    inclusivew = None
-
-    def __init__(self, parent, filename, id_, rule):
-        self.original_values = self._compute_values(rule)
-
-        self._create_widgets(parent)
-
-        wxscheduler_api.change_rule(filename, id_, self.mpanel)
-
-    def _create_widgets(self, parent):
-        self.mpanel = wx.Panel(parent)
-
-        self.pbox = wx.BoxSizer(wx.VERTICAL)
-        self.mpanel.SetSizer(self.pbox)
-
-        self._create_widgets_start()
-        self._create_widgets_end()
-        self._create_widgets_interval()
-        self._create_widgets_inclusive()
-
-        self._align_first_column()
-
-    def _create_widgets_start(self):
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        self.pbox.Add(box, flag=wx.BOTTOM, border=4)
-
-        self.slabel = wx.StaticText(self.mpanel, label='Sample start date:')
-        box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
-                                                                      border=4)
-
-        self.startw = DateHourCtrl(self.mpanel)
-        self.startw.set_values(self.original_values['refstartY'],
-                               self.original_values['refstartm'],
-                               self.original_values['refstartd'],
-                               self.original_values['refstartH'],
-                               self.original_values['refstartM'])
-        box.Add(self.startw.get_main_panel())
-
-    def _create_widgets_end(self):
-        self.endchoicew = WidgetChoiceCtrl(self.mpanel,
-                                  (('End date:', self._create_end_date_widget),
-                                  ('Duration:', self._create_duration_widget)),
-                                            self.original_values['endtype'], 4)
-        self.endchoicew.force_update()
-        self.pbox.Add(self.endchoicew.get_main_panel(), flag=wx.BOTTOM,
-                                                                      border=4)
-
-    def _create_end_date_widget(self):
-        self.endw = DateHourCtrl(self.endchoicew.get_main_panel())
-        self.endw.set_values(self.original_values['refendY'],
-                             self.original_values['refendm'],
-                             self.original_values['refendd'],
-                             self.original_values['refendH'],
-                             self.original_values['refendM'])
-
-        return self.endw.get_main_panel()
-
-    def _create_duration_widget(self):
-        self.endw = TimeSpanCtrl(self.endchoicew.get_main_panel(), 1, 999)
-        self.endw.set_values(self.original_values['rendn'],
-                             self.original_values['rendu'])
-
-        return self.endw.get_main_panel()
-
-    def _create_widgets_interval(self):
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        self.pbox.Add(box, flag=wx.BOTTOM, border=4)
-
-        self.ilabel = wx.StaticText(self.mpanel, label='Interval time:')
-        box.Add(self.ilabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
-                                                                      border=4)
-
-        self.intervalw = TimeSpanCtrl(self.mpanel, 1, 999)
-        self.intervalw.set_values(self.original_values['intervaln'],
-                                  self.original_values['intervalu'])
-        box.Add(self.intervalw.get_main_panel())
-
-    def _create_widgets_inclusive(self):
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        self.pbox.Add(box)
-
-        self.inclusivew = wx.CheckBox(self.mpanel)
-        self.inclusivew.SetValue(self.original_values['inclusive'])
-        box.Add(self.inclusivew)
-
-        ilabel = wx.StaticText(self.mpanel, label='Inclusive')
-        box.Add(ilabel, flag=wx.ALIGN_CENTER_VERTICAL)
-
-    def _align_first_column(self):
-        sminw = self.slabel.GetSizeTuple()[0]
-        eminw = self.endchoicew.get_choice_width()
-        iminw = self.ilabel.GetSizeTuple()[0]
-
-        maxw = max((sminw, eminw, iminw))
-
-        sminh = self.slabel.GetMinHeight()
-        self.slabel.SetMinSize((maxw, sminh))
-
-        self.endchoicew.set_choice_min_width(maxw)
-
-        iminh = self.ilabel.GetMinHeight()
-        self.ilabel.SetMinSize((maxw, iminh))
+class Rule(object):
+    def __init__(self, parent, filename, id_, standard, rule):
+        self.original_values = self._compute_values(standard, rule)
+        self.ui = interface.Interface(parent, filename, id_,
+                                            (interface.StartDateSample,
+                                            interface.EndDateSample2,
+                                            interface.Interval,
+                                            interface.Inclusive,
+                                            interface.Standard),
+                                      self.original_values)
 
     def apply_rule(self, filename, id_):
-        refstart = self.startw.get_unix_time()
-
-        endtype = self.endchoicew.get_selection()
-
-        if endtype == 1:
-            rend = self.endw.get_time_span()
-            rendn = self.endw.get_number()
-            rendu = self.endw.get_unit()
-        else:
-            rend = self.endw.get_unix_time() - refstart
-            rendn = None
-            rendu = None
-
-        interval = self.intervalw.get_time_span()
-        intervaln = self.intervalw.get_number()
-        intervalu = self.intervalw.get_unit()
-
-        inclusive = self.inclusivew.GetValue()
+        values = self.ui.get_values()
+        refstart = values['start_unix_time']
+        interval = values['interval']
+        intervaln = values['interval_number']
+        intervalu = values['interval_unit']
+        endtype = values['end_type']
+        rend = values['end_relative_time']
+        rendn = values['end_relative_number']
+        rendu = values['end_relative_unit']
+        inclusive = values['inclusive']
+        standard = values['time_standard']
 
         try:
-            ruled = organism_basicrules_api.make_except_regularly_single_rule(
+            if standard == 'UTC':
+                ruled = organism_basicrules_api.make_except_regularly_rule_UTC(
+                              refstart, interval, rend, inclusive, (endtype, ))
+            else:
+                ruled = organism_basicrules_api.make_except_regularly_rule_local(
                               refstart, interval, rend, inclusive, (endtype, ))
         except organism_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule(msgboxes.end_time).ShowModal()
         else:
             label = self._make_label(intervaln, intervalu, refstart, rend,
-                                              inclusive, endtype, rendn, rendu)
+                                    inclusive, endtype, rendn, rendu, standard)
             wxscheduler_api.apply_rule(filename, id_, ruled, label)
 
     @classmethod
     def insert_rule(cls, filename, id_, rule, rulev):
-        values = cls._compute_values(rulev)
-        label = cls._make_label(values['intervaln'], values['intervalu'],
-                       values['refstart'], values['rend'], values['inclusive'],
-                           values['endtype'], values['rendn'], values['rendu'])
+        standard = 'UTC' if rule['rule'] == 'except_regularly_UTC' else 'local'
+        values = cls._compute_values(standard, rulev)
+        label = cls._make_label(values['interval_number'],
+                                values['interval_unit'],
+                                values['reference_start'],
+                                values['end_relative_time'],
+                                values['inclusive'],
+                                values['end_type'],
+                                values['end_relative_number'],
+                                values['end_relative_unit'],
+                                values['time_standard'])
         wxscheduler_api.insert_rule(filename, id_, rule, label)
 
     @classmethod
-    def _compute_values(cls, rule):
-        values = {}
-
+    def _compute_values(cls, standard, rule):
+        # Remember to support also time zones that differ from UTC by not
+        # exact hours (e.g. Australia/Adelaide)
         if not rule:
-            values['refstart'] = (int(_time.time()) // 3600 + 1) * 3600
-            values['refmax'] = values['refstart'] + 3600
+            nextdate = _datetime.datetime.now() + _datetime.timedelta(hours=1)
+            refstart = int(_time.time()) // 86400 * 86400 + \
+                                                        nextdate.hour * 3600
 
-            values.update({
-                'refspan': values['refmax'] - values['refstart'],
+            values = {
+                'reference_start': refstart,
                 'interval': 86400,
-                'rend': 3600,
+                'overlaps': 0,
+                'bgap': 86400 - 3600,
+                'end_relative_time': 3600,
                 'inclusive': False,
-                'endtype': 0,
-            })
+                'end_type': 0,
+                'time_standard': standard,
+            }
         else:
             values = {
-                'refmax': rule[0],
-                'refspan': rule[1],
-                'interval': rule[2],
-                'rend': rule[3] if rule[3] is not None else 3600,
-                'inclusive': rule[4],
-                'endtype': rule[5][0],
+                'reference_start': rule[0],
+                'interval': rule[1],
+                'overlaps': rule[2],
+                'bgap': rule[3],
+                'end_relative_time': rule[4] if rule[4] is not None else 3600,
+                'inclusive': rule[5],
+                'end_type': rule[6][0],
+                'time_standard': standard,
             }
 
-            values['refstart'] = values['refmax'] - values['refspan']
+        wstart = _datetime.datetime.utcfromtimestamp(
+                                            values['reference_start'])
+        wend = _datetime.datetime.utcfromtimestamp(
+                                            values['reference_start'] +
+                                            values['end_relative_time'])
 
-        values['intervaln'], values['intervalu'] = \
-                        TimeSpanCtrl._compute_widget_values(values['interval'])
+        values['interval_number'], values['interval_unit'] = \
+                                        TimeSpanCtrl.compute_widget_values(
+                                        values['interval'])
 
-        values['rendn'], values['rendu'] = \
-                            TimeSpanCtrl._compute_widget_values(values['rend'])
-
-        localstart = _datetime.datetime.fromtimestamp(values['refstart'])
-        localend = _datetime.datetime.fromtimestamp(values['refstart'] +
-                                                                values['rend'])
+        values['end_relative_number'], values['end_relative_unit'] = \
+                                        TimeSpanCtrl.compute_widget_values(
+                                        values['end_relative_time'])
 
         values.update({
-            'refstartY': localstart.year,
-            'refstartm': localstart.month - 1,
-            'refstartd': localstart.day,
-            'refstartH': localstart.hour,
-            'refstartM': localstart.minute,
-            'refendY': localend.year,
-            'refendm': localend.month - 1,
-            'refendd': localend.day,
-            'refendH': localend.hour,
-            'refendM': localend.minute,
+            'start_year': wstart.year,
+            'start_month': wstart.month - 1,
+            'start_day': wstart.day,
+            'start_hour': wstart.hour,
+            'start_minute': wstart.minute,
+            'end_year': wend.year,
+            'end_month': wend.month - 1,
+            'end_day': wend.day,
+            'end_hour': wend.hour,
+            'end_minute': wend.minute,
         })
 
         return values
 
     @staticmethod
     def _make_label(intervaln, intervalu, refstart, rend, inclusive, endtype,
-                                                                 rendn, rendu):
+                                                    rendn, rendu, standard):
         label = 'Except every {} {}'.format(intervaln, intervalu)
 
-        label += ', for example on {}'.format(_time.strftime(
-                            '%a %d %b %Y at %H:%M', _time.localtime(refstart)))
+        label += ', for example on {} ({})'.format(_time.strftime(
+                '%a %d %b %Y at %H:%M', _time.gmtime(refstart)), standard)
 
         if endtype == 1:
             label += ' for {} {}'.format(rendn, rendu)
         else:
             label += _time.strftime(' until %a %d %b %Y at %H:%M',
-                                              _time.localtime(refstart + rend))
+                                              _time.gmtime(refstart + rend))
 
         if inclusive:
             label += ', inclusive'
@@ -265,5 +172,11 @@ class Rule():
 
         inclusive = random.choice((True, False))
 
-        return organism_basicrules_api.make_except_regularly_single_rule(
+        stdn = random.randint(0, 1)
+
+        if stdn == 0:
+            return organism_basicrules_api.make_except_regularly_rule_local(
+                              refstart, interval, rend, inclusive, (endtype, ))
+        else:
+            return organism_basicrules_api.make_except_regularly_rule_UTC(
                               refstart, interval, rend, inclusive, (endtype, ))

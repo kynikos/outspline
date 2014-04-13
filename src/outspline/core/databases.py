@@ -44,7 +44,7 @@ exit_app_event_2 = Event()
 dbs = {}
 
 
-class Protection():
+class Protection(object):
     # Avoid that an operation is started while the timer is doing something
     # In theory it could happen that, because the database connection is
     #   taken and released with .get() and .give() various times during an
@@ -65,9 +65,6 @@ class Protection():
     # Another advantage is that this class makes sure that when a function sets
     #     the history group, it's impossible that another function manages to
     #     set the same group
-    q = None
-    s = None
-
     def __init__(self):
         baton = True
         self.q = queue.Queue()
@@ -116,15 +113,13 @@ class MemoryDB(DBQueue):
         exit_app_event_2.signal()
 
 
-class Database(history.DBHistory):
-    connection = None
-    filename = None
-    items = None
-
+class Database(object):
     def __init__(self, filename):
         self.connection = DBQueue()
         self.filename = filename
         self.items = {}
+        self.dbhistory = history.DBHistory(self.filename, self.connection,
+                                                                    self.items)
 
         conn = self.connection
         # Enable multi-threading, as the database is protected with a queue
@@ -132,6 +127,16 @@ class Database(history.DBHistory):
         qconn = conn.get()
         qconn.row_factory = _sql.Row
         cursor = qconn.cursor()
+
+        try:
+            # In order to test if the database is locked (open by another
+            # instance of Outspline), a SELECT query is not enough
+            cursor.execute(queries.properties_insert_dummy)
+        except _sql.OperationalError:
+            raise exceptions.DatabaseLocked()
+        else:
+            cursor.execute(queries.properties_delete_dummy)
+
         dbitems = cursor.execute(queries.items_select_tree)
         conn.give(qconn)
 
@@ -167,18 +172,18 @@ class Database(history.DBHistory):
                 # Only store major versions, as they are supposed to keep
                 # backward compatibility
                 cursor.execute(queries.compatibility_insert, ('Core', 'core',
-                                  int(float(coreaux_api.get_core_version())), ))
+                                int(float(coreaux_api.get_core_version())), ))
 
                 info = coreaux_api.get_addons_info(disabled=False)
 
                 for t in ('Extensions', 'Interfaces', 'Plugins'):
                     for a in info(t).get_sections():
                         if info(t)(a).get('affects_database', fallback=None
-                                                                      ) != 'no':
-                            # Only store major versions, as they are supposed to
-                            # keep backward compatibility
+                                                                    ) != 'no':
+                            # Only store major versions, as they are supposed
+                            # to keep backward compatibility
                             cursor.execute(queries.compatibility_insert, (t, a,
-                                          int(info(t)(a).get_float('version'))))
+                                        int(info(t)(a).get_float('version'))))
 
                 cursor.execute(queries.items_create)
 
@@ -199,7 +204,7 @@ class Database(history.DBHistory):
         elif not os.access(filename, os.W_OK):
             raise exceptions.DatabaseNotAccessibleError()
         else:
-            compat = cls.check_compatibility(filename)
+            compat = cls._check_compatibility(filename)
 
             if not compat:
                 raise exceptions.DatabaseNotValidError()
@@ -207,18 +212,18 @@ class Database(history.DBHistory):
                 dbs[filename] = cls(filename)
 
                 open_database_dirty_event.signal(filename=filename,
-                                                            dependencies=compat)
+                                                        dependencies=compat)
 
-                # Reset modified state after instantiating the class, since this
-                # signals an event whose handlers might require the object to be
-                # already created
-                dbs[filename].reset_modified_state()
+                # Reset modified state after instantiating the class, since
+                # this signals an event whose handlers might require the object
+                # to be already created
+                dbs[filename].dbhistory.reset_modified_state()
 
                 open_database_event.signal(filename=filename)
                 return True
 
     @staticmethod
-    def check_compatibility(filename):
+    def _check_compatibility(filename):
         try:
             qconn = _sql.connect(filename)
             cursor = qconn.cursor()
@@ -243,9 +248,9 @@ class Database(history.DBHistory):
                     # Only compare major versions, as they are supposed to keep
                     # backward compatibility
                     if row[3] == int(info(str(row[1]))(str(row[2])
-                                                        ).get_float('version')):
+                                                    ).get_float('version')):
                         compat.append('.'.join((row[1].lower(), row[2],
-                                                                  str(row[3]))))
+                                                                str(row[3]))))
                     else:
                         break
                 else:
@@ -253,9 +258,9 @@ class Database(history.DBHistory):
             else:
                 break
         else:
-            # Note that it's possible that there are other addons installed with
-            # the affects_database flag, however all addons are required to be
-            # able to ignore a database that doesn't support them
+            # Note that it's possible that there are other addons installed
+            # with the affects_database flag, however all addons are required
+            # to be able to ignore a database that doesn't support them
             qconn.close()
             return compat
 
@@ -270,7 +275,7 @@ class Database(history.DBHistory):
         qconn.commit()
         self.connection.give(qconn)
 
-        self.reset_modified_state()
+        self.dbhistory.reset_modified_state()
 
     def save_copy(self, destination):
         # Of course the original file cannot be simply copied, in fact in that
@@ -293,7 +298,7 @@ class Database(history.DBHistory):
 
         cursor.execute(queries.items_select)
         for row in cursor:
-            cursord.execute(queries.items_insert_copy, tuple(row))
+            cursord.execute(queries.items_insert, tuple(row))
 
         cursor.execute(queries.history_select)
         for row in cursor:
@@ -311,7 +316,7 @@ class Database(history.DBHistory):
                                         destination=destination)
 
     def close(self):
-        self.remove()
+        self._remove()
 
         qconn = self.connection.get()
         qconn.close()
@@ -322,11 +327,11 @@ class Database(history.DBHistory):
 
         # Note that if the database has not been closed correctly, the history
         # is not cleaned
-        self.clean_history()
+        self.dbhistory.clean_history()
 
         return True
 
-    def remove(self):
+    def _remove(self):
         for id_ in self.items.copy():
             item = self.items[id_]
             if item.get_filename() == self.filename:

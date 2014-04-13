@@ -20,11 +20,17 @@
 
 import os
 import errno
+import locale
 from datetime import datetime
 
 import configfile
 
 import exceptions
+
+# The program must explicitly say that it wants the user's preferred locale
+# settings
+# http://docs.python.org/2/library/locale.html#background-details-hints-tips-and-caveats
+locale.setlocale(locale.LC_ALL, '')
 
 __author__ = "Dario Giovannetti <dev@dariogiovannetti.net>"
 

@@ -19,267 +19,158 @@
 import time as _time
 import datetime as _datetime
 import random
-import wx
 
-from outspline.static.wxclasses.choices import WidgetChoiceCtrl
-from outspline.static.wxclasses.time import DateHourCtrl, TimeSpanCtrl
+from outspline.static.wxclasses.timectrls import TimeSpanCtrl
 import outspline.extensions.organism_basicrules_api as organism_basicrules_api
 import outspline.plugins.wxscheduler_api as wxscheduler_api
 
+import interface
 import msgboxes
 
 # More info at http://eclipse.gsfc.nasa.gov/phase/phasecat.html
 
-_RULE_DESC = 'Occur every synodic month'
 
-
-class Rule():
-    original_values = None
-    mpanel = None
-    pbox = None
-    slabel = None
-    startw = None
-    endchoicew = None
-    endw = None
-    alarmchoicew = None
-    alarmw = None
-
-    def __init__(self, parent, filename, id_, rule):
-        self.original_values = self._compute_values(rule)
-
-        self._create_widgets(parent)
-
-        wxscheduler_api.change_rule(filename, id_, self.mpanel)
-
-    def _create_widgets(self, parent):
-        self.mpanel = wx.Panel(parent)
-
-        self.pbox = wx.BoxSizer(wx.VERTICAL)
-        self.mpanel.SetSizer(self.pbox)
-
-        self._create_widgets_start()
-        self._create_widgets_end()
-        self._create_widgets_alarm()
-
-        self._align_first_column()
-
-    def _create_widgets_start(self):
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        self.pbox.Add(box, flag=wx.BOTTOM, border=4)
-
-        self.slabel = wx.StaticText(self.mpanel, label='Sample start date:')
-        box.Add(self.slabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
-                                                                      border=4)
-
-        self.startw = DateHourCtrl(self.mpanel)
-        self.startw.set_values(self.original_values['refstartY'],
-                               self.original_values['refstartm'],
-                               self.original_values['refstartd'],
-                               self.original_values['refstartH'],
-                               self.original_values['refstartM'])
-        box.Add(self.startw.get_main_panel())
-
-    def _create_widgets_end(self):
-        self.endchoicew = WidgetChoiceCtrl(self.mpanel, (('No duration', None),
-                                   ('Duration:', self._create_duration_widget),
-                           ('Sample end date:', self._create_end_date_widget)),
-                                            self.original_values['endtype'], 4)
-        self.endchoicew.force_update()
-        self.pbox.Add(self.endchoicew.get_main_panel(), flag=wx.BOTTOM,
-                                                                      border=4)
-
-    def _create_duration_widget(self):
-        self.endw = TimeSpanCtrl(self.endchoicew.get_main_panel(), 1, 999)
-        self.endw.set_values(self.original_values['rendn'],
-                             self.original_values['rendu'])
-
-        return self.endw.get_main_panel()
-
-    def _create_end_date_widget(self):
-        self.endw = DateHourCtrl(self.endchoicew.get_main_panel())
-        self.endw.set_values(self.original_values['refendY'],
-                             self.original_values['refendm'],
-                             self.original_values['refendd'],
-                             self.original_values['refendH'],
-                             self.original_values['refendM'])
-
-        return self.endw.get_main_panel()
-
-    def _create_widgets_alarm(self):
-        self.alarmchoicew = WidgetChoiceCtrl(self.mpanel, (('No alarm', None),
-                         ('Alarm advance:', self._create_alarm_advance_widget),
-                       ('Sample alarm date:', self._create_alarm_date_widget)),
-                                          self.original_values['alarmtype'], 4)
-        self.alarmchoicew.force_update()
-        self.pbox.Add(self.alarmchoicew.get_main_panel())
-
-    def _create_alarm_advance_widget(self):
-        self.alarmw = TimeSpanCtrl(self.alarmchoicew.get_main_panel(), 0, 999)
-        self.alarmw.set_values(self.original_values['ralarmn'],
-                               self.original_values['ralarmu'])
-
-        return self.alarmw.get_main_panel()
-
-    def _create_alarm_date_widget(self):
-        self.alarmw = DateHourCtrl(self.alarmchoicew.get_main_panel())
-        self.alarmw.set_values(self.original_values['refalarmY'],
-                               self.original_values['refalarmm'],
-                               self.original_values['refalarmd'],
-                               self.original_values['refalarmH'],
-                               self.original_values['refalarmM'])
-
-        return self.alarmw.get_main_panel()
-
-    def _align_first_column(self):
-        sminw = self.slabel.GetSizeTuple()[0]
-        eminw = self.endchoicew.get_choice_width()
-        aminw = self.alarmchoicew.get_choice_width()
-
-        maxw = max((sminw, eminw, aminw))
-
-        sminh = self.slabel.GetMinHeight()
-        self.slabel.SetMinSize((maxw, sminh))
-
-        self.endchoicew.set_choice_min_width(maxw)
-
-        self.alarmchoicew.set_choice_min_width(maxw)
+class Rule(object):
+    def __init__(self, parent, filename, id_, standard, rule):
+        self.original_values = self._compute_values(standard, rule)
+        self.ui = interface.Interface(parent, filename, id_,
+                                            (interface.StartDateSample,
+                                            interface.EndDateSample,
+                                            interface.AlarmDateSample,
+                                            interface.Standard),
+                                      self.original_values)
 
     def apply_rule(self, filename, id_):
-        refstart = self.startw.get_unix_time()
-
-        endtype = self.endchoicew.get_selection()
-
-        if endtype == 1:
-            rend = self.endw.get_time_span()
-            rendn = self.endw.get_number()
-            rendu = self.endw.get_unit()
-        elif endtype == 2:
-            rend = self.endw.get_unix_time() - refstart
-            rendn = None
-            rendu = None
-        else:
-            rend = None
-            rendn = None
-            rendu = None
-
-        alarmtype = self.alarmchoicew.get_selection()
-
-        if alarmtype == 1:
-            ralarm = self.alarmw.get_time_span()
-            ralarmn = self.alarmw.get_number()
-            ralarmu = self.alarmw.get_unit()
-        elif alarmtype == 2:
-            ralarm = refstart - self.alarmw.get_unix_time()
-            ralarmn = None
-            ralarmu = None
-        else:
-            ralarm = None
-            ralarmn = None
-            ralarmu = None
+        values = self.ui.get_values()
+        refstart = values['start_unix_time']
+        endtype = values['end_type']
+        rend = values['end_relative_time']
+        rendn = values['end_relative_number']
+        rendu = values['end_relative_unit']
+        alarmtype = values['alarm_type']
+        ralarm = values['alarm_relative_time']
+        ralarmn = values['alarm_relative_number']
+        ralarmu = values['alarm_relative_unit']
+        standard = values['time_standard']
 
         try:
-            ruled = organism_basicrules_api.make_occur_regularly_single_rule(
-                   refstart, 2551443, rend, ralarm, ('sy', endtype, alarmtype))
+            if standard == 'UTC':
+                ruled = organism_basicrules_api.make_occur_regularly_rule_UTC(
+                  refstart, 2551443, rend, ralarm, ('sy', endtype, alarmtype))
+            else:
+                ruled = organism_basicrules_api.make_occur_regularly_rule_local(
+                  refstart, 2551443, rend, ralarm, ('sy', endtype, alarmtype))
         except organism_basicrules_api.BadRuleError:
             msgboxes.warn_bad_rule(msgboxes.end_time).ShowModal()
         else:
             label = self._make_label(refstart, rend, ralarm, endtype,
-                                     alarmtype, rendn, rendu, ralarmn, ralarmu)
+                        alarmtype, rendn, rendu, ralarmn, ralarmu, standard)
             wxscheduler_api.apply_rule(filename, id_, ruled, label)
 
     @classmethod
     def insert_rule(cls, filename, id_, rule, rulev):
-        values = cls._compute_values(rulev)
-        label = cls._make_label(values['refstart'], values['rend'],
-                      values['ralarm'], values['endtype'], values['alarmtype'],
-                                              values['rendn'], values['rendu'],
-                                          values['ralarmn'], values['ralarmu'])
+        standard = 'UTC' if rule['rule'] == 'occur_regularly_UTC' else 'local'
+        values = cls._compute_values(standard, rulev)
+        label = cls._make_label(values['reference_start'],
+                                values['end_relative_time'],
+                                values['alarm_relative_time'],
+                                values['end_type'],
+                                values['alarm_type'],
+                                values['end_relative_number'],
+                                values['end_relative_unit'],
+                                values['alarm_relative_number'],
+                                values['alarm_relative_unit'],
+                                values['time_standard'])
         wxscheduler_api.insert_rule(filename, id_, rule, label)
 
     @classmethod
-    def _compute_values(cls, rule):
-        values = {}
-
+    def _compute_values(cls, standard, rule):
+        # Remember to support also time zones that differ from UTC by not
+        # exact hours (e.g. Australia/Adelaide)
         if not rule:
-            values['refmin'] = (int(_time.time()) // 3600 + 1) * 3600
-            values['refmax'] = values['refmin'] + 3600
+            nextdate = _datetime.datetime.now() + _datetime.timedelta(hours=1)
+            refstart = int(_time.time()) // 86400 * 86400 + nextdate.hour * 3600
 
-            values.update({
-                'refspan': values['refmax'] - values['refmin'],
-                'rstart': 0,
-                'rend': 3600,
-                'ralarm': 0,
-                'endtype': 0,
-                'alarmtype': 0,
-            })
+            values = {
+                'reference_start': refstart,
+                'interval': 2551443,
+                'overlaps': 0,
+                'bgap': 2551443 - 3600,
+                'end_relative_time': 3600,
+                'alarm_relative_time': 0,
+                'end_type': 0,
+                'alarm_type': 0,
+                'time_standard': standard,
+            }
         else:
             values = {
-                'refmax': rule[0],
-                'refspan': rule[1],
-                'interval': rule[2],
-                'rstart': rule[3],
-                'rend': rule[4] if rule[4] is not None else 3600,
-                'ralarm': rule[5] if rule[5] is not None else 0,
-                'endtype': rule[6][1],
-                'alarmtype': rule[6][2],
+                'reference_start': rule[0],
+                'interval': rule[1],
+                'overlaps': rule[2],
+                'bgap': rule[3],
+                'end_relative_time': rule[4] if rule[4] is not None else 3600,
+                'alarm_relative_time': rule[5] if rule[5] is not None else 0,
+                'end_type': rule[6][1],
+                'alarm_type': rule[6][2],
+                'time_standard': standard,
             }
 
-            values['refmin'] = values['refmax'] - values['refspan']
+        wstart = _datetime.datetime.utcfromtimestamp(
+                                            values['reference_start'])
+        wend = _datetime.datetime.utcfromtimestamp(
+                                            values['reference_start'] +
+                                            values['end_relative_time'])
+        walarm = _datetime.datetime.utcfromtimestamp(
+                                            values['reference_start'] -
+                                            values['alarm_relative_time'])
 
-        values['refstart'] = values['refmin'] + values['rstart']
-
-        values['rendn'], values['rendu'] = \
-                            TimeSpanCtrl._compute_widget_values(values['rend'])
+        values['end_relative_number'], values['end_relative_unit'] = \
+                                    TimeSpanCtrl.compute_widget_values(
+                                    values['end_relative_time'])
 
         # ralarm could be negative
-        values['ralarmn'], values['ralarmu'] = \
-                                           TimeSpanCtrl._compute_widget_values(
-                                                    max((0, values['ralarm'])))
-
-        refstart = values['refmin'] + values['rstart']
-
-        localstart = _datetime.datetime.fromtimestamp(refstart)
-        localend = _datetime.datetime.fromtimestamp(refstart + values['rend'])
-        localalarm = _datetime.datetime.fromtimestamp(refstart - values[
-                                                                     'ralarm'])
+        values['alarm_relative_number'], values['alarm_relative_unit'] = \
+                                    TimeSpanCtrl.compute_widget_values(
+                                    max((0, values['alarm_relative_time'])))
 
         values.update({
-            'refstartY': localstart.year,
-            'refstartm': localstart.month - 1,
-            'refstartd': localstart.day,
-            'refstartH': localstart.hour,
-            'refstartM': localstart.minute,
-            'refendY': localend.year,
-            'refendm': localend.month - 1,
-            'refendd': localend.day,
-            'refendH': localend.hour,
-            'refendM': localend.minute,
-            'refalarmY': localalarm.year,
-            'refalarmm': localalarm.month - 1,
-            'refalarmd': localalarm.day,
-            'refalarmH': localalarm.hour,
-            'refalarmM': localalarm.minute,
+            'start_year': wstart.year,
+            'start_month': wstart.month - 1,
+            'start_day': wstart.day,
+            'start_hour': wstart.hour,
+            'start_minute': wstart.minute,
+            'end_year': wend.year,
+            'end_month': wend.month - 1,
+            'end_day': wend.day,
+            'end_hour': wend.hour,
+            'end_minute': wend.minute,
+            'alarm_year': walarm.year,
+            'alarm_month': walarm.month - 1,
+            'alarm_day': walarm.day,
+            'alarm_hour': walarm.hour,
+            'alarm_minute': walarm.minute,
         })
 
         return values
 
     @staticmethod
     def _make_label(refstart, rend, ralarm, endtype, alarmtype, rendn, rendu,
-                                                             ralarmn, ralarmu):
-        label = 'Occur every synodic month, for example on {}'.format(
-             _time.strftime('%a %d %b %Y at %H:%M', _time.localtime(refstart)))
+                                                ralarmn, ralarmu, standard):
+        label = 'Occur every synodic month, for example on {} ({})'.format(
+                                         _time.strftime('%a %d %b %Y at %H:%M',
+                                         _time.gmtime(refstart)), standard)
 
         if endtype == 1:
             label += ' for {} {}'.format(rendn, rendu)
         elif endtype == 2:
             label += _time.strftime(' until %a %d %b %Y at %H:%M',
-                                              _time.localtime(refstart + rend))
+                                              _time.gmtime(refstart + rend))
 
         if alarmtype == 1:
             label += ', activate alarm {} {} before'.format(ralarmn, ralarmu)
         elif alarmtype == 2:
             label += _time.strftime(', alarm set on %a %d %b %Y at %H:%M',
-                                            _time.localtime(refstart - ralarm))
+                                            _time.gmtime(refstart - ralarm))
 
         return label
 
@@ -301,5 +192,11 @@ class Rule():
         else:
             ralarm = random.randint(0, 360) * 60
 
-        return organism_basicrules_api.make_occur_regularly_single_rule(
+        stdn = random.randint(0, 1)
+
+        if stdn == 0:
+            return organism_basicrules_api.make_occur_regularly_rule_local(
+                   refstart, 2551443, rend, ralarm, ('sy', endtype, alarmtype))
+        else:
+            return organism_basicrules_api.make_occur_regularly_rule_UTC(
                    refstart, 2551443, rend, ralarm, ('sy', endtype, alarmtype))

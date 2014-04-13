@@ -17,29 +17,64 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import sqlite3 as _sql
+import json
 
 from outspline.coreaux_api import Event
 
 import queries
 import items
+import exceptions
 
 check_pending_changes_event = Event()
 reset_modified_state_event = Event()
 history_event = Event()
 history_insert_event = Event()
 history_update_event = Event()
-history_remove_event = Event()
-history_other_event = Event()
+history_delete_event = Event()
 history_clean_event = Event()
-history_clean_groups_event = Event()
 
 
-class DBHistory():
-    modified = None
+class DBHistory(object):
+    def __init__(self, filename, connection, items):
+        self.filename = filename
+        self.connection = connection
+        self.items = items
+
+        self.hactions = {
+            'insert': {
+                'undo': self._do_history_row_delete,
+                'redo': self._do_history_row_insert,
+            },
+            'update': {
+                'undo': self._do_history_row_update,
+                'redo': self._do_history_row_update,
+            },
+            'delete': {
+                'undo': self._do_history_row_insert,
+                'redo': self._do_history_row_delete,
+            },
+        }
+
+    def register_action_handlers(self, name, redo_handler, undo_handler):
+        if name not in self.hactions:
+            self.hactions[name] = {
+                'undo': undo_handler,
+                'redo': redo_handler,
+            }
+        else:
+            raise exceptions.ConflictingActionHandlersError()
+
+    def insert_history(self, group, id_, type_, description, query_redo,
+                                                                query_undo):
+        qconn = self.connection.get()
+        cur = qconn.cursor()
+        cur.execute(queries.history_insert, (group, id_, type_, description,
+                                                    query_redo, query_undo))
+        self.connection.give(qconn)
+
+        return cur.lastrowid
 
     def get_next_history_group(self):
-        history_clean_groups_event.signal(filename=self.filename)
-
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.history_delete_status)
@@ -63,7 +98,7 @@ class DBHistory():
 
         return cursor
 
-    def update_history_id(self, id_, status):
+    def _update_history_id(self, id_, status):
         if status == 0:
             newstatus = 1
         elif status == 1:
@@ -103,8 +138,16 @@ class DBHistory():
 
         reset_modified_state_event.signal(filename=self.filename)
 
-    def read_history(self, action):
+    def read_history_undo(self):
+        return self._read_history(queries.history_select_status_undo,
+                                            queries.history_select_group_undo)
 
+    def read_history_redo(self):
+        return self._read_history(queries.history_select_status_redo,
+                                            queries.history_select_group_redo)
+
+    def _read_history(self, history_select_status_query,
+                                                history_select_group_query):
         # SavedStatus  CurrentStatus  Status
         # 0 unsaved    0 undone       0 unsaved and undone
         # 0 unsaved    1 done         1 unsaved and done
@@ -146,87 +189,103 @@ class DBHistory():
         # 1 0
         # 0
 
-        if action == 'undo':
-            query = queries.history_select_status_undo
-        elif action == 'redo':
-            query = queries.history_select_status_redo
         qconn = self.connection.get()
         cursor = qconn.cursor()
-        cursor.execute(query)
+        cursor.execute(history_select_status_query)
         self.connection.give(qconn)
         lastgroup = cursor.fetchone()
 
         if lastgroup:
-            if action == 'undo':
-                q = queries.history_select_group_undo
-            elif action == 'redo':
-                q = queries.history_select_group_redo
             qconn = self.connection.get()
             cursorm = qconn.cursor()
             # Create a list, because it has to be looped twice
-            history = tuple(cursorm.execute(q, (lastgroup['H_group'], )))
+            history = tuple(cursorm.execute(history_select_group_query,
+                                                    (lastgroup['H_group'], )))
             self.connection.give(qconn)
             return {'history': history,
                     'status': lastgroup['H_status']}
         else:
             return False
 
-    def do_history(self, action):
-        read = self.read_history(action)
+    def undo_history(self):
+        self._do_history(self.read_history_undo(), 'undo')
+
+    def redo_history(self):
+        self._do_history(self.read_history_redo(), 'redo')
+
+    def _do_history(self, read, action):
         if read:
             history = read['history']
             status = read['status']
+
             for row in history:
-                self.do_history_row(action, row[3], row[4], row['H_id'],
-                                                   row['H_type'], row['H_item'])
-                self.update_history_id(row['H_id'], status)
+                self.hactions[row['H_type']][action](self.filename, action,
+                            row[3], row['H_id'], row['H_type'], row['H_item'])
+                self._update_history_id(row['H_id'], status)
+
             history_event.signal(filename=self.filename)
 
-    def do_history_row(self, action, query, text, hid, type_, itemid):
+    def _do_history_row_insert(self, filename, action, jparams, hid, type_,
+                                                                    itemid):
+        params = [itemid, ]
+        params.extend(json.loads(jparams))
+
         qconn = self.connection.get()
         cursor = qconn.cursor()
-        # Update queries can or cannot have I_text=?, hence they accept or
-        # don't accept a query binding
-        try:
-            cursor.execute(query)
-        except _sql.ProgrammingError:
-            cursor.execute(query, (text, ))
+        cursor.execute(queries.items_insert, params)
+        cursor.execute(queries.items_select_id, (itemid, ))
+        select = cursor.fetchone()
         self.connection.give(qconn)
 
-        filename = self.filename
+        self.items[itemid] = items.Item(database=self, filename=self.filename,
+                                                                    id_=itemid)
 
-        if (action == 'undo' and type_ == 'insert') or (action == 'redo' and
-                                                             type_ == 'delete'):
-            self.items[itemid].remove()
+        history_insert_event.signal(filename=self.filename, id_=itemid,
+                                                parent=select['I_parent'],
+                                                previous=select['I_previous'],
+                                                text=select['I_text'], hid=hid)
 
-            history_remove_event.signal(filename=filename, id_=itemid, hid=hid)
-        elif type_ in ('insert', 'update', 'delete'):
-            qconn = self.connection.get()
-            cursor = qconn.cursor()
-            cursor.execute(queries.items_select_id, (itemid, ))
-            select = cursor.fetchone()
-            self.connection.give(qconn)
+    def _do_history_row_update(self, filename, action, jparams, hid, type_,
+                                                                    itemid):
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
 
-            if type_ == 'update':
-                history_update_event.signal(filename=filename, id_=itemid,
-                                            parent=select['I_parent'],
-                                            previous=select['I_previous'],
-                                            text=select['I_text'])
+        kwparams = json.loads(jparams)
+        set_fields = ''
+        qparams = []
 
-            if (action == 'undo' and type_ == 'delete') or \
-                                       (action == 'redo' and type_ == 'insert'):
-                self.items[itemid] = items.Item(database=self,
-                                                filename=filename,
-                                                id_=itemid)
+        for field in kwparams:
+            value = kwparams[field]
 
-                history_insert_event.signal(filename=filename, id_=itemid,
-                                            parent=select['I_parent'],
-                                            previous=select['I_previous'],
-                                            text=select['I_text'], hid=hid)
-        else:
-            # Other types are processed here
-            history_other_event.signal(type_=type_, action=action,
-                                       filename=filename, id_=itemid, hid=hid)
+            if value is not None:
+                set_fields += '{}=?, '.format(field)
+                qparams.append(value)
+
+        set_fields = set_fields[:-2]
+        query = queries.items_update_id.format(set_fields)
+        qparams.append(itemid)
+        cursor.execute(query, qparams)
+
+        cursor.execute(queries.items_select_id, (itemid, ))
+        select = cursor.fetchone()
+
+        self.connection.give(qconn)
+
+        history_update_event.signal(filename=self.filename, id_=itemid,
+                                                parent=select['I_parent'],
+                                                previous=select['I_previous'],
+                                                text=select['I_text'])
+
+    def _do_history_row_delete(self, filename, action, jparams, hid, type_,
+                                                                    itemid):
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+        cursor.execute(queries.items_delete_id, (itemid, ))
+        self.connection.give(qconn)
+
+        self.items[itemid].remove()
+        history_delete_event.signal(filename=self.filename, id_=itemid,
+                                                        hid=hid, text=jparams)
 
     def clean_history(self):
         # This operation must be performed on a different connection than

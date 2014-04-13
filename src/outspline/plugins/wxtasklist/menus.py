@@ -18,7 +18,8 @@
 
 import wx
 
-from outspline.static.wxclasses.time import TimeSpanCtrl
+from outspline.static.wxclasses.timectrls import TimeSpanCtrl
+from outspline.static.wxclasses.misc import NarrowSpinCtrl
 
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
@@ -32,6 +33,8 @@ import filters as filters_
 class MainMenu(wx.Menu):
     tasklist = None
     occview = None
+    ID_SHOW = None
+    show = None
     filters = None
     ID_FILTERS = None
     filters_submenu = None
@@ -64,9 +67,11 @@ class MainMenu(wx.Menu):
 
     def __init__(self, tasklist):
         wx.Menu.__init__(self)
+
         self.tasklist = tasklist
         self.occview = tasklist.list_
 
+        self.ID_SHOW = wx.NewId()
         self.ID_FILTERS = wx.NewId()
         self.ID_ADD_FILTER = wx.NewId()
         self.ID_EDIT_FILTER = wx.NewId()
@@ -81,6 +86,11 @@ class MainMenu(wx.Menu):
         self.ID_SNOOZE_ALL = wx.NewId()
         self.ID_DISMISS = wx.NewId()
         self.ID_DISMISS_ALL = wx.NewId()
+
+        self.show = wx.MenuItem(self, self.ID_SHOW,
+                                                "Show &panel\tCTRL+SHIFT+F5",
+                                                "Show the occurrences panel",
+                                                kind=wx.ITEM_CHECK)
 
         self.filters_submenu = FiltersMenu(self.tasklist)
 
@@ -146,6 +156,7 @@ class MainMenu(wx.Menu):
         self.dismiss_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
                                                                   wx.ART_MENU))
 
+        self.AppendItem(self.show)
         self.AppendItem(self.filters)
         self.AppendSeparator()
         self.AppendItem(self.addfilter)
@@ -166,6 +177,7 @@ class MainMenu(wx.Menu):
         self.AppendItem(self.dismiss)
         self.AppendItem(self.dismiss_all)
 
+        wxgui_api.bind_to_menu(self.tasklist.toggle_shown, self.show)
         wxgui_api.bind_to_menu(self.add_filter, self.addfilter)
         wxgui_api.bind_to_menu(self.edit_filter, self.editfilter)
         wxgui_api.bind_to_menu(self.remove_filter, self.removefilter)
@@ -182,10 +194,11 @@ class MainMenu(wx.Menu):
         wxgui_api.bind_to_reset_menu_items(self.reset_items)
 
         wxgui_api.insert_menu_main_item('&Occurrences',
-                                    wxgui_api.get_menu_view_position(), self)
+                                    wxgui_api.get_menu_logs_position(), self)
 
     def update_items(self, kwargs):
         if kwargs['menu'] is self:
+            self.show.Check(check=self.tasklist.is_shown())
             self.filters.Enable(False)
             self.addfilter.Enable(False)
             self.editfilter.Enable(False)
@@ -257,6 +270,7 @@ class MainMenu(wx.Menu):
     def reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
         # accelerators
+        self.show.Enable()
         self.filters.Enable()
         self.addfilter.Enable()
         self.editfilter.Enable()
@@ -381,30 +395,6 @@ class MainMenu(wx.Menu):
                 # Let the alarm off event update the tasklist
 
         core_api.release_databases()
-
-
-class ViewMenu():
-    tasklist = None
-    ID_SHOW = None
-    menushow = None
-
-    def __init__(self, tasklist):
-        self.tasklist = tasklist
-
-        self.ID_SHOW = wx.NewId()
-
-        self.menushow = wx.MenuItem(wxgui_api.get_menu_view(), self.ID_SHOW,
-                                            "Show &occurrences\tCTRL+SHIFT+F5",
-                                            "Show the occurrences window",
-                                            kind=wx.ITEM_CHECK)
-
-        self.menushow = wxgui_api.add_menu_view_item(self.menushow)
-
-        wxgui_api.bind_to_menu_view_update(self.update_menu_items)
-        wxgui_api.bind_to_menu(self.tasklist.toggle_shown, self.menushow)
-
-    def update_menu_items(self, event):
-        self.menushow.Check(check=self.tasklist.is_shown())
 
 
 class TabContextMenu(wx.Menu):
@@ -622,7 +612,7 @@ class _SnoozeConfigMenu(wx.Menu):
 
         for stime in snooze_times:
             time = int(stime) * 60
-            number, unit = TimeSpanCtrl._compute_widget_values(time)
+            number, unit = TimeSpanCtrl.compute_widget_values(time)
             # Duplicate time values are not supported, just make sure they
             # don't crash the application
             self.snoozetimes[time] = self.Append(wx.NewId(), "For " +
@@ -692,13 +682,13 @@ class SnoozeDialog(wx.Dialog):
         label = wx.StaticText(self, label='Snooze for:')
         ssizer.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
-        self.number = wx.SpinCtrl(self, min=1, max=999, size=(48, 21),
+        self.number = NarrowSpinCtrl(self, min=1, max=999,
                                                         style=wx.SP_ARROW_KEYS)
         self.number.SetValue(5)
         ssizer.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
-        self.unit = wx.ComboBox(self, value='minutes', size=(100, 21),
+        self.unit = wx.ComboBox(self, value='minutes',
                                 choices=('minutes', 'hours', 'days', 'weeks'),
                                 style=wx.CB_READONLY)
         ssizer.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL)

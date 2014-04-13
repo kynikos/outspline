@@ -19,6 +19,7 @@
 from threading import Timer
 import time as _time
 
+from outspline.static.pyaux import timeaux
 from outspline.coreaux_api import log, Event
 import outspline.core_api as core_api
 import outspline.extensions.organism_api as organism_api
@@ -187,19 +188,21 @@ def get_next_occurrences(base_time=None, base_times=None):
     # search_next_occurrences because it can be used without the latter (e.g.
     # by wxtasklist); note also that both functions generate their own events
     occs = NextOccurrences()
-
+    utcoffset = timeaux.UTCOffset()
     search_start = (_time.time(), _time.clock())
 
     for filename in cdbs:
         if not base_time:
             base_time = base_times[filename]
 
+        utcbase = base_time - utcoffset.compute(base_time)
+
         for id_ in core_api.get_items_ids(filename):
             rules = organism_api.get_item_rules(filename, id_)
 
             for rule in rules:
-                rule_handlers[rule['rule']](base_time, filename, id_, rule,
-                                                                          occs)
+                rule_handlers[rule['rule']](base_time, utcbase, utcoffset,
+                                                    filename, id_, rule, occs)
 
         get_next_occurrences_event.signal(base_time=base_time,
                                                   filename=filename, occs=occs)
@@ -226,6 +229,8 @@ def get_last_search_all():
 def set_last_search(filename, tstamp):
     conn = core_api.get_connection(filename)
     cur = conn.cursor()
+    # Use a UTC timestamp, so that even if the local time zone is changed on
+    # the system, the timer behaves properly
     cur.execute(queries.timerproperties_update, (tstamp, ))
     core_api.give_connection(filename, conn)
 
@@ -250,6 +255,8 @@ def set_last_search_all_safe(tstamp):
         # values would be updated to the lower value, thus possibly
         # reactivating old alarms
         if tstamp > last_search:
+            # Use a UTC timestamp, so that even if the local time zone is
+            # changed on the system, the timer behaves properly
             cur.execute(queries.timerproperties_update, (tstamp, ))
 
         core_api.give_connection(filename, conn)

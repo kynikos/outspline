@@ -26,7 +26,7 @@ import notebooks
 import editor
 import textarea
 import msgboxes
-import history
+import logs
 import tree
 import about
 
@@ -34,7 +34,7 @@ update_menu_items_event = Event()
 reset_menu_items_event = Event()
 menu_database_update_event = Event()
 menu_edit_update_event = Event()
-menu_view_update_event = Event()
+menu_logs_update_event = Event()
 undo_tree_event = Event()
 redo_tree_event = Event()
 move_item_event = Event()
@@ -45,7 +45,7 @@ class RootMenu(wx.MenuBar):
     file = None
     database = None
     edit = None
-    view = None
+    logs = None
     help = None
 
     def __init__(self):
@@ -57,13 +57,13 @@ class RootMenu(wx.MenuBar):
         self.file = MenuFile()
         self.database = MenuDatabase()
         self.edit = MenuEdit()
-        self.view = MenuView()
+        self.logs = MenuLogs()
         self.help = MenuHelp()
 
         self.Append(self.file, "&File")
         self.Append(self.database, "&Database")
         self.Append(self.edit, "&Editor")
-        self.Append(self.view, "&View")
+        self.Append(self.logs, "&Logs")
         self.Append(self.help, "&Help")
 
     def update_menus(self, event):
@@ -75,8 +75,8 @@ class RootMenu(wx.MenuBar):
             self.database.update_items()
         elif menu is self.edit:
             self.edit.update_items()
-        elif menu is self.view:
-            self.view.update_items()
+        elif menu is self.logs:
+            self.logs.update_items()
         else:
             update_menu_items_event.signal(menu=menu)
 
@@ -225,7 +225,7 @@ class MenuFile(wx.Menu):
             filename = treedb.get_filename()
             if core_api.check_pending_changes(filename):
                 core_api.save_database(filename)
-                treedb.history.refresh()
+                treedb.dbhistory.refresh()
         core_api.release_databases()
 
     def save_all_databases(self, event):
@@ -233,7 +233,7 @@ class MenuFile(wx.Menu):
         for filename in tuple(tree.dbs.keys()):
             if core_api.check_pending_changes(filename):
                 core_api.save_database(filename)
-                tree.dbs[filename].history.refresh()
+                tree.dbs[filename].dbhistory.refresh()
         core_api.release_databases()
 
     def save_database_as(self, event):
@@ -458,8 +458,8 @@ class MenuDatabase(wx.Menu):
                 else:
                     filename = tab.get_filename()
                     core_api.undo_tree(filename)
-                    tab.history.refresh()
-                    undo_tree_event.signal(filename=filename)
+                    tab.dbhistory.refresh()
+                    undo_tree_event.signal(filename=filename, items=read)
 
         core_api.release_databases()
 
@@ -478,8 +478,8 @@ class MenuDatabase(wx.Menu):
                 else:
                     filename = tab.get_filename()
                     core_api.redo_tree(filename)
-                    tab.history.refresh()
-                    redo_tree_event.signal(filename=filename)
+                    tab.dbhistory.refresh()
+                    redo_tree_event.signal(filename=filename, items=read)
 
         core_api.release_databases()
 
@@ -496,30 +496,32 @@ class MenuDatabase(wx.Menu):
 
             # If multiple items are selected, selection will be bool (False)
             if isinstance(selection, list):
+                text = 'New item'
+
                 if len(selection) > 0:
                     base = selection[0]
                     baseid = treedb.get_item_id(base)
 
                     id_ = core_api.create_sibling(filename=filename,
                                                     baseid=baseid,
-                                                    text='New item',
+                                                    text=text,
                                                     description='Insert item')
 
-                    item = treedb.insert_item(base, 'after', id_=id_)
+                    item = treedb.insert_item(base, 'after', id_, text=text)
                 else:
                     base = treedb.get_root()
                     baseid = None
 
                     id_ = core_api.create_child(filename=filename,
                                                     baseid=baseid,
-                                                    text='New item',
+                                                    text=text,
                                                     description='Insert item')
 
-                    item = treedb.insert_item(base, 'append', id_=id_)
+                    item = treedb.insert_item(base, 'append', id_, text=text)
 
                 treedb.select_item(item)
 
-                treedb.history.refresh()
+                treedb.dbhistory.refresh()
 
         core_api.release_databases()
 
@@ -533,16 +535,17 @@ class MenuDatabase(wx.Menu):
                 base = selection[0]
                 filename = treedb.get_filename()
                 baseid = treedb.get_item_id(base)
+                text = 'New item'
 
                 id_ = core_api.create_child(filename=filename, baseid=baseid,
-                                            text='New item',
+                                            text=text,
                                             description='Insert sub-item')
 
-                item = treedb.insert_item(base, 'append', id_=id_)
+                item = treedb.insert_item(base, 'append', id_, text=text)
 
                 treedb.select_item(item)
 
-                treedb.history.refresh()
+                treedb.dbhistory.refresh()
 
         core_api.release_databases()
 
@@ -566,7 +569,7 @@ class MenuDatabase(wx.Menu):
 
                     treedb.select_item(newitem)
 
-                    treedb.history.refresh()
+                    treedb.dbhistory.refresh()
 
                     move_item_event.signal(filename=filename)
 
@@ -595,7 +598,7 @@ class MenuDatabase(wx.Menu):
 
                     treedb.select_item(newitem)
 
-                    treedb.history.refresh()
+                    treedb.dbhistory.refresh()
 
                     move_item_event.signal(filename=filename)
 
@@ -619,7 +622,7 @@ class MenuDatabase(wx.Menu):
 
                     treedb.select_item(newitem)
 
-                    treedb.history.refresh()
+                    treedb.dbhistory.refresh()
 
                     move_item_event.signal(filename=filename)
 
@@ -662,7 +665,7 @@ class MenuDatabase(wx.Menu):
                                       ''.format(len(items)))
 
                 treedb.remove_items(selection)
-                treedb.history.refresh()
+                treedb.dbhistory.refresh()
                 delete_items_event.signal()
 
         core_api.release_databases()
@@ -883,37 +886,37 @@ class MenuEdit(wx.Menu):
         core_api.release_databases()
 
 
-class MenuView(wx.Menu):
-    ID_HISTORY = None
-    history = None
+class MenuLogs(wx.Menu):
+    ID_LOGS = None
+    logs = None
 
     def __init__(self):
         wx.Menu.__init__(self)
 
-        self.ID_HISTORY = wx.NewId()
+        self.ID_LOGS = wx.NewId()
 
-        self.history = self.AppendCheckItem(self.ID_HISTORY,
-                                            "Show &history\tCTRL+SHIFT+h",
-                                            "Show history frame")
+        self.logs = self.AppendCheckItem(self.ID_LOGS,
+                                            "Show &panel\tCTRL+SHIFT+l",
+                                            "Show logs panel")
 
-        wx.GetApp().Bind(wx.EVT_MENU, self.toggle_history, self.history)
+        wx.GetApp().Bind(wx.EVT_MENU, self.toggle_logs, self.logs)
 
     def update_items(self):
-        self.history.Check(check=history.is_shown())
-        menu_view_update_event.signal()
+        self.logs.Check(check=wx.GetApp().logs_configuration.is_shown())
+        menu_logs_update_event.signal()
 
-    def toggle_history(self, event):
-        # Set history.set_shown() here, and not in each
-        # tree.dbs[].show_history()... so that this method works also if there
+    def toggle_logs(self, event):
+        # Set logs_configuration.set_shown() here, and not in each
+        # tree.dbs[].show_logs()... so that this method works also if there
         # aren't open databases
-        if history.is_shown():
+        if wx.GetApp().logs_configuration.is_shown():
             for filename in tree.dbs:
-                tree.dbs[filename].hide_history()
-            history.set_shown(False)
+                tree.dbs[filename].hide_logs()
+            wx.GetApp().logs_configuration.set_shown(False)
         else:
             for filename in tree.dbs:
-                tree.dbs[filename].show_history()
-            history.set_shown(True)
+                tree.dbs[filename].show_logs()
+            wx.GetApp().logs_configuration.set_shown(True)
 
 
 class MenuHelp(wx.Menu):
@@ -923,7 +926,7 @@ class MenuHelp(wx.Menu):
         wx.Menu.__init__(self)
 
         self.about = self.Append(wx.ID_ABOUT, '&About Outspline',
-                                 'Information about Outspline and its license')
+                    'Information about Outspline and the installed add-ons')
 
         wx.GetApp().Bind(wx.EVT_MENU, self.show_about, self.about)
 

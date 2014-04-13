@@ -206,7 +206,10 @@ for dbrule in dbrules:
             else:
                 rend = None
 
-            refstart = int(time.time()) // 86400 * 86400 + rstart + time.altzone
+            now = time.time()
+            utcoffset = int((datetime.datetime.utcfromtimestamp(now) - \
+                        datetime.datetime.fromtimestamp(now)).total_seconds())
+            refstart = int(now) // 86400 * 86400 + rstart + utcoffset
 
             endtype = 1 if rend is not None else 0
             alarmtype = 1 if ralarm is not None else 0

@@ -27,6 +27,10 @@ def get_existing_links(filename):
     return links.select_links(filename)
 
 
+def get_last_known_target(filename, id_):
+    return links.get_last_known_target(filename, id_)
+
+
 def make_link(filename, id_, target, group, description='Make link'):
     try:
         return links.upsert_link(filename, id_, target, group,
@@ -51,5 +55,17 @@ def find_broken_links(filename):
     return links.find_broken_links(filename)
 
 
-def find_next_broken_link(filename):
-    return links.find_next_broken_link(filename)
+def find_first_broken_link(filename):
+    return links.find_first_broken_link(filename)
+
+
+def bind_to_upsert_link(handler, bind=True):
+    return links.upsert_link_event.bind(handler, bind)
+
+
+def bind_to_delete_link(handler, bind=True):
+    return links.delete_link_event.bind(handler, bind)
+
+
+def bind_to_break_link(handler, bind=True):
+    return links.break_link_event.bind(handler, bind)

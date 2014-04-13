@@ -1,7 +1,7 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='outspline-experimental'
-pkgver='0.4.0'
+pkgver='0.5.0'
 pkgrel=1
 pkgdesc="Experimental addons for Outspline"
 arch=('any')
@@ -9,7 +9,7 @@ url="https://github.com/kynikos/outspline"
 license=('GPL3')
 depends=('outspline')
 source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
-sha256sums=('a77049f02645b0d08ed7cee9ce5d8766dba0ae26d229ac3bcd3e52ea4046bf1e')
+sha256sums=('f33108bb4a5be62ea662dc7fa15fee107cfad4f2a045a669bf76d6394a483018')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"

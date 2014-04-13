@@ -1,10 +1,9 @@
 author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.3
+version = 0.4
 description = Adds the backend for managing alarm events.
 website = https://github.com/kynikos/outspline/
 affects_database = yes
-provides_tables = Alarms CopyAlarms
-provides_history_actions =
+provides_tables = Alarms CopyAlarms AlarmsOffLog
 dependency_1 = core 0
 dependency_2 = extensions.organism 0
 dependency_3 = extensions.organism_timer 0

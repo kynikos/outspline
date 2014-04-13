@@ -16,29 +16,28 @@
 # You should have received a copy of the GNU General Public License
 # along with wxClasses.  If not, see <http://www.gnu.org/licenses/>.
 
+import time as time_
+import datetime as datetime_
 import wx
 
 from choices import MultipleChoiceCtrl
+from misc import NarrowSpinCtrl
 
 
-class HourCtrl():
-    panel = None
-    hourctrl = None
-    minutectrl = None
-
+class HourCtrl(object):
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
 
-        self.hourctrl = wx.SpinCtrl(self.panel, min=0, max=23, size=(40, 21),
+        self.hourctrl = NarrowSpinCtrl(self.panel, min=0, max=23,
                                            style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
         box.Add(self.hourctrl, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
 
         slabel = wx.StaticText(self.panel, label=':')
         box.Add(slabel, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        self.minutectrl = wx.SpinCtrl(self.panel, min=0, max=59, size=(40, 21),
+        self.minutectrl = NarrowSpinCtrl(self.panel, min=0, max=59,
                                            style=wx.SP_ARROW_KEYS | wx.SP_WRAP)
         box.Add(self.minutectrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
@@ -62,17 +61,14 @@ class HourCtrl():
         return hour * 3600 + minute * 60
 
 
-class WeekDayCtrl():
+class WeekDayCtrl(object):
     choices = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
                                                           'Saturday', 'Sunday')
-    panel = None
-    dayctrl = None
 
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
 
-        self.dayctrl = wx.Choice(self.panel, choices=self.choices,
-                                                                size=(100, 21))
+        self.dayctrl = wx.Choice(self.panel, choices=self.choices)
 
     def set_day(self, day):
         self.dayctrl.SetSelection(self.dayctrl.FindString(day))
@@ -96,32 +92,25 @@ class WeekDayCtrl():
         }[self.get_day()]
 
     @classmethod
-    def _compute_widget_day(cls, timew):
+    def compute_widget_day(cls, timew):
         # Any check that 0 <= number <= 6 should be done outside of here
         return cls.choices[timew]
 
     @classmethod
-    def _compute_day_label(cls, day):
+    def compute_day_label(cls, day):
         return cls.choices.index(day)
 
 
-class MonthDayCtrl():
+class MonthDayCtrl(object):
     choices = ('1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th',
                '10th', '11th', '12th', '13th', '14th', '15th', '16th', '17th',
                '18th', '19th', '20th', '21st', '22nd', '23rd', '24th', '25th',
                '26th', '27th', '28th', '29th', '30th', '31st')
-    # Defining value and size here lets derive other classes from this one more
-    # easily
-    value = '1st'
-    size = (60, 21)
-    panel = None
-    dayctrl = None
 
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
 
-        self.dayctrl = wx.Choice(self.panel, choices=self.choices,
-                                                                size=self.size)
+        self.dayctrl = wx.Choice(self.panel, choices=self.choices)
 
     def set_day(self, day):
         self.dayctrl.SetSelection(day - 1)
@@ -130,13 +119,13 @@ class MonthDayCtrl():
         return self.panel
 
     def get_day(self):
-        return int(self.dayctrl.GetString(self.dayctrl.GetSelection())[:-2])
+        return self.dayctrl.GetSelection() + 1
 
     def get_relative_time(self):
         return self.get_day() * 86400 - 86400
 
     @classmethod
-    def _compute_day_label(cls, day):
+    def compute_day_label(cls, day):
         return cls.choices[day - 1]
 
 
@@ -146,33 +135,13 @@ class MonthInverseDayCtrl(MonthDayCtrl):
                '13th', '14th', '15th', '16th', '17th', '18th', '19th', '20th',
                '21st', '22nd', '23rd', '24th', '25th', '26th', '27th', '28th',
                '29th', '30th', '31st')]
-    value = 'last'
-    size = (110, 21)
 
     def get_day(self):
-        try:
-            return int(self.dayctrl.GetString(self.dayctrl.GetSelection())
-                                                                        [:-10])
-        except ValueError:
-            return 1
+        return self.dayctrl.GetSelection() + 1
 
     @classmethod
-    def _compute_day_label(cls, day):
+    def compute_day_label(cls, day):
         return cls.choices[day - 1].replace(' ', '-')
-
-
-class MonthDaySafeCtrl(MonthDayCtrl):
-    choices = ('1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th',
-               '10th', '11th', '12th', '13th', '14th', '15th', '16th', '17th',
-               '18th', '19th', '20th', '21st', '22nd', '23rd', '24th', '25th',
-               '26th', '27th', '28th')
-
-
-class MonthInverseDaySafeCtrl(MonthInverseDayCtrl):
-    choices = ['last', ] + [d + ' to last' for d in ('2nd', '3rd', '4th',
-               '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th',
-               '13th', '14th', '15th', '16th', '17th', '18th', '19th', '20th',
-               '21st', '22nd', '23rd', '24th', '25th', '26th', '27th', '28th')]
 
 
 class MonthWeekdayNumberCtrl(MonthDayCtrl):
@@ -184,11 +153,8 @@ class MonthInverseWeekdayNumberCtrl(MonthInverseDayCtrl):
                                                                         '5th')]
 
 
-class MonthWeekdayCtrl():
-    panel = None
+class MonthWeekdayCtrl(object):
     mwnctrl = MonthWeekdayNumberCtrl
-    numberctrl = None
-    dayctrl = None
 
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
@@ -217,33 +183,29 @@ class MonthWeekdayCtrl():
         return self.dayctrl.get_day()
 
     @classmethod
-    def _compute_weekday_number_label(cls, number):
-        return cls.mwnctrl._compute_day_label(number)
+    def compute_weekday_number_label(cls, number):
+        return cls.mwnctrl.compute_day_label(number)
 
     @staticmethod
-    def _compute_weekday_label(day):
-        return WeekDayCtrl._compute_day_label(day)
+    def compute_weekday_label(day):
+        return WeekDayCtrl.compute_day_label(day)
 
     @staticmethod
-    def _compute_widget_weekday(day):
-        return WeekDayCtrl._compute_widget_day(day)
+    def compute_widget_weekday(day):
+        return WeekDayCtrl.compute_widget_day(day)
 
 
 class MonthInverseWeekdayCtrl(MonthWeekdayCtrl):
     mwnctrl = MonthInverseWeekdayNumberCtrl
 
 
-class DateHourCtrl():
-    panel = None
-    datectrl = None
-    hourctrl = None
-
+class DateHourCtrl(object):
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
 
-        self.datectrl = wx.DatePickerCtrl(self.panel, size=(-1, 21))
+        self.datectrl = wx.DatePickerCtrl(self.panel)
         box.Add(self.datectrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.hourctrl = HourCtrl(self.panel)
@@ -261,11 +223,19 @@ class DateHourCtrl():
         return self.panel
 
     def get_unix_time(self):
-        date = self.datectrl.GetValue().GetTicks()
+        date = self.datectrl.GetValue()
         hour = self.hourctrl.get_hour()
         minute = self.hourctrl.get_minute()
 
-        return date + hour * 3600 + minute * 60
+        fdate = datetime_.datetime(date.GetYear(), date.GetMonth() + 1,
+                                                date.GetDay(), hour, minute)
+
+        # Don't do this because it behaves incorrectly if the date is a day
+        # in which the DST starts or ends
+        #date = self.datectrl.GetValue().GetTicks()
+        #return date + hour * 3600 + minute * 60
+
+        return int(time_.mktime(fdate.timetuple()))
 
     def get_year(self):
         return self.datectrl.GetValue().GetYear()
@@ -283,7 +253,7 @@ class DateHourCtrl():
         return self.hourctrl.get_minute()
 
     @staticmethod
-    def _compute_month_label(month):
+    def compute_month_label(month):
         # Hardcode the names since only English is supported for the moment
         # anyway
         return ('January', 'February', 'March', 'April', 'May', 'June', 'July',
@@ -291,11 +261,7 @@ class DateHourCtrl():
                                                                      month - 1]
 
 
-class WeekDayHourCtrl():
-    panel = None
-    dayctrl = None
-    hourctrl = None
-
+class WeekDayHourCtrl(object):
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
         box = wx.BoxSizer(wx.HORIZONTAL)
@@ -334,16 +300,13 @@ class WeekDayHourCtrl():
         return rday + rhour
 
     @staticmethod
-    def _compute_widget_day(timew):
-        return WeekDayCtrl._compute_widget_day(timew)
+    def compute_widget_day(timew):
+        return WeekDayCtrl.compute_widget_day(timew)
 
 
-class MonthDayHourCtrl():
+class MonthDayHourCtrl(object):
     # Defining mdctrl here lets derive other classes from this one more easily
     mdctrl = MonthDayCtrl
-    panel = None
-    dayctrl = None
-    hourctrl = None
 
     def __init__(self, parent):
         self.panel = wx.Panel(parent)
@@ -373,33 +336,28 @@ class MonthDayHourCtrl():
     def get_minute(self):
         return self.hourctrl.get_minute()
 
-    def get_relative_time(self):
+    def get_relative_month_time(self):
         rday = self.dayctrl.get_relative_time()
         rhour = self.hourctrl.get_relative_time()
 
         return rday + rhour
 
+    def get_relative_time(self):
+        return self.hourctrl.get_relative_time()
+
     @classmethod
-    def _compute_day_label(cls, day):
-        return cls.mdctrl._compute_day_label(day)
-
-
-class MonthDayHourSafeCtrl(MonthDayHourCtrl):
-    mdctrl = MonthDaySafeCtrl
+    def compute_day_label(cls, day):
+        return cls.mdctrl.compute_day_label(day)
 
 
 class MonthInverseDayHourCtrl(MonthDayHourCtrl):
     mdctrl = MonthInverseDayCtrl
 
-    def get_relative_time(self):
+    def get_relative_month_time(self):
         rday = self.dayctrl.get_relative_time()
         rhour = self.hourctrl.get_relative_time()
 
         return rday + 86400 - rhour
-
-
-class MonthInverseDayHourSafeCtrl(MonthInverseDayHourCtrl):
-    mdctrl = MonthInverseDaySafeCtrl
 
 
 class MonthWeekdayHourCtrl(MonthDayHourCtrl):
@@ -419,42 +377,34 @@ class MonthWeekdayHourCtrl(MonthDayHourCtrl):
         return self.dayctrl.get_weekday()
 
     @classmethod
-    def _compute_weekday_number_label(cls, number):
-        return cls.mdctrl._compute_weekday_number_label(number)
+    def compute_weekday_number_label(cls, number):
+        return cls.mdctrl.compute_weekday_number_label(number)
 
     @classmethod
-    def _compute_weekday_label(cls, day):
-        return cls.mdctrl._compute_weekday_label(day)
+    def compute_weekday_label(cls, day):
+        return cls.mdctrl.compute_weekday_label(day)
 
     @classmethod
-    def _compute_widget_weekday(cls, day):
-        return cls.mdctrl._compute_widget_weekday(day)
+    def compute_widget_weekday(cls, day):
+        return cls.mdctrl.compute_widget_weekday(day)
 
 
 class MonthInverseWeekdayHourCtrl(MonthWeekdayHourCtrl):
     mdctrl = MonthInverseWeekdayCtrl
 
 
-class TimeSpanCtrl():
-    panel = None
-    numberctrl = None
-    unitctrl = None
-
+class TimeSpanCtrl(object):
     def __init__(self, parent, min_number, max_number):
         self.panel = wx.Panel(parent)
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
 
-        # Note that min_number's length includes also the minus sign, if
-        # negative
-        width = 8 * max((len(str(min_number)), len(str(max_number)))) + 24
-
-        self.numberctrl = wx.SpinCtrl(self.panel, min=min_number,
-                      max=max_number, size=(width, 21), style=wx.SP_ARROW_KEYS)
+        self.numberctrl = NarrowSpinCtrl(self.panel, min=min_number,
+                                        max=max_number, style=wx.SP_ARROW_KEYS)
         box.Add(self.numberctrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.unitctrl = wx.Choice(self.panel,
-                choices=('minutes', 'hours', 'days', 'weeks'), size=(100, 21))
+                                choices=('minutes', 'hours', 'days', 'weeks'))
         box.Add(self.unitctrl, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT |
                                                             wx.LEFT, border=12)
 
@@ -487,7 +437,7 @@ class TimeSpanCtrl():
         return number * mult[unit]
 
     @staticmethod
-    def _compute_widget_values(diff):
+    def compute_widget_values(diff):
         if diff == 0:
             return (0, 'minutes')
         else:
@@ -520,7 +470,7 @@ class WeekdaysCtrl(MultipleChoiceCtrl):
         return self.get_values()
 
     @classmethod
-    def _compute_day_name(cls, day):
+    def compute_day_name(cls, day):
         return cls.dnames[day - 1]
 
 
@@ -539,5 +489,5 @@ class MonthsCtrl(MultipleChoiceCtrl):
         return self.get_values()
 
     @classmethod
-    def _compute_month_name(cls, month):
+    def compute_month_name(cls, month):
         return cls.mnames[month - 1]

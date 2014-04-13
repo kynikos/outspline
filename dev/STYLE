@@ -63,7 +63,7 @@ Info files:
     Required but can have an empty value
 - affects_database:
     Set to a different value than 'no' if the extension can write the user
-    database or if it affects the stabdards with which other extensions read or
+    database or if it affects the standards with which other extensions read or
     write the user database
     In general, this option determines which addons are added to the
     CoMpatibility table and hence used for compatibility checks when opening a
@@ -72,10 +72,6 @@ Info files:
 - provides_tables:
     Names of the database tables managed by the extension
     If another extension provides some of those tables, Outspline won't load
-    Required but can have an empty value
-- provides_history_actions:
-    Names of the history actions provided by the extension
-    If another extension provides some of those actions, Outspline won't load
     Required but can have an empty value
 - dependency_N:
     N-th dependency for the addon

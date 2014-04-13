@@ -16,14 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import time as _time
-
 from exceptions import BadRuleError
 
-_RULE_NAME = 'occur_regularly_single'
+_RULE_NAMES = {'local': 'occur_regularly_local',
+               'UTC': 'occur_regularly_UTC'}
 
 
-def make_rule(refstart, interval, rend, ralarm, guiconfig):
+def make_rule(refstart, interval, rend, ralarm, standard, guiconfig):
     """
     @param refstart: A sample occurrence Unix start time.
     @param interval: The interval in seconds between two consecutive occurrence
@@ -33,32 +32,38 @@ def make_rule(refstart, interval, rend, ralarm, guiconfig):
     @param ralarm: The difference in seconds between the sample start time and
                    the sample alarm time; it is negative if the alarm is set
                    later than the start time.
+    @param standard: The time standard to be used, either 'local' or 'UTC'.
     @param guiconfig: A place to store any configuration needed only by the
                       interface.
     """
     # Make sure this rule can only produce occurrences compliant with the
-    # requirements defined in organism_api.update_item_rules
+    #   requirements defined in organism_api.update_item_rules
+    # There's no need to check standard because it's imposed by the API
     if isinstance(refstart, int) and refstart >= 0 and \
-                                isinstance(interval, int) and interval > 0 and \
-                    (rend is None or (isinstance(rend, int) and rend > 0)) and \
-                                    (ralarm is None or isinstance(ralarm, int)):
+                isinstance(interval, int) and interval > 0 and \
+                (rend is None or (isinstance(rend, int) and rend > 0)) and \
+                (ralarm is None or isinstance(ralarm, int)):
+        # Also take a possible negative (late) alarm time into account, in fact
+        #  the occurrence wouldn't be found if the search range included the
+        #  alarm time but not the actual occurrence time span; remember that
+        #  it's normal that the occurrence is not added to the results if the
+        #  search range is between (and doesn't include) the alarm time and the
+        #  actual occurrence time span
         if ralarm is None:
-            refmin = refstart
-            refmax = refstart + max((rend, 0))
+            rmax = max((rend, 0))
         else:
-            refmin = refstart - max((ralarm, 0))
-            refmax = refstart + max((rend, ralarm * -1, 0))
+            rmax = max((rend, ralarm * -1, 0))
 
-        refspan = refmax - refmin
-        rstart = refstart - refmin
+        overlaps = rmax // interval
+        bgap = interval - rmax % interval
 
         return {
-            'rule': _RULE_NAME,
+            'rule': _RULE_NAMES[standard],
             '#': (
-                refmax,
-                refspan,
+                refstart,
                 interval,
-                rstart,
+                overlaps,
+                bgap,
                 rend,
                 ralarm,
                 guiconfig,
@@ -68,6 +73,120 @@ def make_rule(refstart, interval, rend, ralarm, guiconfig):
         raise BadRuleError()
 
 """
+| search_time
+* reference_start_time
+< found_start_time
+(() occurrence (rmix start rmax)
+[[] target_occurrence (rmix start rmax)
+
+(   *        )--------(   (        )----|---[   <        ]--------(   (        )--------(   (        )
+
+(   *        )--------(   (        )--------[   [   |    ]--------(   <        )--------(   (        )
+
+(   *        )--------(   (        )--------(   (        |--------[   <        ]--------(   (        )
+
+(   (        )----|---[   <        ]--------(   (        )--------(   (        )--------(   *        )
+
+(   (        )--------[   [   |    ]--------(   <        )--------(   (        )--------(   *        )
+
+(   (        )--------(   (        |--------[   <        ]--------(   (        )--------(   *        )
+
+(     *                 )  |
+    [     [                |]
+        (     (            |    )
+            (     (        |        )
+                (     (    |            )
+                    (     (|                )
+                        (  |  <                 )
+                           |(     (                 )
+                           |    (     (                 )
+                           |        (     (                 )
+                           |            (     (                 )
+                           |                (     (                 )
+                           |                    (     (                 )
+
+(     *                 )   |
+    (     (                 )
+        [     [             |   ]
+            (     (         |       )
+                (     (     |           )
+                    (     ( |               )
+                        (   | <                 )
+                            (     (                 )
+                            |   (     (                 )
+                            |       (     (                 )
+                            |           (     (                 )
+                            |               (     (                 )
+                            |                   (     (                 )
+
+(     *                 )
+    (     (                 )|
+        [     [              |  ]
+            (     (          |      )
+                (     (      |          )
+                    (     (  |              )
+                        (    |<                 )
+                            (|    (                 )
+                             |  (     (                 )
+                             |      (     (                 )
+                             |          (     (                 )
+                             |              (     (                 )
+                             |                  (     (                 )
+
+(     (                 )  |
+    [     [                |]
+        (     (            |    )
+            (     (        |        )
+                (     (    |            )
+                    (     (|                )
+                        (  |  <                 )
+                           |(     (                 )
+                           |    (     (                 )
+                           |        (     (                 )
+                           |            (     (                 )
+                           |                (     (                 )
+                           |                    (     *                 )
+
+(     (                 )   |
+    (     (                 )
+        [     [             |   ]
+            (     (         |       )
+                (     (     |           )
+                    (     ( |               )
+                        (   | <                 )
+                            (     (                 )
+                            |   (     (                 )
+                            |       (     (                 )
+                            |           (     (                 )
+                            |               (     (                 )
+                            |                   (     *                 )
+
+(     (                 )
+    (     (                 )|
+        [     [              |  ]
+            (     (          |      )
+                (     (      |          )
+                    (     (  |              )
+                        (    |<                 )
+                            (|    (                 )
+                             |  (     (                 )
+                             |      (     (                 )
+                             |          (     (                 )
+                             |              (     (                 )
+                             |                  (     *                 )
+
+overlaps = rmax // interval
+fgap = rmax % interval
+bgap = interval - fgap
+found_start_time = search_time + (reference_start_time - search_time) % interval
+if (found_start_time - search_time) > bgap:
+    target_start_time = found_start_time - (overlaps + 1) * interval
+else:
+    target_start_time = found_start_time - overlaps * interval
+
+===============================================================================
+OLD IMPLEMENTATION
+
 * reference occurrence
 | reftime
 [] target occurrence
@@ -295,22 +414,63 @@ DHPT
 """
 
 
-def _compute_min_time(reftime, refmax, refspan, interval):
-    rem = (refmax - reftime) % interval
-    mintime = reftime + rem - refspan
+def compute_min_time(reftime, refstart, interval, overlaps, bgap):
+    ftime = reftime + (refstart - reftime) % interval
 
-    if rem == 0 and refspan != 0:
-        # Use formula (T), see the examples above
-        return mintime + interval
+    if (ftime - reftime) > bgap:
+        return ftime - (overlaps + 1) * interval
     else:
-        # Use formula (S), see the examples above
-        return mintime
+        return ftime - overlaps * interval
+
+def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
+                                                                rule, occs):
+    interval = rule['#'][1]
+    # Use utcmint because in Western (negative) time zones (e.g.
+    # Pacific/Honolulu), the first occurrence to be found would otherwise be
+    # already too late; in Eastern (positive) time zones the problem would pass
+    # unnoticed because the first occurrence would be found too early, and
+    # simply several cycles would not produce occurrences in the search range
+    start = compute_min_time(utcmint, rule['#'][0], interval, rule['#'][2],
+                                                                rule['#'][3])
+    rend = rule['#'][4]
+    ralarm = rule['#'][5]
+
+    while True:
+        # Every timestamp can have a different UTC offset, depending whether
+        # it's in a DST period or not
+        offset = utcoffset.compute(start)
+
+        sstart = start + offset
+
+        try:
+            send = sstart + rend
+        except TypeError:
+            send = None
+
+        try:
+            salarm = sstart - ralarm
+        except TypeError:
+            salarm = None
+
+        # Do compare sstart and salarm with maxt, *not* start and alarm
+        if sstart > maxt and (salarm is None or salarm > maxt):
+            break
+
+        # The rule is checked in make_rule, no need to use occs.add
+        occs.add_safe({'filename': filename,
+                       'id_': id_,
+                       'start': sstart,
+                       'end': send,
+                       'alarm': salarm})
+
+        start += interval
 
 
-def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
-    interval = rule['#'][2]
-    mintime = _compute_min_time(mint, rule['#'][0], rule['#'][1], interval)
-    start = mintime + rule['#'][3]
+def get_occurrences_range_UTC(mint, utcmint, maxt, utcoffset, filename, id_,
+                                                                rule, occs):
+    interval = rule['#'][1]
+    start = compute_min_time(mint, rule['#'][0], interval, rule['#'][2],
+                                                                rule['#'][3])
     rend = rule['#'][4]
     ralarm = rule['#'][5]
 
@@ -338,10 +498,59 @@ def get_occurrences_range(mint, maxt, filename, id_, rule, occs):
         start += interval
 
 
-def get_next_item_occurrences(base_time, filename, id_, rule, occs):
-    interval = rule['#'][2]
-    mintime = _compute_min_time(base_time, rule['#'][0], rule['#'][1], interval)
-    start = mintime + rule['#'][3]
+def get_next_item_occurrences_local(base_time, utcbase, utcoffset, filename,
+                                                            id_, rule, occs):
+    interval = rule['#'][1]
+    # Use utcbase because in Western (negative) time zones (e.g.
+    # Pacific/Honolulu), the first occurrence to be found would otherwise be
+    # already too late; in Eastern (positive) time zones the problem would pass
+    # unnoticed because the first occurrence would be found too early, and
+    # simply several cycles would not produce occurrences in the search range
+    start = compute_min_time(utcbase, rule['#'][0], interval, rule['#'][2],
+                                                                rule['#'][3])
+    rend = rule['#'][4]
+    ralarm = rule['#'][5]
+
+    while True:
+        # Every timestamp can have a different UTC offset, depending whether
+        # it's in a DST period or not
+        offset = utcoffset.compute(start)
+
+        sstart = start + offset
+
+        try:
+            send = sstart + rend
+        except TypeError:
+            send = None
+
+        try:
+            salarm = sstart - ralarm
+        except TypeError:
+            salarm = None
+
+        occd = {'filename': filename,
+                'id_': id_,
+                'start': sstart,
+                'end': send,
+                'alarm': salarm}
+
+        next_occ = occs.get_next_occurrence_time()
+
+        # The rule is checked in make_rule, no need to use occs.add
+        # Do compare sstart and salarm with next_occ, *not* start and alarm
+        if occs.add_safe(base_time, occd) or (next_occ and \
+                            sstart > next_occ and \
+                            (salarm is None or salarm > next_occ)):
+            break
+
+        start += interval
+
+
+def get_next_item_occurrences_UTC(base_time, utcbase, utcoffset, filename,
+                                                            id_, rule, occs):
+    interval = rule['#'][1]
+    start = compute_min_time(base_time, rule['#'][0], interval, rule['#'][2],
+                                                                rule['#'][3])
     rend = rule['#'][4]
     ralarm = rule['#'][5]
 
@@ -365,8 +574,8 @@ def get_next_item_occurrences(base_time, filename, id_, rule, occs):
         next_occ = occs.get_next_occurrence_time()
 
         # The rule is checked in make_rule, no need to use occs.add
-        if occs.add_safe(base_time, occd) or (next_occ and start > next_occ and
-                                           (alarm is None or alarm > next_occ)):
+        if occs.add_safe(base_time, occd) or (next_occ and \
+                    start > next_occ and (alarm is None or alarm > next_occ)):
             break
 
         start += interval

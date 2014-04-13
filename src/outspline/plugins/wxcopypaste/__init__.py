@@ -51,7 +51,7 @@ def cut_items(event, no_confirm=False):
 
     filename = wxgui_api.get_selected_database_filename()
 
-    # This method may be launched by the menu accelerator, but not database
+    # This method may be launched by the menu accelerator, but no database
     # may be open
     if filename:
         # select() arguments must be compatible with delete_items()
@@ -124,8 +124,8 @@ def paste_items_as_siblings(event, no_confirm=False):
                 base = selection[0]
                 baseid = wxgui_api.get_tree_item_id(filename, base)
 
-                roots = copypaste_api.paste_items_as_siblings(filename, baseid,
-                                                    description='Paste items')
+                roots, ids = copypaste_api.paste_items_as_siblings(filename,
+                                            baseid, description='Paste items')
 
                 for r in roots:
                     treeroot = wxgui_api.insert_tree_item_after(filename,
@@ -135,8 +135,8 @@ def paste_items_as_siblings(event, no_confirm=False):
                 base = wxgui_api.get_root_tree_item(filename)
                 baseid = wxgui_api.get_tree_item_id(filename, base)
 
-                roots = copypaste_api.paste_items_as_children(filename, baseid,
-                                                    description='Paste items')
+                roots, ids = copypaste_api.paste_items_as_children(filename,
+                                            baseid, description='Paste items')
 
                 for r in roots:
                     treeroot = wxgui_api.append_tree_item(filename, base, r)
@@ -144,7 +144,7 @@ def paste_items_as_siblings(event, no_confirm=False):
 
             wxgui_api.refresh_history(filename)
 
-            items_pasted_event.signal(filename=filename)
+            items_pasted_event.signal(filename=filename, roots=roots, ids=ids)
 
     core_api.release_databases()
 
@@ -165,8 +165,8 @@ def paste_items_as_children(event, no_confirm=False):
                     msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK):
             baseid = wxgui_api.get_tree_item_id(filename, selection[0])
 
-            roots = copypaste_api.paste_items_as_children(filename, baseid,
-                                                description='Paste sub-items')
+            roots, ids = copypaste_api.paste_items_as_children(filename,
+                                        baseid, description='Paste sub-items')
 
             for r in roots:
                 treeroot = wxgui_api.append_tree_item(filename, selection[0],
@@ -175,7 +175,7 @@ def paste_items_as_children(event, no_confirm=False):
 
             wxgui_api.refresh_history(filename)
 
-            items_pasted_event.signal(filename=filename)
+            items_pasted_event.signal(filename=filename, roots=roots, ids=ids)
 
     core_api.release_databases()
 

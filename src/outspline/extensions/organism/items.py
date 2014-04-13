@@ -18,7 +18,9 @@
 
 import json
 import time as _time
+import sqlite3
 
+from outspline.static.pyaux import timeaux
 from outspline.coreaux_api import log, Event
 import outspline.core_api as core_api
 
@@ -27,6 +29,7 @@ from exceptions import (BadOccurrenceError, BadExceptRuleError,
                                                    ConflictingRuleHandlerError)
 
 update_item_rules_conditional_event = Event()
+delete_item_rules_event = Event()
 get_alarms_event = Event()
 
 rule_handlers = {}
@@ -215,16 +218,15 @@ def install_rule_handler(rulename, handler):
 
 def insert_item(filename, id_, group, description='Insert item'):
     if filename in cdbs:
-        query_redo = queries.rules_insert.format(id_)
-        query_undo = queries.rules_delete_id.format(id_)
+        srules = rules_to_string([])
 
         qconn = core_api.get_connection(filename)
         cursor = qconn.cursor()
-        cursor.execute(query_redo, (rules_to_string([]), ))
+        cursor.execute(queries.rules_insert, (id_, srules, ))
         core_api.give_connection(filename, qconn)
 
         core_api.insert_history(filename, group, id_, 'rules_insert',
-                description, query_redo, rules_to_string([]), query_undo, None)
+                                                    description, srules, None)
 
 
 def update_item_rules(filename, id_, rules, group,
@@ -234,7 +236,8 @@ def update_item_rules(filename, id_, rules, group,
 
     # Note that update_item_rules_no_event can be called directly, thus not
     # signalling this event
-    update_item_rules_conditional_event.signal(filename=filename, id_=id_)
+    update_item_rules_conditional_event.signal(filename=filename, id_=id_,
+                                                                rules=rules)
 
 
 def update_item_rules_no_event(filename, id_, rules, group,
@@ -244,21 +247,19 @@ def update_item_rules_no_event(filename, id_, rules, group,
 
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
+
     cursor.execute(queries.rules_select_id, (id_, ))
     sel = cursor.fetchone()
 
     # The query should always return a result, so sel should never be None
     unrules = sel['R_rules']
 
-    query_redo = queries.rules_update_id.format(id_)
-    query_undo = queries.rules_update_id.format(id_)
-
-    cursor.execute(query_redo, (rules, ))
+    cursor.execute(queries.rules_update_id, (rules, id_))
 
     core_api.give_connection(filename, qconn)
 
     core_api.insert_history(filename, group, id_, 'rules_update', description,
-                            query_redo, rules, query_undo, unrules)
+                                                                rules, unrules)
 
 
 def copy_item_rules(filename, id_):
@@ -307,7 +308,8 @@ def paste_item_rules(filename, id_, oldid, group, description):
                                                             group, description)
 
 
-def delete_item_rules(filename, id_, group, description='Delete item rules'):
+def delete_item_rules(filename, id_, text, group,
+                                            description='Delete item rules'):
     if filename in cdbs:
         qconn = core_api.get_connection(filename)
         cursor = qconn.cursor()
@@ -318,15 +320,14 @@ def delete_item_rules(filename, id_, group, description='Delete item rules'):
         # The query should always return a result, so sel should never be None
         current_rules = sel['R_rules']
 
-        query_redo = queries.rules_delete_id.format(id_)
-        query_undo = queries.rules_insert.format(id_)
-
-        cursor.execute(query_redo)
+        cursor.execute(queries.rules_delete_id, (id_, ))
 
         core_api.give_connection(filename, qconn)
 
-        return core_api.insert_history(filename, group, id_, 'rules_delete',
-                      description, query_redo, None, query_undo, current_rules)
+        core_api.insert_history(filename, group, id_, 'rules_delete',
+                                            description, None, current_rules)
+
+        delete_item_rules_event.signal(filename=filename, id_=id_, text=text)
 
 
 def get_item_rules(filename, id_):
@@ -338,6 +339,16 @@ def get_item_rules(filename, id_):
 
     # The query should always return a result, so row should never be None
     return string_to_rules(row['R_rules'])
+
+
+def get_all_item_rules(filename):
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+    cursor.execute(queries.rules_select)
+    rows = cursor.fetchall()
+    core_api.give_connection(filename, qconn)
+
+    return rows
 
 
 def rules_to_string(rules):
@@ -353,15 +364,16 @@ def string_to_rules(string):
 
 def get_occurrences_range(mint, maxt):
     occs = OccurrencesRange(mint, maxt)
-
+    utcoffset = timeaux.UTCOffset()
+    utcmint = mint - utcoffset.compute(mint)
     search_start = (_time.time(), _time.clock())
 
     for filename in cdbs:
         for id_ in core_api.get_items_ids(filename):
             rules = get_item_rules(filename, id_)
             for rule in rules:
-                rule_handlers[rule['rule']](mint, maxt, filename, id_, rule,
-                                                                          occs)
+                rule_handlers[rule['rule']](mint, utcmint, maxt, utcoffset,
+                                                    filename, id_, rule, occs)
 
         # Get active alarms *after* all occurrences, to avoid except rules
         get_alarms_event.signal(mint=mint, maxt=maxt, filename=filename,
@@ -373,3 +385,24 @@ def get_occurrences_range(mint, maxt):
     # Note that the list is practically unsorted: sorting its items is a duty
     # of the interface
     return occs
+
+
+def handle_history_insert(filename, action, jparams, hid, type_, itemid):
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+    cursor.execute(queries.rules_insert, (itemid, jparams))
+    core_api.give_connection(filename, qconn)
+
+
+def handle_history_update(filename, action, jparams, hid, type_, itemid):
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+    cursor.execute(queries.rules_update_id, (jparams, itemid))
+    core_api.give_connection(filename, qconn)
+
+
+def handle_history_delete(filename, action, jparams, hid, type_, itemid):
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+    cursor.execute(queries.rules_delete_id, (itemid, ))
+    core_api.give_connection(filename, qconn)

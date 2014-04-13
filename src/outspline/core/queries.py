@@ -28,6 +28,9 @@ properties_select = 'SELECT * FROM Properties'
 properties_select_history = ('SELECT P_max_history FROM Properties '
                              'WHERE P_max_history IS NOT NULL LIMIT 1')
 
+properties_insert_dummy = ('INSERT INTO Properties (P_id, P_max_history) '
+                                                        'VALUES (NULL, NULL)')
+
 properties_insert_init = ('INSERT INTO Properties (P_id, P_max_history) '
                           'VALUES (NULL, ?)')
 
@@ -35,6 +38,8 @@ properties_insert_copy = ('INSERT INTO Properties (P_id, P_max_history) '
                           'VALUES (?, ?)')
 
 properties_delete = 'DELETE FROM Properties'
+
+properties_delete_dummy = 'DELETE FROM Properties WHERE P_max_history IS NULL'
 
 compatibility_create = ('CREATE TABLE CoMpatibility ('
                                                   'CM_id INTEGER PRIMARY KEY, '
@@ -84,14 +89,11 @@ items_select_parent = ('SELECT I_id, I_text FROM Items WHERE I_parent=? AND '
 items_select_search = 'SELECT I_id, I_text FROM Items'
 
 items_insert = ('INSERT INTO Items (I_id, I_parent, I_previous, I_text) '
-                'VALUES ({}, {}, {}, ?)')
+                'VALUES (?, ?, ?, ?)')
 
-items_insert_copy = ('INSERT INTO Items (I_id, I_parent, I_previous, I_text) '
-                     'VALUES (?, ?, ?, ?)')
+items_update_id = 'UPDATE Items SET {} WHERE I_id=?'
 
-items_update_id = 'UPDATE Items SET {} WHERE I_id={}'
-
-items_delete_id = 'DELETE FROM Items WHERE I_id={}'
+items_delete_id = 'DELETE FROM Items WHERE I_id=?'
 
 history_create = ("CREATE TABLE History (H_id INTEGER PRIMARY KEY, "
                                         "H_group INTEGER, "
@@ -100,21 +102,17 @@ history_create = ("CREATE TABLE History (H_id INTEGER PRIMARY KEY, "
                                         "H_type TEXT, "
                                         "H_description TEXT, "
                                         "H_redo TEXT, "
-                                        "H_redo_text TEXT, "
-                                        "H_undo TEXT, "
-                                        "H_undo_text TEXT)")
+                                        "H_undo TEXT)")
 
 history_select = ('SELECT * FROM History')
 
-# Do not change the index of H_undo [3] and H_undo_text [4]
-history_select_group_undo = ('SELECT H_id, H_item, H_type, H_undo, '
-                             'H_undo_text FROM History '
-                             'WHERE H_group=? ORDER BY H_id DESC')
+# Do not change the index of H_undo [3]
+history_select_group_undo = ('SELECT H_id, H_item, H_type, H_undo '
+                             'FROM History WHERE H_group=? ORDER BY H_id DESC')
 
-# Do not change the index of H_redo [3] and H_redo_text [4]
-history_select_group_redo = ('SELECT H_id, H_item, H_type, H_redo, '
-                             'H_redo_text FROM History '
-                             'WHERE H_group=? ORDER BY H_id ASC')
+# Do not change the index of H_redo [3]
+history_select_group_redo = ('SELECT H_id, H_item, H_type, H_redo '
+                             'FROM History WHERE H_group=? ORDER BY H_id ASC')
 
 history_select_status = ('SELECT H_status FROM History '
                          'WHERE H_status IN (0, 1, 3, 4) LIMIT 1')
@@ -141,13 +139,12 @@ history_select_select = ('SELECT H_id FROM History '
                          'ORDER BY H_group DESC LIMIT ?)')
 
 history_insert = ('INSERT INTO History (H_id, H_group, H_status, '
-                  'H_item, H_type, H_description, H_redo, H_redo_text, '
-                  'H_undo, H_undo_text) '
-                  'VALUES (NULL, ?, 1, ?, ?, ?, ?, ?, ?, ?)')
+                  'H_item, H_type, H_description, H_redo, H_undo) '
+                  'VALUES (NULL, ?, 1, ?, ?, ?, ?, ?)')
 
 history_insert_copy = ('INSERT INTO History (H_id, H_group, H_status, H_item, '
-                       'H_type, H_description, H_redo, H_redo_text, H_undo, '
-                       'H_undo_text) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+                       'H_type, H_description, H_redo, H_undo) '
+                       'VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
 
 history_update_status_new = ('UPDATE History SET H_status=5 '
                              'WHERE H_status IN (1, 3)')

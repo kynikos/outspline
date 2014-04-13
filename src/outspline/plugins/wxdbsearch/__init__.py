@@ -153,10 +153,10 @@ class SearchView():
         self.search_threaded_action = self._search_threaded_continue
         self.finish_search_action = self._finish_search_dummy
 
-        if self.filters.option5.GetValue():
-            flags = 0
-        else:
-            flags = re.IGNORECASE
+        flags = re.MULTILINE
+
+        if not self.filters.option5.GetValue():
+            flags |= re.IGNORECASE
 
         try:
             regexp = re.compile(string, flags)
@@ -328,11 +328,11 @@ class SearchFilters():
         label = wx.StaticText(mainview.panel, label='Search for:')
         sbox.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
-        self.text = wx.TextCtrl(mainview.panel, size=(-1, 24))
+        self.text = wx.TextCtrl(mainview.panel)
         sbox.Add(self.text, 1, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
-        self.search = wx.Button(mainview.panel, label='Search', size=(-1, 24))
+        self.search = wx.Button(mainview.panel, label='Search')
         sbox.Add(self.search, flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.box.Add(sbox, flag=wx.EXPAND | wx.BOTTOM, border=4)
@@ -533,7 +533,7 @@ class MainMenu(wx.Menu):
         wxgui_api.bind_to_reset_menu_items(self.reset_items)
 
         wxgui_api.insert_menu_main_item('&Search',
-                                    wxgui_api.get_menu_view_position(), self)
+                                    wxgui_api.get_menu_logs_position(), self)
 
     @staticmethod
     def get_selected_search():

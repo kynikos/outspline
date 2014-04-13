@@ -63,6 +63,13 @@ def open_db_incompatible(filename):
                             style=wx.OK | wx.ICON_EXCLAMATION)
 
 
+def open_db_locked(filename):
+    return wx.MessageDialog(wx.GetApp().root, '{} seems to be open by another '
+                            'instance of Outspline or a different application.'
+                            ''.format(filename), caption="Open database",
+                            style=wx.OK | wx.ICON_EXCLAMATION)
+
+
 def create_db_open(filename):
     return wx.MessageDialog(wx.GetApp().root, '{} seems to be open. '
                            'You cannot overwrite an open database.'

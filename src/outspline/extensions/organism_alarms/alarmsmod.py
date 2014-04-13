@@ -20,6 +20,7 @@ import time as _time
 import sqlite3
 
 from outspline.coreaux_api import Event
+import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 import outspline.extensions.organism_timer_api as organism_timer_api
 
@@ -31,13 +32,14 @@ alarm_off_event = Event()
 changes = {}
 dismiss_state = {}
 cdbs = set()
+tempcdbs = set()
 
 
 def get_snoozed_alarms(last_search, filename, occs):
     if filename in cdbs:
         conn = core_api.get_connection(filename)
         cur = conn.cursor()
-        cur.execute(queries.alarms_select_alarms)
+        cur.execute(queries.alarms_select)
         core_api.give_connection(filename, conn)
 
         for row in cur:
@@ -138,11 +140,12 @@ def activate_alarm(alarm):
         alarmid = alarm['alarmid']
         # Occurrence dictionaries store active alarms with False, not None
         if alarm['alarm']:
-            update_alarm(filename=alarm['filename'],
-                         alarmid=alarmid,
-                         # Note that here passing None is correct (do not pass
-                         # False)
-                         newalarm=None)
+            filename = alarm['filename']
+            qconn = core_api.get_connection(filename)
+            cursor = qconn.cursor()
+            # Note that here using None is correct (do not use False)
+            cursor.execute(queries.alarms_update_id, (None, alarmid))
+            core_api.give_connection(filename, qconn)
 
     alarm_event.signal(filename=alarm['filename'],
                        id_=alarm['id_'],
@@ -156,7 +159,7 @@ def get_alarms(mint, maxt, filename, occs):
     if filename in cdbs:
         conn = core_api.get_connection(filename)
         cur = conn.cursor()
-        cur.execute(queries.alarms_select_alarms)
+        cur.execute(queries.alarms_select)
         core_api.give_connection(filename, conn)
 
         for row in cur:
@@ -206,12 +209,20 @@ def snooze_alarms(alarmsd, stime):
     newalarm = ((int(_time.time()) + stime) // 60 + 1) * 60
 
     for filename in alarmsd:
-        for alarmid in alarmsd[filename]:
-            update_alarm(filename, alarmid, newalarm)
+        for id_ in alarmsd[filename]:
+            for alarmid in alarmsd[filename][id_]:
+                text = core_api.get_item_text(filename, id_)
 
-            # Signal the event after updating the database, so, for example,
-            # the tasklist can be correctly updated
-            alarm_off_event.signal(filename=filename, alarmid=alarmid)
+                qconn = core_api.get_connection(filename)
+                cursor = qconn.cursor()
+                cursor.execute(queries.alarms_update_id, (newalarm, alarmid))
+                cursor.execute(queries.alarmsofflog_insert, (id_, 0, text))
+                core_api.give_connection(filename, qconn)
+
+                # Signal the event after updating the database, so, for
+                # example, the tasklist can be correctly updated
+                alarm_off_event.signal(filename=filename, id_=id_,
+                                                            alarmid=alarmid)
 
     # Do not search occurrences (thus restarting the timer) inside the for
     # loop, otherwise it messes up with the wx.CallAfter() that manages the
@@ -221,23 +232,28 @@ def snooze_alarms(alarmsd, stime):
 
 def dismiss_alarms(alarmsd):
     for filename in alarmsd:
-        for alarmid in alarmsd[filename]:
-            qconn = core_api.get_connection(filename)
-            cursor = qconn.cursor()
-            cursor.execute(queries.alarms_delete_id, (alarmid, ))
-            core_api.give_connection(filename, qconn)
+        for id_ in alarmsd[filename]:
+            for alarmid in alarmsd[filename][id_]:
+                text = core_api.get_item_text(filename, id_)
 
-            # It's necessary to change the dismiss status, otherwise it's
-            # possible that a database is loaded and some of its alarms are
-            # activated: if at that point those alarms are dismissed and then
-            # the user tries to close the database, the database will seem
-            # unmodified, and won't ask to be saved
-            global dismiss_state
-            dismiss_state[filename] = True
+                qconn = core_api.get_connection(filename)
+                cursor = qconn.cursor()
+                cursor.execute(queries.alarms_delete_id, (alarmid, ))
+                cursor.execute(queries.alarmsofflog_insert, (id_, 1, text))
+                core_api.give_connection(filename, qconn)
 
-            # Signal the event after updating the database, so, for example,
-            # the tasklist can be correctly updated
-            alarm_off_event.signal(filename=filename, alarmid=alarmid)
+                # It's necessary to change the dismiss status, otherwise it's
+                # possible that a database is loaded and some of its alarms are
+                # activated: if at that point those alarms are dismissed and
+                # then the user tries to close the database, the database will
+                # seem unmodified, and won't ask to be saved
+                global dismiss_state
+                dismiss_state[filename] = True
+
+                # Signal the event after updating the database, so, for
+                # example, the tasklist can be correctly updated
+                alarm_off_event.signal(filename=filename, id_=id_,
+                                                            alarmid=alarmid)
 
 
 def insert_alarm(filename, id_, start, end, origalarm, snooze):
@@ -247,13 +263,6 @@ def insert_alarm(filename, id_, start, end, origalarm, snooze):
     core_api.give_connection(filename, conn)
     aid = cur.lastrowid
     return aid
-
-
-def update_alarm(filename, alarmid, newalarm):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.alarms_update_id, (newalarm, alarmid))
-    core_api.give_connection(filename, qconn)
 
 
 def copy_alarms(filename, id_):
@@ -298,39 +307,43 @@ def paste_alarms(filename, id_, oldid):
                          occ['CA_alarm'], occ['CA_snooze'])
 
 
-def delete_alarms(filename, id_, hid):
+def delete_alarms(filename, id_, text):
     if filename in cdbs:
         qconn = core_api.get_connection(filename)
         cursor = qconn.cursor()
-        cursor.execute(queries.alarms_update_id_delete, (hid, id_))
-        core_api.give_connection(filename, qconn)
+        cursor.execute(queries.alarms_delete_item, (id_, ))
 
-        # Signal the event after updating the database, so, for example,
-        # the tasklist can be correctly updated
-        alarm_off_event.signal(filename=filename, id_=id_)
+        if cursor.rowcount > 0:
+            # Also store the text, otherwise it won't be possible to retrieve
+            # it, since the item has been deleted
+            cursor.execute(queries.alarmsofflog_insert, (id_, 2, text))
+            core_api.give_connection(filename, qconn)
 
-
-def undelete_alarms(filename, id_, hid):
-    if filename in cdbs:
-        qconn = core_api.get_connection(filename)
-        cursor = qconn.cursor()
-        cursor.execute(queries.alarms_update_id_undelete, (id_, hid))
-        core_api.give_connection(filename, qconn)
-
-
-def clean_deleted_alarms(filename):
-    if filename in cdbs:
-        qconn = core_api.get_connection(filename)
-        cursor = qconn.cursor()
-        cursor.execute(queries.alarms_delete_clean)
-        core_api.give_connection(filename, qconn)
+            # Signal the event after updating the database, so, for example,
+            # the tasklist can be correctly updated
+            alarm_off_event.signal(filename=filename, id_=id_)
+        else:
+            core_api.give_connection(filename, qconn)
 
 
-def clean_old_history_alarms(filename, hids):
-    if filename in cdbs:
+def select_alarms_log(filename):
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+    cursor.execute(queries.alarmsofflog_select_order)
+    core_api.give_connection(filename, qconn)
+
+    return cursor
+
+
+def clean_alarms_log(filename):
+    LIMIT = coreaux_api.get_extension_configuration('organism_alarms'
+                                                ).get_int('default_log_limit')
+
+    # filename has already been deleted from cdbs, use tempcdbs instead
+    if filename in tempcdbs:
         qconn = sqlite3.connect(filename)
         cursor = qconn.cursor()
-        for hid in hids:
-            cursor.execute(queries.alarms_delete_clean_soft, (hid[0], ))
+        cursor.execute(queries.alarmsofflog_delete_clean, (LIMIT, ))
         qconn.commit()
         qconn.close()
+        tempcdbs.discard(filename)

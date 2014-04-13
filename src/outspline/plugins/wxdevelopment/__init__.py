@@ -19,6 +19,7 @@
 import os as _os
 import random
 import wx
+import wx.lib.inspection
 
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
@@ -47,16 +48,18 @@ class MenuDev(wx.Menu):
         wx.Menu.__init__(self)
 
         # Initialize self.ID_PRINT so it can be destroyed at the beginning of
-        # self.handle_reset_menu_items
+        # self.reset_print_menu
         self.ID_PRINT = wx.NewId()
         self.PrependItem(wx.MenuItem(self, self.ID_PRINT, "INIT"))
 
+        self.inspection = self.Append(wx.NewId(), "&Inspection tool")
         self.populate = self.Append(wx.NewId(), "&Populate database")
         self.simulator = self.AppendCheckItem(wx.NewId(), "&Run simulator")
 
         wxgui_api.insert_menu_main_item('Develo&pment',
                                     wxgui_api.get_menu_help_position(), self)
 
+        wxgui_api.bind_to_menu(self.show_inspection_tool, self.inspection)
         wxgui_api.bind_to_menu(self.populate_tree, self.populate)
         wxgui_api.bind_to_menu(self.toggle_simulator, self.simulator)
 
@@ -163,6 +166,9 @@ class MenuDev(wx.Menu):
         development_api.print_all_tables(filename)
         core_api.release_databases()
 
+    def show_inspection_tool(self, event):
+        wx.lib.inspection.InspectionTool().Show()
+
     def populate_tree(self, event):
         core_api.block_databases()
         filename = wxgui_api.get_selected_database_filename()
@@ -194,13 +200,14 @@ class MenuDev(wx.Menu):
                 id_ = self._populate_tree_item(mode, filename, itemid,
                                                 group, text, description)
 
+                self._populate_tree_gui(mode, filename, itemid, id_, text)
+
+                # Rules must be created *after* self._populate_tree_gui
                 if organism_api and wxscheduler_basicrules_api and \
                         filename in \
                         organism_api.get_supported_open_databases():
                     self._populate_tree_rules(filename, id_, group,
                                                         description)
-
-                self._populate_tree_gui(mode, filename, itemid, id_, text)
 
                 # Links must be created *after* self._populate_tree_gui
                 if links_api and wxlinks_api and len(dbitems) > 0 and \
@@ -300,7 +307,6 @@ class MenuDev(wx.Menu):
             # *before* the new item was appended
             target = random.choice(dbitems)
             links_api.make_link(filename, id_, target, group, description)
-            wxlinks_api.update_items_formatting(filename)
 
     def _populate_tree_gui(self, mode, filename, itemid, id_, text):
         if mode == 'child':

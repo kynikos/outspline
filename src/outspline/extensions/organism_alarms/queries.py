@@ -17,7 +17,6 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 alarms_create = ("CREATE TABLE Alarms (A_id INTEGER PRIMARY KEY, "
-                                      "A_del_id INTEGER, "
                                       "A_item INTEGER, "
                                       "A_start INTEGER, "
                                       "A_end INTEGER, "
@@ -26,34 +25,23 @@ alarms_create = ("CREATE TABLE Alarms (A_id INTEGER PRIMARY KEY, "
 
 alarms_select = 'SELECT * FROM Alarms'
 
-alarms_select_alarms = ('SELECT A_id, A_item, A_start, A_end, A_alarm, '
-                        'A_snooze FROM Alarms WHERE A_del_id IS NULL')
-
 alarms_select_item = ('SELECT A_id, A_start, A_end, A_alarm, A_snooze '
-                      'FROM Alarms WHERE A_item=? AND A_del_id IS NULL')
+                                                'FROM Alarms WHERE A_item=?')
 
 alarms_select_count = ('SELECT COUNT(*) AS A_active_alarms FROM Alarms '
-                                'WHERE A_del_id IS NULL AND A_snooze IS NULL')
+                                                    'WHERE A_snooze IS NULL')
 
-alarms_insert = ('INSERT INTO Alarms (A_id, A_del_id, A_item, A_start, A_end, '
-                 'A_alarm, A_snooze) VALUES (NULL, NULL, ?, ?, ?, ?, ?)')
+alarms_insert = ('INSERT INTO Alarms (A_id, A_item, A_start, A_end, A_alarm, '
+                                    'A_snooze) VALUES (NULL, ?, ?, ?, ?, ?)')
 
-alarms_insert_copy = ('INSERT INTO Alarms (A_id, A_del_id, A_item, A_start, '
-                      'A_end, A_alarm, A_snooze) VALUES (?, ?, ?, ?, ?, ?, ?)')
+alarms_insert_copy = ('INSERT INTO Alarms (A_id, A_item, A_start, A_end, '
+                                'A_alarm, A_snooze) VALUES (?, ?, ?, ?, ?, ?)')
 
 alarms_update_id = 'UPDATE Alarms SET A_snooze=? WHERE A_id=?'
 
-alarms_update_id_delete = ('UPDATE Alarms SET A_del_id=? '
-                           'WHERE A_item=? AND A_del_id IS NULL')
-
-alarms_update_id_undelete = ('UPDATE Alarms SET A_del_id=NULL '
-                             'WHERE A_item=? AND A_del_id=?')
-
 alarms_delete_id = 'DELETE FROM Alarms WHERE A_id=?'
 
-alarms_delete_clean_soft = 'DELETE FROM Alarms WHERE A_del_id=?'
-
-alarms_delete_clean = 'DELETE FROM Alarms WHERE A_del_id IS NOT NULL'
+alarms_delete_item = 'DELETE FROM Alarms WHERE A_item=?'
 
 copyalarms_create = ("CREATE TABLE CopyAlarms (CA_id INTEGER, "
                                               "CA_item INTEGER, "
@@ -71,3 +59,27 @@ copyalarms_insert = ('INSERT INTO CopyAlarms (CA_id, CA_item, CA_start, '
                      'CA_end, CA_alarm, CA_snooze) VALUES (?, ?, ?, ?, ?, ?)')
 
 copyalarms_delete = 'DELETE FROM CopyAlarms'
+
+alarmsofflog_create = ("CREATE TABLE AlarmsOffLog ("
+                                                "AOL_id INTEGER PRIMARY KEY, "
+                                                "AOL_item INTEGER, "
+                                                "AOL_tstamp INTEGER, "
+                                                "AOL_reason INTEGER, "
+                                                "AOL_text TEXT)")
+
+alarmsofflog_select = 'SELECT * FROM AlarmsOffLog'
+
+alarmsofflog_select_order = ('SELECT * FROM AlarmsOffLog '
+                                                    'ORDER BY AOL_tstamp DESC')
+
+alarmsofflog_insert = ('INSERT INTO AlarmsOffLog (AOL_id, AOL_item, '
+                            'AOL_tstamp, AOL_reason, AOL_text) '
+                            'VALUES (NULL, ?, strftime("%s", "now"), ?, ?)')
+
+alarmsofflog_insert_copy = ('INSERT INTO AlarmsOffLog (AOL_id, AOL_item, '
+                    'AOL_tstamp, AOL_reason, AOL_text) VALUES (?, ?, ?, ?, ?)')
+
+# DELETE FROM AlarmsOffLog ORDER BY AOL_tstamp DESC LIMIT -1 OFFSET ?
+alarmsofflog_delete_clean = ('DELETE FROM AlarmsOffLog '
+                        'WHERE AOL_id NOT IN (SELECT AOL_id FROM AlarmsOffLog '
+                        'ORDER BY AOL_tstamp DESC LIMIT ?)')

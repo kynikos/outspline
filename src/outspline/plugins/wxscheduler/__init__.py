@@ -21,8 +21,11 @@ import wx
 from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin
 
 from outspline.coreaux_api import Event
+import outspline.coreaux_api as coreaux_api
+import outspline.core_api as core_api
 import outspline.extensions.organism_api as organism_api
 import outspline.interfaces.wxgui_api as wxgui_api
+wxcopypaste_api = coreaux_api.import_optional_plugin_api('wxcopypaste')
 
 init_rules_list_event = Event()
 insert_rule_event = Event()
@@ -31,7 +34,53 @@ edit_rule_event = Event()
 choose_rule_event = Event()
 check_editor_event = Event()
 
-items = {}
+base = None
+
+
+class Main(object):
+    def __init__(self):
+        self.items = {}
+        self.itemicons = {}
+
+        wxgui_api.bind_to_creating_tree(self._handle_creating_tree)
+        wxgui_api.bind_to_close_database(self._handle_close_database)
+        wxgui_api.bind_to_open_editor(self._handle_open_editor)
+        wxgui_api.bind_to_close_editor(self._handle_close_editor)
+
+    def _handle_creating_tree(self, kwargs):
+        filename = kwargs['filename']
+
+        if filename in organism_api.get_supported_open_databases():
+            self.itemicons[filename] = TreeItemIcons(filename)
+
+    def _handle_close_database(self, kwargs):
+        try:
+            del self.itemicons[kwargs['filename']]
+        except KeyError:
+            pass
+
+    def _handle_open_editor(self, kwargs):
+        filename = kwargs['filename']
+
+        if filename in organism_api.get_supported_open_databases():
+            id_ = kwargs['id_']
+            itemid = self._make_itemid(filename, id_)
+            self.items[itemid] = Scheduler(filename, id_)
+            self.items[itemid].post_init()
+
+    def _handle_close_editor(self, kwargs):
+        itemid = self._make_itemid(kwargs['filename'], kwargs['id_'])
+
+        try:
+            del self.items[itemid]
+        except KeyError:
+            pass
+
+    def get_scheduler(self, filename, id_):
+        return self.items[self._make_itemid(filename, id_)]
+
+    def _make_itemid(self, filename, id_):
+        return '_'.join((filename, str(id_)))
 
 
 class Scheduler():
@@ -92,10 +141,6 @@ class Scheduler():
         self.rule_editor.panel.Show()
         self.resize()
 
-    @staticmethod
-    def make_itemid(filename, id_):
-        return '_'.join((filename, str(id_)))
-
 
 class RuleList():
     parent = None
@@ -126,7 +171,7 @@ class RuleList():
         # up and down
         # Initialize with a small size so that it will expand properly in the
         # sizer
-        self.listview = wx.ListView(self.panel, size=(10, 10),
+        self.listview = wx.ListView(self.panel, size=(1, 1),
                     style=wx.LC_REPORT | wx.LC_NO_HEADER | wx.LC_SINGLE_SEL)
         self.listview.InsertColumn(0, 'Rules')
         hbox.Add(self.listview, 1, flag=wx.EXPAND | wx.RIGHT, border=4)
@@ -137,26 +182,21 @@ class RuleList():
 
         pgrid = wx.GridSizer(3, 2, 4, 4)
 
-        self.button_up = wx.Button(self.panel, label='Move up', size=(-1, 24),
-                                                            style=wx.BU_LEFT)
+        self.button_up = wx.Button(self.panel, label='Move up')
         pgrid.Add(self.button_up)
 
         pgrid.AddSpacer(1)
 
-        self.button_remove = wx.Button(self.panel, label='Remove',
-                                            size=(-1, 24), style=wx.BU_LEFT)
+        self.button_remove = wx.Button(self.panel, label='Remove')
         pgrid.Add(self.button_remove)
 
-        self.button_add = wx.Button(self.panel, label='Add...', size=(-1, 24),
-                                                            style=wx.BU_LEFT)
+        self.button_add = wx.Button(self.panel, label='Add...')
         pgrid.Add(self.button_add)
 
-        self.button_down = wx.Button(self.panel, label='Move down',
-                                            size=(-1, 24), style=wx.BU_LEFT)
+        self.button_down = wx.Button(self.panel, label='Move down')
         pgrid.Add(self.button_down)
 
-        self.button_edit = wx.Button(self.panel, label='Edit...',
-                                            size=(-1, 24), style=wx.BU_LEFT)
+        self.button_edit = wx.Button(self.panel, label='Edit...')
         pgrid.Add(self.button_edit)
 
         self.update_buttons()
@@ -171,7 +211,6 @@ class RuleList():
 
         self.listview.Bind(wx.EVT_LIST_ITEM_SELECTED, self._update_buttons)
         self.listview.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._update_buttons)
-        self.listview.Bind(wx.EVT_LIST_DELETE_ITEM, self._update_buttons)
 
         wxgui_api.bind_to_apply_editor(self.handle_apply)
         wxgui_api.bind_to_check_editor_modified_state(
@@ -261,6 +300,18 @@ class RuleList():
             self.listview.SetColumnWidth(0, wx.LIST_AUTOSIZE)
             del self.rules[index]
 
+            count = self.listview.GetItemCount()
+
+            if count > index:
+                self.listview.Select(index)
+            elif count > 0:
+                self.listview.Select(count - 1)
+
+            # Do not update the buttons on EVT_LIST_DELETE_ITEM because
+            # GetSelectedItemCount would still return > 0 and the buttons would
+            # be left enabled
+            self.update_buttons()
+
     def move_rule_up(self, event):
         index = self.listview.GetFirstSelected()
 
@@ -330,13 +381,13 @@ class RuleEditor():
         mbox2 = wx.BoxSizer(wx.HORIZONTAL)
         mbox.Add(mbox2, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.choice = wx.Choice(self.panel, size=(-1, 24), choices=())
-        mbox2.Add(self.choice, 1, flag=wx.EXPAND)
+        self.choice = wx.Choice(self.panel, choices=())
+        mbox2.Add(self.choice, 1, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        button_cancel = wx.Button(self.panel, label='Cancel', size=(60, 24))
+        button_cancel = wx.Button(self.panel, label='Cancel')
         mbox2.Add(button_cancel, flag=wx.LEFT | wx.RIGHT, border=4)
 
-        button_ok = wx.Button(self.panel, label='OK', size=(60, 24))
+        button_ok = wx.Button(self.panel, label='OK')
         mbox2.Add(button_ok)
 
         self.scwindow = wx.ScrolledWindow(self.panel, style=wx.BORDER_NONE)
@@ -352,7 +403,7 @@ class RuleEditor():
     def post_init(self):
         self.choice.SetSelection(0)
 
-    def display_rule(self, description, rule):
+    def display_rule(self, rule, description):
         self.choice.Append(description, clientData=rule)
 
     def select_rule(self, interface_name):
@@ -397,18 +448,70 @@ class RuleEditor():
         self.parent.show_list()
 
 
-def handle_open_editor(kwargs):
-    filename = kwargs['filename']
-    id_ = kwargs['id_']
+class TreeItemIcons(object):
+    def __init__(self, filename):
+        self.filename = filename
 
-    if filename in organism_api.get_supported_open_databases():
-        itemid = Scheduler.make_itemid(filename, id_)
+        config = coreaux_api.get_plugin_configuration('wxscheduler')
+        char = config['icon_rules']
 
-        global items
-        items[itemid] = Scheduler(filename, id_)
+        if char != '':
+            bits_to_colour = {1: wx.Colour()}
+            bits_to_colour[1].SetFromString(config['icon_rules_color'])
 
-        items[itemid].post_init()
+            self.property_shift, self.property_mask = \
+                                            wxgui_api.add_item_property(
+                                            filename, 1, char, bits_to_colour)
+
+            organism_api.bind_to_update_item_rules_conditional(
+                                                    self._handle_update_rules)
+
+            wxgui_api.bind_to_open_database(self._handle_open_database)
+            wxgui_api.bind_to_undo_tree(self._handle_history)
+            wxgui_api.bind_to_redo_tree(self._handle_history)
+
+            if wxcopypaste_api:
+                wxcopypaste_api.bind_to_items_pasted(self._handle_paste)
+
+    def _handle_open_database(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            self._update_all_items()
+
+    def _handle_update_rules(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            self._update_item(kwargs['id_'], kwargs['rules'])
+
+    def _handle_history(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            for id_ in kwargs['items']:
+                # The history action may have deleted the item
+                if core_api.is_item(self.filename, id_):
+                    rules = organism_api.get_item_rules(self.filename, id_)
+                    self._update_item(id_, rules)
+
+    def _handle_paste(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            for id_ in kwargs['ids']:
+                rules = organism_api.get_item_rules(self.filename, id_)
+                self._update_item(id_, rules)
+
+    def _update_all_items(self):
+        itemrules = organism_api.get_all_item_rules(self.filename)
+
+        for id_ in itemrules:
+            self._update_item(id_, itemrules[id_])
+
+    def _update_item(self, id_, rules):
+        if len(rules) > 0:
+            bits = 1 << self.property_shift
+        else:
+            bits = 0 << self.property_shift
+
+        wxgui_api.update_item_properties(self.filename, id_, bits,
+                                                            self.property_mask)
+        wxgui_api.update_item_image(self.filename, id_)
 
 
 def main():
-    wxgui_api.bind_to_open_editor(handle_open_editor)
+    global base
+    base = Main()

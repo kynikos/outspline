@@ -48,10 +48,22 @@ def handle_create_database(kwargs):
 def handle_open_database_dirty(kwargs):
     info = coreaux_api.get_addons_info()
     dependencies = info(_ADDON_NAME[0])(_ADDON_NAME[1]
-                                     )['database_dependency_group_1'].split(' ')
+                                    )['database_dependency_group_1'].split(' ')
 
     if not set(dependencies) - set(kwargs['dependencies']):
         items.cdbs.add(kwargs['filename'])
+
+
+def handle_open_database(kwargs):
+    filename = kwargs['filename']
+
+    if filename in items.cdbs:
+        core_api.register_history_action_handlers(filename, 'rules_insert',
+                    items.handle_history_insert, items.handle_history_delete)
+        core_api.register_history_action_handlers(filename, 'rules_update',
+                    items.handle_history_update, items.handle_history_update)
+        core_api.register_history_action_handlers(filename, 'rules_delete',
+                    items.handle_history_delete, items.handle_history_insert)
 
 
 def handle_save_database_copy(kwargs):
@@ -63,7 +75,7 @@ def handle_save_database_copy(kwargs):
 
         cur.execute(queries.rules_select)
         for row in cur:
-            curd.execute(queries.rules_insert_copy, tuple(row))
+            curd.execute(queries.rules_insert, tuple(row))
 
         core_api.give_connection(kwargs['origin'], qconn)
 
@@ -77,12 +89,12 @@ def handle_close_database(kwargs):
 
 def handle_insert_item(kwargs):
     items.insert_item(kwargs['filename'], kwargs['id_'], kwargs['group'],
-                                                          kwargs['description'])
+                                                        kwargs['description'])
 
 
 def handle_delete_item(kwargs):
-    items.delete_item_rules(kwargs['filename'], kwargs['id_'], kwargs['group'],
-                                                          kwargs['description'])
+    items.delete_item_rules(kwargs['filename'], kwargs['id_'], kwargs['text'],
+                                        kwargs['group'], kwargs['description'])
 
 
 def handle_copy_items(kwargs):
@@ -100,7 +112,7 @@ def handle_copy_item(kwargs):
 
 def handle_paste_item(kwargs):
     items.paste_item_rules(kwargs['filename'], kwargs['id_'], kwargs['oldid'],
-                                         kwargs['group'], kwargs['description'])
+                                        kwargs['group'], kwargs['description'])
 
 
 def handle_safe_paste_check(kwargs):
@@ -112,6 +124,7 @@ def main():
 
     core_api.bind_to_create_database(handle_create_database)
     core_api.bind_to_open_database_dirty(handle_open_database_dirty)
+    core_api.bind_to_open_database(handle_open_database)
     core_api.bind_to_save_database_copy(handle_save_database_copy)
     core_api.bind_to_close_database(handle_close_database)
     core_api.bind_to_insert_item(handle_insert_item)

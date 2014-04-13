@@ -26,7 +26,7 @@ import art
 import menubar
 import notebooks
 import msgboxes
-import history
+import logs
 
 config = coreaux_api.get_interface_configuration('wxgui')
 
@@ -41,6 +41,7 @@ _ROOT_MIN_SIZE = (600, 408)
 class GUI(wx.App):
     MAIN_ICON_BUNDLE = None
     root = None
+    logs_configuration = None
     menu = None
     nb_left = None
     nb_right = None
@@ -69,6 +70,7 @@ class GUI(wx.App):
                                                              wx.ART_OTHER))
 
         self.root = MainFrame()
+        self.logs_configuration = logs.LogsConfiguration()
 
         self.menu = self.root.menu
         self.nb_left = self.root.mainpanes.nb_left
@@ -93,7 +95,8 @@ class GUI(wx.App):
         # else: event.Veto() doesn't work here
 
     def export_options(self):
-        config['show_history'] = 'yes' if history.is_shown() else 'no'
+        config['show_logs'] = 'yes' if \
+                                self.logs_configuration.is_shown() else 'no'
         config.export_upgrade(coreaux_api.get_user_config_file())
 
     def handle_uncaught_exception(self, kwargs):

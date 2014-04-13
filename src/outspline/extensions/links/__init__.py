@@ -54,6 +54,28 @@ def handle_open_database_dirty(kwargs):
         links.cdbs.add(kwargs['filename'])
 
 
+def handle_open_database(kwargs):
+    filename = kwargs['filename']
+
+    if filename in links.cdbs:
+        links.last_known_links[filename] = {}
+
+        qconn = core_api.get_connection(filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.links_select)
+        core_api.give_connection(filename, qconn)
+
+        for row in cursor:
+            links.last_known_links[filename][row['L_id']] = row['L_target']
+
+        core_api.register_history_action_handlers(filename, 'link_insert',
+                    links.handle_history_insert, links.handle_history_delete)
+        core_api.register_history_action_handlers(filename, 'link_update',
+                    links.handle_history_update, links.handle_history_update)
+        core_api.register_history_action_handlers(filename, 'link_delete',
+                    links.handle_history_delete, links.handle_history_insert)
+
+
 def handle_save_database_copy(kwargs):
     if kwargs['origin'] in links.cdbs:
         qconn = core_api.get_connection(kwargs['origin'])
@@ -63,7 +85,8 @@ def handle_save_database_copy(kwargs):
 
         cur.execute(queries.links_select)
         for row in cur:
-            curd.execute(queries.links_insert_copy, tuple(row))
+            do_insert_link(kwargs['destination'], curd, row['L_id'],
+                                                            row['L_target'])
 
         core_api.give_connection(kwargs['origin'], qconn)
 
@@ -72,6 +95,11 @@ def handle_save_database_copy(kwargs):
 
 
 def handle_close_database(kwargs):
+    try:
+        del links.last_known_links[kwargs['filename']]
+    except KeyError:
+        pass
+
     links.cdbs.discard(kwargs['filename'])
 
 
@@ -134,6 +162,7 @@ def main():
 
     core_api.bind_to_create_database(handle_create_database)
     core_api.bind_to_open_database_dirty(handle_open_database_dirty)
+    core_api.bind_to_open_database(handle_open_database)
     core_api.bind_to_save_database_copy(handle_save_database_copy)
     core_api.bind_to_close_database(handle_close_database)
     core_api.bind_to_delete_item(handle_delete_item)

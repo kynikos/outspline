@@ -216,7 +216,7 @@ class Editor():
         apply_editor_event.signal(filename=self.filename, id_=self.id_,
                                     group=group, description=description)
 
-        tree.dbs[self.filename].history.refresh()
+        tree.dbs[self.filename].dbhistory.refresh()
 
     def set_modified(self):
         self.modstate = True

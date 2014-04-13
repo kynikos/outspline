@@ -23,13 +23,11 @@ rules_select = 'SELECT * FROM Rules'
 
 rules_select_id = 'SELECT R_rules FROM Rules WHERE R_id=? LIMIT 1'
 
-rules_insert = 'INSERT INTO Rules (R_id, R_rules) VALUES ({}, ?)'
+rules_insert = 'INSERT INTO Rules (R_id, R_rules) VALUES (?, ?)'
 
-rules_insert_copy = 'INSERT INTO Rules (R_id, R_rules) VALUES (?, ?)'
+rules_update_id = 'UPDATE Rules SET R_rules=? WHERE R_id=?'
 
-rules_update_id = 'UPDATE Rules SET R_rules=? WHERE R_id={}'
-
-rules_delete_id = 'DELETE FROM Rules WHERE R_id={}'
+rules_delete_id = 'DELETE FROM Rules WHERE R_id=?'
 
 copyrules_create = ("CREATE TABLE CopyRules (CR_id INTEGER, "
                                             "CR_rules TEXT)")

@@ -19,7 +19,7 @@
 from core import databases, items, history, queries
 from core.exceptions import (AccessDeniedError, DatabaseAlreadyOpenError,
                              DatabaseNotAccessibleError, DatabaseNotValidError,
-                             CannotMoveItemError)
+                             DatabaseLocked, CannotMoveItemError)
 
 
 def get_memory_connection():
@@ -64,14 +64,14 @@ def exit_():
 
 def create_child(filename, baseid, text='New item',
                  description='Create child'):
-    group = databases.dbs[filename].get_next_history_group()
+    group = databases.dbs[filename].dbhistory.get_next_history_group()
     return items.Item.insert(filename=filename, mode='child', baseid=baseid,
                              group=group, text=text, description=description)
 
 
 def create_sibling(filename, baseid, text='New item',
                    description='Create sibling'):
-    group = databases.dbs[filename].get_next_history_group()
+    group = databases.dbs[filename].dbhistory.get_next_history_group()
     return items.Item.insert(filename=filename, mode='sibling', baseid=baseid,
                              group=group, text=text, description=description)
 
@@ -79,7 +79,7 @@ def create_sibling(filename, baseid, text='New item',
 def append_item(filename, baseid, group=None, text='New item',
                 description='Insert item'):
     if group == None:
-        group = databases.dbs[filename].get_next_history_group()
+        group = databases.dbs[filename].dbhistory.get_next_history_group()
     return items.Item.insert(filename=filename, mode='child', baseid=baseid,
                              group=group, text=text, description=description)
 
@@ -87,13 +87,13 @@ def append_item(filename, baseid, group=None, text='New item',
 def insert_item_after(filename, baseid, group=None, text='New item',
                       description='Insert item'):
     if group == None:
-        group = databases.dbs[filename].get_next_history_group()
+        group = databases.dbs[filename].dbhistory.get_next_history_group()
     return items.Item.insert(filename=filename, mode='sibling', baseid=baseid,
                              group=group, text=text, description=description)
 
 
 def move_item_up(filename, id_, description='Move item up'):
-    group = databases.dbs[filename].get_next_history_group()
+    group = databases.dbs[filename].dbhistory.get_next_history_group()
     try:
         return databases.dbs[filename].items[id_].shift(mode='up', group=group,
                                                     description=description)
@@ -102,7 +102,7 @@ def move_item_up(filename, id_, description='Move item up'):
 
 
 def move_item_down(filename, id_, description='Move item down'):
-    group = databases.dbs[filename].get_next_history_group()
+    group = databases.dbs[filename].dbhistory.get_next_history_group()
     try:
         return databases.dbs[filename].items[id_].shift(mode='down',
                                         group=group, description=description)
@@ -111,7 +111,7 @@ def move_item_down(filename, id_, description='Move item down'):
 
 
 def move_item_to_parent(filename, id_, description='Move item to parent'):
-    group = databases.dbs[filename].get_next_history_group()
+    group = databases.dbs[filename].dbhistory.get_next_history_group()
     try:
         return databases.dbs[filename].items[id_].shift(mode='parent',
                                         group=group, description=description)
@@ -122,7 +122,7 @@ def move_item_to_parent(filename, id_, description='Move item to parent'):
 def update_item_text(filename, id_, text, group=None,
                      description='Update item text'):
     if group == None:
-        group = databases.dbs[filename].get_next_history_group()
+        group = databases.dbs[filename].dbhistory.get_next_history_group()
     return databases.dbs[filename].items[id_].update(group,
                                             description=description, text=text)
 
@@ -130,69 +130,70 @@ def update_item_text(filename, id_, text, group=None,
 def update_item_text_no_event(filename, id_, text, group=None,
                                             description='Update item text'):
     if group == None:
-        group = databases.dbs[filename].get_next_history_group()
+        group = databases.dbs[filename].dbhistory.get_next_history_group()
     return databases.dbs[filename].items[id_].update_no_event(group,
                                             description=description, text=text)
 
 
+def register_history_action_handlers(filename, name, redo_handler,
+                                                                undo_handler):
+    return databases.dbs[filename].dbhistory.register_action_handlers(name,
+                                                    redo_handler, undo_handler)
+
+
 def insert_history(filename, group, id_, type, description, query_redo,
-                   text_redo, query_undo, text_undo):
-    qconn = databases.dbs[filename].connection.get()
-    cur = qconn.cursor()
-    cur.execute(queries.history_insert, (group, id_, type, description,
-                                         query_redo, text_redo,
-                                         query_undo, text_undo))
-    databases.dbs[filename].connection.give(qconn)
-    return cur.lastrowid
+                                                                query_undo):
+    return databases.dbs[filename].dbhistory.insert_history(group, id_, type,
+                                        description, query_redo, query_undo)
 
 
 def preview_undo_tree(filename):
-    read = databases.dbs[filename].read_history('undo')
+    read = databases.dbs[filename].dbhistory.read_history_undo()
     if read:
-        items = []
+        items = set()
         for row in read['history']:
-            items.append(row['H_item'])
+            items.add(row['H_item'])
         return items
     else:
         return False
 
 
 def preview_redo_tree(filename):
-    read = databases.dbs[filename].read_history('redo')
+    read = databases.dbs[filename].dbhistory.read_history_redo()
     if read:
-        items = []
+        items = set()
         for row in read['history']:
-            items.append(row['H_item'])
+            items.add(row['H_item'])
         return items
     else:
         return False
 
 
 def undo_tree(filename):
-    return databases.dbs[filename].do_history('undo')
+    return databases.dbs[filename].dbhistory.undo_history()
 
 
 def redo_tree(filename):
-    return databases.dbs[filename].do_history('redo')
+    return databases.dbs[filename].dbhistory.redo_history()
 
 
 def delete_items(filename, ditems, group=None, description='Delete items'):
     if group == None:
-        group = databases.dbs[filename].get_next_history_group()
+        group = databases.dbs[filename].dbhistory.get_next_history_group()
     return databases.dbs[filename].delete_items(ditems, group=group,
                                                description=description)
 
 
 def get_next_history_group(filename):
-    return databases.dbs[filename].get_next_history_group()
+    return databases.dbs[filename].dbhistory.get_next_history_group()
 
 
 def check_pending_changes(filename):
-    return databases.dbs[filename].check_pending_changes()
+    return databases.dbs[filename].dbhistory.check_pending_changes()
 
 
 def set_modified(filename):
-    return databases.dbs[filename].set_modified()
+    return databases.dbs[filename].dbhistory.set_modified()
 
 
 def is_item(filename, id_):
@@ -231,7 +232,7 @@ def get_all_items_text(filename):
 
 
 def get_history_descriptions(filename):
-    return databases.dbs[filename].get_history_descriptions()
+    return databases.dbs[filename].dbhistory.get_history_descriptions()
 
 
 def select_all_memory_table_names():
@@ -323,11 +324,7 @@ def bind_to_history_update(handler, bind=True):
 
 
 def bind_to_history_remove(handler, bind=True):
-    return history.history_remove_event.bind(handler, bind)
-
-
-def bind_to_history_other(handler, bind=True):
-    return history.history_other_event.bind(handler, bind)
+    return history.history_delete_event.bind(handler, bind)
 
 
 def bind_to_check_pending_changes(handler, bind=True):
@@ -340,10 +337,6 @@ def bind_to_reset_modified_state(handler, bind=True):
 
 def bind_to_history_clean(handler, bind=True):
     return history.history_clean_event.bind(handler, bind)
-
-
-def bind_to_history_clean_groups(handler, bind=True):
-    return history.history_clean_groups_event.bind(handler, bind)
 
 
 def bind_to_exit_app_1(handler, bind=True):

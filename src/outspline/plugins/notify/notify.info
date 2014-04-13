@@ -1,10 +1,9 @@
 author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.3
+version = 0.4
 description = Shows a desktop notification whenever an item occurrence alarm is activated.
 website = https://github.com/kynikos/outspline/
 affects_database = no
 provides_tables =
-provides_history_actions =
 dependency_1 = core 0
 dependency_2 = extensions.organism_alarms 0
 optional_dependency_1 = interfaces.wxgui 0
