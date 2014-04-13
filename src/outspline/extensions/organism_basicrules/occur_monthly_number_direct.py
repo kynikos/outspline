@@ -68,19 +68,32 @@ def make_rule(months, day, hour, minute, rend, ralarm, standard, guiconfig):
         #else:
         #    nmonths.extend([nmonths[0], ] * (12 - len(nmonths)))
 
-        srend = max(rend, 0)
+        # Calculate the shortest time difference with the end of a month
+        #  (consider 27 days to make up for possible DST or time zone changes:
+        #  for this reason diff may be negative; the number 28 is due to the
+        #  fact that 1 must be re-added because day starts from 1, not 0)
+        diff = (28 - day) * 86400 - hour * 3600 - minute * 60
+        diffs = max(diff, 0)
 
-        if ralarm is None:
-            span = srend
-        elif ralarm >= 0:
-            span = srend + ralarm
+        # Also take a possible negative (late) alarm time into account, in fact
+        #  the occurrence wouldn't be found if the search range included the
+        #  alarm time but not the actual occurrence time span; remember that
+        #  it's normal that the occurrence is not added to the results if the
+        #  search range is between (and doesn't include) the alarm time and the
+        #  actual occurrence time span
+        if ralarm:
+            srend = max(rend, ralarm * -1, 0)
         else:
-            span = max(srend, ralarm * -1)
+            srend = max(rend, 0)
+
+        # Don't just store the number of months to go back, because it would
+        #  make the algorithm always go back also when it's not necessary
+        maxoverlap = max(srend - diffs, 0)
 
         return {
             'rule': _RULE_NAMES[standard],
             '#': (
-                span,
+                maxoverlap,
                 nmonths,
                 day,
                 hour,

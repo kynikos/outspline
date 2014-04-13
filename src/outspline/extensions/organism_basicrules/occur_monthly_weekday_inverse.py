@@ -72,14 +72,17 @@ def make_rule(months, weekday, number, hour, minute, rend, ralarm, standard,
 
         nnumber = number - 1
 
-        srend = max(rend, 0)
-
-        if ralarm is None:
-            span = srend
-        elif ralarm >= 0:
-            span = srend + ralarm
+        # Also take a possible negative (late) alarm time into account, in fact
+        #  the occurrence wouldn't be found if the search range included the
+        #  alarm time but not the actual occurrence time span; remember that
+        #  it's normal that the occurrence is not added to the results if the
+        #  search range is between (and doesn't include) the alarm time and the
+        #  actual occurrence time span
+        # It's not possible to predict a more accurate maxoverlap
+        if ralarm:
+            maxoverlap = max(rend, ralarm * -1, 0)
         else:
-            span = max(srend, ralarm * -1)
+            maxoverlap = max(rend, 0)
 
         return {
             'rule': _RULE_NAMES[standard],
@@ -87,7 +90,7 @@ def make_rule(months, weekday, number, hour, minute, rend, ralarm, standard,
                 nmonths,
                 weekday,
                 nnumber,
-                span,
+                maxoverlap,
                 hour,
                 minute,
                 rend,
