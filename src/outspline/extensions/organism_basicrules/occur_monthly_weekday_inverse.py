@@ -99,8 +99,8 @@ def make_rule(months, weekday, number, hour, minute, rend, ralarm, standard,
         raise BadRuleError()
 
 
-def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
+                                                                rule, occs):
     months = rule['#'][0]
     weekday = rule['#'][1]
     number = rule['#'][2]
@@ -170,8 +170,8 @@ def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
             year += 1
 
 
-def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_occurrences_range_UTC(mint, utcmint, maxt, utcoffset, filename, id_,
+                                                                rule, occs):
     months = rule['#'][0]
     weekday = rule['#'][1]
     number = rule['#'][2]
@@ -248,8 +248,8 @@ def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
             year += 1
 
 
-def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_next_item_occurrences_local(base_time, utcbase, utcoffset, filename,
+                                                            id_, rule, occs):
     months = rule['#'][0]
     weekday = rule['#'][1]
     number = rule['#'][2]
@@ -332,8 +332,8 @@ def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
             year += 1
 
 
-def get_next_item_occurrences_UTC(base_time, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_next_item_occurrences_UTC(base_time, utcbase, utcoffset, filename,
+                                                            id_, rule, occs):
     months = rule['#'][0]
     weekday = rule['#'][1]
     number = rule['#'][2]

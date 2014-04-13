@@ -42,8 +42,8 @@ def make_rule(start, end, alarm, standard, guiconfig):
         raise BadRuleError()
 
 
-def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
+                                                                rule, occs):
     # The rule is checked in make_rule, no need to use occs.add
     start = rule['#'][0]
     end = rule['#'][1]
@@ -70,8 +70,8 @@ def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
                    'alarm': salarm})
 
 
-def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_occurrences_range_UTC(mint, utcmint, maxt, utcoffset, filename, id_,
+                                                                rule, occs):
     # The rule is checked in make_rule, no need to use occs.add
     occs.add_safe({'filename': filename,
                    'id_': id_,
@@ -79,8 +79,8 @@ def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
                    'end': rule['#'][1],
                    'alarm': rule['#'][2]})
 
-def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_next_item_occurrences_local(base_time, utcbase, utcoffset, filename,
+                                                            id_, rule, occs):
     # The rule is checked in make_rule, no need to use occs.add
     start = rule['#'][0]
     end = rule['#'][1]
@@ -106,8 +106,8 @@ def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
                               'end': send,
                               'alarm': salarm})
 
-def get_next_item_occurrences_UTC(base_time, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_next_item_occurrences_UTC(base_time, utcbase, utcoffset, filename,
+                                                            id_, rule, occs):
     # The rule is checked in make_rule, no need to use occs.add
     occs.add_safe(base_time, {'filename': filename,
                               'id_': id_,

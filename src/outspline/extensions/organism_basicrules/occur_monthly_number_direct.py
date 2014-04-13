@@ -94,8 +94,8 @@ def make_rule(months, day, hour, minute, rend, ralarm, standard, guiconfig):
         raise BadRuleError()
 
 
-def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
+                                                                rule, occs):
     # Go back by span in order to keep into account any occurrence that still
     # has to end
     mintime = mint - rule['#'][0]
@@ -156,8 +156,8 @@ def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
             year += 1
 
 
-def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_occurrences_range_UTC(mint, utcmint, maxt, utcoffset, filename, id_,
+                                                                rule, occs):
     # Go back by span in order to keep into account any occurrence that still
     # has to end
     mintime = mint - rule['#'][0]
@@ -225,8 +225,8 @@ def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
             year += 1
 
 
-def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_next_item_occurrences_local(base_time, utcbase, utcoffset, filename,
+                                                            id_, rule, occs):
     # Go back by span in order to keep into account any occurrence that still
     # has to end
     mintime = base_time - rule['#'][0]
@@ -300,8 +300,8 @@ def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
             year += 1
 
 
-def get_next_item_occurrences_UTC(base_time, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_next_item_occurrences_UTC(base_time, utcbase, utcoffset, filename,
+                                                            id_, rule, occs):
     # Go back by span in order to keep into account any occurrence that still
     # has to end
     mintime = base_time - rule['#'][0]

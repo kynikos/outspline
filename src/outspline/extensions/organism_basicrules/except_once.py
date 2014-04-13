@@ -41,8 +41,8 @@ def make_rule(start, end, inclusive, standard, guiconfig):
         raise BadRuleError
 
 
-def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
+                                                                rule, occs):
     start = rule['#'][0]
     end = rule['#'][1]
     inclusive = rule['#'][2]
@@ -60,8 +60,8 @@ def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
     occs.except_safe(filename, id_, sstart, send, inclusive)
 
 
-def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_occurrences_range_UTC(mint, utcmint, maxt, utcoffset, filename, id_,
+                                                                rule, occs):
     start = rule['#'][0]
     end = rule['#'][1]
     inclusive = rule['#'][2]
@@ -70,8 +70,8 @@ def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
     occs.except_safe(filename, id_, start, end, inclusive)
 
 
-def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_next_item_occurrences_local(base_time, utcbase, utcoffset, filename,
+                                                            id_, rule, occs):
     start = rule['#'][0]
     end = rule['#'][1]
     inclusive = rule['#'][2]
@@ -89,8 +89,8 @@ def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
     occs.except_safe(filename, id_, sstart, send, inclusive)
 
 
-def get_next_item_occurrences_UTC(base_time, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_next_item_occurrences_UTC(base_time, utcbase, utcoffset, filename,
+                                                            id_, rule, occs):
     start = rule['#'][0]
     end = rule['#'][1]
     inclusive = rule['#'][2]

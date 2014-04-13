@@ -307,12 +307,13 @@ def _compute_min_time(reftime, refmax, refspan, interval):
         # Use formula (S), see the examples above
         return mintime
 
-
-def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
-                                                                        occs):
     interval = rule['#'][2]
-    mintime = _compute_min_time(mint, rule['#'][0], rule['#'][1], interval)
+    mintime = _compute_min_time(mint - utcoffset.compute(mint), rule['#'][0],
+                                                        rule['#'][1], interval)
+    # This start is already in local time
     start = mintime + rule['#'][3]
+def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
+                                                                rule, occs):
     rend = rule['#'][4]
     ralarm = rule['#'][5]
 
@@ -347,8 +348,8 @@ def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
         start += interval
 
 
-def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_occurrences_range_UTC(mint, utcmint, maxt, utcoffset, filename, id_,
+                                                                rule, occs):
     interval = rule['#'][2]
     mintime = _compute_min_time(mint, rule['#'][0], rule['#'][1], interval)
     start = mintime + rule['#'][3]
@@ -379,8 +380,8 @@ def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
         start += interval
 
 
-def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_next_item_occurrences_local(base_time, utcbase, utcoffset, filename,
+                                                            id_, rule, occs):
     interval = rule['#'][2]
     mintime = _compute_min_time(base_time, rule['#'][0], rule['#'][1],
                                                                     interval)
@@ -423,8 +424,8 @@ def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
         start += interval
 
 
-def get_next_item_occurrences_UTC(base_time, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_next_item_occurrences_UTC(base_time, utcbase, utcoffset, filename,
+                                                            id_, rule, occs):
     interval = rule['#'][2]
     mintime = _compute_min_time(base_time, rule['#'][0], rule['#'][1],
                                                                     interval)

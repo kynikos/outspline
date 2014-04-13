@@ -83,13 +83,13 @@ def make_rule(refstart, interval, rstarts, rend, ralarm, standard, guiconfig):
         raise BadRuleError()
 
 
+def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
+                                                                rule, occs):
 def _compute_relative_max_time(reftime, refmax, interval):
     # Use formula (S), see the examples in occur_regularly
     return (refmax - reftime) % interval
 
 
-def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
-                                                                        occs):
     interval = rule['#'][1]
     rmaxtime = _compute_relative_max_time(mint, rule['#'][0], interval)
     irmaxs = rule['#'][2]
@@ -141,8 +141,6 @@ def get_occurrences_range_local(mint, maxt, utcoffset, filename, id_, rule,
             irmax = irmaxs[j]
 
 
-def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
-                                                                        occs):
     interval = rule['#'][1]
     rmaxtime = _compute_relative_max_time(mint, rule['#'][0], interval)
     irmaxs = rule['#'][2]
@@ -187,8 +185,8 @@ def get_occurrences_range_UTC(mint, maxt, utcoffset, filename, id_, rule,
             irmax = irmaxs[j]
 
 
-def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
-                                                                        occs):
+def get_occurrences_range_UTC(mint, utcmint, maxt, utcoffset, filename, id_,
+                                                                rule, occs):
     interval = rule['#'][1]
     rmaxtime = _compute_relative_max_time(base_time, rule['#'][0], interval)
     irmaxs = rule['#'][2]
@@ -215,6 +213,8 @@ def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
         except TypeError:
             send = None
 
+def get_next_item_occurrences_local(base_time, utcbase, utcoffset, filename,
+                                                            id_, rule, occs):
         try:
             salarm = sstart - ralarm
         except TypeError:
@@ -244,8 +244,6 @@ def get_next_item_occurrences_local(base_time, utcoffset, filename, id_, rule,
             irmax = irmaxs[j]
 
 
-def get_next_item_occurrences_UTC(base_time, utcoffset, filename, id_, rule,
-                                                                        occs):
     interval = rule['#'][1]
     rmaxtime = _compute_relative_max_time(base_time, rule['#'][0], interval)
     irmaxs = rule['#'][2]
@@ -291,3 +289,5 @@ def get_next_item_occurrences_UTC(base_time, utcoffset, filename, id_, rule,
             basemax += interval
             i = j
             irmax = irmaxs[j]
+def get_next_item_occurrences_UTC(base_time, utcbase, utcoffset, filename,
+                                                            id_, rule, occs):

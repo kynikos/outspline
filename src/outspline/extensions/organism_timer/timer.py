@@ -195,12 +195,14 @@ def get_next_occurrences(base_time=None, base_times=None):
         if not base_time:
             base_time = base_times[filename]
 
+        utcbase = base_time - utcoffset.compute(base_time)
+
         for id_ in core_api.get_items_ids(filename):
             rules = organism_api.get_item_rules(filename, id_)
 
             for rule in rules:
-                rule_handlers[rule['rule']](base_time, utcoffset, filename,
-                                                            id_, rule, occs)
+                rule_handlers[rule['rule']](base_time, utcbase, utcoffset,
+                                                    filename, id_, rule, occs)
 
         get_next_occurrences_event.signal(base_time=base_time,
                                                   filename=filename, occs=occs)
