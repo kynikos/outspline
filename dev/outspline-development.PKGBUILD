@@ -1,7 +1,7 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='outspline-development'
-pkgver='0.4.0'
+pkgver='0.5.0'
 pkgrel=1
 pkgdesc="Development component for Outspline"
 arch=('any')
@@ -11,7 +11,7 @@ depends=('outspline')
 conflicts=('organism-development')
 replaces=('organism-development')
 source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
-sha256sums=('415b12ecced9487ad069d62406a1b9aa2056e894e22812ceb3b77bd2812b259e')
+sha256sums=('3d05876fdec21c5101195fbf998b0cb8400877d69bc87b948541233a0653cdb7')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"

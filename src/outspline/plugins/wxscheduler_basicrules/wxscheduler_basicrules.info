@@ -1,5 +1,5 @@
 author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.4
+version = 0.5
 description = Adds the interface for creating some basic item schedule rules.
 website = https://github.com/kynikos/outspline/
 affects_database = no
