@@ -92,9 +92,9 @@ class Rule(object):
 
             values = {
                 'reference_start': refstart,
-                'reerence_fmax': refstart + 3600,
-                'reference_span': 3600,
                 'interval': 86400,
+                'overlaps': 0,
+                'bgap': 86400 - 3600,
                 'end_relative_time': 3600,
                 'inclusive': False,
                 'end_type': 0,
@@ -102,13 +102,13 @@ class Rule(object):
             }
         else:
             values = {
-                'reference_start': rule[0] - rule[1],
-                'reference_max': rule[0],
-                'reference_span': rule[1],
-                'interval': rule[2],
-                'end_relative_time': rule[3] if rule[3] is not None else 3600,
-                'inclusive': rule[4],
-                'end_type': rule[5][0],
+                'reference_start': rule[0],
+                'interval': rule[1],
+                'overlaps': rule[2],
+                'bgap': rule[3],
+                'end_relative_time': rule[4] if rule[4] is not None else 3600,
+                'inclusive': rule[5],
+                'end_type': rule[6][0],
                 'time_standard': standard,
             }
 

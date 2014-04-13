@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+import occur_regularly
 from exceptions import BadRuleError
 
 _RULE_NAMES = {'local': 'except_regularly_local',
@@ -42,15 +43,16 @@ def make_rule(refstart, interval, rend, inclusive, standard, guiconfig):
     if isinstance(refstart, int) and refstart >= 0 and \
             isinstance(interval, int) and interval > 0 and \
             isinstance(rend, int) and rend > 0 and isinstance(inclusive, bool):
-        refmax = refstart + rend
-        refspan = refmax - refstart
+        overlaps = rend // interval
+        bgap = interval - rend % interval
 
         return {
             'rule': _RULE_NAMES[standard],
             '#': (
-                refmax,
-                refspan,
+                refstart,
                 interval,
+                overlaps,
+                bgap,
                 rend,
                 inclusive,
                 guiconfig,
@@ -60,6 +62,12 @@ def make_rule(refstart, interval, rend, inclusive, standard, guiconfig):
         raise BadRuleError()
 
 """
+The new implementation is identical to occur_regularly
+
+
+===============================================================================
+OLD IMPLEMENTATION
+
 * reference occurrence
 | reftime
 [] target occurrence
@@ -154,11 +162,6 @@ CGOS
 """
 
 
-def _compute_min_time(reftime, refmax, refspan, interval):
-    # Use formula (S), see the examples above and in occur_regularly
-    return reftime + (refmax - reftime) % interval - refspan
-
-
 def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
                                                                 rule, occs):
     limits = occs.get_item_time_span(filename, id_)
@@ -166,14 +169,20 @@ def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
     if limits:
         minstart, maxend = limits
 
-        interval = rule['#'][2]
-        rend = rule['#'][3]
-        inclusive = rule['#'][4]
+        interval = rule['#'][1]
+        rend = rule['#'][4]
+        inclusive = rule['#'][5]
 
         # start can't be based on mint, in fact an except rule can affect an
-        # occurrence even if its start and end times are out of the time range
-        start = _compute_min_time(minstart, rule['#'][0], rule['#'][1],
-                                                                      interval)
+        #  occurrence even if its start and end times are out of the time range
+        # Subtract utcoffset.compute(minstart) because in Western (negative)
+        #  time zones (e.g. Pacific/Honolulu), the first occurrence to be found
+        #  would otherwise be already too late; in Eastern (positive) time
+        #  zones the problem would pass unnoticed because the first occurrence
+        #  would be found too early, and simply several cycles would not
+        #  produce occurrences in the search range
+        start = occur_regularly.compute_min_time(minstart - utcoffset.compute(
+                minstart), rule['#'][0], interval, rule['#'][2], rule['#'][3])
         while True:
             # Every timestamp can have a different UTC offset, depending
             # whether it's in a DST period or not
@@ -200,14 +209,14 @@ def get_occurrences_range_UTC(mint, utcmint, maxt, utcoffset, filename, id_,
     if limits:
         minstart, maxend = limits
 
-        interval = rule['#'][2]
-        rend = rule['#'][3]
-        inclusive = rule['#'][4]
+        interval = rule['#'][1]
+        rend = rule['#'][4]
+        inclusive = rule['#'][5]
 
         # start can't be based on mint, in fact an except rule can affect an
         # occurrence even if its start and end times are out of the time range
-        start = _compute_min_time(minstart, rule['#'][0], rule['#'][1],
-                                                                      interval)
+        start = occur_regularly.compute_min_time(minstart, rule['#'][0],
+                                        interval, rule['#'][2], rule['#'][3])
         while True:
             end = start + rend
 
@@ -227,15 +236,21 @@ def get_next_item_occurrences_local(base_time, utcbase, utcoffset, filename,
     if limits:
         minstart, maxend = limits
 
-        interval = rule['#'][2]
-        rend = rule['#'][3]
-        inclusive = rule['#'][4]
+        interval = rule['#'][1]
+        rend = rule['#'][4]
+        inclusive = rule['#'][5]
 
         # start can't be based on base_time, in fact an except rule can affect
-        # an occurrence even if its start and end times are out of the time
-        # range
-        start = _compute_min_time(minstart, rule['#'][0], rule['#'][1],
-                                                                      interval)
+        #  an occurrence even if its start and end times are out of the time
+        #  range
+        # Subtract utcoffset.compute(minstart) because in Western (negative)
+        #  time zones (e.g. Pacific/Honolulu), the first occurrence to be found
+        #  would otherwise be already too late; in Eastern (positive) time
+        #  zones the problem would pass unnoticed because the first occurrence
+        #  would be found too early, and simply several cycles would not
+        #  produce occurrences in the search range
+        start = occur_regularly.compute_min_time(minstart - utcoffset.compute(
+                minstart), rule['#'][0], interval, rule['#'][2], rule['#'][3])
 
         while True:
             # Every timestamp can have a different UTC offset, depending
@@ -267,15 +282,15 @@ def get_next_item_occurrences_UTC(base_time, utcbase, utcoffset, filename,
     if limits:
         minstart, maxend = limits
 
-        interval = rule['#'][2]
-        rend = rule['#'][3]
-        inclusive = rule['#'][4]
+        interval = rule['#'][1]
+        rend = rule['#'][4]
+        inclusive = rule['#'][5]
 
         # start can't be based on base_time, in fact an except rule can affect
         # an occurrence even if its start and end times are out of the time
         # range
-        start = _compute_min_time(minstart, rule['#'][0], rule['#'][1],
-                                                                      interval)
+        start = occur_regularly.compute_min_time(minstart, rule['#'][0],
+                                        interval, rule['#'][2], rule['#'][3])
 
         while True:
             end = start + rend
