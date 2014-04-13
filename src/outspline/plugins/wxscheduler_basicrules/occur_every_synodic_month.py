@@ -89,15 +89,13 @@ class Rule(object):
         # exact hours (e.g. Australia/Adelaide)
         if not rule:
             nextdate = _datetime.datetime.now() + _datetime.timedelta(hours=1)
-            refmin = int(_time.time()) // 86400 * 86400 + nextdate.hour * 3600
+            refstart = int(_time.time()) // 86400 * 86400 + nextdate.hour * 3600
 
             values = {
-                'reference_min': refmin,
-                'reference_max': refmin + 3600,
-                'reference_start': refmin,
-                'reference_span': refmin + 3600 - refmin,
-                'interval': 86400,
-                'start_relative_time': 0,
+                'reference_start': refstart,
+                'interval': 2551443,
+                'overlaps': 0,
+                'bgap': 2551443 - 3600,
                 'end_relative_time': 3600,
                 'alarm_relative_time': 0,
                 'end_type': 0,
@@ -106,12 +104,10 @@ class Rule(object):
             }
         else:
             values = {
-                'reference_min': rule[0] - rule[1],
-                'reference_max': rule[0],
-                'reference_start': rule[0] - rule[1] + rule[3],
-                'reference_span': rule[1],
-                'interval': rule[2],
-                'start_relative_time': rule[3],
+                'reference_start': rule[0],
+                'interval': rule[1],
+                'overlaps': rule[2],
+                'bgap': rule[3],
                 'end_relative_time': rule[4] if rule[4] is not None else 3600,
                 'alarm_relative_time': rule[5] if rule[5] is not None else 0,
                 'end_type': rule[6][1],

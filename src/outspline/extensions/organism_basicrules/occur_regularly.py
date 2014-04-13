@@ -43,23 +43,27 @@ def make_rule(refstart, interval, rend, ralarm, standard, guiconfig):
                 isinstance(interval, int) and interval > 0 and \
                 (rend is None or (isinstance(rend, int) and rend > 0)) and \
                 (ralarm is None or isinstance(ralarm, int)):
+        # Also take a possible negative (late) alarm time into account, in fact
+        #  the occurrence wouldn't be found if the search range included the
+        #  alarm time but not the actual occurrence time span; remember that
+        #  it's normal that the occurrence is not added to the results if the
+        #  search range is between (and doesn't include) the alarm time and the
+        #  actual occurrence time span
         if ralarm is None:
-            refmin = refstart
-            refmax = refstart + max((rend, 0))
+            rmax = max((rend, 0))
         else:
-            refmin = refstart - max((ralarm, 0))
-            refmax = refstart + max((rend, ralarm * -1, 0))
+            rmax = max((rend, ralarm * -1, 0))
 
-        refspan = refmax - refmin
-        rstart = refstart - refmin
+        overlaps = rmax // interval
+        bgap = interval - rmax % interval
 
         return {
             'rule': _RULE_NAMES[standard],
             '#': (
-                refmax,
-                refspan,
+                refstart,
                 interval,
-                rstart,
+                overlaps,
+                bgap,
                 rend,
                 ralarm,
                 guiconfig,
@@ -69,6 +73,120 @@ def make_rule(refstart, interval, rend, ralarm, standard, guiconfig):
         raise BadRuleError()
 
 """
+| search_time
+* reference_start_time
+< found_start_time
+(() occurrence (rmix start rmax)
+[[] target_occurrence (rmix start rmax)
+
+(   *        )--------(   (        )----|---[   <        ]--------(   (        )--------(   (        )
+
+(   *        )--------(   (        )--------[   [   |    ]--------(   <        )--------(   (        )
+
+(   *        )--------(   (        )--------(   (        |--------[   <        ]--------(   (        )
+
+(   (        )----|---[   <        ]--------(   (        )--------(   (        )--------(   *        )
+
+(   (        )--------[   [   |    ]--------(   <        )--------(   (        )--------(   *        )
+
+(   (        )--------(   (        |--------[   <        ]--------(   (        )--------(   *        )
+
+(     *                 )  |
+    [     [                |]
+        (     (            |    )
+            (     (        |        )
+                (     (    |            )
+                    (     (|                )
+                        (  |  <                 )
+                           |(     (                 )
+                           |    (     (                 )
+                           |        (     (                 )
+                           |            (     (                 )
+                           |                (     (                 )
+                           |                    (     (                 )
+
+(     *                 )   |
+    (     (                 )
+        [     [             |   ]
+            (     (         |       )
+                (     (     |           )
+                    (     ( |               )
+                        (   | <                 )
+                            (     (                 )
+                            |   (     (                 )
+                            |       (     (                 )
+                            |           (     (                 )
+                            |               (     (                 )
+                            |                   (     (                 )
+
+(     *                 )
+    (     (                 )|
+        [     [              |  ]
+            (     (          |      )
+                (     (      |          )
+                    (     (  |              )
+                        (    |<                 )
+                            (|    (                 )
+                             |  (     (                 )
+                             |      (     (                 )
+                             |          (     (                 )
+                             |              (     (                 )
+                             |                  (     (                 )
+
+(     (                 )  |
+    [     [                |]
+        (     (            |    )
+            (     (        |        )
+                (     (    |            )
+                    (     (|                )
+                        (  |  <                 )
+                           |(     (                 )
+                           |    (     (                 )
+                           |        (     (                 )
+                           |            (     (                 )
+                           |                (     (                 )
+                           |                    (     *                 )
+
+(     (                 )   |
+    (     (                 )
+        [     [             |   ]
+            (     (         |       )
+                (     (     |           )
+                    (     ( |               )
+                        (   | <                 )
+                            (     (                 )
+                            |   (     (                 )
+                            |       (     (                 )
+                            |           (     (                 )
+                            |               (     (                 )
+                            |                   (     *                 )
+
+(     (                 )
+    (     (                 )|
+        [     [              |  ]
+            (     (          |      )
+                (     (      |          )
+                    (     (  |              )
+                        (    |<                 )
+                            (|    (                 )
+                             |  (     (                 )
+                             |      (     (                 )
+                             |          (     (                 )
+                             |              (     (                 )
+                             |                  (     *                 )
+
+overlaps = rmax // interval
+fgap = rmax % interval
+bgap = interval - fgap
+found_start_time = search_time + (reference_start_time - search_time) % interval
+if (found_start_time - search_time) > bgap:
+    target_start_time = found_start_time - (overlaps + 1) * interval
+else:
+    target_start_time = found_start_time - overlaps * interval
+
+===============================================================================
+OLD IMPLEMENTATION
+
 * reference occurrence
 | reftime
 [] target occurrence
@@ -296,24 +414,24 @@ DHPT
 """
 
 
-def _compute_min_time(reftime, refmax, refspan, interval):
-    rem = (refmax - reftime) % interval
-    mintime = reftime + rem - refspan
+def compute_min_time(reftime, refstart, interval, overlaps, bgap):
+    ftime = reftime + (refstart - reftime) % interval
 
-    if rem == 0 and refspan != 0:
-        # Use formula (T), see the examples above
-        return mintime + interval
+    if (ftime - reftime) > bgap:
+        return ftime - (overlaps + 1) * interval
     else:
-        # Use formula (S), see the examples above
-        return mintime
+        return ftime - overlaps * interval
 
-    interval = rule['#'][2]
-    mintime = _compute_min_time(mint - utcoffset.compute(mint), rule['#'][0],
-                                                        rule['#'][1], interval)
-    # This start is already in local time
-    start = mintime + rule['#'][3]
 def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
                                                                 rule, occs):
+    interval = rule['#'][1]
+    # Use utcmint because in Western (negative) time zones (e.g.
+    # Pacific/Honolulu), the first occurrence to be found would otherwise be
+    # already too late; in Eastern (positive) time zones the problem would pass
+    # unnoticed because the first occurrence would be found too early, and
+    # simply several cycles would not produce occurrences in the search range
+    start = compute_min_time(utcmint, rule['#'][0], interval, rule['#'][2],
+                                                                rule['#'][3])
     rend = rule['#'][4]
     ralarm = rule['#'][5]
 
@@ -350,9 +468,9 @@ def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
 
 def get_occurrences_range_UTC(mint, utcmint, maxt, utcoffset, filename, id_,
                                                                 rule, occs):
-    interval = rule['#'][2]
-    mintime = _compute_min_time(mint, rule['#'][0], rule['#'][1], interval)
-    start = mintime + rule['#'][3]
+    interval = rule['#'][1]
+    start = compute_min_time(mint, rule['#'][0], interval, rule['#'][2],
+                                                                rule['#'][3])
     rend = rule['#'][4]
     ralarm = rule['#'][5]
 
@@ -382,10 +500,14 @@ def get_occurrences_range_UTC(mint, utcmint, maxt, utcoffset, filename, id_,
 
 def get_next_item_occurrences_local(base_time, utcbase, utcoffset, filename,
                                                             id_, rule, occs):
-    interval = rule['#'][2]
-    mintime = _compute_min_time(base_time, rule['#'][0], rule['#'][1],
-                                                                    interval)
-    start = mintime + rule['#'][3]
+    interval = rule['#'][1]
+    # Use utcbase because in Western (negative) time zones (e.g.
+    # Pacific/Honolulu), the first occurrence to be found would otherwise be
+    # already too late; in Eastern (positive) time zones the problem would pass
+    # unnoticed because the first occurrence would be found too early, and
+    # simply several cycles would not produce occurrences in the search range
+    start = compute_min_time(utcbase, rule['#'][0], interval, rule['#'][2],
+                                                                rule['#'][3])
     rend = rule['#'][4]
     ralarm = rule['#'][5]
 
@@ -426,10 +548,9 @@ def get_next_item_occurrences_local(base_time, utcbase, utcoffset, filename,
 
 def get_next_item_occurrences_UTC(base_time, utcbase, utcoffset, filename,
                                                             id_, rule, occs):
-    interval = rule['#'][2]
-    mintime = _compute_min_time(base_time, rule['#'][0], rule['#'][1],
-                                                                    interval)
-    start = mintime + rule['#'][3]
+    interval = rule['#'][1]
+    start = compute_min_time(base_time, rule['#'][0], interval, rule['#'][2],
+                                                                rule['#'][3])
     rend = rule['#'][4]
     ralarm = rule['#'][5]
 

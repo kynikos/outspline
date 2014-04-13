@@ -108,14 +108,13 @@ class Rule(object):
             currw = currdate.weekday()
             nextdate = currdate + _datetime.timedelta(hours=1)
             rrstart = nextdate.hour * 3600
-            refmin = int(_time.time()) // 86400 * 86400 + rrstart
+            refstart = int(_time.time()) // 86400 * 86400 + rrstart
 
             values = {
-                'reference_min': refmin,
-                'reference_max': refmin + 3600,
-                'reference_span': 3600,
+                'reference_start': refstart,
                 'interval': 604800,
-                'start_relative_time': 0,
+                'overlaps': 0,
+                'bgap': 604800 - 3600,
                 'end_relative_time': 3600,
                 'alarm_relative_time': 0,
                 'end_type': 0,
@@ -124,11 +123,10 @@ class Rule(object):
             }
         else:
             values = {
-                'reference_min': rule[0] - rule[1],
-                'reference_max': rule[0],
-                'reference_span': rule[1],
-                'interval': rule[2],
-                'start_relative_time': rule[3],
+                'reference_start': rule[0],
+                'interval': rule[1],
+                'overlaps': rule[2],
+                'bgap': rule[3],
                 'end_relative_time': rule[4] if rule[4] is not None else 3600,
                 'alarm_relative_time': rule[5] if rule[5] is not None else 0,
                 'end_type': rule[6][1],
@@ -136,11 +134,10 @@ class Rule(object):
                 'time_standard': standard,
             }
 
-            rrstart = (values['reference_min'] + values['start_relative_time']
-                                                                    ) % 86400
+            rrstart = values['reference_start'] % 86400
 
-            currw = _datetime.datetime.fromtimestamp(values['reference_min'] +
-                                    values['start_relative_time']).weekday()
+            currw = _datetime.datetime.fromtimestamp(
+                                        values['reference_start']).weekday()
 
         values['end_relative_number'], values['end_relative_unit'] = \
                                 TimeSpanCtrl.compute_widget_values(
