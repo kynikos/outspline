@@ -79,11 +79,19 @@ def make_rule(interval, refyear, month, day, hour, minute, rend, ralarm,
         diff = date2 - date1
         diffs = diff.total_seconds() - hour * 3600 - minute * 60
 
+        # Also take a possible negative (late) alarm time into account, in fact
+        #  the occurrence wouldn't be found if the search range included the
+        #  alarm time but not the actual occurrence time span; remember that
+        #  it's normal that the occurrence is not added to the results if the
+        #  search range is between (and doesn't include) the alarm time and the
+        #  actual occurrence time span
         if ralarm:
             srend = max(rend, ralarm * -1, 0)
         else:
             srend = max(rend, 0)
 
+        # Don't just store the number of years to go back, because it would
+        #  make the algorithm always go back also when it's not necessary
         maxoverlap = max(srend - diffs, 0)
 
         return {
@@ -117,7 +125,7 @@ def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
     rend = rule['#'][7]
     ralarm = rule['#'][8]
 
-    ndate = _datetime.date.fromtimestamp(mintime)
+    ndate = _datetime.datetime.fromtimestamp(mintime)
     nyear = ndate.year
 
     year = nyear + abs(refyear - nyear) % interval
@@ -170,7 +178,9 @@ def get_occurrences_range_UTC(mint, utcmint, maxt, utcoffset, filename, id_,
     rend = rule['#'][7]
     ralarm = rule['#'][8]
 
-    ndate = _datetime.date.fromtimestamp(mintime)
+    # Using utcfromtimestamp gives correct behaviour in Eastern (positive) time
+    # zones (e.g. Australia/Sydney)
+    ndate = _datetime.datetime.utcfromtimestamp(mintime)
     nyear = ndate.year
 
     year = nyear + abs(refyear - nyear) % interval
@@ -230,7 +240,7 @@ def get_next_item_occurrences_local(base_time, utcbase, utcoffset, filename,
     rend = rule['#'][7]
     ralarm = rule['#'][8]
 
-    ndate = _datetime.date.fromtimestamp(mintime)
+    ndate = _datetime.datetime.fromtimestamp(mintime)
     nyear = ndate.year
 
     year = nyear + abs(refyear - nyear) % interval
@@ -296,7 +306,9 @@ def get_next_item_occurrences_UTC(base_time, utcbase, utcoffset, filename,
     rend = rule['#'][7]
     ralarm = rule['#'][8]
 
-    ndate = _datetime.date.fromtimestamp(mintime)
+    # Using utcfromtimestamp gives correct behaviour in Eastern (positive) time
+    # zones (e.g. Australia/Sydney)
+    ndate = _datetime.datetime.utcfromtimestamp(mintime)
     nyear = ndate.year
 
     year = nyear + abs(refyear - nyear) % interval
