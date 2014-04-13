@@ -18,6 +18,7 @@
 
 import bisect
 
+import occur_regularly
 from exceptions import BadRuleError
 
 _RULE_NAMES = {'local': 'occur_regularly_group_local',
@@ -51,29 +52,35 @@ def make_rule(refstart, interval, rstarts, rend, ralarm, standard, guiconfig):
                 isinstance(rstarts, list) and 0 in rstarts and \
                 (rend is None or (isinstance(rend, int) and rend > 0)) and \
                 (ralarm is None or isinstance(ralarm, int)):
-        mrstart = max(rstarts)
-        irmaxs = []
+        refstarts = []
 
         for rstart in rstarts:
             if isinstance(rstart, int) and rstart >= 0:
-                irmaxs.append(mrstart - rstart)
+                refstarts.append(refstart + rstart)
             else:
                 raise BadRuleError()
 
-        # irmaxs must be sorted in order to have bisect.bisect_right work
-        # correctly
-        irmaxs.sort()
+        # Also take a possible negative (late) alarm time into account, in fact
+        #  the occurrence wouldn't be found if the search range included the
+        #  alarm time but not the actual occurrence time span; remember that
+        #  it's normal that the occurrence is not added to the results if the
+        #  search range is between (and doesn't include) the alarm time and the
+        #  actual occurrence time span
+        if ralarm is None:
+            rmax = max((rend, 0))
+        else:
+            rmax = max((rend, ralarm * -1, 0))
 
-        rmax = max((rend, ralarm * -1 if ralarm else 0, 0))
-        refmax = refstart + mrstart + rmax
+        overlaps = rmax // interval
+        bgap = interval - rmax % interval
 
         return {
             'rule': _RULE_NAMES[standard],
             '#': (
-                refmax,
+                refstarts,
                 interval,
-                irmaxs,
-                rmax,
+                overlaps,
+                bgap,
                 rend,
                 ralarm,
                 guiconfig,
@@ -85,209 +92,35 @@ def make_rule(refstart, interval, rstarts, rend, ralarm, standard, guiconfig):
 
 def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
                                                                 rule, occs):
-def _compute_relative_max_time(reftime, refmax, interval):
-    # Use formula (S), see the examples in occur_regularly
-    return (refmax - reftime) % interval
-
-
-    interval = rule['#'][1]
-    rmaxtime = _compute_relative_max_time(mint, rule['#'][0], interval)
-    irmaxs = rule['#'][2]
-    rmax = rule['#'][3]
-    rend = rule['#'][4]
-    ralarm = rule['#'][5]
-
-    j = len(irmaxs) - 1
-    i = bisect.bisect_right(irmaxs, rmaxtime) - 1
-    irmax = irmaxs[i]
-    basemax = mint + rmaxtime
-
-    while True:
-        start = basemax - irmax - rmax
-
-        # Every timestamp can have a different UTC offset, depending whether
-        # it's in a DST period or not
-        offset = utcoffset.compute(start)
-
-        sstart = start + offset
-
-        try:
-            send = sstart + rend
-        except TypeError:
-            send = None
-
-        try:
-            salarm = sstart - ralarm
-        except TypeError:
-            salarm = None
-
-        # Do compare sstart and salarm with maxt, *not* start and alarm
-        if sstart > maxt and (salarm is None or salarm > maxt):
-            break
-
-        # The rule is checked in make_rule, no need to use occs.add
-        occs.add_safe({'filename': filename,
-                       'id_': id_,
-                       'start': sstart,
-                       'end': send,
-                       'alarm': salarm})
-
-        if i > 0:
-            i -= 1
-            irmax = irmaxs[i]
-        else:
-            basemax += interval
-            i = j
-            irmax = irmaxs[j]
-
-
-    interval = rule['#'][1]
-    rmaxtime = _compute_relative_max_time(mint, rule['#'][0], interval)
-    irmaxs = rule['#'][2]
-    rmax = rule['#'][3]
-    rend = rule['#'][4]
-    ralarm = rule['#'][5]
-
-    j = len(irmaxs) - 1
-    i = bisect.bisect_right(irmaxs, rmaxtime) - 1
-    irmax = irmaxs[i]
-    basemax = mint + rmaxtime
-
-    while True:
-        start = basemax - irmax - rmax
-
-        try:
-            end = start + rend
-        except TypeError:
-            end = None
-
-        try:
-            alarm = start - ralarm
-        except TypeError:
-            alarm = None
-
-        if start > maxt and (alarm is None or alarm > maxt):
-            break
-
-        # The rule is checked in make_rule, no need to use occs.add
-        occs.add_safe({'filename': filename,
-                       'id_': id_,
-                       'start': start,
-                       'end': end,
-                       'alarm': alarm})
-
-        if i > 0:
-            i -= 1
-            irmax = irmaxs[i]
-        else:
-            basemax += interval
-            i = j
-            irmax = irmaxs[j]
+    for refstart in rule['#'][0]:
+        srule = rule.copy()
+        srule['#'][0] = refstart
+        occur_regularly.get_occurrences_range_local(mint, utcmint, maxt,
+                                        utcoffset, filename, id_, srule, occs)
 
 
 def get_occurrences_range_UTC(mint, utcmint, maxt, utcoffset, filename, id_,
                                                                 rule, occs):
-    interval = rule['#'][1]
-    rmaxtime = _compute_relative_max_time(base_time, rule['#'][0], interval)
-    irmaxs = rule['#'][2]
-    rmax = rule['#'][3]
-    rend = rule['#'][4]
-    ralarm = rule['#'][5]
+    for refstart in rule['#'][0]:
+        srule = rule.copy()
+        srule['#'][0] = refstart
+        occur_regularly.get_occurrences_range_UTC(mint, utcmint, maxt,
+                                        utcoffset, filename, id_, srule, occs)
 
-    j = len(irmaxs) - 1
-    i = bisect.bisect_right(irmaxs, rmaxtime) - 1
-    irmax = irmaxs[i]
-    basemax = base_time + rmaxtime
-
-    while True:
-        start = basemax - irmax - rmax
-
-        # Every timestamp can have a different UTC offset, depending whether
-        # it's in a DST period or not
-        offset = utcoffset.compute(start)
-
-        sstart = start + offset
-
-        try:
-            send = sstart + rend
-        except TypeError:
-            send = None
 
 def get_next_item_occurrences_local(base_time, utcbase, utcoffset, filename,
                                                             id_, rule, occs):
-        try:
-            salarm = sstart - ralarm
-        except TypeError:
-            salarm = None
-
-        occd = {'filename': filename,
-                'id_': id_,
-                'start': sstart,
-                'end': send,
-                'alarm': salarm}
-
-        next_occ = occs.get_next_occurrence_time()
-
-        # The rule is checked in make_rule, no need to use occs.add
-        # Do compare sstart and salarm with next_occ, *not* start and alarm
-        if occs.add_safe(base_time, occd) or \
-                            (next_occ and sstart > next_occ and
-                            (salarm is None or salarm > next_occ)):
-            break
-
-        if i > 0:
-            i -= 1
-            irmax = irmaxs[i]
-        else:
-            basemax += interval
-            i = j
-            irmax = irmaxs[j]
+    for refstart in rule['#'][0]:
+        srule = rule.copy()
+        srule['#'][0] = refstart
+        occur_regularly.get_next_item_occurrences_local(base_time, utcbase,
+                                        utcoffset, filename, id_, srule, occs)
 
 
-    interval = rule['#'][1]
-    rmaxtime = _compute_relative_max_time(base_time, rule['#'][0], interval)
-    irmaxs = rule['#'][2]
-    rmax = rule['#'][3]
-    rend = rule['#'][4]
-    ralarm = rule['#'][5]
-
-    j = len(irmaxs) - 1
-    i = bisect.bisect_right(irmaxs, rmaxtime) - 1
-    irmax = irmaxs[i]
-    basemax = base_time + rmaxtime
-
-    while True:
-        start = basemax - irmax - rmax
-
-        try:
-            end = start + rend
-        except TypeError:
-            end = None
-
-        try:
-            alarm = start - ralarm
-        except TypeError:
-            alarm = None
-
-        occd = {'filename': filename,
-                'id_': id_,
-                'start': start,
-                'end': end,
-                'alarm': alarm}
-
-        next_occ = occs.get_next_occurrence_time()
-
-        # The rule is checked in make_rule, no need to use occs.add
-        if occs.add_safe(base_time, occd) or (next_occ and start > next_occ and
-                                          (alarm is None or alarm > next_occ)):
-            break
-
-        if i > 0:
-            i -= 1
-            irmax = irmaxs[i]
-        else:
-            basemax += interval
-            i = j
-            irmax = irmaxs[j]
 def get_next_item_occurrences_UTC(base_time, utcbase, utcoffset, filename,
                                                             id_, rule, occs):
+    for refstart in rule['#'][0]:
+        srule = rule.copy()
+        srule['#'][0] = refstart
+        occur_regularly.get_next_item_occurrences_UTC(base_time, utcbase,
+                                        utcoffset, filename, id_, srule, occs)

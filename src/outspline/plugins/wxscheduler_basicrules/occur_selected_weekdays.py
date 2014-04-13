@@ -116,19 +116,24 @@ class Rule(object):
             refstart = int(_time.time()) // 86400 * 86400 + rrstart
 
             values = {
+                'reference_starts': [refstart + rstart for rstart in (0, 86400,
+                                    172800, 259200, 345600, 432000, 518400)],
+                'interval': 604800,
+                'overlaps': 0,
+                'bgap': 604800 - 3600,
                 'end_relative_time': 3600,
                 'alarm_relative_time': 0,
                 'end_type': 0,
                 'alarm_type': 0,
-                'selected_weekdays': list(range(1, 8)),
                 'time_standard': standard,
+                'selected_weekdays': list(range(1, 8)),
             }
         else:
             values = {
-                'reference_max': rule[0],
+                'reference_starts': rule[0],
                 'interval': rule[1],
-                'irmaxs': rule[2],
-                'rmax': rule[3],
+                'overlaps': rule[2],
+                'bgap': rule[3],
                 'end_relative_time': rule[4] if rule[4] is not None else 3600,
                 'alarm_relative_time': rule[5] if rule[5] is not None else 0,
                 'end_type': rule[6][1],
@@ -136,14 +141,12 @@ class Rule(object):
                 'time_standard': standard,
             }
 
-            refstart = values['reference_max'] - values['irmaxs'][-1] - \
-                                                                values['rmax']
-            rrstart = refstart % 86400
+            rrstart = values['reference_starts'][0] % 86400
 
             values['selected_weekdays'] = [_datetime.datetime.fromtimestamp(
-                        refstart + values['irmaxs'][-1] - irmax).weekday() + 1
-                        for irmax in values['irmaxs']]
-            values['selected_weekdays'].reverse()
+                                    refstart).weekday() + 1
+                                    for refstart in values['reference_starts']]
+            values['selected_weekdays'].sort()
 
         values['end_relative_number'], values['end_relative_unit'] = \
                                         TimeSpanCtrl.compute_widget_values(
