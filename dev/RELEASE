@@ -11,6 +11,7 @@
   - DST (non-full hours) (Australia/Adelaide)
     - with a non-DST time
     - with a DST time
+  - Also test Eastern (Asia/Shanghai) and Western time zones (Pacific/Honolulu)
   If backward compatibility has to be kept, also test with databases created
     with the previous release
   Test interfaces with various GTK themes
