@@ -106,7 +106,7 @@ def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
     rend = rule['#'][5]
     ralarm = rule['#'][6]
 
-    date = _datetime.date.fromtimestamp(mintime)
+    date = _datetime.datetime.fromtimestamp(mintime)
 
     try:
         month = months[date.month - 1]
@@ -168,7 +168,9 @@ def get_occurrences_range_UTC(mint, utcmint, maxt, utcoffset, filename, id_,
     rend = rule['#'][5]
     ralarm = rule['#'][6]
 
-    date = _datetime.date.fromtimestamp(mintime)
+    # Using utcfromtimestamp gives correct behaviour in Eastern (positive) time
+    # zones (e.g. Australia/Sydney)
+    date = _datetime.datetime.utcfromtimestamp(mintime)
 
     try:
         month = months[date.month - 1]
@@ -237,7 +239,7 @@ def get_next_item_occurrences_local(base_time, utcbase, utcoffset, filename,
     rend = rule['#'][5]
     ralarm = rule['#'][6]
 
-    date = _datetime.date.fromtimestamp(mintime)
+    date = _datetime.datetime.fromtimestamp(mintime)
 
     try:
         month = months[date.month - 1]
@@ -312,7 +314,9 @@ def get_next_item_occurrences_UTC(base_time, utcbase, utcoffset, filename,
     rend = rule['#'][5]
     ralarm = rule['#'][6]
 
-    date = _datetime.date.fromtimestamp(mintime)
+    # Using utcfromtimestamp gives correct behaviour in Eastern (positive) time
+    # zones (e.g. Australia/Sydney)
+    date = _datetime.datetime.utcfromtimestamp(mintime)
 
     try:
         month = months[date.month - 1]
