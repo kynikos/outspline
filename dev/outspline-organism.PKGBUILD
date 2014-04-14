@@ -1,7 +1,7 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='outspline-organism'
-pkgver='0.5.0'
+pkgver='0.5.1'
 pkgrel=1
 pkgdesc="Organizer component for Outspline, adding advanced time management abilities"
 arch=('any')
@@ -13,7 +13,7 @@ optdepends=('libnotify: for desktop notifications (notify plugin)'
 conflicts=('organism-organizer')
 replaces=('organism-organizer')
 source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
-sha256sums=('c9627a10c91b2cb3f110d08693ef26e0350fa4d8cf670c56d86e90b4833875c1')
+sha256sums=('a8c9bafeed659010dbbbebd3015673ec433b4e8b8e25843698924693af9e21af')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"
