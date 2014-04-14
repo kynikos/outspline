@@ -109,7 +109,6 @@ class Rule(object):
             nh = _datetime.datetime.now() + _datetime.timedelta(hours=1)
 
             values = {
-                'time_span': 3600,
                 'start_day': nh.day,
                 'start_hour': nh.hour,
                 'start_minute': 0,
@@ -121,7 +120,7 @@ class Rule(object):
             }
         else:
             values = {
-                'time_span': rule[0],
+                'max_overlap': rule[0],
                 'selected_months_raw': rule[1],
                 'start_day': rule[2],
                 'start_hour': rule[3],
