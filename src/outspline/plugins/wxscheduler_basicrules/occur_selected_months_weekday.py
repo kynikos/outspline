@@ -131,7 +131,7 @@ class Rule(object):
                 'selected_months_raw': rule[0],
                 'start_weekday_raw': rule[1],
                 'start_weekday_number_raw': rule[2],
-                'time_span': rule[3],
+                'max_overlap': rule[3],
                 'start_hour': rule[4],
                 'start_minute': rule[5],
                 'end_relative_time': rule[6] if rule[6] is not None else 3600,
