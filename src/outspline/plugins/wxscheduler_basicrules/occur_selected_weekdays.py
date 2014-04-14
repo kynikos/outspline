@@ -143,7 +143,7 @@ class Rule(object):
 
             rrstart = values['reference_starts'][0] % 86400
 
-            values['selected_weekdays'] = [_datetime.datetime.fromtimestamp(
+            values['selected_weekdays'] = [_datetime.datetime.utcfromtimestamp(
                                     refstart).weekday() + 1
                                     for refstart in values['reference_starts']]
             values['selected_weekdays'].sort()
@@ -213,7 +213,7 @@ class Rule(object):
     @staticmethod
     def create_random_rule():
         start = int((random.gauss(_time.time(), 15000))) // 60 * 60
-        swd = _datetime.datetime.fromtimestamp(start).weekday()
+        swd = _datetime.datetime.utcfromtimestamp(start).weekday()
 
         rdays = [0, ]
         rdays.extend(random.sample(range(1, 7), random.randint(0, 6)))

@@ -136,7 +136,7 @@ class Rule(object):
 
             rrstart = values['reference_start'] % 86400
 
-            currw = _datetime.datetime.fromtimestamp(
+            currw = _datetime.datetime.utcfromtimestamp(
                                         values['reference_start']).weekday()
 
         values['end_relative_number'], values['end_relative_unit'] = \
