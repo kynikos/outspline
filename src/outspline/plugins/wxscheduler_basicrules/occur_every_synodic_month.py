@@ -156,9 +156,10 @@ class Rule(object):
     @staticmethod
     def _make_label(refstart, rend, ralarm, endtype, alarmtype, rendn, rendu,
                                                 ralarmn, ralarmu, standard):
-        label = 'Occur every synodic month, for example on {} ({})'.format(
-                                         _time.strftime('%a %d %b %Y at %H:%M',
-                                         _time.gmtime(refstart)), standard)
+        label = ('Occur every mean synodic month, '
+                                        'for example on {} ({})').format(
+                                        _time.strftime('%a %d %b %Y at %H:%M',
+                                        _time.gmtime(refstart)), standard)
 
         if endtype == 1:
             label += ' for {} {}'.format(rendn, rendu)

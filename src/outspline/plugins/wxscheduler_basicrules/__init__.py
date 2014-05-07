@@ -72,7 +72,7 @@ class Main(object):
             ('occur_every_month_weekday_inverse',
                 ('Occur on the n-th-to-last weekday of every month',
                                         occur_every_month_weekday_inverse)),
-            ('occur_every_synodic_month', ('Occur every synodic month',
+            ('occur_every_synodic_month', ('Occur every mean synodic month',
                                                 occur_every_synodic_month)),
             ('occur_yearly', ('Occur every n years', occur_yearly)),
             ('except_once', ('Except once', except_once)),
