@@ -36,20 +36,17 @@ import menus
 
 
 class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
-    imagelistsmall = None
-    imagemap = None
-
     def __init__(self, parent, colsn):
         wx.ListView.__init__(self, parent, style=wx.LC_REPORT)
         ListCtrlAutoWidthMixin.__init__(self)
         ColumnSorterMixin.__init__(self, colsn)
 
-        self.set_image_lists()
+        self._set_image_lists()
 
     def GetListCtrl(self):
         return self
 
-    def set_image_lists(self):
+    def _set_image_lists(self):
         self.imagelistsmall = wx.ImageList(16, 16)
         self.imagemap = {
             'small': {}
@@ -67,42 +64,7 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
                                             self.imagemap['small']['sortdown'])
 
 
-class OccurrencesView():
-    DATABASE_COLUMN = None
-    HEADING_COLUMN = None
-    START_COLUMN = None
-    DURATION_COLUMN = None
-    END_COLUMN = None
-    STATE_COLUMN = None
-    ALARM_COLUMN = None
-    tasklist = None
-    listview = None
-    cmenu = None
-    colors = None
-    filter_ = None
-    now = None
-    occs = None
-    datamap = None
-    states = None
-    activealarms = None
-    DELAY = None
-    delay = None
-    timer = None
-    min_time = None
-    max_time = None
-    autoscroll = None
-    startformat = None
-    endformat = None
-    alarmformat = None
-    format_database = None
-    format_duration = None
-    time_allocation = None
-    time_allocation_overlap = None
-    compute_time_allocation = None
-    insert_gaps_and_overlappings = None
-    show_gaps = None
-    show_overlappings = None
-
+class OccurrencesView(object):
     def __init__(self, tasklist, filters):
         self.DATABASE_COLUMN = 0
         self.HEADING_COLUMN = 1
@@ -119,7 +81,7 @@ class OccurrencesView():
 
         # Override ColumnSorterMixin's method for sorting items that have equal
         # primary sort value
-        self.listview.GetSecondarySortValues = self.get_secondary_sort_values
+        self.listview.GetSecondarySortValues = self._get_secondary_sort_values
 
         config = coreaux_api.get_plugin_configuration('wxtasklist')
 
@@ -155,7 +117,7 @@ class OccurrencesView():
         self.set_filter(self.tasklist.filters.get_filter_configuration(
                                 self.tasklist.filters.get_selected_filter()))
 
-        self.set_colors(config)
+        self._set_colors(config)
 
         # Do not self.listview.setResizeColumn(2) because it gives a
         # non-standard feeling; the last column is auto-resized by default
@@ -172,33 +134,33 @@ class OccurrencesView():
             self.alarmformat = self.startformat
 
         if config['database_format'] == 'full':
-            self.format_database = self.format_database_full
+            self.format_database = self._format_database_full
         else:
-            self.format_database = self.format_database_short
+            self.format_database = self._format_database_short
 
         if config['duration_format'] == 'compact':
-            self.format_duration = self.format_duration_compact
+            self.format_duration = self._format_duration_compact
         else:
-            self.format_duration = self.format_duration_expanded
+            self.format_duration = self._format_duration_expanded
 
         self.show_gaps = config.get_bool('show_gaps')
         self.show_overlappings = config.get_bool('show_overlappings')
 
         # Initialize self.delay with a dummy function (int)
         self.delay = wx.CallLater(self.DELAY, int)
-        self.timer = wx.CallLater(0, self.restart)
+        self.timer = wx.CallLater(0, self._restart)
 
         self.enable_refresh()
 
-        self.listview.Bind(wx.EVT_CONTEXT_MENU, self.popup_context_menu)
+        self.listview.Bind(wx.EVT_CONTEXT_MENU, self._popup_context_menu)
 
     def _init_context_menu(self, mainmenu):
         self.cmenu = menus.ListContextMenu(self.tasklist, mainmenu)
 
-    def get_secondary_sort_values(self, col, key1, key2):
+    def _get_secondary_sort_values(self, col, key1, key2):
         return (self.datamap[key1][2], self.datamap[key2][2])
 
-    def set_colors(self, config):
+    def _set_colors(self, config):
         system = self.listview.GetTextColour()
         colpast = config['color_past']
         colongoing = config['color_ongoing']
@@ -249,17 +211,17 @@ class OccurrencesView():
         self.colors['gap'] = colgap
         self.colors['overlapping'] = coloverlap
 
-    def delay_restart_on_text_update(self, kwargs=None):
+    def _delay_restart_on_text_update(self, kwargs=None):
         if kwargs['text'] is not None:
             self.delay_restart()
 
     def enable_refresh(self):
-        core_api.bind_to_update_item(self.delay_restart_on_text_update)
+        core_api.bind_to_update_item(self._delay_restart_on_text_update)
         # Note that self.delay_restart is *not* bound to
         # organism_timer_api.bind_to_get_next_occurrences which is signalled by
-        # self.refresh signal because of the call to
+        # self._refresh signal because of the call to
         # organism_timer_api.get_next_occurrences, otherwise this would make
-        # self.refresh recur infinitely
+        # self._refresh recur infinitely
         organism_timer_api.bind_to_search_next_occurrences(self._delay_restart)
         organism_alarms_api.bind_to_alarm_off(self._delay_restart)
 
@@ -267,7 +229,7 @@ class OccurrencesView():
         # Do not even think of disabling refreshing when the notebook tab is
         # not selected, because then it should always be refreshed when
         # selecting it, which would make everything more sluggish
-        core_api.bind_to_update_item(self.delay_restart_on_text_update, False)
+        core_api.bind_to_update_item(self._delay_restart_on_text_update, False)
         organism_timer_api.bind_to_search_next_occurrences(self._delay_restart,
                                                                         False)
         organism_alarms_api.bind_to_alarm_off(self._delay_restart, False)
@@ -278,15 +240,15 @@ class OccurrencesView():
         wx.CallAfter(self.delay_restart)
 
     def delay_restart(self):
-        # Instead of self.restart, bind _this_ function to events that can be
-        # signalled many times in a loop, so that self.restart is executed only
-        # once after the last signal
+        # Instead of self._restart, bind _this_ function to events that can be
+        # signalled many times in a loop, so that self._restart is executed
+        # only once after the last signal
         self.delay.Stop()
-        self.delay = wx.CallLater(self.DELAY, self.restart)
+        self.delay = wx.CallLater(self.DELAY, self._restart)
 
-    def restart(self, kwargs=None):
+    def _restart(self, kwargs=None):
         self.timer.Stop()
-        delay = self.refresh()
+        delay = self._refresh()
 
         if delay is not None:
             # delay may become too big (long instead of int), limit it to 24h
@@ -319,7 +281,7 @@ class OccurrencesView():
         else:
             self.filter_ = class_(config)
 
-    def refresh(self):
+    def _refresh(self):
         log.debug('Refresh tasklist')
 
         self.now = int(_time.time())
@@ -352,7 +314,7 @@ class OccurrencesView():
 
         self.activealarms = {}
 
-        self.prepare_time_allocation()
+        self._prepare_time_allocation()
 
         if self.listview.GetItemCount() > 0:
             # Save the scroll y for restoring it after inserting the items
@@ -395,7 +357,7 @@ class OccurrencesView():
 
             self.states[self.occs[i].get_state()].append(i)
 
-    def prepare_time_allocation(self):
+    def _prepare_time_allocation(self):
         if self.show_gaps or self.show_overlappings:
             # Bit array that stores the minutes occupied by at least an
             # occurrence
@@ -516,7 +478,7 @@ class OccurrencesView():
 
         self.states[self.occs[i].get_state()].append(i)
 
-    def popup_context_menu(self, event):
+    def _popup_context_menu(self, event):
         self.cmenu.update()
         self.listview.PopupMenu(self.cmenu)
 
@@ -587,15 +549,15 @@ class OccurrencesView():
         config['autoscroll'] = 'on' if self.autoscroll.is_enabled() else 'off'
 
     @staticmethod
-    def format_database_short(filename):
+    def _format_database_short(filename):
         return os.path.basename(filename)
 
     @staticmethod
-    def format_database_full(filename):
+    def _format_database_full(filename):
         return filename
 
     @staticmethod
-    def format_duration_compact(duration):
+    def _format_duration_compact(duration):
         if duration % 604800 == 0:
             return '{} weeks'.format(str(duration // 604800))
         elif duration % 86400 == 0:
@@ -606,7 +568,7 @@ class OccurrencesView():
             return '{} minutes'.format(str(duration // 60))
 
     @staticmethod
-    def format_duration_expanded(duration):
+    def _format_duration_expanded(duration):
         strings = []
         w, r = divmod(duration, 604800)
         d, r = divmod(r, 86400)
@@ -628,14 +590,7 @@ class OccurrencesView():
         return ' '.join(strings)
 
 
-class Autoscroll():
-    occview = None
-    listview = None
-    padding = None
-    state_column = None
-    enabled = None
-    execute = None
-
+class Autoscroll(object):
     def __init__(self, occview, listview, padding, state_column):
         self.occview = occview
         self.listview = listview
@@ -704,19 +659,7 @@ class Autoscroll():
         self._execute_auto(None)
 
 
-class ListItem():
-    filename = None
-    id_ = None
-    start = None
-    duration = None
-    end = None
-    alarm = None
-    alarmid = None
-    fname = None
-    title = None
-    state = None
-    stateid = None
-
+class ListItem(object):
     def __init__(self, i, occ, occview, listview):
         self.filename = occ['filename']
         self.id_ = occ['id_']
@@ -754,7 +697,7 @@ class ListItem():
             listview.SetItemTextColour(index, occview.colors['past'])
 
         text = core_api.get_item_text(self.filename, self.id_)
-        self.title = self.make_heading(text)
+        self.title = self._make_heading(text)
 
         startdate = _time.strftime(occview.startformat, _time.localtime(
                                                                 self.start))
@@ -807,23 +750,11 @@ class ListItem():
         return self.state
 
     @staticmethod
-    def make_heading(text):
+    def _make_heading(text):
         return text.partition('\n')[0]
 
 
-class ListAuxiliaryItem():
-    filename = None
-    id_ = None
-    start = None
-    duration = None
-    end = None
-    alarm = None
-    alarmid = None
-    fname = None
-    title = None
-    state = None
-    stateid = None
-
+class ListAuxiliaryItem(object):
     def __init__(self, i, title, start, end, minstart, maxend, color, occview,
                                                                     listview):
         self.filename = None

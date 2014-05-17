@@ -31,40 +31,6 @@ import filters as filters_
 
 
 class MainMenu(wx.Menu):
-    tasklist = None
-    occview = None
-    ID_SHOW = None
-    show = None
-    filters = None
-    ID_FILTERS = None
-    filters_submenu = None
-    addfilter = None
-    ID_ADD_FILTER = None
-    editfilter = None
-    ID_EDIT_FILTER = None
-    removefilter = None
-    ID_REMOVE_FILTER = None
-    gaps = None
-    ID_GAPS = None
-    overlaps = None
-    ID_OVERLAPS = None
-    scroll = None
-    ID_SCROLL = None
-    autoscroll = None
-    ID_AUTOSCROLL = None
-    find = None
-    ID_FIND = None
-    edit = None
-    ID_EDIT = None
-    snooze = None
-    ID_SNOOZE = None
-    snooze_all = None
-    ID_SNOOZE_ALL = None
-    dismiss = None
-    ID_DISMISS = None
-    dismiss_all = None
-    ID_DISMISS_ALL = None
-
     def __init__(self, tasklist):
         wx.Menu.__init__(self)
 
@@ -178,25 +144,25 @@ class MainMenu(wx.Menu):
         self.AppendItem(self.dismiss_all)
 
         wxgui_api.bind_to_menu(self.tasklist.toggle_shown, self.show)
-        wxgui_api.bind_to_menu(self.add_filter, self.addfilter)
-        wxgui_api.bind_to_menu(self.edit_filter, self.editfilter)
-        wxgui_api.bind_to_menu(self.remove_filter, self.removefilter)
-        wxgui_api.bind_to_menu(self.show_gaps, self.gaps)
-        wxgui_api.bind_to_menu(self.show_overlappings, self.overlaps)
-        wxgui_api.bind_to_menu(self.scroll_to_ongoing, self.scroll)
-        wxgui_api.bind_to_menu(self.enable_autoscroll, self.autoscroll)
-        wxgui_api.bind_to_menu(self.find_in_tree, self.find)
-        wxgui_api.bind_to_menu(self.edit_items, self.edit)
-        wxgui_api.bind_to_menu(self.dismiss_selected_alarms, self.dismiss)
-        wxgui_api.bind_to_menu(self.dismiss_all_alarms, self.dismiss_all)
+        wxgui_api.bind_to_menu(self._add_filter, self.addfilter)
+        wxgui_api.bind_to_menu(self._edit_filter, self.editfilter)
+        wxgui_api.bind_to_menu(self._remove_filter, self.removefilter)
+        wxgui_api.bind_to_menu(self._show_gaps, self.gaps)
+        wxgui_api.bind_to_menu(self._show_overlappings, self.overlaps)
+        wxgui_api.bind_to_menu(self._scroll_to_ongoing, self.scroll)
+        wxgui_api.bind_to_menu(self._enable_autoscroll, self.autoscroll)
+        wxgui_api.bind_to_menu(self._find_in_tree, self.find)
+        wxgui_api.bind_to_menu(self._edit_items, self.edit)
+        wxgui_api.bind_to_menu(self._dismiss_selected_alarms, self.dismiss)
+        wxgui_api.bind_to_menu(self._dismiss_all_alarms, self.dismiss_all)
 
-        wxgui_api.bind_to_update_menu_items(self.update_items)
-        wxgui_api.bind_to_reset_menu_items(self.reset_items)
+        wxgui_api.bind_to_update_menu_items(self._update_items)
+        wxgui_api.bind_to_reset_menu_items(self._reset_items)
 
         wxgui_api.insert_menu_main_item('&Occurrences',
                                     wxgui_api.get_menu_logs_position(), self)
 
-    def update_items(self, kwargs):
+    def _update_items(self, kwargs):
         if kwargs['menu'] is self:
             self.show.Check(check=self.tasklist.is_shown())
             self.filters.Enable(False)
@@ -267,7 +233,7 @@ class MainMenu(wx.Menu):
                 self.overlaps.Enable()
                 self.autoscroll.Enable()
 
-    def reset_items(self, kwargs):
+    def _reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
         # accelerators
         self.show.Enable()
@@ -286,38 +252,38 @@ class MainMenu(wx.Menu):
         self.dismiss.Enable()
         self.dismiss_all.Enable()
 
-    def add_filter(self, event):
+    def _add_filter(self, event):
         self.tasklist.filters.create()
 
-    def edit_filter(self, event):
+    def _edit_filter(self, event):
         self.tasklist.filters.edit_selected()
 
-    def remove_filter(self, event):
+    def _remove_filter(self, event):
         self.tasklist.filters.remove_selected()
 
-    def show_gaps(self, event):
+    def _show_gaps(self, event):
         if self.tasklist.is_shown():
             self.occview.show_gaps = not self.occview.show_gaps
             self.occview.delay_restart()
 
-    def show_overlappings(self, event):
+    def _show_overlappings(self, event):
         if self.tasklist.is_shown():
             self.occview.show_overlappings = not self.occview.show_overlappings
             self.occview.delay_restart()
 
-    def scroll_to_ongoing(self, event):
+    def _scroll_to_ongoing(self, event):
         tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.tasklist.panel:
             self.occview.autoscroll.execute_force()
 
-    def enable_autoscroll(self, event):
+    def _enable_autoscroll(self, event):
         if self.occview.autoscroll.is_enabled():
             self.occview.autoscroll.disable()
         else:
             self.occview.autoscroll.enable()
 
-    def find_in_tree(self, event):
+    def _find_in_tree(self, event):
         tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.tasklist.panel:
@@ -351,7 +317,7 @@ class MainMenu(wx.Menu):
 
                     sel = self.occview.listview.GetNextSelected(sel)
 
-    def edit_items(self, event):
+    def _edit_items(self, event):
         tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.tasklist.panel:
@@ -366,7 +332,7 @@ class MainMenu(wx.Menu):
 
                 sel = self.occview.listview.GetNextSelected(sel)
 
-    def dismiss_selected_alarms(self, event):
+    def _dismiss_selected_alarms(self, event):
         core_api.block_databases()
 
         tab = wxgui_api.get_selected_right_nb_tab()
@@ -380,7 +346,7 @@ class MainMenu(wx.Menu):
 
         core_api.release_databases()
 
-    def dismiss_all_alarms(self, event):
+    def _dismiss_all_alarms(self, event):
         # Note that "all" means all the visible active alarms; some may be
         # hidden in the current view
         core_api.block_databases()
@@ -398,19 +364,6 @@ class MainMenu(wx.Menu):
 
 
 class TabContextMenu(wx.Menu):
-    tasklist = None
-    filters = None
-    filters_submenu = None
-    addfilter = None
-    editfilter = None
-    removefilter = None
-    gaps = None
-    overlaps = None
-    scroll = None
-    autoscroll = None
-    snooze_all = None
-    dismiss_all = None
-
     def __init__(self, tasklist):
         wx.Menu.__init__(self)
         self.tasklist = tasklist
@@ -489,14 +442,6 @@ class TabContextMenu(wx.Menu):
 
 
 class ListContextMenu(wx.Menu):
-    tasklist = None
-    occview = None
-    mainmenu = None
-    find = None
-    edit = None
-    snooze = None
-    dismiss = None
-
     def __init__(self, tasklist, mainmenu):
         wx.Menu.__init__(self)
         self.tasklist = tasklist
@@ -556,9 +501,6 @@ class ListContextMenu(wx.Menu):
 
 
 class FiltersMenu(wx.Menu):
-    tasklist = None
-    namestoids = None
-
     def __init__(self, tasklist):
         wx.Menu.__init__(self)
         self.tasklist = tasklist
@@ -582,7 +524,7 @@ class FiltersMenu(wx.Menu):
             item = wx.MenuItem(self, id_, config['name'], kind=wx.ITEM_RADIO)
             self.AppendItem(item)
 
-            wxgui_api.bind_to_menu(self.select_filter_loop(filter_, config),
+            wxgui_api.bind_to_menu(self._select_filter_loop(filter_, config),
                                                                         item)
 
         # This submenu is created both under the main menu and the tab context
@@ -590,16 +532,12 @@ class FiltersMenu(wx.Menu):
         selfilter = self.tasklist.filters.get_selected_filter()
         self.Check(self.namestoids[selfilter], check=True)
 
-    def select_filter_loop(self, filter_, config):
+    def _select_filter_loop(self, filter_, config):
         return lambda event: self.tasklist.filters.select_filter(filter_,
                                                                         config)
 
 
 class _SnoozeConfigMenu(wx.Menu):
-    tasklist = None
-    snoozetimes = None
-    snoozefor = None
-
     def __init__(self, tasklist):
         wx.Menu.__init__(self)
         self.tasklist = tasklist
@@ -617,18 +555,18 @@ class _SnoozeConfigMenu(wx.Menu):
             # don't crash the application
             self.snoozetimes[time] = self.Append(wx.NewId(), "For " +
                                                       str(number) + ' ' + unit)
-            wxgui_api.bind_to_menu(self.snooze_for_loop(time),
+            wxgui_api.bind_to_menu(self._snooze_for_loop(time),
                                                         self.snoozetimes[time])
 
         self.AppendSeparator()
         self.snoozefor = self.Append(wx.NewId(), "For...")
 
-        wxgui_api.bind_to_menu(self.snooze_for_custom, self.snoozefor)
+        wxgui_api.bind_to_menu(self._snooze_for_custom, self.snoozefor)
 
-    def snooze_for_loop(self, time):
-        return lambda event: self.snooze_for(time)
+    def _snooze_for_loop(self, time):
+        return lambda event: self._snooze_for(time)
 
-    def snooze_for(self, time):
+    def _snooze_for(self, time):
         core_api.block_databases()
 
         tab = wxgui_api.get_selected_right_nb_tab()
@@ -642,7 +580,7 @@ class _SnoozeConfigMenu(wx.Menu):
 
         core_api.release_databases()
 
-    def snooze_for_custom(self, event):
+    def _snooze_for_custom(self, event):
         core_api.block_databases()
 
         tab = wxgui_api.get_selected_right_nb_tab()
@@ -661,9 +599,6 @@ class _SnoozeConfigMenu(wx.Menu):
 
 
 class SnoozeDialog(wx.Dialog):
-    number = None
-    unit = None
-
     def __init__(self):
         wx.Dialog.__init__(self, parent=wxgui_api.get_main_frame(),
                                                 title="Snooze configuration")

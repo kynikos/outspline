@@ -29,13 +29,7 @@ import outspline.extensions.organism_timer_api as organism_timer_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
 
-class Filters():
-    tasklist = None
-    config = None
-    filterssorted = None
-    selected_filter = None
-    editor = None
-
+class Filters(object):
     def __init__(self, tasklist):
         self.DEFAULT_FILTERS = {
             0: {
@@ -64,6 +58,8 @@ class Filters():
                 ]),
             },
         }
+
+        self.editor = False
 
         # tasklist.list_ hasn't been instantiated yet here
         self.tasklist = tasklist
@@ -175,18 +171,7 @@ class Filters():
         wxgui_api.set_right_nb_page_title(self.tasklist.panel, title)
 
 
-class FilterEditor():
-    tasklist = None
-    parent = None
-    editid = None
-    config = None
-    filters = None
-    panel = None
-    fbox = None
-    name = None
-    choice = None
-    sfilter = None
-
+class FilterEditor(object):
     def __init__(self, tasklist, default_filters, filterid, config):
         self.tasklist = tasklist
         self.default_filters = default_filters
@@ -233,11 +218,11 @@ class FilterEditor():
 
         self.fbox.Add(sheader, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.panel.Bind(wx.EVT_BUTTON, self.save, button_save)
-        self.panel.Bind(wx.EVT_BUTTON, self.preview, button_preview)
-        self.panel.Bind(wx.EVT_BUTTON, self.cancel, button_cancel)
+        self.panel.Bind(wx.EVT_BUTTON, self._save, button_save)
+        self.panel.Bind(wx.EVT_BUTTON, self._preview, button_preview)
+        self.panel.Bind(wx.EVT_BUTTON, self._cancel, button_cancel)
 
-    def compose_configuration(self):
+    def _compose_configuration(self):
         config = OrderedDict()
 
         # wx.TextCtrl.GetValue returns a unicode, not a str
@@ -247,10 +232,10 @@ class FilterEditor():
 
         return config
 
-    def save(self, event):
+    def _save(self, event):
         # Note that the configuration is exported to the file only when exiting
         # Outspline
-        config = self.compose_configuration()
+        config = self._compose_configuration()
 
         filtersconfig = coreaux_api.get_plugin_configuration('wxtasklist')(
                                                                      'Filters')
@@ -279,19 +264,21 @@ class FilterEditor():
         # don't call self.close here
         self.filters.select_filter(filter_, config)
 
-    def preview(self, event):
-        config = self.compose_configuration()
+    def _preview(self, event):
+        config = self._compose_configuration()
         self.tasklist.list_.set_filter(config)
         self.filters.set_tab_title(config['name'])
         self.tasklist.list_.delay_restart()
 
-    def cancel(self, event):
+    def _cancel(self, event):
         self.close()
         self.filters.apply_selected_filter()
 
     def close(self):
         self.panel.Destroy()
-        del self.filters.editor
+        # Do not just do `del self.filters.editor`, otherwise AttributeError
+        # will be raised the next time a rule is attempted to be edited
+        self.filters.editor = False
         self.parent.GetSizer().Layout()
 
     def _init_filter_types(self):
@@ -319,14 +306,14 @@ class FilterEditor():
 
         self.fbox.Add(self.choice, flag=wx.BOTTOM, border=4)
 
-        self.panel.Bind(wx.EVT_CHOICE, self.choose_filter_type, self.choice)
+        self.panel.Bind(wx.EVT_CHOICE, self._choose_filter_type, self.choice)
 
     def _init_selected_filter(self):
         self.sfilter = self.choice.GetClientData(self.choice.GetSelection()
                                                      )(self.panel, self.config)
         self.fbox.Add(self.sfilter.panel, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-    def choose_filter_type(self, event):
+    def _choose_filter_type(self, event):
         fpanel = event.GetClientData()(self.panel, self.config)
         self.fbox.Replace(self.sfilter.panel, fpanel.panel)
         self.sfilter.panel.Destroy()
@@ -334,13 +321,7 @@ class FilterEditor():
         self.parent.Layout()
 
 
-class FilterRelativeInterface():
-    panel = None
-    fgrid = None
-    lowlimit = None
-    highlimit = None
-    values = None
-
+class FilterRelativeInterface(object):
     def __init__(self, parent, config):
         self.panel = wx.Panel(parent)
 
@@ -410,13 +391,7 @@ class FilterRelativeInterface():
         return config
 
 
-class FilterAbsoluteInterface():
-    panel = None
-    fgrid = None
-    lowlimit = None
-    highlimit = None
-    values = None
-
+class FilterAbsoluteInterface(object):
     def __init__(self, parent, config):
         self.panel = wx.Panel(parent)
 
@@ -500,14 +475,7 @@ class FilterAbsoluteInterface():
         return config
 
 
-class FilterRegularInterface():
-    panel = None
-    fgrid = None
-    base = None
-    span = None
-    advance = None
-    values = None
-
+class FilterRegularInterface(object):
     def __init__(self, parent, config):
         self.panel = wx.Panel(parent)
 
@@ -590,14 +558,7 @@ class FilterRegularInterface():
         ])
 
 
-class FilterMonthStaticInterface():
-    panel = None
-    fgrid = None
-    month = None
-    span = None
-    year = None
-    values = None
-
+class FilterMonthStaticInterface(object):
     def __init__(self, parent, config):
         self.panel = wx.Panel(parent)
 
@@ -660,14 +621,7 @@ class FilterMonthStaticInterface():
         ])
 
 
-class FilterMonthDynamicInterface():
-    panel = None
-    fgrid = None
-    month = None
-    span = None
-    advance = None
-    values = None
-
+class FilterMonthDynamicInterface(object):
     def __init__(self, parent, config):
         self.panel = wx.Panel(parent)
 
@@ -738,10 +692,7 @@ class FilterMonthDynamicInterface():
         ])
 
 
-class FilterRelative():
-    low = None
-    high = None
-
+class FilterRelative(object):
     def __init__(self, config):
         # Make sure self.low is lower than self.high
         limits = [int(config['low']) * 60, int(config['high']) * 60]
@@ -803,7 +754,7 @@ class FilterRelative():
 
         try:
             # Note that the delay can still be further limited in
-            # OccurrencesView.restart
+            # OccurrencesView._restart
             # Subtract `now % 60` so that the refresh will occur at an exact
             # minute
             return min(delays) - now % 60
@@ -812,10 +763,7 @@ class FilterRelative():
             return None
 
 
-class FilterAbsolute():
-    low = None
-    high = None
-
+class FilterAbsolute(object):
     def __init__(self, config):
         # Make sure self.low is lower than self.high
         limits = [int(_time.mktime(_time.strptime(config['low'],
@@ -832,11 +780,7 @@ class FilterAbsolute():
         return None
 
 
-class FilterRegular():
-    base = None
-    span = None
-    advance = None
-
+class FilterRegular(object):
     def __init__(self, config):
         self.base = int(_time.mktime(_time.strptime(config['base'],
                                                             '%Y-%m-%dT%H:%M')))
@@ -1044,15 +988,11 @@ class FilterRegular():
 
     def compute_delay(self, occsobj, now, mint, maxt):
         # Note that the delay can still be further limited in
-        # OccurrencesView.restart
+        # OccurrencesView._restart
         return max(min((mint + self.advance, maxt)) - now, 0)
 
 
-class FilterMonthStatic():
-    month = None
-    span = None
-    year = None
-
+class FilterMonthStatic(object):
     def __init__(self, config):
         self.month = min(max(int(config['month']), 1), 12)
         self.span = max(int(config['span']), 1)
@@ -1071,11 +1011,7 @@ class FilterMonthStatic():
         return None
 
 
-class FilterMonthDynamic():
-    month = None
-    span = None
-    advance = None
-
+class FilterMonthDynamic(object):
     def __init__(self, config):
         self.month = min(max(int(config['month']), 1), 12)
         # For the moment only span<= 12 is supported
@@ -1136,5 +1072,5 @@ class FilterMonthDynamic():
         delaydate = _datetime.date(mindate.year + years, delaymonth + 1, 1)
 
         # Note that the delay can still be further limited in
-        # OccurrencesView.restart
+        # OccurrencesView._restart
         return max((delaydate - nowdate).total_seconds(), 0)
