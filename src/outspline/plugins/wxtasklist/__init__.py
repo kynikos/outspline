@@ -52,8 +52,9 @@ class TaskList(object):
 
         # filters.Filters must be instantiated *before* list_.OccurrencesView,
         # because the former sets the filter for the latter; note that
-        # inverting the order would work anyway because of a favorable race
-        # condition, but of course don't rely on that
+        # inverting the order would work anyway because of a usually favorable
+        # race condition (the list is refreshed after an asynchronous delay),
+        # but of course that shouldn't be relied on
         self.filters = filters.Filters(self)
         self.list_ = list_.OccurrencesView(self)
 
