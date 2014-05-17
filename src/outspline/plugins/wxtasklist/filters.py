@@ -59,7 +59,7 @@ class Filters(object):
             },
         }
 
-        self.editor = False
+        self.navigator = False
 
         # tasklist.list_ hasn't been instantiated yet here
         self.tasklist = tasklist
@@ -107,9 +107,9 @@ class Filters(object):
 
     def select_filter(self, filter_, config):
         # Trying to select a filter while one is being edited is not
-        # supported, so close any open editor first
-        if self.editor:
-            self.editor.close()
+        # supported, so close any open navigators first
+        if self.navigator:
+            self.navigator.close()
 
         self.tasklist.list_.set_filter(config)
 
@@ -128,20 +128,20 @@ class Filters(object):
         self.set_tab_title(config['name'])
 
     def create(self):
-        if self.editor:
-            self.editor.close()
+        if self.navigator:
+            self.navigator.close()
 
-        self.editor = FilterEditor(self.tasklist, self.DEFAULT_FILTERS, None,
+        self.navigator = Navigator(self.tasklist, self.DEFAULT_FILTERS, None,
                                                                         None)
         self.set_tab_title('New filter')
 
     def edit_selected(self):
-        if self.editor:
-            self.editor.close()
+        if self.navigator:
+            self.navigator.close()
 
         filter_ = self.get_selected_filter()
         config = self.get_filter_configuration(filter_)
-        self.editor = FilterEditor(self.tasklist, self.DEFAULT_FILTERS,
+        self.navigator = Navigator(self.tasklist, self.DEFAULT_FILTERS,
                                                             filter_, config)
 
     def remove_selected(self):
@@ -150,10 +150,10 @@ class Filters(object):
         # case where there are no filters in the configuration, so no further
         # tests are needed here
         # Trying to remove a filter that is being edited, and then trying to
-        # save the editor, would generate an error, so close any open editors
-        # first
-        if self.editor:
-            self.editor.close()
+        # save the navigator, would generate an error, so close any open
+        # navigators first
+        if self.navigator:
+            self.navigator.close()
 
         filter_ = self.get_selected_filter()
         filters = self.config('Filters')
@@ -171,7 +171,7 @@ class Filters(object):
         wxgui_api.set_right_nb_page_title(self.tasklist.panel, title)
 
 
-class FilterEditor(object):
+class Navigator(object):
     def __init__(self, tasklist, default_filters, filterid, config):
         self.tasklist = tasklist
         self.default_filters = default_filters
@@ -260,7 +260,7 @@ class FilterEditor(object):
                 else:
                     newid += 1
 
-        # self.filters.select_filter will take care of closing the editor,
+        # self.filters.select_filter will take care of closing the navigator,
         # don't call self.close here
         self.filters.select_filter(filter_, config)
 
@@ -276,9 +276,9 @@ class FilterEditor(object):
 
     def close(self):
         self.panel.Destroy()
-        # Do not just do `del self.filters.editor`, otherwise AttributeError
+        # Do not just do `del self.filters.navigator`, otherwise AttributeError
         # will be raised the next time a rule is attempted to be edited
-        self.filters.editor = False
+        self.filters.navigator = False
         self.parent.GetSizer().Layout()
 
     def _init_filter_types(self):
@@ -351,7 +351,7 @@ class FilterRelativeInterface(object):
         self.fgrid.Add(self.highlimit.get_main_panel())
 
     def _init_config(self, config):
-        # config cannot be None here, as it's been initialized in FilterEditor
+        # config cannot be None here, as it's been initialized in Navigator
         if config['mode'] == 'relative':
             # Do not overwrite the values in self.config, as they may be used
             # also by other filters
@@ -423,7 +423,7 @@ class FilterAbsoluteInterface(object):
         self.fgrid.Add(self.highlimit.get_main_panel())
 
     def _init_config(self, config):
-        # config cannot be None here, as it's been initialized in FilterEditor
+        # config cannot be None here, as it's been initialized in Navigator
         if config['mode'] == 'absolute':
             # Do not overwrite the values in self.config, as they may be used
             # also by other filters
@@ -517,7 +517,7 @@ class FilterRegularInterface(object):
         self.fgrid.Add(self.advance.get_main_panel())
 
     def _init_config(self, config):
-        # config cannot be None here, as it's been initialized in FilterEditor
+        # config cannot be None here, as it's been initialized in Navigator
         if config['mode'] == 'regular':
             # Do not overwrite the values in self.config, as they may be used
             # also by other filters
@@ -592,7 +592,7 @@ class FilterMonthStaticInterface(object):
         self.fgrid.Add(self.span)
 
     def _init_config(self, config):
-        # config cannot be None here, as it's been initialized in FilterEditor
+        # config cannot be None here, as it's been initialized in Navigator
         if config['mode'] == 'staticmonth':
             # Do not overwrite the values in self.config, as they may be used
             # also by other filters
@@ -661,7 +661,7 @@ class FilterMonthDynamicInterface(object):
         self.fgrid.Add(self.advance)
 
     def _init_config(self, config):
-        # config cannot be None here, as it's been initialized in FilterEditor
+        # config cannot be None here, as it's been initialized in Navigator
         if config['mode'] == 'month':
             # Do not overwrite the values in self.config, as they may be used
             # also by other filters
