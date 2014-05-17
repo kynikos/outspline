@@ -28,34 +28,6 @@ import outspline.coreaux_api as coreaux_api
 import outspline.extensions.organism_timer_api as organism_timer_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
-DEFAULT_FILTERS = {
-    0: {
-        'F0': OrderedDict([
-            ('name', 'Next 24 hours'),
-            ('mode', 'relative'),
-            ('low', '-5'),
-            ('high', '1440'),
-        ]),
-        'F1': OrderedDict([
-            ('name', 'Current week'),
-            ('mode', 'regular'),
-            # A Monday, must be in local time
-            # Note there's not a native way in Python to initialize this to a
-            # Monday or Sunday depending on the local week conventions
-            ('base', '2013-10-21T00:00'),
-            ('span', '10079'),
-            ('advance', '10080'),
-        ]),
-        'F2': OrderedDict([
-            ('name', 'Current month'),
-            ('mode', 'month'),
-            ('month', '1'),
-            ('span', '1'),
-            ('advance', '1'),
-        ]),
-    },
-}
-
 
 class Filters():
     tasklist = None
@@ -65,6 +37,34 @@ class Filters():
     editor = None
 
     def __init__(self, tasklist):
+        self.DEFAULT_FILTERS = {
+            0: {
+                'F0': OrderedDict([
+                    ('name', 'Next 24 hours'),
+                    ('mode', 'relative'),
+                    ('low', '-5'),
+                    ('high', '1440'),
+                ]),
+                'F1': OrderedDict([
+                    ('name', 'Current week'),
+                    ('mode', 'regular'),
+                    # A Monday, must be in local time
+                    # Note there's not a native way in Python to initialize this to a
+                    # Monday or Sunday depending on the local week conventions
+                    ('base', '2013-10-21T00:00'),
+                    ('span', '10079'),
+                    ('advance', '10080'),
+                ]),
+                'F2': OrderedDict([
+                    ('name', 'Current month'),
+                    ('mode', 'month'),
+                    ('month', '1'),
+                    ('span', '1'),
+                    ('advance', '1'),
+                ]),
+            },
+        }
+
         # tasklist.list_ hasn't been instantiated yet here
         self.tasklist = tasklist
 
@@ -87,7 +87,7 @@ class Filters():
         self.filterssorted = filters.get_sections()
 
         if len(self.filterssorted) == 0:
-            filters.reset(DEFAULT_FILTERS)
+            filters.reset(self.DEFAULT_FILTERS)
 
             # Re-get the sections after resetting
             self.filterssorted = filters.get_sections()
@@ -135,7 +135,8 @@ class Filters():
         if self.editor:
             self.editor.close()
 
-        self.editor = FilterEditor(self.tasklist, None, None)
+        self.editor = FilterEditor(self.tasklist, self.DEFAULT_FILTERS, None,
+                                                                        None)
         self.set_tab_title('New filter')
 
     def edit_selected(self):
@@ -144,7 +145,8 @@ class Filters():
 
         filter_ = self.get_selected_filter()
         config = self.get_filter_configuration(filter_)
-        self.editor = FilterEditor(self.tasklist, filter_, config)
+        self.editor = FilterEditor(self.tasklist, self.DEFAULT_FILTERS,
+                                                            filter_, config)
 
     def remove_selected(self):
         # If there's only one filter left in the configuration, the remove
@@ -185,8 +187,9 @@ class FilterEditor():
     choice = None
     sfilter = None
 
-    def __init__(self, tasklist, filterid, config):
+    def __init__(self, tasklist, default_filters, filterid, config):
         self.tasklist = tasklist
+        self.default_filters = default_filters
         self.parent = tasklist.panel
         self.editid = filterid
         self.filters = tasklist.filters
@@ -206,7 +209,7 @@ class FilterEditor():
         if config:
             self.config = config
         else:
-            self.config = DEFAULT_FILTERS[0]['F0']
+            self.config = self.default_filters[0]['F0']
             self.config['name'] = 'New filter'
 
     def _init_header(self):

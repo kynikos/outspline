@@ -103,7 +103,7 @@ class OccurrencesView():
     show_gaps = None
     show_overlappings = None
 
-    def __init__(self, tasklist):
+    def __init__(self, tasklist, filters):
         self.DATABASE_COLUMN = 0
         self.HEADING_COLUMN = 1
         self.START_COLUMN = 2
@@ -114,6 +114,7 @@ class OccurrencesView():
         COLUMNS_NUMBER = 7
 
         self.tasklist = tasklist
+        self.filters = filters
         self.listview = ListView(tasklist.panel, COLUMNS_NUMBER)
 
         # Override ColumnSorterMixin's method for sorting items that have equal
@@ -314,7 +315,7 @@ class OccurrencesView():
         try:
             class_ = filterclasses[config['mode']]
         except KeyError:
-            self.set_filter(filters.DEFAULT_FILTERS[0]['F0'])
+            self.set_filter(self.filters.DEFAULT_FILTERS[0]['F0'])
         else:
             self.filter_ = class_(config)
 

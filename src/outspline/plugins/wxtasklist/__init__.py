@@ -56,7 +56,7 @@ class TaskList(object):
         # race condition (the list is refreshed after an asynchronous delay),
         # but of course that shouldn't be relied on
         self.filters = filters.Filters(self)
-        self.list_ = list_.OccurrencesView(self)
+        self.list_ = list_.OccurrencesView(self, self.filters)
 
         self.mainmenu = menus.MainMenu(self)
         self.panel.init_tab_menu(self)
