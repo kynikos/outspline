@@ -216,7 +216,8 @@ def snooze_alarms(alarmsd, stime):
                 qconn = core_api.get_connection(filename)
                 cursor = qconn.cursor()
                 cursor.execute(queries.alarms_update_id, (newalarm, alarmid))
-                cursor.execute(queries.alarmsofflog_insert, (id_, 0, text))
+                cursor.execute(queries.alarmsofflog_insert, (id_, 0,
+                                                    text.partition('\n')[0]))
                 core_api.give_connection(filename, qconn)
 
                 # Signal the event after updating the database, so, for
@@ -239,7 +240,8 @@ def dismiss_alarms(alarmsd):
                 qconn = core_api.get_connection(filename)
                 cursor = qconn.cursor()
                 cursor.execute(queries.alarms_delete_id, (alarmid, ))
-                cursor.execute(queries.alarmsofflog_insert, (id_, 1, text))
+                cursor.execute(queries.alarmsofflog_insert, (id_, 1,
+                                                    text.partition('\n')[0]))
                 core_api.give_connection(filename, qconn)
 
                 # It's necessary to change the dismiss status, otherwise it's
@@ -316,7 +318,8 @@ def delete_alarms(filename, id_, text):
         if cursor.rowcount > 0:
             # Also store the text, otherwise it won't be possible to retrieve
             # it, since the item has been deleted
-            cursor.execute(queries.alarmsofflog_insert, (id_, 2, text))
+            cursor.execute(queries.alarmsofflog_insert, (id_, 2,
+                                                    text.partition('\n')[0]))
             core_api.give_connection(filename, qconn)
 
             # Signal the event after updating the database, so, for example,
