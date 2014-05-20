@@ -180,28 +180,31 @@ class RuleList():
 
         self.mmode = 'append'
 
-        pgrid = wx.GridSizer(3, 2, 4, 4)
+        pbox = wx.BoxSizer(wx.VERTICAL)
 
-        self.button_up = wx.Button(self.panel, label='Move up')
-        pgrid.Add(self.button_up)
+        self.button_add = wx.Button(self.panel, label='Add...',
+                                                        style=wx.BU_EXACTFIT)
+        pbox.Add(self.button_add, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        pgrid.AddSpacer(1)
+        self.button_edit = wx.Button(self.panel, label='Edit...',
+                                                        style=wx.BU_EXACTFIT)
+        pbox.Add(self.button_edit, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.button_remove = wx.Button(self.panel, label='Remove')
-        pgrid.Add(self.button_remove)
+        self.button_up = wx.Button(self.panel, label='Move up',
+                                                        style=wx.BU_EXACTFIT)
+        pbox.Add(self.button_up, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.button_add = wx.Button(self.panel, label='Add...')
-        pgrid.Add(self.button_add)
+        self.button_down = wx.Button(self.panel, label='Move down',
+                                                        style=wx.BU_EXACTFIT)
+        pbox.Add(self.button_down, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.button_down = wx.Button(self.panel, label='Move down')
-        pgrid.Add(self.button_down)
-
-        self.button_edit = wx.Button(self.panel, label='Edit...')
-        pgrid.Add(self.button_edit)
+        self.button_remove = wx.Button(self.panel, label='Remove',
+                                                        style=wx.BU_EXACTFIT)
+        pbox.Add(self.button_remove, flag=wx.EXPAND)
 
         self.update_buttons()
 
-        hbox.Add(pgrid, flag=wx.EXPAND)
+        hbox.Add(pbox, flag=wx.EXPAND)
 
         self.panel.Bind(wx.EVT_BUTTON, self.add_rule, self.button_add)
         self.panel.Bind(wx.EVT_BUTTON, self.edit_rule, self.button_edit)
