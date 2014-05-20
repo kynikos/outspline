@@ -303,13 +303,13 @@ class Alarm():
                                 '%Y.%m.%d %H:%M', _time.localtime(self.start)))
         hbox.Add(startdate, 1, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        button_s = wx.Button(parent, label='Snooze')
+        button_s = wx.Button(parent, label='Snooze', style=wx.BU_EXACTFIT)
         hbox.Add(button_s)
 
-        button_d = wx.Button(parent, label='Dismiss')
+        button_d = wx.Button(parent, label='Dismiss', style=wx.BU_EXACTFIT)
         hbox.Add(button_d, flag=wx.LEFT, border=4)
 
-        button_e = wx.Button(parent, label='Open')
+        button_e = wx.Button(parent, label='Open', style=wx.BU_EXACTFIT)
         hbox.Add(button_e, flag=wx.LEFT, border=4)
 
         # wx.CP_NO_TLW_RESIZE in conjunction with
