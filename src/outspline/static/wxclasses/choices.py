@@ -20,22 +20,25 @@ import wx
 
 
 class WidgetChoiceCtrl(object):
-    def __init__(self, parent, choices, initchoice, rborder):
+    def __init__(self, parent, choices, initchoice, rborder,
+                                                        layout_ancestors=1):
         self.panel = wx.Panel(parent)
         self.box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(self.box)
 
         self.choices = choices
         self.activectrl = None
+        self.layout_ancestors = layout_ancestors
 
         self.choicectrl = wx.Choice(self.panel,
                                      choices=[choice[0] for choice in choices])
         self.choicectrl.Select(initchoice)
         self.box.Add(self.choicectrl, flag=wx.ALIGN_CENTER_VERTICAL |
                                                     wx.RIGHT, border=rborder)
-        # Do not call self._update here, in fact classcall will very likely have
-        # to use this very object, which at this stage hasn;'t been instantiated
-        # yet; call self.force_update after the object is created, instead
+        # Do not call self._update here, in fact classcall will very likely
+        # have to use this very object, which at this stage hasn;'t been
+        # instantiated yet; call self.force_update after the object is created,
+        # instead
 
         self.panel.Bind(wx.EVT_CHOICE, self._handle_choice, self.choicectrl)
 
@@ -56,8 +59,12 @@ class WidgetChoiceCtrl(object):
         if self.activectrl:
             self.box.Add(self.activectrl, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        # self.panel.Layout() isn't enough...
-        self.panel.GetParent().Layout()
+        window = self.panel
+
+        for i in range(self.layout_ancestors):
+            window = window.GetParent()
+
+        window.Layout()
 
     def force_update(self):
         self._update()
