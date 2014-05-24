@@ -32,7 +32,7 @@ class WidgetChoiceCtrl(object):
 
         self.choicectrl = wx.Choice(self.panel,
                                      choices=[choice[0] for choice in choices])
-        self.choicectrl.Select(initchoice)
+        self.set_selection(initchoice)
         self.box.Add(self.choicectrl, flag=wx.ALIGN_CENTER_VERTICAL |
                                                     wx.RIGHT, border=rborder)
         # Do not call self._update here, in fact classcall will very likely
@@ -78,6 +78,9 @@ class WidgetChoiceCtrl(object):
 
     def get_selection(self):
         return self.choicectrl.GetSelection()
+
+    def set_selection(self, choice):
+        self.choicectrl.Select(choice)
 
     def get_choice_width(self):
         return self.choicectrl.GetSizeTuple()[0]
