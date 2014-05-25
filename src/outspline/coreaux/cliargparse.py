@@ -27,15 +27,16 @@ from configuration import (_USER_CONFIG_FILE, _COPYRIGHT_V1, _DISCLAIMER_SHORT,
 class ShowVersion(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         print("Outspline {} ({})\n\n{}\n{}".format(
-                        components('Components')(components['core'])['version'],
-                   components('Components')(components['core'])['release_date'],
-                                              _COPYRIGHT_V1, _DISCLAIMER_SHORT))
+                components('Components')(components['core'])['version'],
+                components('Components')(components['core'])['release_date'],
+                _COPYRIGHT_V1, _DISCLAIMER_SHORT))
         sys.exit()
 
 
 def parse_cli_args():
     # Options -h and --help are automatically created
-    cliparser = argparse.ArgumentParser(description=info('Core')['description'])
+    cliparser = argparse.ArgumentParser(description=info('Core')[
+                                                                'description'])
 
     cliparser.add_argument('-c',
                            '--config',
@@ -69,7 +70,7 @@ def parse_cli_args():
                                 'path can be specified (default: {}, see also '
                                 '--loglevel option)'
                                 ''.format(os.path.expanduser(config('Log'
-                                                                )['log_file'])))
+                                                            )['log_file'])))
 
     cliparser.add_argument('-v',
                            '--version',
