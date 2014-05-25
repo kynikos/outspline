@@ -57,9 +57,11 @@ def parse_cli_args():
                                 'respectively, stdout and file log messages; '
                                 '0) disabled; 1) essential reports; 2) normal '
                                 'verbosity; 3) debug mode; digits different '
-                                'from 0,1,2,3 will be converted to 3 '
-                                '(default: {}, see also --logfile option)'
-                                ''.format(config('Log')['log_level']))
+                                'from 0,1,2,3 will default to the respective '
+                                'value set in the configuration file '
+                                '(default: {}{}, see also --logfile option)'
+                                ''.format(config('Log')['log_level_stdout'],
+                                config('Log')['log_level_file']))
 
     cliparser.add_argument('-f',
                            '--logfile',

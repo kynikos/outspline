@@ -25,10 +25,7 @@ from configuration import components, info, config, _USER_FOLDER_PERMISSIONS
 log = None
 
 
-class LevelFilter():
-    levels = None
-    inverse = None
-
+class LevelFilter(object):
     def __init__(self, levels, inverse):
         self.levels = levels
         self.inverse = inverse
@@ -38,12 +35,26 @@ class LevelFilter():
 
 
 def set_logger(cliargs):
-    if cliargs.loglevel != None:
-        loglevel = cliargs.loglevel
+    if cliargs.loglevel is not None:
+        level = {'console': int(cliargs.loglevel[0]),
+                'file': int(cliargs.loglevel[1:])}
     else:
-        loglevel = config('Log')['log_level']
+        level = {'console': -1,
+                'file': -1}
 
-    if cliargs.logfile != None:
+    if level['console'] not in (0, 1, 2, 3):
+        level['console'] = config('Log').get_int('log_level_stdout')
+
+        if level['console'] not in (0, 1, 2, 3):
+            level['console'] = 1
+
+    if level['file'] not in (0, 1, 2, 3):
+        level['file'] = config('Log').get_int('log_level_file')
+
+        if level['file'] not in (0, 1, 2, 3):
+            level['file'] = 0
+
+    if cliargs.logfile is not None:
         logfile = os.path.expanduser(cliargs.logfile)
     else:
         logfile = os.path.expanduser(config('Log')['log_file'])
@@ -54,21 +65,14 @@ def set_logger(cliargs):
         if e.errno != errno.EEXIST:
             raise
 
-    level = {'console': int(loglevel[0]), 'file': int(loglevel[1:])}
-
-    if level['console'] not in (0, 1, 2, 3):
-        level['console'] = 2
-    if level['file'] not in (0, 1, 2, 3):
-        level['file'] = 0
-
     console_level = ('CRITICAL', 'ERROR', 'INFO', 'DEBUG')[level['console']]
     file_level = ('CRITICAL', 'WARNING', 'INFO', 'DEBUG')[level['file']]
     console_formatter = ('simple_default', 'simple_default', 'simple_default',
                          'verbose_default')[level['console']]
     console_info_formatter = ('simple_info', 'simple_info', 'simple_info',
                               'verbose_info')[level['console']]
-    file_low_formatter = ('simple', 'simple', 'simple', 'verbose')[level['file']
-                                                                               ]
+    file_low_formatter = ('simple', 'simple', 'simple', 'verbose')[
+                                                                level['file']]
     file_formatter = ('simple', 'verbose', 'verbose', 'verbose')[level['file']]
     file_max_bytes = (1, 10000, 30000, 100000)[level['file']]
     file_delay = (True, True, False, False)[level['file']]
@@ -183,7 +187,8 @@ def set_logger(cliargs):
     global log
     log = logging.getLogger('outspline')
 
-    log.info('Start logging (level {}, file {})'.format(loglevel, logfile))
+    log.info('Start logging (level {}{}, file {})'.format(
+                        str(level['console']), str(level['file']), logfile))
     log.info('{} version {} ({})'.format('Outspline',
-                        components('Components')(components['core'])['version'],
-                  components('Components')(components['core'])['release_date']))
+                components('Components')(components['core'])['version'],
+                components('Components')(components['core'])['release_date']))
