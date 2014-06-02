@@ -45,17 +45,17 @@ class Navigator(object):
         self.panel.SetSizer(self.fbox)
 
 
-        conf = coreaux_api.get_plugin_configuration('wxtasklist')
+        self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
-        self.limits = (conf.get_int('minimum_year'),
-                                                conf.get_int('maximum_year'))
+        self.limits = (self.config.get_int('minimum_year'),
+                                            self.config.get_int('maximum_year'))
 
         self.configuration = FilterConfiguration(self.limits)
 
         self._init_buttons()
         self._init_filter()
 
-        if conf.get_bool('show_navigator'):
+        if self.config.get_bool('show_navigator'):
             self._show()
 
     def _init_buttons(self):
@@ -169,8 +169,7 @@ class Navigator(object):
         cconfig = self.configuration.get_current()
 
         try:
-            nconfig = self.configuration.compute_next_configuration(
-                                                                    cconfig)
+            nconfig = self.configuration.compute_next_configuration(cconfig)
         except OutOfRangeError:
             msgboxes.warn_out_of_range().ShowModal()
         else:
@@ -242,8 +241,7 @@ class Navigator(object):
         return self.configuration.get_default()
 
     def save_configuration(self):
-        config = coreaux_api.get_plugin_configuration('wxtasklist')
-        config['show_navigator'] = 'yes' if self.is_shown() else 'no'
+        self.config['show_navigator'] = 'yes' if self.is_shown() else 'no'
         self.configuration.clear_on_file()
 
 
