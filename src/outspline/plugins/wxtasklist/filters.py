@@ -19,8 +19,12 @@
 import wx
 import time as _time
 import datetime as _datetime
+import calendar as _calendar
+import copy as copy_
 from collections import OrderedDict
 
+from outspline.static.pyaux import timeaux
+from outspline.static.wxclasses.choices import WidgetChoiceCtrl
 from outspline.static.wxclasses.timectrls import DateHourCtrl, TimeSpanCtrl
 from outspline.static.wxclasses.misc import NarrowSpinCtrl
 
@@ -28,676 +32,956 @@ import outspline.coreaux_api as coreaux_api
 import outspline.extensions.organism_timer_api as organism_timer_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
-
-class Filters(object):
-    def __init__(self, tasklist):
-        self.DEFAULT_FILTERS = {
-            0: {
-                'F0': OrderedDict([
-                    ('name', 'Next 24 hours'),
-                    ('mode', 'relative'),
-                    ('low', '-5'),
-                    ('high', '1440'),
-                ]),
-                'F1': OrderedDict([
-                    ('name', 'Current week'),
-                    ('mode', 'regular'),
-                    # A Monday, must be in local time
-                    # Note there's not a native way in Python to initialize this to a
-                    # Monday or Sunday depending on the local week conventions
-                    ('base', '2013-10-21T00:00'),
-                    ('span', '10079'),
-                    ('advance', '10080'),
-                ]),
-                'F2': OrderedDict([
-                    ('name', 'Current month'),
-                    ('mode', 'month'),
-                    ('month', '1'),
-                    ('span', '1'),
-                    ('advance', '1'),
-                ]),
-            },
-        }
-
-        self.navigator = False
-
-        # tasklist.list_ hasn't been instantiated yet here
-        self.tasklist = tasklist
-
-        self.config = coreaux_api.get_plugin_configuration('wxtasklist')
-        self.update_filters()
-        self.selected_filter = self.config['selected_filter']
-
-        try:
-            config = self.config('Filters')(self.selected_filter)
-        except KeyError:
-            filter_ = self.filterssorted[0]
-            # The configuration is exported to the file only when exiting
-            # Outspline
-            config = self.get_filter_configuration(filter_)
-            self.config['selected_filter'] = filter_
-            self.selected_filter = self.config['selected_filter']
-
-    def update_filters(self):
-        filters = self.config('Filters')
-        self.filterssorted = filters.get_sections()
-
-        if len(self.filterssorted) == 0:
-            filters.reset(self.DEFAULT_FILTERS)
-
-            # Re-get the sections after resetting
-            self.filterssorted = filters.get_sections()
-
-        # Filters with the same name must be supported, and with the current
-        # absence of a way to configure their order in the choice control, they
-        # must be sorted alphabetically
-        self.filterssorted.sort(key=self._get_sorting_key)
-
-    def _get_sorting_key(self, filter_):
-        return self.config('Filters')(filter_)['name']
-
-    def get_filters_sorted(self):
-        return self.filterssorted
-
-    def get_filter_configuration(self, filter_):
-        return self.config('Filters')(filter_).get_options()
-
-    def get_selected_filter(self):
-        return self.selected_filter
-
-    def select_filter(self, filter_, config):
-        # Trying to select a filter while one is being edited is not
-        # supported, so close any open navigators first
-        if self.navigator:
-            self.navigator.close()
-
-        self.tasklist.list_.set_filter(config)
-
-        # The configuration is exported to the file only when exiting Outspline
-        self.config['selected_filter'] = filter_
-        self.selected_filter = filter_
-
-        self.set_tab_title(config['name'])
-
-        self.tasklist.list_.delay_restart()
-
-    def apply_selected_filter(self):
-        config = self.get_filter_configuration(self.get_selected_filter())
-        self.tasklist.list_.set_filter(config)
-        self.tasklist.list_.delay_restart()
-        self.set_tab_title(config['name'])
-
-    def create(self):
-        if self.navigator:
-            self.navigator.close()
-
-        self.navigator = Navigator(self.tasklist, self.DEFAULT_FILTERS, None,
-                                                                        None)
-        self.set_tab_title('New filter')
-
-    def edit_selected(self):
-        if self.navigator:
-            self.navigator.close()
-
-        filter_ = self.get_selected_filter()
-        config = self.get_filter_configuration(filter_)
-        self.navigator = Navigator(self.tasklist, self.DEFAULT_FILTERS,
-                                                            filter_, config)
-
-    def remove_selected(self):
-        # If there's only one filter left in the configuration, the remove
-        # menu item is disabled; however update_filters can also handle the
-        # case where there are no filters in the configuration, so no further
-        # tests are needed here
-        # Trying to remove a filter that is being edited, and then trying to
-        # save the navigator, would generate an error, so close any open
-        # navigators first
-        if self.navigator:
-            self.navigator.close()
-
-        filter_ = self.get_selected_filter()
-        filters = self.config('Filters')
-        filters(filter_).delete()
-
-        self.update_filters()
-
-        # Select the first filter for safe and consistent behavior
-        filter_ = self.filterssorted[0]
-        config = self.get_filter_configuration(filter_)
-
-        self.select_filter(filter_, config)
-
-    def set_tab_title(self, title):
-        wxgui_api.set_right_nb_page_title(self.tasklist.panel, title)
+import msgboxes
+from exceptions import OutOfRangeError
 
 
 class Navigator(object):
-    def __init__(self, tasklist, default_filters, filterid, config):
+    def __init__(self, tasklist):
+        # tasklist.list_ hasn't been instantiated yet here
         self.tasklist = tasklist
-        self.default_filters = default_filters
         self.parent = tasklist.panel
-        self.editid = filterid
-        self.filters = tasklist.filters
         self.panel = wx.Panel(self.parent)
-        self.fbox = wx.BoxSizer(wx.VERTICAL)
+        self.fbox = wx.WrapSizer(orient=wx.HORIZONTAL)
         self.panel.SetSizer(self.fbox)
 
-        self._init_config(config)
-        self._init_header()
-        self._init_filter_types()
-        self._init_selected_filter()
 
-        self.parent.GetSizer().Prepend(self.panel, flag=wx.EXPAND)
-        self.parent.GetSizer().Layout()
+        conf = coreaux_api.get_plugin_configuration('wxtasklist')
 
-    def _init_config(self, config):
-        if config:
-            self.config = config
-        else:
-            self.config = self.default_filters[0]['F0']
-            self.config['name'] = 'New filter'
+        self.limits = (conf.get_int('minimum_year'),
+                                                conf.get_int('maximum_year'))
 
-    def _init_header(self):
-        sheader = wx.BoxSizer(wx.HORIZONTAL)
+        self.configuration = FilterConfiguration(self.limits)
 
-        label = wx.StaticText(self.panel, label='Name:')
-        sheader.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
+        self._init_buttons()
+        self._init_filter()
+        self._show()
 
-        self.name = wx.TextCtrl(self.panel, value=self.config['name'])
-        sheader.Add(self.name, 1, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
-                                                                    border=4)
+    def _init_buttons(self):
+        button_previous = wx.Button(self.panel, label='<',
+                                                        style=wx.BU_EXACTFIT)
+        self.fbox.Add(button_previous, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        button_save = wx.Button(self.panel, label='Save')
-        sheader.Add(button_save, flag=wx.RIGHT, border=4)
+        # Use spacers instead of margins: a spacer will be ignored by the
+        # WrapSizer if the next item wraps
+        self.fbox.AddSpacer(4)
 
-        button_preview = wx.Button(self.panel, label='Preview')
-        sheader.Add(button_preview, flag=wx.RIGHT, border=4)
+        button_next = wx.Button(self.panel, label='>', style=wx.BU_EXACTFIT)
+        self.fbox.Add(button_next, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        button_cancel = wx.Button(self.panel, label='Cancel')
-        sheader.Add(button_cancel)
+        self.fbox.AddSpacer(4)
 
-        self.fbox.Add(sheader, flag=wx.EXPAND | wx.BOTTOM, border=4)
+        button_reset = wx.Button(self.panel, label='Reset',
+                                                        style=wx.BU_EXACTFIT)
+        self.fbox.Add(button_reset, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.panel.Bind(wx.EVT_BUTTON, self._save, button_save)
-        self.panel.Bind(wx.EVT_BUTTON, self._preview, button_preview)
-        self.panel.Bind(wx.EVT_BUTTON, self._cancel, button_cancel)
+        self.fbox.AddSpacer(4)
 
-    def _compose_configuration(self):
-        config = OrderedDict()
+        button_set = wx.Button(self.panel, label='Set', style=wx.BU_EXACTFIT)
+        self.fbox.Add(button_set, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        # wx.TextCtrl.GetValue returns a unicode, not a str
-        config['name'] = str(self.name.GetValue())
+        self.fbox.AddSpacer(4)
 
-        config.update(self.sfilter.get_config())
+        button_apply = wx.Button(self.panel, label='Apply',
+                                                        style=wx.BU_EXACTFIT)
+        self.fbox.Add(button_apply, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        return config
+        self.fbox.AddSpacer(4)
 
-    def _save(self, event):
-        # Note that the configuration is exported to the file only when exiting
-        # Outspline
-        config = self._compose_configuration()
+        self.panel.Bind(wx.EVT_BUTTON, self._show_previous_page,
+                                                            button_previous)
+        self.panel.Bind(wx.EVT_BUTTON, self._show_next_page, button_next)
+        self.panel.Bind(wx.EVT_BUTTON, self._reset, button_reset)
+        self.panel.Bind(wx.EVT_BUTTON, self._set, button_set)
+        self.panel.Bind(wx.EVT_BUTTON, self._apply, button_apply)
 
-        filtersconfig = coreaux_api.get_plugin_configuration('wxtasklist')(
-                                                                     'Filters')
-
-        if self.editid:
-            filter_ = self.editid
-            filtersconfig(filter_).reset(config)
-            self.filters.update_filters()
-        else:
-            newid = 0
-
-            while True:
-                filter_ = ''.join(('F', str(newid)))
-
-                try:
-                    filtersconfig(filter_)
-                except KeyError:
-                    filtersconfig.make_subsection(filter_)
-                    filtersconfig(filter_).reset(config)
-                    self.filters.update_filters()
-                    break
-                else:
-                    newid += 1
-
-        # self.filters.select_filter will take care of closing the navigator,
-        # don't call self.close here
-        self.filters.select_filter(filter_, config)
-
-    def _preview(self, event):
-        config = self._compose_configuration()
-        self.tasklist.list_.set_filter(config)
-        self.filters.set_tab_title(config['name'])
-        self.tasklist.list_.delay_restart()
-
-    def _cancel(self, event):
-        self.close()
-        self.filters.apply_selected_filter()
-
-    def close(self):
-        self.panel.Destroy()
-        # Do not just do `del self.filters.navigator`, otherwise AttributeError
-        # will be raised the next time a rule is attempted to be edited
-        self.filters.navigator = False
-        self.parent.GetSizer().Layout()
-
-    def _init_filter_types(self):
+    def _init_filter(self):
         self.choice = wx.Choice(self.panel, choices=())
 
-        self.choice.Append("Relative interval (dnyamic)",
-                                            clientData=FilterRelativeInterface)
-        self.choice.Append("Absolute interval (static)",
-                                            clientData=FilterAbsoluteInterface)
-        self.choice.Append("Regular interval (dnyamic)",
-                                             clientData=FilterRegularInterface)
-        self.choice.Append("Month-based interval (static)",
-                                         clientData=FilterMonthStaticInterface)
-        self.choice.Append("Month-based interval (dnyamic)",
-                                        clientData=FilterMonthDynamicInterface)
-
-
-        self.choice.SetSelection({
-            'relative': 0,
-            'absolute': 1,
-            'regular': 2,
-            'staticmonth': 3,
-            'month': 4,
-        }[self.config['mode']])
+        self.choice.Append("Relative", clientData=FilterInterfaceRelative)
+        self.choice.Append("Date", clientData=FilterInterfaceDate)
+        self.choice.Append("Month", clientData=FilterInterfaceMonth)
 
         self.fbox.Add(self.choice, flag=wx.BOTTOM, border=4)
 
-        self.panel.Bind(wx.EVT_CHOICE, self._choose_filter_type, self.choice)
+        self.fbox.AddSpacer(4)
 
-    def _init_selected_filter(self):
-        self.sfilter = self.choice.GetClientData(self.choice.GetSelection()
-                                                     )(self.panel, self.config)
-        self.fbox.Add(self.sfilter.panel, flag=wx.EXPAND | wx.BOTTOM, border=4)
+        config = self.configuration.get_saved()
+        choice = self._set_filter_selection(config)
 
-    def _choose_filter_type(self, event):
-        fpanel = event.GetClientData()(self.panel, self.config)
+        self.sfilter = self.choice.GetClientData(choice)(self.panel,
+                                                        self.limits, config)
+        self.fbox.Add(self.sfilter.panel, flag=wx.BOTTOM, border=4)
+        self.parent.Layout()
+
+        self.panel.Bind(wx.EVT_CHOICE, self._handle_filter_choice, self.choice)
+
+    def _handle_filter_choice(self, event):
+        self._show_filter(event.GetInt(),
+                    self.configuration.get_current_or_default(event.GetInt()))
+
+    def _show_filter(self, choice, config):
+        fpanel = self.choice.GetClientData(choice)(self.panel, self.limits,
+                                                                        config)
         self.fbox.Replace(self.sfilter.panel, fpanel.panel)
         self.sfilter.panel.Destroy()
         self.sfilter = fpanel
         self.parent.Layout()
 
+    def _set_filter_selection(self, config):
+        choice = {'relative': 0, 'date': 1, 'month': 2}[config['mode']]
+        self.choice.SetSelection(choice)
+        return choice
 
-class FilterRelativeInterface(object):
-    def __init__(self, parent, config):
-        self.panel = wx.Panel(parent)
+    def _reset_filter(self, config):
+        choice = self._set_filter_selection(config)
+        self._show_filter(choice, config)
 
-        self._init_config(config)
-
-        self.fgrid = wx.FlexGridSizer(rows=2, cols=2, hgap=4, vgap=4)
-        self.panel.SetSizer(self.fgrid)
-
-        lowlabel = wx.StaticText(self.panel, label='Low limit:')
-        self.fgrid.Add(lowlabel, flag=wx.ALIGN_CENTER_VERTICAL)
-
-        # It must be possible to set up at least to 527039 minutes
-        # (1 leap year - 1 minute)
-        self.lowlimit = TimeSpanCtrl(self.panel, -999999, 999999)
-        self.lowlimit.set_values(*TimeSpanCtrl.compute_widget_values(
-                                                           self.values['low']))
-        self.fgrid.Add(self.lowlimit.get_main_panel())
-
-        highlabel = wx.StaticText(self.panel, label='High limit:')
-        self.fgrid.Add(highlabel, flag=wx.ALIGN_CENTER_VERTICAL)
-
-        # It must be possible to set up at least to 527039 minutes
-        # (1 leap year - 1 minute)
-        self.highlimit = TimeSpanCtrl(self.panel, -999999, 999999)
-        self.highlimit.set_values(*TimeSpanCtrl.compute_widget_values(
-                                                          self.values['high']))
-        self.fgrid.Add(self.highlimit.get_main_panel())
-
-    def _init_config(self, config):
-        # config cannot be None here, as it's been initialized in Navigator
-        if config['mode'] == 'relative':
-            # Do not overwrite the values in self.config, as they may be used
-            # also by other filters
-            limits = [int(config['low']) * 60, int(config['high']) * 60]
-            limits.sort()
-            self.values = {
-                'low': limits[0],
-                'high': limits[1],
-            }
+    def _apply_filter(self, config):
+        try:
+            self.tasklist.list_.set_filter(config)
+        except OutOfRangeError:
+            msgboxes.warn_out_of_range().ShowModal()
         else:
-            self.values = {
-                'low': -300,
-                'high': 86400,
-            }
+            self.tasklist.list_.delay_restart()
 
-    def get_config(self):
-        # It's important to store only the significant values for the limits:
-        # this helps preventing the user from entering wrong values in the
-        # configuration file
-        config = OrderedDict()
-        config['mode'] = 'relative'
-        low = self.lowlimit.get_time_span()
-        high = self.highlimit.get_time_span()
+    def _show_previous_page(self, event):
+        cconfig = self.configuration.get_current()
 
         try:
-            lowneg = low // abs(low)
-        except ZeroDivisionError:
-            lowneg = 1
+            nconfig = self.configuration.compute_previous_configuration(
+                                                                    cconfig)
+        except OutOfRangeError:
+            msgboxes.warn_out_of_range().ShowModal()
+        else:
+            self._reset_filter(nconfig)
+            self._show_filter(self.choice.GetSelection(), nconfig)
+            self._apply_filter(nconfig)
+
+    def _show_next_page(self, event):
+        cconfig = self.configuration.get_current()
 
         try:
-            highneg = high // abs(high)
-        except ZeroDivisionError:
-            highneg = 1
+            nconfig = self.configuration.compute_next_configuration(
+                                                                    cconfig)
+        except OutOfRangeError:
+            msgboxes.warn_out_of_range().ShowModal()
+        else:
+            self._reset_filter(nconfig)
+            self._show_filter(self.choice.GetSelection(), nconfig)
+            self._apply_filter(nconfig)
 
-        config['low'] = str(abs(low) // 60 * lowneg)
-        config['high'] = str(abs(high) // 60 * highneg)
+    def _reset(self, event):
+        config = self.configuration.restore_saved()
+        self._reset_filter(config)
+        self._apply_filter(config)
+
+    def _set(self, event):
+        # Note that the configuration is exported to the file only when exiting
+        # Outspline
+        intvalues = self.sfilter.get_values()
+
+        try:
+            config = self.configuration.set_current_from_interface(intvalues)
+        except OutOfRangeError:
+            msgboxes.warn_out_of_range().ShowModal()
+        else:
+            self._apply_filter(config)
+
+            # Store *after* applying the filter, i.e. after setting the current
+            # values
+            self.configuration.set_saved()
+
+    def _apply(self, event):
+        intvalues = self.sfilter.get_values()
+
+        try:
+            config = self.configuration.set_current_from_interface(intvalues)
+        except OutOfRangeError:
+            msgboxes.warn_out_of_range().ShowModal()
+        else:
+            self._apply_filter(config)
+
+    def _show(self):
+        self.parent.GetSizer().Prepend(self.panel, flag=wx.EXPAND)
+        self.parent.GetSizer().Layout()
+
+    def _hide(self):
+        self.parent.GetSizer().Detach(self.panel)
+        self.parent.GetSizer().Layout()
+
+    def is_shown(self):
+        return self.panel.GetContainingSizer() is not None
+
+    def toggle_shown(self):
+        if self.is_shown():
+            self._hide()
+        else:
+            self._show()
+
+    def get_current_configuration(self):
+        return self.configuration.get_current()
+
+    def get_default_configuration(self):
+        return self.configuration.get_default()
+
+    def reset_config_file(self):
+        self.configuration.clear_on_file()
+
+
+class FilterConfiguration(object):
+    def __init__(self, limits):
+        self.section = coreaux_api.get_plugin_configuration('wxtasklist')(
+                                                            'DefaultFilter')
+
+        self.modes_to_filters = {
+            'relative': FilterConfigurationRelative(limits),
+            'date': FilterConfigurationDate(limits),
+            'month': FilterConfigurationMonth(limits),
+        }
+
+        options = self.section.get_options()
+        self.filterconf = self.modes_to_filters[options['mode']]
+
+        try:
+            self.saved = self.filterconf.compute_from_file(options)
+        except OutOfRangeError:
+            self.saved = self.filterconf.get_defaults()
+
+        self.current = copy_.deepcopy(self.saved)
+
+    def _set_current(self, config):
+        self.current = config
+        self.filterconf = self.modes_to_filters[self.current['mode']]
+
+    def set_current_from_interface(self, intvalues):
+        self.filterconf = self.modes_to_filters[intvalues['mode']]
+        config = self.filterconf.compute_from_interface(intvalues)
+        self.current = config
         return config
 
+    def get_current(self):
+        return self.current
 
-class FilterAbsoluteInterface(object):
-    def __init__(self, parent, config):
-        self.panel = wx.Panel(parent)
+    def get_default(self):
+        return self.filterconf.get_defaults()
 
-        self._init_config(config)
+    def get_current_or_default(self, choice):
+        mode = ('relative', 'date', 'month')[choice]
 
-        self.fgrid = wx.FlexGridSizer(rows=2, cols=2, hgap=4, vgap=4)
-        self.panel.SetSizer(self.fgrid)
+        if self.current['mode'] == mode:
+            return self.current
+        else:
+            return self.modes_to_filters[mode].get_defaults()
 
-        lowlabel = wx.StaticText(self.panel, label='Low limit:')
-        self.fgrid.Add(lowlabel, flag=wx.ALIGN_CENTER_VERTICAL)
+    def set_saved(self):
+        self.saved = copy_.deepcopy(self.current)
+        self.section.reset(self.filterconf.compose_for_file(self.saved))
 
-        self.lowlimit = DateHourCtrl(self.panel)
-        self.lowlimit.set_values(self.values['lowyear'],
-                                 self.values['lowmonth'] - 1,
-                                 self.values['lowday'],
-                                 self.values['lowhour'],
-                                 self.values['lowminute'])
-        self.fgrid.Add(self.lowlimit.get_main_panel())
+    def restore_saved(self):
+        self._set_current(self.saved)
+        return self.saved
 
-        highlabel = wx.StaticText(self.panel, label='High limit:')
-        self.fgrid.Add(highlabel, flag=wx.ALIGN_CENTER_VERTICAL)
+    def get_saved(self):
+        return self.saved
 
-        self.highlimit = DateHourCtrl(self.panel)
-        self.highlimit.set_values(self.values['highyear'],
-                                  self.values['highmonth'] - 1,
-                                  self.values['highday'],
-                                  self.values['highhour'],
-                                  self.values['highminute'])
-        self.fgrid.Add(self.highlimit.get_main_panel())
+    def compute_next_configuration(self, config):
+        nconfig = self.filterconf.compute_adjacent(config, 1)
+        self._set_current(nconfig)
+        return nconfig
 
-    def _init_config(self, config):
-        # config cannot be None here, as it's been initialized in Navigator
-        if config['mode'] == 'absolute':
-            # Do not overwrite the values in self.config, as they may be used
-            # also by other filters
-            limits = [_time.mktime(_time.strptime(config['low'],
-                                                            '%Y-%m-%dT%H:%M')),
-                      _time.mktime(_time.strptime(config['high'],
-                                                            '%Y-%m-%dT%H:%M'))]
+    def compute_previous_configuration(self, config):
+        nconfig = self.filterconf.compute_adjacent(config, -1)
+        self._set_current(nconfig)
+        return nconfig
+
+    def clear_on_file(self):
+        # The DefaultFilter section must be reset (not simply upgraded) in the
+        # configuration file, otherwise the old options will be left
+        self.section.export_reset(coreaux_api.get_user_config_file())
+
+
+class FilterConfigurationRelative(object):
+    def __init__(self, limits):
+        self.limits = limits
+        self.units = ('minutes', 'hours', 'days', 'weeks', 'months', 'years')
+        self.default = {
+            'mode': 'relative',
+            'low': -5,
+            'high': {0: 1440,
+                     1: 24,
+                     2: 1,
+                     3: 1,
+                     4: 1,
+                     5: 1},
+            'type': 'to',
+            'unit': 'minutes',
+            'uniti': 0,
+        }
+
+    def _compute(self, low, high, type_, unit):
+        if type_ == 'to':
+            limits = [low, high]
             limits.sort()
-            lowdate = _datetime.datetime.fromtimestamp(limits[0])
-            highdate = _datetime.datetime.fromtimestamp(limits[1])
-            self.values = {
-                'lowyear': lowdate.year,
-                'lowmonth': lowdate.month,
-                'lowday': lowdate.day,
-                'lowhour': lowdate.hour,
-                'lowminute': lowdate.minute,
-                'highyear': highdate.year,
-                'highmonth': highdate.month,
-                'highday': highdate.day,
-                'highhour': highdate.hour,
-                'highminute': highdate.minute,
-            }
-        else:
-            today = _datetime.date.today()
-            self.values = {
-                'lowyear': today.year,
-                'lowmonth': today.month,
-                'lowday': today.day,
-                'lowhour': 0,
-                'lowminute': 0,
-                'highyear': today.year,
-                'highmonth': today.month,
-                'highday': today.day,
-                'highhour': 23,
-                'highminute': 59,
-            }
+            low, high = limits
 
-    def get_config(self):
-        # It's important to store only the significant values for the limits:
-        # this helps preventing the user from entering wrong values in the
-        # configuration file
-        config = OrderedDict()
-        config['mode'] = 'absolute'
-        low = self.lowlimit.get_unix_time()
-        high = self.highlimit.get_unix_time()
-        config['low'] = _time.strftime('%Y-%m-%dT%H:%M', _time.localtime(low))
-        config['high'] = _time.strftime('%Y-%m-%dT%H:%M',
-                                                         _time.localtime(high))
+        config = copy_.deepcopy(self.default)
+        uniti = self.units.index(unit)
+
+        config.update({
+            'low': low,
+            'type': type_,
+            'unit': unit,
+            'uniti': uniti,
+        })
+
+        config['high'][uniti] = high
+
         return config
 
+    def compute_from_file(self, fileconfig):
+        return self._compute(int(fileconfig['low']), int(fileconfig['high']),
+                                        fileconfig['type'], fileconfig['unit'])
 
-class FilterRegularInterface(object):
-    def __init__(self, parent, config):
-        self.panel = wx.Panel(parent)
+    def compute_from_interface(self, intvalues):
+        return self._compute(intvalues['low'], intvalues['high'],
+                            intvalues['type'], self.units[intvalues['uniti']])
 
-        self._init_config(config)
+    def get_defaults(self):
+        return self.default
 
-        self.fgrid = wx.FlexGridSizer(rows=3, cols=2, hgap=4, vgap=4)
-        self.panel.SetSizer(self.fgrid)
+    def compute_adjacent(self, cconfig, mode):
+        nconfig = copy_.deepcopy(cconfig)
+        uniti = cconfig['uniti']
 
-        baselabel = wx.StaticText(self.panel, label='Low limit sample:')
-        self.fgrid.Add(baselabel, flag=wx.ALIGN_CENTER_VERTICAL)
-
-        self.base = DateHourCtrl(self.panel)
-        today = _datetime.date.today()
-        self.base.set_values(self.values['baseyear'],
-                             self.values['basemonth'] - 1,
-                             self.values['baseday'],
-                             self.values['basehour'],
-                             self.values['baseminute'])
-        self.fgrid.Add(self.base.get_main_panel())
-
-        spanlabel = wx.StaticText(self.panel, label='Time span:')
-        self.fgrid.Add(spanlabel, flag=wx.ALIGN_CENTER_VERTICAL)
-
-        # It must be possible to set up at least to 527039 minutes
-        # (1 leap year - 1 minute)
-        self.span = TimeSpanCtrl(self.panel, 1, 999999)
-        self.span.set_values(*TimeSpanCtrl.compute_widget_values(
-                                                          self.values['span']))
-        self.fgrid.Add(self.span.get_main_panel())
-
-        advlabel = wx.StaticText(self.panel, label='Advance interval:')
-        self.fgrid.Add(advlabel, flag=wx.ALIGN_CENTER_VERTICAL)
-
-        # It must be possible to set up at least to 527039 minutes
-        # (1 leap year - 1 minute)
-        self.advance = TimeSpanCtrl(self.panel, 1, 999999)
-        self.advance.set_values(*TimeSpanCtrl.compute_widget_values(
-                                                       self.values['advance']))
-        self.fgrid.Add(self.advance.get_main_panel())
-
-    def _init_config(self, config):
-        # config cannot be None here, as it's been initialized in Navigator
-        if config['mode'] == 'regular':
-            # Do not overwrite the values in self.config, as they may be used
-            # also by other filters
-            basetime = _time.mktime(_time.strptime(config['base'],
-                                                             '%Y-%m-%dT%H:%M'))
-            basedate = _datetime.datetime.fromtimestamp(basetime)
-            self.values = {
-                'baseyear': basedate.year,
-                'basemonth': basedate.month,
-                'baseday': basedate.day,
-                'basehour': basedate.hour,
-                'baseminute': basedate.minute,
-                'span': max(int(config['span']), 1) * 60,
-                'advance': max(int(config['advance']), 1) * 60,
-            }
+        if cconfig['type'] == 'for':
+            nconfig['low'] = cconfig['low'] + cconfig['high'][uniti] * mode
         else:
-            today = _datetime.date.today()
-            self.values = {
-                'baseyear': today.year,
-                'basemonth': today.month,
-                'baseday': today.day,
-                'basehour': 0,
-                'baseminute': 0,
-                'span': 86340,
-                'advance': 86400,
-            }
+            span = cconfig['high'][uniti] - cconfig['low']
+            nconfig['low'] = cconfig['low'] + span * mode
+            nconfig['high'][uniti] = cconfig['high'][uniti] + span * mode
 
-    def get_config(self):
+        return nconfig
+
+    def compose_for_file(self, config):
         # It's important to store only the significant values for the limits:
         # this helps preventing the user from entering wrong values in the
         # configuration file
-        return OrderedDict([
-            ('mode', 'regular'),
-            ('base', _time.strftime('%Y-%m-%dT%H:%M',
-                                  _time.localtime(self.base.get_unix_time()))),
-            ('span', str(self.span.get_time_span() // 60)),
-            ('advance', str(self.advance.get_time_span() // 60)),
-        ])
+        return OrderedDict((
+            ('mode', config['mode']),
+            ('low', str(config['low'])),
+            ('high', str(config['high'][config['uniti']])),
+            ('type', config['type']),
+            ('unit', config['unit']),
+        ))
 
 
-class FilterMonthStaticInterface(object):
-    def __init__(self, parent, config):
-        self.panel = wx.Panel(parent)
+class FilterConfigurationDate(object):
+    def __init__(self, limits):
+        self.limits = limits
+        self.default = {
+            'mode': 'date',
+            'lowdate': None,
+            'highdate': None,
+            'type': 'for',
+            'span': 1,
+            'unit': 'days',
+        }
 
-        self._init_config(config)
+    def _compute(self, lowdate, highdate, type_, unit):
+        limits = [lowdate, highdate]
+        # Always sort, even if type is "for", in fact the span is always
+        # computed in this case
+        limits.sort()
+        lowdate, highdate = limits
 
-        self.fgrid = wx.FlexGridSizer(rows=2, cols=3, hgap=4, vgap=4)
-        self.panel.SetSizer(self.fgrid)
+        return {
+            'mode': 'date',
+            'lowdate': lowdate,
+            'highdate': highdate,
+            'type': type_,
+            # Add 1 day because the stored high date is included in the
+            # range
+            'span': self._compute_span(lowdate, highdate, unit),
+            'unit': unit,
+        }
 
+    def _compute_span(self, lowdate, highdate, unit):
+        days = (highdate + _datetime.timedelta(days=1) - lowdate).days
+
+        if unit == 'weeks':
+            return days // 7
+        else:
+            return days
+
+    def compute_from_file(self, fileconfig):
+        lowdate = _datetime.datetime.strptime(fileconfig['lowdate'],
+                                                                    '%Y-%m-%d')
+        highdate = _datetime.datetime.strptime(fileconfig['highdate'],
+                                                                    '%Y-%m-%d')
+
+        if self.limits[0] <= lowdate.year <= self.limits[1] and \
+                            self.limits[0] <= highdate.year <= self.limits[1]:
+            return self._compute(lowdate, highdate, fileconfig['type'],
+                                                            fileconfig['unit'])
+        else:
+            raise OutOfRangeError()
+
+    def compute_from_interface(self, intvalues):
+        # The values are already sanitized by the date widgets
+        ld = intvalues['lowdate']
+        lowdate = _datetime.datetime(year=ld.GetYear(),
+                                    month=ld.GetMonth() + 1, day=ld.GetDay())
+        type_ = intvalues['type']
+
+        if type_ == 'to':
+            hd = intvalues['highdate']
+            highdate = _datetime.datetime(year=hd.GetYear(),
+                                    month=hd.GetMonth() + 1, day=hd.GetDay())
+            unit = 'days'
+            return self._compute(lowdate, highdate, type_, unit)
+        else:
+            unit = intvalues['unit']
+            span = intvalues['number']
+
+            if unit == 'weeks':
+                spand = _datetime.timedelta(weeks=span)
+            else:
+                spand = _datetime.timedelta(days=span)
+
+            try:
+                # Subtract 1 day because the stored high date is included in
+                # the range
+                highdate = lowdate + spand - _datetime.timedelta(days=1)
+            except OverflowError:
+                raise OutOfRangeError()
+
+            return {
+                'mode': 'date',
+                'lowdate': lowdate,
+                'highdate': highdate,
+                'type': type_,
+                # Add 1 day because the stored high date is included in the
+                # range
+                'span': span,
+                'unit': unit,
+            }
+
+    def get_defaults(self):
+        config = copy_.deepcopy(self.default)
         today = _datetime.date.today()
 
-        monthlabel = wx.StaticText(self.panel, label='Low month:')
-        self.fgrid.Add(monthlabel, flag=wx.ALIGN_CENTER_VERTICAL)
+        config.update({
+            'lowdate': today,
+            # Still use today because the stored high date is included in
+            # the range
+            'highdate': today,
+        })
 
-        self.month = wx.Choice(self.panel, choices=('January',
+        return config
+
+    def compute_adjacent(self, cconfig, mode):
+        nconfig = copy_.deepcopy(cconfig)
+
+        lowdate = cconfig['lowdate']
+        highdate = cconfig['highdate']
+        delta = highdate + _datetime.timedelta(days=1) - lowdate
+
+        try:
+            if mode > 0:
+                lowdate += delta
+                highdate += delta
+            else:
+                lowdate -= delta
+                highdate -= delta
+        except OverflowError:
+            raise OutOfRangeError()
+
+        if lowdate.year >= self.limits[0] and highdate.year <= self.limits[1]:
+            nconfig.update({
+                'lowdate': lowdate,
+                'highdate': highdate,
+            })
+
+            return nconfig
+        else:
+            raise OutOfRangeError()
+
+    def compose_for_file(self, config):
+        # It's important to store only the significant values for the limits:
+        # this helps preventing the user from entering wrong values in the
+        # configuration file
+        return OrderedDict((
+            ('mode', config['mode']),
+            ('lowdate', config['lowdate'].strftime('%Y-%m-%d')),
+            ('highdate', config['highdate'].strftime('%Y-%m-%d')),
+            ('type', config['type']),
+            ('unit', config['unit']),
+        ))
+
+
+class FilterConfigurationMonth(object):
+    def __init__(self, limits):
+        self.limits = limits
+        self.default = {
+            'mode': 'month',
+            'lowyear': 2011,
+            'lowmonth0': 0,
+            # Still use today because the stored high date is included in
+            # the range
+            'highyear': 2011,
+            'highmonth0': 0,
+            'type': 'for',
+            'span': 1,
+            'unit': 'months',
+        }
+
+    def _compute(self, lowyear, lowmonth0, highyear, highmonth0, type_, unit):
+        if lowyear < highyear or (lowyear == highyear and
+                                                    lowmonth0 <= highmonth0):
+            slowyear = lowyear
+            slowmonth0 = lowmonth0
+            shighyear = highyear
+            shighmonth0 = highmonth0
+        else:
+            slowyear = highyear
+            slowmonth0 = highmonth0
+            shighyear = lowyear
+            shighmonth0 = lowmonth0
+
+        span = self._compute_span(slowmonth0, slowyear, shighmonth0, shighyear,
+                                                                        unit)
+
+        return {
+            'mode': 'month',
+            'lowyear': slowyear,
+            'lowmonth0': slowmonth0,
+            'highyear': shighyear,
+            'highmonth0': shighmonth0,
+            'type': type_,
+            'span': span,
+            'unit': unit,
+        }
+
+    def _compute_span(self, lowmonth0, lowyear, highmonth0, highyear, unit):
+        # Add 1 month because the stored high date is included in the range
+        months = (13 - lowmonth0) + (highyear - lowyear - 1) * 12 + highmonth0
+
+        if unit == 'years':
+            return months // 12
+        else:
+            return months
+
+    def compute_from_file(self, fileconfig):
+        lowyear = int(fileconfig['lowyear'])
+        lowmonth0 = int(fileconfig['lowmonth']) - 1
+        highyear = int(fileconfig['highyear'])
+        highmonth0 = int(fileconfig['highmonth']) - 1
+
+        if self.limits[0] <= lowyear <= self.limits[1] and \
+                                self.limits[0] <= highyear <= self.limits[1]:
+            return self._compute(lowyear, lowmonth0, highyear, highmonth0,
+                                        fileconfig['type'], fileconfig['unit'])
+        else:
+            raise OutOfRangeError()
+
+    def compute_from_interface(self, intvalues):
+        # The values are already sanitized by the date widgets
+        lowyear = intvalues['lowyear']
+        lowmonth0 = intvalues['lowmonth0']
+        type_ = intvalues['type']
+
+        if type_ == 'to':
+            highyear = intvalues['highyear']
+            highmonth0 = intvalues['highmonth0']
+            unit = 'months'
+            return self._compute(lowyear, lowmonth0, highyear, highmonth0,
+                                                                type_, unit)
+        else:
+            unit = intvalues['unit']
+            span = intvalues['number']
+
+            if unit == 'years':
+                if lowmonth0 > 0:
+                    highyear = lowyear + span
+                    # Subtract 1 month because the stored high date is included
+                    # in the range
+                    highmonth0 = lowmonth0 - 1
+                else:
+                    highyear = lowyear + span - 1
+                    # Subtract 1 month because the stored high date is included
+                    # in the range
+                    highmonth0 = 11
+            else:
+                # Subtract 1 month because the stored high date is included in
+                # the range
+                tempmonth0 = lowmonth0 - 1 + span
+                yspan, highmonth0 = divmod(tempmonth0, 12)
+                highyear = lowyear + yspan
+
+            return {
+                'mode': 'month',
+                'lowyear': lowyear,
+                'lowmonth0': lowmonth0,
+                'highyear': highyear,
+                'highmonth0': highmonth0,
+                'type': type_,
+                'span': span,
+                'unit': unit,
+            }
+
+    def get_defaults(self):
+        config = copy_.deepcopy(self.default)
+        today = _datetime.date.today()
+
+        config.update({
+            'lowyear': today.year,
+            'lowmonth0': today.month - 1,
+            # Still use today because the stored high date is included in
+            # the range
+            'highyear': today.year,
+            'highmonth0': today.month - 1,
+        })
+
+        return config
+
+    def compute_adjacent(self, cconfig, mode):
+        nconfig = copy_.deepcopy(cconfig)
+
+        span = cconfig['span']
+
+        if cconfig['unit'] == 'years':
+            span *= 12
+
+        rlyear, nconfig['lowmonth0'] = divmod(cconfig['lowmonth0'] +
+                                                            span * mode, 12)
+        rhyear, nconfig['highmonth0'] = divmod(cconfig['highmonth0'] +
+                                                            span * mode, 12)
+
+        nconfig['lowyear'] = cconfig['lowyear'] + rlyear
+        nconfig['highyear'] = cconfig['highyear'] + rhyear
+
+        if nconfig['lowyear'] >= self.limits[0] and \
+                                        nconfig['highyear'] <= self.limits[1]:
+            return nconfig
+        else:
+            raise OutOfRangeError()
+
+    def compose_for_file(self, config):
+        # It's important to store only the significant values for the limits:
+        # this helps preventing the user from entering wrong values in the
+        # configuration file
+        return OrderedDict((
+            ('mode', config['mode']),
+            ('lowyear', str(config['lowyear'])),
+            ('lowmonth', str(config['lowmonth0'] + 1)),
+            ('highyear', str(config['highyear'])),
+            ('highmonth', str(config['highmonth0'] + 1)),
+            ('type', config['type']),
+            ('unit', config['unit']),
+        ))
+
+
+class FilterInterfaceRelative(object):
+    def __init__(self, parent, limits, config):
+        self.limits = limits
+        self.units = ('minutes', 'hours', 'days', 'weeks', 'months', 'years')
+        self.config = config
+
+        self.panel = wx.Panel(parent)
+        self.fbox = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(self.fbox)
+
+        lowlabel = wx.StaticText(self.panel, label='From')
+        self.fbox.Add(lowlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                    border=4)
+
+        self.lowlimit = NarrowSpinCtrl(self.panel, min=-9999, max=9999,
+                                                        style=wx.SP_ARROW_KEYS)
+        self.lowlimit.SetValue(self.config['low'])
+        self.fbox.Add(self.lowlimit, flag=wx.ALIGN_CENTER_VERTICAL |
+                                                            wx.RIGHT, border=4)
+
+        self.unitchoice = wx.Choice(self.panel, choices=self.units)
+        self.unitchoice.SetSelection(self.config['uniti'])
+        self.panel.Bind(wx.EVT_CHOICE, self._handle_choice, self.unitchoice)
+        # unitchoice must be created before highchoice, but added to the sizer
+        # after
+
+        choice = ('to', 'for').index(self.config['type'])
+        # Use layout_ancestors=3 because 2 makes the sizer expand to the right
+        # if the new widgets need more room, and 3 adds/removes a row if the
+        # window is too narrow
+        self.highchoice = WidgetChoiceCtrl(self.panel, (
+                                            ('to', self._create_to_widget),
+                                            ('for', self._create_for_widget)),
+                                            choice, 4, layout_ancestors=3)
+        self.highchoice.force_update()
+        self.fbox.Add(self.highchoice.get_main_panel(),
+                            flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
+
+        # unitchoice must be created before highchoice, but added to the sizer
+        # after
+        self.fbox.Add(self.unitchoice, flag=wx.ALIGN_CENTER_VERTICAL)
+
+    def _handle_choice(self, event):
+        self.highlimit.SetValue(self.config['high'][event.GetInt()])
+
+    def _create_to_widget(self):
+        self.highlimit = NarrowSpinCtrl(self.highchoice.get_main_panel(),
+                                min=-9999, max=9999, style=wx.SP_ARROW_KEYS)
+        self.highlimit.SetValue(self.config['high'][
+                                            self.unitchoice.GetSelection()])
+
+        return self.highlimit
+
+    def _create_for_widget(self):
+        self.highlimit = NarrowSpinCtrl(self.highchoice.get_main_panel(),
+                                    min=1, max=9999, style=wx.SP_ARROW_KEYS)
+        self.highlimit.SetValue(self.config['high'][
+                                            self.unitchoice.GetSelection()])
+
+        return self.highlimit
+
+    def get_values(self):
+        values = {
+            'mode': 'relative',
+            'type': ('to', 'for')[self.highchoice.get_selection()],
+            'uniti': self.unitchoice.GetSelection(),
+            'low': self.lowlimit.GetValue(),
+            'high': self.highlimit.GetValue(),
+        }
+
+        return values
+
+
+class FilterInterfaceDate(object):
+    def __init__(self, parent, limits, config):
+        self.limits = limits
+        self.config = config
+
+        self.panel = wx.Panel(parent)
+        self.fbox = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(self.fbox)
+
+        lowlabel = wx.StaticText(self.panel, label='From')
+        self.fbox.Add(lowlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                    border=4)
+
+        self.lowdate = wx.DatePickerCtrl(self.panel)
+        sdate = wx.DateTime()
+        lowdate = self.config['lowdate']
+        sdate.Set(year=lowdate.year, month=lowdate.month - 1, day=lowdate.day)
+        self.lowdate.SetValue(sdate)
+        ldate = wx.DateTime()
+        hdate = wx.DateTime()
+        ldate.Set(year=self.limits[0], month=0, day=1)
+        hdate.Set(year=self.limits[1], month=11, day=31)
+        self.lowdate.SetRange(ldate, hdate)
+        self.fbox.Add(self.lowdate, flag=wx.ALIGN_CENTER_VERTICAL |
+                                                            wx.RIGHT, border=4)
+
+        choice = ('for', 'to').index(self.config['type'])
+        # Use layout_ancestors=3 because 2 makes the sizer expand to the right
+        # if the new widgets need more room, and 3 adds/removes a row if the
+        # window is too narrow
+        self.highchoice = WidgetChoiceCtrl(self.panel, (
+                                            ('for', self._create_for_widget),
+                                            ('to', self._create_to_widget)),
+                                            choice, 4, layout_ancestors=3)
+        self.highchoice.force_update()
+        self.fbox.Add(self.highchoice.get_main_panel(),
+                                                flag=wx.ALIGN_CENTER_VERTICAL)
+
+    def _create_for_widget(self):
+        panel = wx.Panel(self.highchoice.get_main_panel())
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        panel.SetSizer(box)
+
+        self.highlimit = NarrowSpinCtrl(panel,
+                                    min=1, max=999, style=wx.SP_ARROW_KEYS)
+        self.highlimit.SetValue(self.config['span'])
+        box.Add(self.highlimit, flag=wx.ALIGN_CENTER_VERTICAL |
+                                                            wx.RIGHT, border=4)
+
+        self.unitchoice = wx.Choice(panel, choices=('days', 'weeks'))
+        self.unitchoice.SetSelection(self.unitchoice.FindString(
+                                                        self.config['unit']))
+        box.Add(self.unitchoice, flag=wx.ALIGN_CENTER_VERTICAL)
+
+        return panel
+
+    def _create_to_widget(self):
+        self.highdate = wx.DatePickerCtrl(self.highchoice.get_main_panel())
+        sdate = wx.DateTime()
+        highdate = self.config['highdate']
+        sdate.Set(year=highdate.year, month=highdate.month - 1,
+                                                            day=highdate.day)
+        self.highdate.SetValue(sdate)
+        ldate = wx.DateTime()
+        hdate = wx.DateTime()
+        ldate.Set(year=self.limits[0], month=0, day=1)
+        hdate.Set(year=self.limits[1], month=11, day=31)
+        self.highdate.SetRange(ldate, hdate)
+
+        return self.highdate
+
+    def get_values(self):
+        values = {
+            'mode': 'date',
+            'lowdate': self.lowdate.GetValue()
+        }
+
+        if self.highchoice.get_selection() == 1:
+            values.update({
+                'type': 'to',
+                'highdate': self.highdate.GetValue(),
+            })
+        else:
+            values.update({
+                'type': 'for',
+                'number': self.highlimit.GetValue(),
+                # GetString returns a unicode object, it's necessary to convert
+                # it into a normal string because the configfile module doesn't
+                # support unicode objects
+                'unit': str(self.unitchoice.GetString(
+                                            self.unitchoice.GetSelection())),
+            })
+
+        return values
+
+
+class FilterInterfaceMonth(object):
+    def __init__(self, parent, limits, config):
+        self.limits = limits
+        self.config = config
+
+        self.panel = wx.Panel(parent)
+        self.fbox = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(self.fbox)
+
+        lowlabel = wx.StaticText(self.panel, label='From')
+        self.fbox.Add(lowlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                    border=4)
+
+        self.lowmonth = wx.Choice(self.panel, choices=('January',
                            'February', 'March', 'April', 'May', 'June', 'July',
                      'August', 'September', 'October', 'November', 'December'))
-        self.month.SetSelection(self.values['month'] - 1)
-        self.fgrid.Add(self.month)
+        self.lowmonth.SetSelection(self.config['lowmonth0'])
+        self.fbox.Add(self.lowmonth, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                    border=4)
 
-        self.year = NarrowSpinCtrl(self.panel, min=1970, max=9999,
-                                                        style=wx.SP_ARROW_KEYS)
-        self.year.SetValue(self.values['year'])
-        self.fgrid.Add(self.year)
+        self.lowyear = NarrowSpinCtrl(self.panel, min=self.limits[0],
+                                    max=self.limits[1], style=wx.SP_ARROW_KEYS)
+        self.lowyear.SetValue(self.config['lowyear'])
+        self.fbox.Add(self.lowyear, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                    border=4)
 
-        spanlabel = wx.StaticText(self.panel, label='Months span:')
-        self.fgrid.Add(spanlabel, flag=wx.ALIGN_CENTER_VERTICAL)
+        choice = ('for', 'to').index(self.config['type'])
+        # Use layout_ancestors=3 because 2 makes the sizer expand to the right
+        # if the new widgets need more room, and 3 adds/removes a row if the
+        # window is too narrow
+        self.highchoice = WidgetChoiceCtrl(self.panel, (
+                                            ('for', self._create_for_widget),
+                                            ('to', self._create_to_widget)),
+                                            choice, 4, layout_ancestors=3)
+        self.highchoice.force_update()
+        self.fbox.Add(self.highchoice.get_main_panel(),
+                                                flag=wx.ALIGN_CENTER_VERTICAL)
 
-        self.span = NarrowSpinCtrl(self.panel, min=1, max=999,
-                                                        style=wx.SP_ARROW_KEYS)
-        self.span.SetValue(self.values['span'])
-        self.fgrid.Add(self.span)
+    def _create_for_widget(self):
+        panel = wx.Panel(self.highchoice.get_main_panel())
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        panel.SetSizer(box)
 
-    def _init_config(self, config):
-        # config cannot be None here, as it's been initialized in Navigator
-        if config['mode'] == 'staticmonth':
-            # Do not overwrite the values in self.config, as they may be used
-            # also by other filters
-            self.values = {
-                'month': min(max(int(config['month']), 1), 12),
-                'year': max(int(config['year']), 1970),
-                'span': max(int(config['span']), 1),
-            }
-        else:
-            today = _datetime.date.today()
-            self.values = {
-                'month': today.month,
-                'year': today.year,
-                'span': 1,
-            }
+        self.highlimit = NarrowSpinCtrl(panel,
+                                    min=1, max=99, style=wx.SP_ARROW_KEYS)
+        self.highlimit.SetValue(self.config['span'])
+        box.Add(self.highlimit, flag=wx.ALIGN_CENTER_VERTICAL |
+                                                            wx.RIGHT, border=4)
 
-    def get_config(self):
-        # It's important to store only the significant values for the limits:
-        # this helps preventing the user from entering wrong values in the
-        # configuration file
-        return OrderedDict([
-            ('mode', 'staticmonth'),
-            ('month', str(self.month.GetSelection() + 1)),
-            ('year', str(self.year.GetValue())),
-            ('span', str(self.span.GetValue())),
-        ])
+        self.unitchoice = wx.Choice(panel, choices=('months', 'years'))
+        self.unitchoice.SetSelection(self.unitchoice.FindString(
+                                                        self.config['unit']))
+        box.Add(self.unitchoice, flag=wx.ALIGN_CENTER_VERTICAL)
 
+        return panel
 
-class FilterMonthDynamicInterface(object):
-    def __init__(self, parent, config):
-        self.panel = wx.Panel(parent)
+    def _create_to_widget(self):
+        panel = wx.Panel(self.highchoice.get_main_panel())
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        panel.SetSizer(box)
 
-        self._init_config(config)
-
-        self.fgrid = wx.FlexGridSizer(rows=3, cols=2, hgap=4, vgap=4)
-        self.panel.SetSizer(self.fgrid)
-
-        monthlabel = wx.StaticText(self.panel, label='Low month sample:')
-        self.fgrid.Add(monthlabel, flag=wx.ALIGN_CENTER_VERTICAL)
-
-        self.month = wx.Choice(self.panel, choices=('January',
+        self.highmonth = wx.Choice(panel, choices=('January',
                            'February', 'March', 'April', 'May', 'June', 'July',
                      'August', 'September', 'October', 'November', 'December'))
-        today = _datetime.date.today()
-        self.month.SetSelection(self.values['month'] - 1)
-        self.fgrid.Add(self.month)
+        self.highmonth.SetSelection(self.config['highmonth0'])
+        box.Add(self.highmonth, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                    border=4)
 
-        spanlabel = wx.StaticText(self.panel, label='Months span:')
-        self.fgrid.Add(spanlabel, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.highyear = NarrowSpinCtrl(panel, min=self.limits[0],
+                                    max=self.limits[1], style=wx.SP_ARROW_KEYS)
+        self.highyear.SetValue(self.config['highyear'])
+        box.Add(self.highyear, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        # Note that FilterMonthDynamic.compute_limits only supports spans
-        # <= 12 months
-        self.span = NarrowSpinCtrl(self.panel, min=1, max=12,
-                                                        style=wx.SP_ARROW_KEYS)
-        self.span.SetValue(self.values['span'])
-        self.fgrid.Add(self.span)
+        return panel
 
-        advlabel = wx.StaticText(self.panel, label='Advance interval:')
-        self.fgrid.Add(advlabel, flag=wx.ALIGN_CENTER_VERTICAL)
+    def get_values(self):
+        values = {
+            'mode': 'month',
+            'lowyear': self.lowyear.GetValue(),
+            'lowmonth0': self.lowmonth.GetSelection(),
+        }
 
-        # Note that FilterMonthDynamic.compute_limits only supports intervals
-        # <= 12 months
-        self.advance = NarrowSpinCtrl(self.panel, min=1, max=12,
-                                                        style=wx.SP_ARROW_KEYS)
-        self.advance.SetValue(self.values['advance'])
-        self.fgrid.Add(self.advance)
-
-    def _init_config(self, config):
-        # config cannot be None here, as it's been initialized in Navigator
-        if config['mode'] == 'month':
-            # Do not overwrite the values in self.config, as they may be used
-            # also by other filters
-            self.values = {
-                'month': min(max(int(config['month']), 1), 12),
-                # For the moment only span<= 12 is supported
-                'span': min(max(int(config['span']), 1), 12),
-                # For the moment only advance <= 12 is supported
-                'advance': min(max(int(config['advance']), 1), 12),
-            }
+        if self.highchoice.get_selection() == 1:
+            values.update({
+                'type': 'to',
+                'highyear': self.highyear.GetValue(),
+                'highmonth0': self.highmonth.GetSelection(),
+            })
         else:
-            today = _datetime.date.today()
-            self.values = {
-                'month': today.month,
-                'span': 1,
-                'advance': 1,
-            }
+            values.update({
+                'type': 'for',
+                'number': self.highlimit.GetValue(),
+                # GetString returns a unicode object, it's necessary to convert
+                # it into a normal string because the configfile module doesn't
+                # support unicode objects
+                'unit': str(self.unitchoice.GetString(
+                                            self.unitchoice.GetSelection())),
+            })
 
-    def get_config(self):
-        # It's important to store only the significant values for the limits:
-        # this helps preventing the user from entering wrong values in the
-        # configuration file
-        return OrderedDict([
-            ('mode', 'month'),
-            ('month', str(self.month.GetSelection() + 1)),
-            ('span', str(self.span.GetValue())),
-            ('advance', str(self.advance.GetValue())),
-        ])
+        return values
 
 
 class FilterRelative(object):
     def __init__(self, config):
-        # Make sure self.low is lower than self.high
-        limits = [int(config['low']) * 60, int(config['high']) * 60]
-        limits.sort()
-        self.low, self.high = limits
+        low = config['low']
+
+        if config['type'] == 'for':
+            high = low + config['high'][config['uniti']]
+        else:
+            high = config['high'][config['uniti']]
+
+        self.filter = {
+            'minutes': FilterRelativeMinutes,
+            'hours': FilterRelativeHours,
+            'days': FilterRelativeDays,
+            'weeks': FilterRelativeWeeks,
+            'months': FilterRelativeMonths,
+            'years': FilterRelativeYears,
+        }[config['unit']](low, high, config)
+
+    def compute_limits(self, now):
+        return self.filter.compute_limits(now)
+
+    def compute_delay(self, occsobj, now, mint, maxt):
+        return self.filter.compute_delay(occsobj, now, mint, maxt)
+
+
+class FilterRelativeMinutes(object):
+    def __init__(self, low, high, config):
+        self.low = low * 60
+        self.high = high * 60
 
     def compute_limits(self, now):
         # Base all calculations on exact minutes, in order to limit the
@@ -705,7 +989,10 @@ class FilterRelative(object):
         # non-exact minutes anyway
         anow = now // 60 * 60
         mint = anow + self.low
-        maxt = anow + self.high
+        # Subtract 1 second because if setting 'to/for 1' it's expected to only
+        # show the current minute, and not occurrences starting at the next
+        # minute
+        maxt = anow + self.high - 1
         return (mint, maxt)
 
     def compute_delay(self, occsobj, now, mint, maxt):
@@ -763,15 +1050,164 @@ class FilterRelative(object):
             return None
 
 
-class FilterAbsolute(object):
+class FilterRelativeHours(object):
+    def __init__(self, low, high, config):
+        self.low = low * 3600
+        self.high = high * 3600
+
+    def compute_limits(self, now):
+        anow = now // 3600 * 3600
+        mint = anow + self.low
+        # Subtract 1 second because if setting 'to/for 1' it's expected to only
+        # show the current hour, and not occurrences starting at the next hour
+        maxt = anow + self.high - 1
+        return (mint, maxt)
+
+    def compute_delay(self, occsobj, now, mint, maxt):
+        # Note that the delay can still be further limited in
+        # OccurrencesView._restart
+        return 3600 - now % 3600
+
+
+class FilterRelativeDays(object):
+    def __init__(self, low, high, config):
+        self.utcoffset = timeaux.UTCOffset()
+        self.low = low * 86400
+        self.high = high * 86400
+
+    def compute_limits(self, now):
+        try:
+            # 'now' is not necessarily the actual current time, it's the search
+            # reference time, so it must be protected
+            self.nowoffset = self.utcoffset.compute(now)
+        except ValueError:
+            raise OutOfRangeError()
+        else:
+            anow = now // 86400 * 86400 + self.nowoffset
+            mint = anow + self.low
+            # Subtract 1 second because if setting 'to/for 1' it's expected to
+            # only show the current day, and not occurrences starting at the
+            # next day
+            maxt = anow + self.high - 1
+            return (mint, maxt)
+
+    def compute_delay(self, occsobj, now, mint, maxt):
+        # Note that the delay can still be further limited in
+        # OccurrencesView._restart
+        return 86400 - now % 86400 + self.nowoffset
+
+
+class FilterRelativeWeeks(object):
+    def __init__(self, low, high, config):
+        self.low = low * 604800
+        self.high = high * 604800
+
+    def compute_limits(self, now):
+        firstweekday = _calendar.firstweekday()
+
+        try:
+            # 'now' is not necessarily the actual current time, it's the search
+            # reference time, so it must be protected
+            dnow = _datetime.date.fromtimestamp(now)
+            weekday = dnow.weekday()
+            relweekdaystart = (7 - firstweekday + weekday) % 7 * 86400
+            self.weekstart = _time.mktime(dnow.timetuple()) - relweekdaystart
+        except ValueError:
+            raise OutOfRangeError()
+        else:
+            mint = self.weekstart + self.low
+            # Subtract 1 second because if setting 'to/for 1' it's expected to
+            # only show the current week, and not occurrences starting at the
+            # next week
+            maxt = self.weekstart + self.high - 1
+            return (mint, maxt)
+
+    def compute_delay(self, occsobj, now, mint, maxt):
+        # Note that the delay can still be further limited in
+        # OccurrencesView._restart
+        return self.weekstart + 604800 - now
+
+
+class FilterRelativeMonths(object):
+    def __init__(self, low, high, config):
+        self.low = low
+        self.high = high
+
+    def compute_limits(self, now):
+        try:
+            # 'now' is not necessarily the actual current time, it's the search
+            # reference time, so it must be protected
+            self.dnow = _datetime.date.fromtimestamp(now)
+            rminyears, minmonth = divmod(self.dnow.month - 1 + self.low, 12)
+
+            dmin = _datetime.date(year=self.dnow.year + rminyears,
+                                                    month=minmonth + 1, day=1)
+            rmaxyears, maxmonth = divmod(self.dnow.month - 1 + self.high, 12)
+            dmax = _datetime.date(year=self.dnow.year + rmaxyears,
+                                                    month=maxmonth + 1, day=1)
+            mint = _time.mktime(dmin.timetuple())
+            # Subtract 1 second because if setting 'to/for 1' it's expected to
+            # only show the current month, and not occurrences starting at the
+            # next month
+            maxt = _time.mktime(dmax.timetuple()) - 1
+        except ValueError:
+            raise OutOfRangeError()
+        else:
+            return (mint, maxt)
+
+    def compute_delay(self, occsobj, now, mint, maxt):
+        # I should add 1 to self.dnow.month, but I should also subtract 1
+        # because I need 0-based months
+        rnyear, nmonth = divmod(self.dnow.month, 12)
+        ndate = _datetime.date(year=self.dnow.year + rnyear, month=nmonth + 1,
+                                                                        day=1)
+        # Note that the delay can still be further limited in
+        # OccurrencesView._restart
+        return _time.mktime(ndate.timetuple()) - now
+
+
+class FilterRelativeYears(object):
+    def __init__(self, low, high, config):
+        self.low = low
+        self.high = high
+
+    def compute_limits(self, now):
+        try:
+            # 'now' is not necessarily the actual current time, it's the search
+            # reference time, so it must be protected
+            self.dnow = _datetime.date.fromtimestamp(now)
+
+            dmin = _datetime.date(year=self.dnow.year + self.low, month=1,
+                                                                        day=1)
+            dmax = _datetime.date(year=self.dnow.year + self.high, month=1,
+                                                                        day=1)
+
+            mint = _time.mktime(dmin.timetuple())
+            # Subtract 1 second because if setting 'to/for 1' it's expected to
+            # only show the current year, and not occurrences starting at the
+            # next year
+            maxt = _time.mktime(dmax.timetuple()) - 1
+        except ValueError:
+            raise OutOfRangeError()
+        else:
+            return (mint, maxt)
+
+    def compute_delay(self, occsobj, now, mint, maxt):
+        ndate = _datetime.date(year=self.dnow.year + 1, month=1, day=1)
+        # Note that the delay can still be further limited in
+        # OccurrencesView._restart
+        return _time.mktime(ndate.timetuple()) - now
+
+
+class FilterDate(object):
     def __init__(self, config):
-        # Make sure self.low is lower than self.high
-        limits = [int(_time.mktime(_time.strptime(config['low'],
-                                                           '%Y-%m-%dT%H:%M'))),
-                  int(_time.mktime(_time.strptime(config['high'],
-                                                           '%Y-%m-%dT%H:%M')))]
-        limits.sort()
-        self.low, self.high = limits
+        # The values are already validated in the FilterConfigurationDate
+        self.low = int(_time.mktime(config['lowdate'].timetuple()))
+        # Add 86400 because the stored date is included in the range, but I
+        # need the midnight of the following day
+        # Subtract 1 second because if setting 'to/for 1' it's expected to not
+        # see the occurrences starting at the end of the interval
+        self.high = int(_time.mktime(config['highdate'].timetuple())) + 86399
 
     def compute_limits(self, now):
         return (self.low, self.high)
@@ -780,297 +1216,29 @@ class FilterAbsolute(object):
         return None
 
 
-class FilterRegular(object):
+class FilterMonth(object):
     def __init__(self, config):
-        self.base = int(_time.mktime(_time.strptime(config['base'],
-                                                            '%Y-%m-%dT%H:%M')))
-        self.span = max(int(config['span']), 1) * 60
-        self.advance = max(int(config['advance']), 1) * 60
+        # The values are already validated in the FilterConfigurationMonth
+        lowdate = _datetime.date(config['lowyear'], config['lowmonth0'] + 1, 1)
+        highdate = _datetime.date(config['highyear'], config['highmonth0'] + 1,
+                                                                            1)
 
-    """
-    * reference view (refmin, refmax)
-    | reftime (now)
-    [] target view (mintime, maxtime)
+        # I should add 1 to highmonth because the stored month is included in
+        # the range, and I'd need the midnight of the first day of the
+        # following month; however I should also subtract 1 because I need a
+        # 0-based value here
+        # This in practice just allows going to next year if highmonth is 12
+        rnyear, nextmonth = divmod(highdate.month, 12)
 
-    A) mintime = reftime - ((reftime - refmin) % advance)
-    B) mintime = reftime - ((reftime - refmin) % advance) + advance
-    C) mintime = reftime - ((reftime - refmin) % advance) - ((refspan // advance) * advance)
-    D) mintime = reftime - ((reftime - refmin) % advance) - ((refspan // advance) * advance) + advance
+        nextdate = _datetime.date(highdate.year + rnyear, nextmonth + 1, 1)
 
-    G) mintime = reftime - ((reftime - refmax) % advance) - refspan
-    H) mintime = reftime - ((reftime - refmax) % advance) + advance - refspan
-    I) (!NOT VERIFIED!) mintime = reftime - ((reftime - refmax) % advance) - refspan + ((refspan // advance) * advance)
-    J) (!NOT VERIFIED!) mintime = reftime - ((reftime - refmax) % advance) - refspan + ((refspan // advance) * advance) + advance
-
-    M) mintime = reftime + ((refmin - reftime) % advance) - advance
-    N) mintime = reftime + ((refmin - reftime) % advance)
-    O) mintime = reftime + ((refmin - reftime) % advance) - ((refspan // advance) * advance) - advance
-    P) mintime = reftime + ((refmin - reftime) % advance) - ((refspan // advance) * advance)
-
-    S) mintime = reftime + ((refmax - reftime) % advance) - refspan
-    T) mintime = reftime + ((refmax - reftime) % advance) + advance - refspan
-    U) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % advance) - refspan + ((refspan // advance) * advance)
-    V) (!NOT VERIFIED!) mintime = reftime + ((refmax - reftime) % advance) - refspan + ((refspan // advance) * advance) + advance
-
-    All cases from extensions.organism_basicrules.occur_regularly are valid,
-    except for the following:
-
-    --------(  *  )--------(     )--------[     |--------(     )--------(     )-----
-    AGMS
-
-    --------[     |--------(     )--------(     )--------(     )--------(  *  )-----
-    AGMS
-
-    --------(     )--------[  *  |--------(     )--------(     )--------(     )-----
-    AGMS
-
-                *                         |
-    (     (     (   ) (   ) (   ) (   ) [ | ) (   ) (   ] (   )     )     )
-    0     1     2   0 3   1 4   2 5   3 6 | 4 7   5 8   6 9   7     8     9
-    (               )                     |
-          (     *         )               |
-                (               )         |
-                      (               )   |
-                            (             | )
-                                  (       |       )
-                                        [ |             ]
-                                          |   (               )
-                                          |         (               )
-                                          |               (               )
-    AJMU
-
-                        |                           *
-    (     (     (   ) [ | ) (   ) (   ] (   ) (   ) (   ) (   )     )     )
-    0     1     2   0 3 | 1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
-    (               )   |
-          (             | )
-                (       |       )
-                      [ |             ]
-                        |   (               )
-                        |         (               )
-                        |               (               )
-                        |                     (     *         )
-                        |                           (               )
-                        |                                 (               )
-    AJMU
-
-                                        * |
-    (     (     (   ) (   ) (   ) (   ) [ | ) (   ) (   ] (   )     )     )
-    0     1     2   0 3   1 4   2 5   3 6 | 4 7   5 8   6 9   7     8     9
-    (               )                     |
-          (               )               |
-                (               )         |
-                      (               )   |
-                            (             | )
-                                  (     * |       )
-                                        [ |             ]
-                                          |   (               )
-                                          |         (               )
-                                          |               (               )
-    AJMU
-
-                *                       |
-    (     (     (   ) (   ) (   ) (   ) |   ) (   ) (   ] (   )     )     )
-    0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
-    (               )                   |
-          (     *         )             |
-                (               )       |
-                      (               ) |
-                            (           |   )
-                                  (     |         )
-                                        |               ]
-                                        |     (               )
-                                        |           (               )
-                                        |                 (               )
-    AJNU
-
-                *                           |
-    (     (     (   ) (   ) (   ) (   ) [   | (   ) (   ] (   )     )     )
-    0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
-    (               )                       |
-          (     *         )                 |
-                (               )           |
-                      (               )     |
-                            (               |
-                                  (         |     )
-                                        [   |           ]
-                                            | (               )
-                                            |       (               )
-                                            |             (               )
-    AIMU
-
-                      |                             *
-    (     (     (   ) |   ) (   ) (   ] (   ) (   ) (   ) (   )     )     )
-    0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
-    (               ) |
-          (           |   )
-                (     |         )
-                      |               ]
-                      |     (               )
-                      |           (               )
-                      |                 (               )
-                      |                       (     *         )
-                      |                             (               )
-                      |                                   (               )
-    AJNU
-
-                          |                         *
-    (     (     (   ) [   | (   ) (   ] (   ) (   ) (   ) (   )     )     )
-    0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
-    (               )     |
-          (               |
-                (         |     )
-                      [   |           ]
-                          | (               )
-                          |       (               )
-                          |             (               )
-                          |                   (     *         )
-                          |                         (               )
-                          |                               (               )
-    AIMU
-
-                                        *
-    (     (     (   ) (   ) (   ) (   ) |   ) (   ) (   ] (   )     )     )
-    0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
-    (               )                   |
-          (               )             |
-                (               )       |
-                      (               ) |
-                            (           |   )
-                                  (     |         )
-                                        |               ]
-                                        |     (               )
-                                        |           (               )
-                                        |                 (               )
-    AJNU
-
-                            *               |
-    (     (     (   ) (   ) (   ) (   ) [   | (   ) (   ] (   )     )     )
-    0     1     2   0 3   1 4   2 5   3 6   4 7   5 8   6 9   7     8     9
-    (               )                       |
-          (               )                 |
-                (               )           |
-                      (     *         )     |
-                            (               |
-                                  (         |     )
-                                        [   |           ]
-                                            | (               )
-                                            |       (               )
-                                            |             (               )
-    AIMU
-    """
+        self.low = int(_time.mktime(lowdate.timetuple()))
+        # Subtract 1 second because if setting 'to/for 1' it's expected to not
+        # see the occurrences starting at the end of the interval
+        self.high = int(_time.mktime(nextdate.timetuple())) - 1
 
     def compute_limits(self, now):
-        # Use advance, *not* span, as the interval between two bases; this
-        # allows for example to view only the 5 working days of the week and
-        # still correctly advance to the next week, bypassing the weekend
-        # In case of overlapping spans, I want the most advanced (as opposed
-        # to what e.g. happens when calculating item occurrences)
-        rem = (self.base + self.span - now) % self.advance
-
-        if self.span == self.advance and rem == 0:
-            # Use formula (T), see the examples above and in
-            # extensions.organism_basicrules.occur_regularly
-            maxt = now + rem + self.advance
-            mint = maxt - self.span
-        elif self.span <= self.advance:
-            # Use formula (S), see the examples above and in
-            # extensions.organism_basicrules.occur_regularly
-            maxt = now + rem
-            mint = maxt - self.span
-        else:
-            # Use formula (A), see the examples above and in
-            # extensions.organism_basicrules.occur_regularly
-            mint = now - (now - self.base) % self.advance
-            maxt = mint + self.span
-
-        return (mint, maxt)
-
-    def compute_delay(self, occsobj, now, mint, maxt):
-        # Note that the delay can still be further limited in
-        # OccurrencesView._restart
-        return max(min((mint + self.advance, maxt)) - now, 0)
-
-
-class FilterMonthStatic(object):
-    def __init__(self, config):
-        self.month = min(max(int(config['month']), 1), 12)
-        self.span = max(int(config['span']), 1)
-        self.year = max(int(config['year']), 1970)
-
-    def compute_limits(self, now):
-        mindate = _datetime.date(self.year, self.month, 1)
-        # In divmod it's necessary to use a 0-11 month number
-        years, maxmonth = divmod(self.month - 1 + self.span, 12)
-        maxdate = _datetime.date(self.year + years, maxmonth + 1, 1)
-        mint = int(_time.mktime(mindate.timetuple()))
-        maxt = int(_time.mktime(maxdate.timetuple())) - 60
-        return (mint, maxt)
+        return (self.low, self.high)
 
     def compute_delay(self, occsobj, now, mint, maxt):
         return None
-
-
-class FilterMonthDynamic(object):
-    def __init__(self, config):
-        self.month = min(max(int(config['month']), 1), 12)
-        # For the moment only span<= 12 is supported
-        self.span = min(max(int(config['span']), 1), 12)
-        # For the moment only advance <= 12 is supported
-        self.advance = min(max(int(config['advance']), 1), 12)
-
-    def compute_limits(self, now):
-        # Since no reference year is configured, the current year is always
-        # used; this means that this algorithm supports only spans and
-        # intervals <= 12 months!!!
-        nowdate = _datetime.date.fromtimestamp(now)
-
-        # It's necessary to use a 0-11 month number for the computation
-        # Add 23 in order to avoid doing calculations with negative months
-        nowrmonth = nowdate.month + 23
-        rmonth = self.month + 23
-
-        # Use advance, *not* span, as the interval between two basedates; this
-        # allows for example to view only the first 2 months in an interval of
-        # 3 and still correctly advance to the fourth month, bypassing the
-        # third
-        # In case of overlapping spans, I want the most advanced
-        rem = (rmonth + self.span - nowrmonth) % self.advance
-
-        if self.span == self.advance and rem == 0:
-            # Use formula (T), see the examples in FilterRegular and in
-            # extensions.organism_basicrules.occur_regularly
-            maxrmonth = nowrmonth + rem + self.advance
-            minrmonth = maxrmonth - self.span
-        elif self.span <= self.advance:
-            # Use formula (S), see the examples in FilterRegular and in
-            # extensions.organism_basicrules.occur_regularly
-            maxrmonth = nowrmonth + rem
-            minrmonth = maxrmonth - self.span
-        else:
-            # Use formula (A), see the examples in FilterRegular and in
-            # extensions.organism_basicrules.occur_regularly
-            minrmonth = nowrmonth - (nowrmonth - rmonth) % self.advance
-            maxrmonth = minrmonth + self.span
-
-        miny, minmonth = divmod(minrmonth, 12)
-        maxy, maxmonth = divmod(maxrmonth, 12)
-        maxryear = maxy - miny
-
-        mindate = _datetime.date(nowdate.year, minmonth + 1, 1)
-        maxdate = _datetime.date(nowdate.year + maxryear, maxmonth + 1, 1)
-
-        mint = int(_time.mktime(mindate.timetuple()))
-        maxt = int(_time.mktime(maxdate.timetuple())) - 60
-        return (mint, maxt)
-
-    def compute_delay(self, occsobj, now, mint, maxt):
-        nowdate = _datetime.date.fromtimestamp(now)
-        mindate = _datetime.date.fromtimestamp(mint)
-        # In divmod it's necessary to use a 0-11 month number
-        years, delaymonth = divmod(mindate.month - 1 + self.advance, 12)
-        delaydate = _datetime.date(mindate.year + years, delaymonth + 1, 1)
-
-        # Note that the delay can still be further limited in
-        # OccurrencesView._restart
-        return max((delaydate - nowdate).total_seconds(), 0)

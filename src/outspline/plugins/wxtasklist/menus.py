@@ -38,10 +38,7 @@ class MainMenu(wx.Menu):
         self.occview = tasklist.list_
 
         self.ID_SHOW = wx.NewId()
-        self.ID_FILTERS = wx.NewId()
-        self.ID_ADD_FILTER = wx.NewId()
-        self.ID_EDIT_FILTER = wx.NewId()
-        self.ID_REMOVE_FILTER = wx.NewId()
+        self.ID_TOGGLE_NAVIGATOR = wx.NewId()
         self.ID_GAPS = wx.NewId()
         self.ID_OVERLAPS = wx.NewId()
         self.ID_SCROLL = wx.NewId()
@@ -58,16 +55,9 @@ class MainMenu(wx.Menu):
                                                 "Show the occurrences panel",
                                                 kind=wx.ITEM_CHECK)
 
-        self.filters_submenu = FiltersMenu(self.tasklist)
-
-        self.filters = wx.MenuItem(self, self.ID_FILTERS, 'F&ilters',
-                            'Select a filter', subMenu=self.filters_submenu)
-        self.addfilter = wx.MenuItem(self, self.ID_ADD_FILTER,
-                                            "&Add filter", "Add a new filter")
-        self.editfilter = wx.MenuItem(self, self.ID_EDIT_FILTER,
-                        "Edi&t filter", "Edit the currently selected filter")
-        self.removefilter = wx.MenuItem(self, self.ID_REMOVE_FILTER,
-                    "&Remove filter", "Remove the currently selected filter")
+        self.navigator = wx.MenuItem(self, self.ID_TOGGLE_NAVIGATOR,
+                        "&Show navigator", "Show or hide the navigator bar",
+                        kind=wx.ITEM_CHECK)
         self.gaps = wx.MenuItem(self, self.ID_GAPS, "Show &gaps\tCTRL+-",
                             "Show any unallocated time in the shown interval",
                             kind=wx.ITEM_CHECK)
@@ -102,14 +92,6 @@ class MainMenu(wx.Menu):
         self.dismiss_all = wx.MenuItem(self, self.ID_DISMISS_ALL,
                     "Dis&miss all\tCTRL+F8", "Dismiss all the active alarms")
 
-        self.filters.SetBitmap(wx.ArtProvider.GetBitmap('@filters',
-                                                                  wx.ART_MENU))
-        self.addfilter.SetBitmap(wx.ArtProvider.GetBitmap('@add-filter',
-                                                                  wx.ART_MENU))
-        self.editfilter.SetBitmap(wx.ArtProvider.GetBitmap('@edit-filter',
-                                                                  wx.ART_MENU))
-        self.removefilter.SetBitmap(wx.ArtProvider.GetBitmap('@remove-filter',
-                                                                  wx.ART_MENU))
         self.scroll.SetBitmap(wx.ArtProvider.GetBitmap('@movedown',
                                                                 wx.ART_MENU))
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
@@ -123,12 +105,7 @@ class MainMenu(wx.Menu):
                                                                   wx.ART_MENU))
 
         self.AppendItem(self.show)
-        self.AppendItem(self.filters)
-        self.AppendSeparator()
-        self.AppendItem(self.addfilter)
-        self.AppendItem(self.editfilter)
-        self.AppendItem(self.removefilter)
-        self.AppendSeparator()
+        self.AppendItem(self.navigator)
         self.AppendItem(self.gaps)
         self.AppendItem(self.overlaps)
         self.AppendSeparator()
@@ -144,9 +121,7 @@ class MainMenu(wx.Menu):
         self.AppendItem(self.dismiss_all)
 
         wxgui_api.bind_to_menu(self.tasklist.toggle_shown, self.show)
-        wxgui_api.bind_to_menu(self._add_filter, self.addfilter)
-        wxgui_api.bind_to_menu(self._edit_filter, self.editfilter)
-        wxgui_api.bind_to_menu(self._remove_filter, self.removefilter)
+        wxgui_api.bind_to_menu(self._toggle_navigator, self.navigator)
         wxgui_api.bind_to_menu(self._show_gaps, self.gaps)
         wxgui_api.bind_to_menu(self._show_overlappings, self.overlaps)
         wxgui_api.bind_to_menu(self._scroll_to_ongoing, self.scroll)
@@ -165,10 +140,9 @@ class MainMenu(wx.Menu):
     def _update_items(self, kwargs):
         if kwargs['menu'] is self:
             self.show.Check(check=self.tasklist.is_shown())
-            self.filters.Enable(False)
-            self.addfilter.Enable(False)
-            self.editfilter.Enable(False)
-            self.removefilter.Enable(False)
+            self.navigator.Enable(False)
+            self.navigator.Check(
+                            check=self.tasklist.navigator.is_shown())
             self.gaps.Enable(False)
             self.gaps.Check(check=self.occview.show_gaps)
             self.overlaps.Enable(False)
@@ -186,13 +160,7 @@ class MainMenu(wx.Menu):
             tab = wxgui_api.get_selected_right_nb_tab()
 
             if tab is self.tasklist.panel:
-                self.filters.Enable()
-                self.addfilter.Enable()
-                self.editfilter.Enable()
                 self.scroll.Enable()
-
-                if len(self.filters.GetSubMenu().GetMenuItems()) > 1:
-                    self.removefilter.Enable()
 
                 sel = self.occview.listview.GetFirstSelected()
 
@@ -225,10 +193,9 @@ class MainMenu(wx.Menu):
                     self.snooze_all.Enable()
                     self.dismiss_all.Enable()
 
-                self.filters_submenu.update()
-
             if self.tasklist.is_shown():
                 # Already appropriately checked above
+                self.navigator.Enable()
                 self.gaps.Enable()
                 self.overlaps.Enable()
                 self.autoscroll.Enable()
@@ -237,10 +204,7 @@ class MainMenu(wx.Menu):
         # Re-enable all the actions so they are available for their
         # accelerators
         self.show.Enable()
-        self.filters.Enable()
-        self.addfilter.Enable()
-        self.editfilter.Enable()
-        self.removefilter.Enable()
+        self.navigator.Enable()
         self.gaps.Enable()
         self.overlaps.Enable()
         self.scroll.Enable()
@@ -252,14 +216,8 @@ class MainMenu(wx.Menu):
         self.dismiss.Enable()
         self.dismiss_all.Enable()
 
-    def _add_filter(self, event):
-        self.tasklist.filters.create()
-
-    def _edit_filter(self, event):
-        self.tasklist.filters.edit_selected()
-
-    def _remove_filter(self, event):
-        self.tasklist.filters.remove_selected()
+    def _toggle_navigator(self, event):
+        self.tasklist.navigator.toggle_shown()
 
     def _show_gaps(self, event):
         if self.tasklist.is_shown():
@@ -368,16 +326,9 @@ class TabContextMenu(wx.Menu):
         wx.Menu.__init__(self)
         self.tasklist = tasklist
 
-        self.filters_submenu = FiltersMenu(self.tasklist)
-
-        self.filters = wx.MenuItem(self, self.tasklist.mainmenu.ID_FILTERS,
-                                    'F&ilters', subMenu=self.filters_submenu)
-        self.addfilter = wx.MenuItem(self,
-                        self.tasklist.mainmenu.ID_ADD_FILTER, "&Add filter")
-        self.editfilter = wx.MenuItem(self,
-                        self.tasklist.mainmenu.ID_EDIT_FILTER, "Edi&t filter")
-        self.removefilter = wx.MenuItem(self,
-                    self.tasklist.mainmenu.ID_REMOVE_FILTER, "&Remove filter")
+        self.navigator = wx.MenuItem(self,
+                    self.tasklist.mainmenu.ID_TOGGLE_NAVIGATOR,
+                                        "&Show navigator", kind=wx.ITEM_CHECK)
         self.gaps = wx.MenuItem(self, self.tasklist.mainmenu.ID_GAPS,
                                             "Show &gaps", kind=wx.ITEM_CHECK)
         self.overlaps = wx.MenuItem(self,
@@ -395,14 +346,6 @@ class TabContextMenu(wx.Menu):
         self.dismiss_all = wx.MenuItem(self,
                         self.tasklist.mainmenu.ID_DISMISS_ALL, "Dis&miss all")
 
-        self.filters.SetBitmap(wx.ArtProvider.GetBitmap('@filters',
-                                                                  wx.ART_MENU))
-        self.addfilter.SetBitmap(wx.ArtProvider.GetBitmap('@add-filter',
-                                                                  wx.ART_MENU))
-        self.editfilter.SetBitmap(wx.ArtProvider.GetBitmap('@edit-filter',
-                                                                  wx.ART_MENU))
-        self.removefilter.SetBitmap(wx.ArtProvider.GetBitmap('@remove-filter',
-                                                                  wx.ART_MENU))
         self.scroll.SetBitmap(wx.ArtProvider.GetBitmap('@movedown',
                                                                 wx.ART_MENU))
         self.snooze_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarms',
@@ -410,17 +353,12 @@ class TabContextMenu(wx.Menu):
         self.dismiss_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
                                                                   wx.ART_MENU))
 
-        self.AppendItem(self.filters)
-        self.AppendSeparator()
-        self.AppendItem(self.addfilter)
-        self.AppendItem(self.editfilter)
-        self.AppendItem(self.removefilter)
+        self.AppendItem(self.navigator)
+        self.AppendItem(self.gaps)
+        self.AppendItem(self.overlaps)
         self.AppendSeparator()
         self.AppendItem(self.scroll)
         self.AppendItem(self.autoscroll)
-        self.AppendSeparator()
-        self.AppendItem(self.gaps)
-        self.AppendItem(self.overlaps)
         self.AppendSeparator()
         self.AppendItem(self.snooze_all)
         self.AppendItem(self.dismiss_all)
@@ -433,8 +371,7 @@ class TabContextMenu(wx.Menu):
             self.snooze_all.Enable(False)
             self.dismiss_all.Enable(False)
 
-        self.filters_submenu.update()
-
+        self.navigator.Check(check=self.tasklist.navigator.is_shown())
         self.gaps.Check(check=self.tasklist.list_.show_gaps)
         self.overlaps.Check(check=self.tasklist.list_.show_overlappings)
         self.autoscroll.Check(
@@ -498,43 +435,6 @@ class ListContextMenu(wx.Menu):
                 break
 
             sel = self.occview.listview.GetNextSelected(sel)
-
-
-class FiltersMenu(wx.Menu):
-    def __init__(self, tasklist):
-        wx.Menu.__init__(self)
-        self.tasklist = tasklist
-
-        self.update()
-
-    def update(self):
-        self.namestoids = {}
-
-        for item in self.GetMenuItems():
-            self.DeleteItem(item)
-
-        filters = self.tasklist.filters.get_filters_sorted()
-
-        for filter_ in filters:
-            config = self.tasklist.filters.get_filter_configuration(filter_)
-
-            id_ = wx.NewId()
-            self.namestoids[filter_] = id_
-
-            item = wx.MenuItem(self, id_, config['name'], kind=wx.ITEM_RADIO)
-            self.AppendItem(item)
-
-            wxgui_api.bind_to_menu(self._select_filter_loop(filter_, config),
-                                                                        item)
-
-        # This submenu is created both under the main menu and the tab context
-        # menu, so update the checked item
-        selfilter = self.tasklist.filters.get_selected_filter()
-        self.Check(self.namestoids[selfilter], check=True)
-
-    def _select_filter_loop(self, filter_, config):
-        return lambda event: self.tasklist.filters.select_filter(filter_,
-                                                                        config)
 
 
 class _SnoozeConfigMenu(wx.Menu):

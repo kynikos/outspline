@@ -20,6 +20,7 @@ import wx
 from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin, ColumnSorterMixin
 import sys
 import time as _time
+import datetime as _datetime
 import os
 import string as string_
 
@@ -33,6 +34,8 @@ import outspline.interfaces.wxgui_api as wxgui_api
 
 import filters
 import menus
+import msgboxes
+from exceptions import OutOfRangeError
 
 
 class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
@@ -65,7 +68,7 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
 
 
 class OccurrencesView(object):
-    def __init__(self, tasklist, filters):
+    def __init__(self, tasklist, navigator):
         self.DATABASE_COLUMN = 0
         self.HEADING_COLUMN = 1
         self.START_COLUMN = 2
@@ -76,7 +79,7 @@ class OccurrencesView(object):
         COLUMNS_NUMBER = 7
 
         self.tasklist = tasklist
-        self.filters = filters
+        self.navigator = navigator
         self.listview = ListView(tasklist.panel, COLUMNS_NUMBER)
 
         # Override ColumnSorterMixin's method for sorting items that have equal
@@ -114,8 +117,23 @@ class OccurrencesView(object):
             # else clause
             self.autoscroll.enable()
 
-        self.set_filter(self.tasklist.filters.get_filter_configuration(
-                                self.tasklist.filters.get_selected_filter()))
+        self.filterlimits = (
+            int(_time.mktime(_datetime.datetime(config.get_int('minimum_year'),
+                                                        1, 1).timetuple())),
+            int(_time.mktime(_datetime.datetime(
+                    config.get_int('maximum_year') + 1, 1, 1).timetuple())) - 1
+        )
+
+        self.filterclasses = {
+            'relative': filters.FilterRelative,
+            'date': filters.FilterDate,
+            'month': filters.FilterMonth,
+        }
+
+        try:
+            self.set_filter(self.navigator.get_current_configuration())
+        except OutOfRangeError:
+            self.set_filter(self.navigator.get_default_configuration())
 
         self._set_colors(config)
 
@@ -265,29 +283,26 @@ class OccurrencesView(object):
 
     def set_filter(self, config):
         self.autoscroll.pre_execute()
-
-        filterclasses = {
-            'relative': filters.FilterRelative,
-            'absolute': filters.FilterAbsolute,
-            'regular': filters.FilterRegular,
-            'staticmonth': filters.FilterMonthStatic,
-            'month': filters.FilterMonthDynamic,
-        }
-
-        try:
-            class_ = filterclasses[config['mode']]
-        except KeyError:
-            self.set_filter(self.filters.DEFAULT_FILTERS[0]['F0'])
-        else:
-            self.filter_ = class_(config)
+        self.filter_ = self.filterclasses[config['mode']](config)
 
     def _refresh(self):
         log.debug('Refresh tasklist')
 
         self.now = int(_time.time())
 
-        self.min_time, self.max_time = self.filter_.compute_limits(self.now)
+        try:
+            self.min_time, self.max_time = self.filter_.compute_limits(
+                                                                    self.now)
+        except OutOfRangeError:
+            msgboxes.warn_out_of_range().ShowModal()
+        else:
+            if self.min_time < self.filterlimits[0] or \
+                                        self.max_time > self.filterlimits[1]:
+                msgboxes.warn_out_of_range().ShowModal()
+            else:
+                self._refresh_continue()
 
+    def _refresh_continue(self):
         occsobj = organism_api.get_occurrences_range(mint=self.min_time,
                                                             maxt=self.max_time)
         occurrences = occsobj.get_list()

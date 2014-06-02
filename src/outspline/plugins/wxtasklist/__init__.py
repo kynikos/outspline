@@ -40,6 +40,7 @@ class TaskListPanel(wx.Panel):
 
 class TaskList(object):
     def __init__(self, parent):
+        self.TAB_TITLE = "Occurrences"
         # Note that the remaining border is due to the SplitterWindow, whose
         # border cannot be removed because it's used to highlight the sash
         # See also http://trac.wxwidgets.org/ticket/12413
@@ -50,13 +51,13 @@ class TaskList(object):
 
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
-        # filters.Filters must be instantiated *before* list_.OccurrencesView,
-        # because the former sets the filter for the latter; note that
-        # inverting the order would work anyway because of a usually favorable
-        # race condition (the list is refreshed after an asynchronous delay),
-        # but of course that shouldn't be relied on
-        self.filters = filters.Filters(self)
-        self.list_ = list_.OccurrencesView(self, self.filters)
+        # filters.Navigator must be instantiated *before*
+        # list_.OccurrencesView, because the former sets the filter for the
+        # latter; note that inverting the order would work anyway because of a
+        # usually favorable race condition (the list is refreshed after an
+        # asynchronous delay), but of course that shouldn't be relied on
+        self.navigator = filters.Navigator(self)
+        self.list_ = list_.OccurrencesView(self, self.navigator)
 
         self.mainmenu = menus.MainMenu(self)
         self.panel.init_tab_menu(self)
@@ -87,7 +88,7 @@ class TaskList(object):
         # bugs will happen, like the keyboard menu shortcuts not working until
         # a database is opened. Add the plugin only when the first database is
         # opened.
-        wxgui_api.add_plugin_to_right_nb(self.panel, self._get_tab_title())
+        wxgui_api.add_plugin_to_right_nb(self.panel, self.TAB_TITLE)
         wxgui_api.bind_to_open_database(self._handle_open_database, False)
 
     def is_shown(self):
@@ -100,7 +101,7 @@ class TaskList(object):
             self._show()
 
     def _show(self):
-        wxgui_api.add_plugin_to_right_nb(self.panel, self._get_tab_title())
+        wxgui_api.add_plugin_to_right_nb(self.panel, self.TAB_TITLE)
         self._enable()
 
     def _hide(self):
@@ -119,15 +120,10 @@ class TaskList(object):
     def _disable(self):
         self.list_.disable_refresh()
 
-    def _get_tab_title(self):
-        return self.filters.get_filter_configuration(
-                                    self.filters.get_selected_filter())['name']
-
     def _handle_exit_application(self, kwargs):
         configfile = coreaux_api.get_user_config_file()
         self.list_.save_configuration()
-        # Reset the Filters section because some filters may have been removed
-        self.config('Filters').export_reset(configfile)
+        self.navigator.reset_config_file()
         self.config.export_upgrade(configfile)
 
 
