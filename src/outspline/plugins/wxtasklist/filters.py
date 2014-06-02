@@ -54,7 +54,9 @@ class Navigator(object):
 
         self._init_buttons()
         self._init_filter()
-        self._show()
+
+        if conf.get_bool('show_navigator'):
+            self._show()
 
     def _init_buttons(self):
         button_previous = wx.Button(self.panel, label='<',
@@ -239,7 +241,9 @@ class Navigator(object):
     def get_default_configuration(self):
         return self.configuration.get_default()
 
-    def reset_config_file(self):
+    def save_configuration(self):
+        config = coreaux_api.get_plugin_configuration('wxtasklist')
+        config['show_navigator'] = 'yes' if self.is_shown() else 'no'
         self.configuration.clear_on_file()
 
 

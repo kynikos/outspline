@@ -123,7 +123,7 @@ class TaskList(object):
     def _handle_exit_application(self, kwargs):
         configfile = coreaux_api.get_user_config_file()
         self.list_.save_configuration()
-        self.navigator.reset_config_file()
+        self.navigator.save_configuration()
         self.config.export_upgrade(configfile)
 
 
