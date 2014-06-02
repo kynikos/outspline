@@ -19,7 +19,6 @@
 import wx
 import time as _time
 import datetime as _datetime
-import calendar as _calendar
 import copy as copy_
 from collections import OrderedDict
 
@@ -1116,16 +1115,16 @@ class FilterRelativeWeeks(object):
     def __init__(self, low, high):
         self.low = low * 604800
         self.high = high * 604800
+        self.firstweekday = coreaux_api.get_plugin_configuration('wxtasklist'
+                                                    ).get_int('first_weekday')
 
     def compute_limits(self, now):
-        firstweekday = _calendar.firstweekday()
-
         try:
             # 'now' is not necessarily the actual current time, it's the search
             # reference time, so it must be protected
             dnow = _datetime.date.fromtimestamp(now)
             weekday = dnow.weekday()
-            relweekdaystart = (7 - firstweekday + weekday) % 7 * 86400
+            relweekdaystart = (7 - self.firstweekday + weekday) % 7 * 86400
             self.weekstart = _time.mktime(dnow.timetuple()) - relweekdaystart
         except ValueError:
             raise OutOfRangeError()
