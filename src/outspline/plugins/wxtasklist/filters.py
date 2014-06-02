@@ -146,6 +146,9 @@ class Navigator(object):
             self.tasklist.list_.delay_restart()
 
     def _show_previous_page(self, event):
+        self.show_previous_page()
+
+    def show_previous_page(self):
         cconfig = self.configuration.get_current()
 
         try:
@@ -159,6 +162,9 @@ class Navigator(object):
             self._apply_filter(nconfig)
 
     def _show_next_page(self, event):
+        self.show_next_page()
+
+    def show_next_page(self):
         cconfig = self.configuration.get_current()
 
         try:
@@ -172,11 +178,17 @@ class Navigator(object):
             self._apply_filter(nconfig)
 
     def _reset(self, event):
+        self.reset()
+
+    def reset(self):
         config = self.configuration.restore_saved()
         self._reset_filter(config)
         self._apply_filter(config)
 
     def _set(self, event):
+        self.set()
+
+    def set(self):
         # Note that the configuration is exported to the file only when exiting
         # Outspline
         intvalues = self.sfilter.get_values()
@@ -193,6 +205,9 @@ class Navigator(object):
             self.configuration.set_saved()
 
     def _apply(self, event):
+        self.apply()
+
+    def apply(self):
         intvalues = self.sfilter.get_values()
 
         try:

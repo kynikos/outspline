@@ -38,7 +38,7 @@ class MainMenu(wx.Menu):
         self.occview = tasklist.list_
 
         self.ID_SHOW = wx.NewId()
-        self.ID_TOGGLE_NAVIGATOR = wx.NewId()
+        self.ID_NAVIGATOR = wx.NewId()
         self.ID_GAPS = wx.NewId()
         self.ID_OVERLAPS = wx.NewId()
         self.ID_SCROLL = wx.NewId()
@@ -50,15 +50,14 @@ class MainMenu(wx.Menu):
         self.ID_DISMISS = wx.NewId()
         self.ID_DISMISS_ALL = wx.NewId()
 
+        self.navigator_submenu = NavigatorMenu(tasklist)
+
         self.show = wx.MenuItem(self, self.ID_SHOW,
                                                 "Show &panel\tCTRL+SHIFT+F5",
                                                 "Show the occurrences panel",
                                                 kind=wx.ITEM_CHECK)
-
-        self.navigator = wx.MenuItem(self, self.ID_TOGGLE_NAVIGATOR,
-                                            "&Show navigator\tCTRL+F5",
-                                            "Show or hide the navigator bar",
-                                            kind=wx.ITEM_CHECK)
+        self.navigator = wx.MenuItem(self, self.ID_NAVIGATOR, 'N&avigator',
+                        'Navigator actions', subMenu=self.navigator_submenu)
         self.gaps = wx.MenuItem(self, self.ID_GAPS, "Show &gaps\tCTRL+-",
                             "Show any unallocated time in the shown interval",
                             kind=wx.ITEM_CHECK)
@@ -93,6 +92,8 @@ class MainMenu(wx.Menu):
         self.dismiss_all = wx.MenuItem(self, self.ID_DISMISS_ALL,
                     "Dis&miss all\tCTRL+F8", "Dismiss all the active alarms")
 
+        self.navigator.SetBitmap(wx.ArtProvider.GetBitmap('@navigator',
+                                                                wx.ART_MENU))
         self.scroll.SetBitmap(wx.ArtProvider.GetBitmap('@movedown',
                                                                 wx.ART_MENU))
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
@@ -106,6 +107,7 @@ class MainMenu(wx.Menu):
                                                                   wx.ART_MENU))
 
         self.AppendItem(self.show)
+        self.AppendSeparator()
         self.AppendItem(self.navigator)
         self.AppendItem(self.gaps)
         self.AppendItem(self.overlaps)
@@ -122,7 +124,6 @@ class MainMenu(wx.Menu):
         self.AppendItem(self.dismiss_all)
 
         wxgui_api.bind_to_menu(self.tasklist.toggle_shown, self.show)
-        wxgui_api.bind_to_menu(self._toggle_navigator, self.navigator)
         wxgui_api.bind_to_menu(self._show_gaps, self.gaps)
         wxgui_api.bind_to_menu(self._show_overlappings, self.overlaps)
         wxgui_api.bind_to_menu(self._scroll_to_ongoing, self.scroll)
@@ -142,8 +143,6 @@ class MainMenu(wx.Menu):
         if kwargs['menu'] is self:
             self.show.Check(check=self.tasklist.is_shown())
             self.navigator.Enable(False)
-            self.navigator.Check(
-                            check=self.tasklist.navigator.is_shown())
             self.gaps.Enable(False)
             self.gaps.Check(check=self.occview.show_gaps)
             self.overlaps.Enable(False)
@@ -157,6 +156,8 @@ class MainMenu(wx.Menu):
             self.snooze_all.Enable(False)
             self.dismiss.Enable(False)
             self.dismiss_all.Enable(False)
+
+            self.navigator_submenu.update_items()
 
             tab = wxgui_api.get_selected_right_nb_tab()
 
@@ -194,12 +195,16 @@ class MainMenu(wx.Menu):
                     self.snooze_all.Enable()
                     self.dismiss_all.Enable()
 
+                self.navigator_submenu.update_items_selected()
+
             if self.tasklist.is_shown():
                 # Already appropriately checked above
                 self.navigator.Enable()
                 self.gaps.Enable()
                 self.overlaps.Enable()
                 self.autoscroll.Enable()
+
+                self.navigator_submenu.update_items_shown()
 
     def _reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
@@ -217,8 +222,7 @@ class MainMenu(wx.Menu):
         self.dismiss.Enable()
         self.dismiss_all.Enable()
 
-    def _toggle_navigator(self, event):
-        self.tasklist.navigator.toggle_shown()
+        self.navigator_submenu.reset_items()
 
     def _show_gaps(self, event):
         if self.tasklist.is_shown():
@@ -322,14 +326,128 @@ class MainMenu(wx.Menu):
         core_api.release_databases()
 
 
+class NavigatorMenu(wx.Menu):
+    def __init__(self, tasklist):
+        wx.Menu.__init__(self)
+        self.tasklist = tasklist
+
+        self.ID_TOGGLE_NAVIGATOR = wx.NewId()
+        self.ID_PREVIOUS = wx.NewId()
+        self.ID_NEXT = wx.NewId()
+        self.ID_APPLY = wx.NewId()
+        self.ID_SET = wx.NewId()
+        self.ID_RESET = wx.NewId()
+
+        self.navigator = wx.MenuItem(self, self.ID_TOGGLE_NAVIGATOR,
+                        "&Show\tCTRL+F5", "Show or hide the navigator bar",
+                        kind=wx.ITEM_CHECK)
+        self.previous = wx.MenuItem(self, self.ID_PREVIOUS,
+                                    "&Previous page\tCTRL+[",
+                                    "View the previous page of occurrences")
+        self.next = wx.MenuItem(self, self.ID_NEXT, "&Next page\tCTRL+]",
+                                        "View the next page of occurrences")
+        self.apply = wx.MenuItem(self, self.ID_APPLY, "&Apply filters\tCTRL+,",
+                                                "Apply the configured filters")
+        self.set = wx.MenuItem(self, self.ID_SET, "Se&t filters\tCTRL+.",
+                                    "Apply and save the configured filters")
+        self.reset = wx.MenuItem(self, self.ID_RESET, "&Reset filters\tCTRL+/",
+                                        "Reset the filters to the saved ones")
+
+        self.previous.SetBitmap(wx.ArtProvider.GetBitmap('@previous',
+                                                                  wx.ART_MENU))
+        self.next.SetBitmap(wx.ArtProvider.GetBitmap('@next', wx.ART_MENU))
+        self.apply.SetBitmap(wx.ArtProvider.GetBitmap('@apply',  wx.ART_MENU))
+        self.set.SetBitmap(wx.ArtProvider.GetBitmap('@save', wx.ART_MENU))
+        self.reset.SetBitmap(wx.ArtProvider.GetBitmap('@undo', wx.ART_MENU))
+
+        self.AppendItem(self.navigator)
+        self.AppendSeparator()
+        self.AppendItem(self.previous)
+        self.AppendItem(self.next)
+        self.AppendItem(self.apply)
+        self.AppendItem(self.set)
+        self.AppendItem(self.reset)
+
+        wxgui_api.bind_to_menu(self._toggle_navigator, self.navigator)
+        wxgui_api.bind_to_menu(self._go_to_previous_page, self.previous)
+        wxgui_api.bind_to_menu(self._go_to_next_page, self.next)
+        wxgui_api.bind_to_menu(self._apply_filters, self.apply)
+        wxgui_api.bind_to_menu(self._set_filters, self.set)
+        wxgui_api.bind_to_menu(self._reset_filters, self.reset)
+
+    def update_items(self):
+        self.navigator.Enable(False)
+        self.navigator.Check(check=self.tasklist.navigator.is_shown())
+        self.previous.Enable(False)
+        self.next.Enable(False)
+        self.apply.Enable(False)
+        self.set.Enable(False)
+        self.reset.Enable(False)
+
+    def update_items_shown(self):
+        self.navigator.Enable()
+
+    def update_items_selected(self):
+        self.previous.Enable()
+        self.next.Enable()
+        self.apply.Enable()
+        self.set.Enable()
+        self.reset.Enable()
+
+    def reset_items(self):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.navigator.Enable()
+        self.previous.Enable()
+        self.next.Enable()
+        self.apply.Enable()
+        self.set.Enable()
+        self.reset.Enable()
+
+    def _toggle_navigator(self, event):
+        self.tasklist.navigator.toggle_shown()
+
+    def _go_to_previous_page(self, event):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.tasklist.navigator.show_previous_page()
+
+    def _go_to_next_page(self, event):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.tasklist.navigator.show_next_page()
+
+    def _apply_filters(self, event):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.tasklist.navigator.apply()
+
+    def _set_filters(self, event):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.tasklist.navigator.set()
+
+    def _reset_filters(self, event):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.tasklist.navigator.reset()
+
+
 class TabContextMenu(wx.Menu):
     def __init__(self, tasklist):
         wx.Menu.__init__(self)
         self.tasklist = tasklist
 
-        self.navigator = wx.MenuItem(self,
-                    self.tasklist.mainmenu.ID_TOGGLE_NAVIGATOR,
-                                        "&Show navigator", kind=wx.ITEM_CHECK)
+        self.navigator_submenu = TabContextNavigatorMenu(tasklist)
+
+        self.navigator = wx.MenuItem(self, self.tasklist.mainmenu.ID_NAVIGATOR,
+                                            'N&avigator', 'Navigator actions',
+                                            subMenu=self.navigator_submenu)
         self.gaps = wx.MenuItem(self, self.tasklist.mainmenu.ID_GAPS,
                                             "Show &gaps", kind=wx.ITEM_CHECK)
         self.overlaps = wx.MenuItem(self,
@@ -347,6 +465,8 @@ class TabContextMenu(wx.Menu):
         self.dismiss_all = wx.MenuItem(self,
                         self.tasklist.mainmenu.ID_DISMISS_ALL, "Dis&miss all")
 
+        self.navigator.SetBitmap(wx.ArtProvider.GetBitmap('@navigator',
+                                                                wx.ART_MENU))
         self.scroll.SetBitmap(wx.ArtProvider.GetBitmap('@movedown',
                                                                 wx.ART_MENU))
         self.snooze_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarms',
@@ -372,11 +492,55 @@ class TabContextMenu(wx.Menu):
             self.snooze_all.Enable(False)
             self.dismiss_all.Enable(False)
 
-        self.navigator.Check(check=self.tasklist.navigator.is_shown())
         self.gaps.Check(check=self.tasklist.list_.show_gaps)
         self.overlaps.Check(check=self.tasklist.list_.show_overlappings)
         self.autoscroll.Check(
                             check=self.tasklist.list_.autoscroll.is_enabled())
+
+        self.navigator_submenu.update_items()
+
+
+class TabContextNavigatorMenu(wx.Menu):
+    def __init__(self, tasklist):
+        wx.Menu.__init__(self)
+        self.tasklist = tasklist
+
+        self.navigator = wx.MenuItem(self,
+                self.tasklist.mainmenu.navigator_submenu.ID_TOGGLE_NAVIGATOR,
+                "&Show", "Show or hide the navigator bar", kind=wx.ITEM_CHECK)
+        self.previous = wx.MenuItem(self,
+                        self.tasklist.mainmenu.navigator_submenu.ID_PREVIOUS,
+                        "&Previous page")
+        self.next = wx.MenuItem(self,
+                            self.tasklist.mainmenu.navigator_submenu.ID_NEXT,
+                            "&Next page")
+        self.apply = wx.MenuItem(self,
+                            self.tasklist.mainmenu.navigator_submenu.ID_APPLY,
+                            "&Apply filters")
+        self.set = wx.MenuItem(self,
+                            self.tasklist.mainmenu.navigator_submenu.ID_SET,
+                            "Se&t filters")
+        self.reset = wx.MenuItem(self,
+                            self.tasklist.mainmenu.navigator_submenu.ID_RESET,
+                            "&Reset filters")
+
+        self.previous.SetBitmap(wx.ArtProvider.GetBitmap('@previous',
+                                                                  wx.ART_MENU))
+        self.next.SetBitmap(wx.ArtProvider.GetBitmap('@next', wx.ART_MENU))
+        self.apply.SetBitmap(wx.ArtProvider.GetBitmap('@apply',  wx.ART_MENU))
+        self.set.SetBitmap(wx.ArtProvider.GetBitmap('@save', wx.ART_MENU))
+        self.reset.SetBitmap(wx.ArtProvider.GetBitmap('@undo', wx.ART_MENU))
+
+        self.AppendItem(self.navigator)
+        self.AppendSeparator()
+        self.AppendItem(self.previous)
+        self.AppendItem(self.next)
+        self.AppendItem(self.apply)
+        self.AppendItem(self.set)
+        self.AppendItem(self.reset)
+
+    def update_items(self):
+        self.navigator.Check(check=self.tasklist.navigator.is_shown())
 
 
 class ListContextMenu(wx.Menu):
