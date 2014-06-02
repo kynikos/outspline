@@ -81,15 +81,20 @@ class RootMenu(wx.MenuBar):
             update_menu_items_event.signal(menu=menu)
 
     def reset_menus(self, event):
-        # Re-enable all the actions so they are available for their
-        # accelerators
-        # EVT_MENU_CLOSE is signalled only for the last-closed menu, but since
-        # all the others opened have been updated, all the menus have to be
-        # reset (don't check event.GetMenu() is menu)
-        self.file.reset_items()
-        self.database.reset_items()
-        self.edit.reset_items()
-        reset_menu_items_event.signal()
+        # Reset the menus only if the closed menu is a top-level one, in fact
+        # EVT_MENU_CLOSE is signalled also for sub-menus, but in those cases
+        # the menus must not be reset
+        if event.GetMenu().GetParent() is None:
+            # Re-enable all the actions so they are available for their
+            # accelerators
+            # EVT_MENU_CLOSE is signalled only for the last-closed menu, but since
+            # all the others opened have been updated, all the menus have to be
+            # reset (don't check event.GetMenu() is menu)
+            self.file.reset_items()
+            self.database.reset_items()
+            self.edit.reset_items()
+
+            reset_menu_items_event.signal()
 
 
 class MenuFile(wx.Menu):
