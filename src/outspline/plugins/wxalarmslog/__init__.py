@@ -136,11 +136,12 @@ class LogsMenu(object):
         self.alarms = wx.MenuItem(wxgui_api.get_menu_logs(), self.ID_ALARMS,
                             '&Alarms', 'Alarms log commands', subMenu=submenu)
         self.find = wx.MenuItem(submenu, self.ID_FIND,
-                "&Find in database\tCTRL+F5",
+                "&Find in database\tCTRL+SHIFT+F6",
                 "Select the database items associated to the selected entries")
 
         # Use an explicit accelerator (temporary workaround for bug #280)
-        accel = wx.AcceleratorEntry(wx.ACCEL_CTRL, wx.WXK_F5, self.ID_FIND)
+        accel = wx.AcceleratorEntry(wx.ACCEL_CTRL | wx.ACCEL_SHIFT, wx.WXK_F5,
+                                                                self.ID_FIND)
         accelt = wx.AcceleratorTable([accel, ])
         wx.GetApp().root.SetAcceleratorTable(accelt)
 

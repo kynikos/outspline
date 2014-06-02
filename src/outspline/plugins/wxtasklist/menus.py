@@ -56,8 +56,9 @@ class MainMenu(wx.Menu):
                                                 kind=wx.ITEM_CHECK)
 
         self.navigator = wx.MenuItem(self, self.ID_TOGGLE_NAVIGATOR,
-                        "&Show navigator", "Show or hide the navigator bar",
-                        kind=wx.ITEM_CHECK)
+                                            "&Show navigator\tCTRL+F5",
+                                            "Show or hide the navigator bar",
+                                            kind=wx.ITEM_CHECK)
         self.gaps = wx.MenuItem(self, self.ID_GAPS, "Show &gaps\tCTRL+-",
                             "Show any unallocated time in the shown interval",
                             kind=wx.ITEM_CHECK)
