@@ -59,6 +59,23 @@ class Navigator(object):
             self._show()
 
     def _init_buttons(self):
+        buttons = self.config['navigator_buttons'].split(',')
+
+        creators = {
+            'previous': self._init_button_previous,
+            'next': self._init_button_next,
+            'reset': self._init_button_reset,
+            'set': self._init_button_set,
+            'apply': self._init_button_apply,
+        }
+
+        for button in buttons:
+            try:
+                creators[button]()
+            except KeyError:
+                pass
+
+    def _init_button_previous(self):
         button_previous = wx.Button(self.panel, label='<',
                                                         style=wx.BU_EXACTFIT)
         self.fbox.Add(button_previous, flag=wx.EXPAND | wx.BOTTOM, border=4)
@@ -67,33 +84,41 @@ class Navigator(object):
         # WrapSizer if the next item wraps
         self.fbox.AddSpacer(4)
 
+        self.panel.Bind(wx.EVT_BUTTON, self._show_previous_page,
+                                                            button_previous)
+
+    def _init_button_next(self):
         button_next = wx.Button(self.panel, label='>', style=wx.BU_EXACTFIT)
         self.fbox.Add(button_next, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         self.fbox.AddSpacer(4)
 
+        self.panel.Bind(wx.EVT_BUTTON, self._show_next_page, button_next)
+
+    def _init_button_reset(self):
         button_reset = wx.Button(self.panel, label='Reset',
                                                         style=wx.BU_EXACTFIT)
         self.fbox.Add(button_reset, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         self.fbox.AddSpacer(4)
 
+        self.panel.Bind(wx.EVT_BUTTON, self._reset, button_reset)
+
+    def _init_button_set(self):
         button_set = wx.Button(self.panel, label='Set', style=wx.BU_EXACTFIT)
         self.fbox.Add(button_set, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         self.fbox.AddSpacer(4)
 
+        self.panel.Bind(wx.EVT_BUTTON, self._set, button_set)
+
+    def _init_button_apply(self):
         button_apply = wx.Button(self.panel, label='Apply',
                                                         style=wx.BU_EXACTFIT)
         self.fbox.Add(button_apply, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         self.fbox.AddSpacer(4)
 
-        self.panel.Bind(wx.EVT_BUTTON, self._show_previous_page,
-                                                            button_previous)
-        self.panel.Bind(wx.EVT_BUTTON, self._show_next_page, button_next)
-        self.panel.Bind(wx.EVT_BUTTON, self._reset, button_reset)
-        self.panel.Bind(wx.EVT_BUTTON, self._set, button_set)
         self.panel.Bind(wx.EVT_BUTTON, self._apply, button_apply)
 
     def _init_filter(self):
