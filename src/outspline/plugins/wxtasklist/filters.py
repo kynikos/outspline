@@ -984,7 +984,7 @@ class FilterRelative(object):
             'weeks': FilterRelativeWeeks,
             'months': FilterRelativeMonths,
             'years': FilterRelativeYears,
-        }[config['unit']](low, high, config)
+        }[config['unit']](low, high)
 
     def compute_limits(self, now):
         return self.filter.compute_limits(now)
@@ -994,7 +994,7 @@ class FilterRelative(object):
 
 
 class FilterRelativeMinutes(object):
-    def __init__(self, low, high, config):
+    def __init__(self, low, high):
         self.low = low * 60
         self.high = high * 60
 
@@ -1066,7 +1066,7 @@ class FilterRelativeMinutes(object):
 
 
 class FilterRelativeHours(object):
-    def __init__(self, low, high, config):
+    def __init__(self, low, high):
         self.low = low * 3600
         self.high = high * 3600
 
@@ -1085,7 +1085,7 @@ class FilterRelativeHours(object):
 
 
 class FilterRelativeDays(object):
-    def __init__(self, low, high, config):
+    def __init__(self, low, high):
         self.utcoffset = timeaux.UTCOffset()
         self.low = low * 86400
         self.high = high * 86400
@@ -1113,7 +1113,7 @@ class FilterRelativeDays(object):
 
 
 class FilterRelativeWeeks(object):
-    def __init__(self, low, high, config):
+    def __init__(self, low, high):
         self.low = low * 604800
         self.high = high * 604800
 
@@ -1144,7 +1144,7 @@ class FilterRelativeWeeks(object):
 
 
 class FilterRelativeMonths(object):
-    def __init__(self, low, high, config):
+    def __init__(self, low, high):
         self.low = low
         self.high = high
 
@@ -1182,7 +1182,7 @@ class FilterRelativeMonths(object):
 
 
 class FilterRelativeYears(object):
-    def __init__(self, low, high, config):
+    def __init__(self, low, high):
         self.low = low
         self.high = high
 
