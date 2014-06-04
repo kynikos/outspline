@@ -641,6 +641,10 @@ class Autoscroll(object):
             # restore the y scroll from the previous filter
             self.execute = self._execute_dummy
 
+    def execute(self, yscroll):
+        # This function is defined dynamically
+        pass
+
     def _execute_auto(self, yscroll):
         # This method must get the same arguments as the other execute_*
         # methods
