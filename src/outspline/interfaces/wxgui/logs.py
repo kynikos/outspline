@@ -113,11 +113,13 @@ class DatabaseHistory(object):
         self.view = wx.dataview.DataViewListCtrl(parent,
                         style=wx.dataview.DV_SINGLE |
                         wx.dataview.DV_ROW_LINES | wx.dataview.DV_NO_HEADER)
+        # Note how AppendBitmapColumn requires a second argument, while
+        # AppendTextColumn doesn't
         self.view.AppendBitmapColumn('Icon', 0, width=wx.COL_WIDTH_AUTOSIZE)
-        self.view.AppendTextColumn('Status', 1, width=wx.COL_WIDTH_AUTOSIZE,
+        self.view.AppendTextColumn('Status', width=wx.COL_WIDTH_AUTOSIZE,
                                                             flags=statusflags)
-        self.view.AppendTextColumn('Timestamp', 2, width=wx.COL_WIDTH_AUTOSIZE)
-        self.view.AppendTextColumn('Description', 3)
+        self.view.AppendTextColumn('Timestamp', width=wx.COL_WIDTH_AUTOSIZE)
+        self.view.AppendTextColumn('Description')
 
         self._make_icons(bgcolor)
 

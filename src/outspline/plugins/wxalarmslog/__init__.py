@@ -65,11 +65,13 @@ class AlarmsLog(object):
                         style=wx.dataview.DV_MULTIPLE |
                         wx.dataview.DV_ROW_LINES | wx.dataview.DV_NO_HEADER)
         # Temporary workaround for bug #279
+        # Note how AppendDateColumn requires a second argument, while
+        # AppendTextColumn doesn't
         #self.view.AppendDateColumn('Timestamp', 0,
         #        width=wx.COL_WIDTH_AUTOSIZE, align=wx.ALIGN_CENTER_VERTICAL)
-        self.view.AppendTextColumn('Timestamp', 0, width=wx.COL_WIDTH_AUTOSIZE)
-        self.view.AppendTextColumn('Action', 1, width=wx.COL_WIDTH_AUTOSIZE)
-        self.view.AppendTextColumn('Item', 2)
+        self.view.AppendTextColumn('Timestamp', width=wx.COL_WIDTH_AUTOSIZE)
+        self.view.AppendTextColumn('Action', width=wx.COL_WIDTH_AUTOSIZE)
+        self.view.AppendTextColumn('Item')
 
         self.reasons = {0: '[snoozed]',
                         1: '[dismissed]',
