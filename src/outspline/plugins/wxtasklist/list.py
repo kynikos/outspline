@@ -653,12 +653,12 @@ class Autoscroll(object):
         # This check also makes this function safe if there are no items in the
         # list
         if pastn > 0:
-            height = self.listview.GetItemRect(self.listview.GetTopItem()
-                                                                ).GetHeight()
+            top = self.listview.GetTopItem()
+            height = self.listview.GetItemRect(top).GetHeight()
 
             # Note that the autoscroll relies on the items to be initially
             # sorted by State ascending
-            yscrollauto = (pastn - self.padding) * height
+            yscrollauto = (pastn - top - self.padding) * height
             self.listview.ScrollList(0, yscrollauto)
 
         self.execute = self._execute_maintain
