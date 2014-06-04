@@ -100,6 +100,7 @@ history_create = ("CREATE TABLE History (H_id INTEGER PRIMARY KEY, "
                                         "H_status INTEGER, "
                                         "H_item INTEGER, "
                                         "H_type TEXT, "
+                                        "H_tstamp INTEGER, "
                                         "H_description TEXT, "
                                         "H_redo TEXT, "
                                         "H_undo TEXT)")
@@ -139,12 +140,12 @@ history_select_select = ('SELECT H_id FROM History '
                          'ORDER BY H_group DESC LIMIT ?)')
 
 history_insert = ('INSERT INTO History (H_id, H_group, H_status, '
-                  'H_item, H_type, H_description, H_redo, H_undo) '
-                  'VALUES (NULL, ?, 1, ?, ?, ?, ?, ?)')
+                  'H_item, H_type, H_tstamp, H_description, H_redo, H_undo) '
+                  'VALUES (NULL, ?, 1, ?, ?, strftime("%s", "now"), ?, ?, ?)')
 
 history_insert_copy = ('INSERT INTO History (H_id, H_group, H_status, H_item, '
-                       'H_type, H_description, H_redo, H_undo) '
-                       'VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+                       'H_type, H_tstamp, H_description, H_redo, H_undo) '
+                       'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
 
 history_update_status_new = ('UPDATE History SET H_status=5 '
                              'WHERE H_status IN (1, 3)')
