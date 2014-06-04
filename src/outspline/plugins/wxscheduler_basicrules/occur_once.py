@@ -20,6 +20,7 @@ import time as _time
 import datetime as _datetime
 import random
 
+from outspline.static.pyaux.timeaux import UTCOffset
 from outspline.static.wxclasses.timectrls import TimeSpanCtrl
 import outspline.extensions.organism_basicrules_api as organism_basicrules_api
 import outspline.plugins.wxscheduler_api as wxscheduler_api
@@ -86,8 +87,11 @@ class Rule(object):
         # Remember to support also time zones that differ from UTC by not
         # exact hours (e.g. Australia/Adelaide)
         if not rule:
-            nextdate = _datetime.datetime.now() + _datetime.timedelta(hours=1)
-            start = int(_time.time()) // 86400 * 86400 + nextdate.hour * 3600
+            now = _datetime.datetime.now()
+            nextdate = _datetime.datetime(now.year, now.month, now.day,
+                                    now.hour) + _datetime.timedelta(hours=1)
+            start = int(_time.mktime(nextdate.timetuple())) - \
+                                                UTCOffset.compute2_current()
 
             values = {
                 'start_unix_time': start,
@@ -107,12 +111,9 @@ class Rule(object):
                 'time_standard': standard,
             }
 
-        wstart = _datetime.datetime.utcfromtimestamp(
-                                                values['start_unix_time'])
-        wend = _datetime.datetime.utcfromtimestamp(
-                                                values['end_unix_time'])
-        walarm = _datetime.datetime.utcfromtimestamp(
-                                                values['alarm_unix_time'])
+        wstart = _datetime.datetime.utcfromtimestamp(values['start_unix_time'])
+        wend = _datetime.datetime.utcfromtimestamp(values['end_unix_time'])
+        walarm = _datetime.datetime.utcfromtimestamp(values['alarm_unix_time'])
 
         values['end_relative_number'], values['end_relative_unit'] = \
                                         TimeSpanCtrl.compute_widget_values(
