@@ -288,6 +288,9 @@ class DBHistory(object):
                                                         hid=hid, text=jparams)
 
     def clean_history(self):
+        # history_clean_event handlers will need a proper connection
+        history_clean_event.signal(filename=self.filename)
+
         # This operation must be performed on a different connection than
         # the main one (which at this point has been closed already anyway)
         qconn = _sql.connect(self.filename)
@@ -296,20 +299,7 @@ class DBHistory(object):
         cursor.execute(queries.properties_select_history)
         hlimit = cursor.fetchone()[0]
 
-        cursor.execute(queries.history_select_select, (hlimit, ))
-        t = tuple(cursor)
-
-        # history_clean_event handlers will need a proper connection
-        qconn.close()
-
-        history_clean_event.signal(filename=self.filename, hids=t)
-
-        qconn = _sql.connect(self.filename)
-        cursor = qconn.cursor()
-
-        for row in t:
-            cursor.execute(queries.history_delete_id, (row[0], ))
-
+        cursor.execute(queries.history_delete_select, (hlimit, ))
         cursor.execute(queries.history_update_group)
 
         qconn.commit()

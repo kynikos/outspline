@@ -133,12 +133,6 @@ history_select_description = ('SELECT DISTINCT H_group, H_status, H_tstamp, '
                               'H_description FROM History '
                               'ORDER BY H_group DESC, H_tstamp DESC')
 
-history_select_select = ('SELECT H_id FROM History '
-                         'WHERE H_status IN (1, 3, 5) AND H_group NOT IN '
-                         '(SELECT DISTINCT H_group FROM History '
-                         'WHERE H_status IN (1, 3, 5) '
-                         'ORDER BY H_group DESC LIMIT ?)')
-
 history_insert = ('INSERT INTO History (H_id, H_group, H_status, '
                   'H_item, H_type, H_tstamp, H_description, H_redo, H_undo) '
                   'VALUES (NULL, ?, 1, ?, ?, strftime("%s", "now"), ?, ?, ?)')
@@ -161,4 +155,10 @@ history_update_group = ('UPDATE History '
 
 history_delete_status = 'DELETE FROM History WHERE H_status IN (0, 2, 4)'
 
-history_delete_id = 'DELETE FROM History WHERE H_id=?'
+# Don't delete statuses 0, 2, 4 this way, because those actions are ahead of
+# the current database status, and at most they should be deleted in ascending
+# order; however, they'll be deleted anyway the next time an action is done, so
+# they can just be left alone here
+history_delete_select = ('DELETE FROM History WHERE H_status IN (1, 3, 5) '
+                'AND H_group NOT IN (SELECT DISTINCT H_group FROM History '
+                'WHERE H_status IN (1, 3, 5) ORDER BY H_group DESC LIMIT ?)')
