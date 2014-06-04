@@ -650,15 +650,17 @@ class Autoscroll(object):
         # methods
         pastn = len(self.occview.get_states()['past'])
 
-        # This check also makes this function safe if there are no items in the
-        # list
-        if pastn > 0:
+        if self.listview.GetItemCount() > 0:
+            # Note that the autoscroll relies on the items to be initially
+            # sorted by State ascending
             top = self.listview.GetTopItem()
             height = self.listview.GetItemRect(top).GetHeight()
 
-            # Note that the autoscroll relies on the items to be initially
-            # sorted by State ascending
-            yscrollauto = (pastn - top - self.padding) * height
+            # If given a negative dy, ScrollList doesn't work if abs(dy) is
+            # less than the current y position (cannot scroll "over the top",
+            # or to negative item indices).
+            scroll = max(pastn - self.padding, 0)
+            yscrollauto = (scroll - top) * height
             self.listview.ScrollList(0, yscrollauto)
 
         self.execute = self._execute_maintain
