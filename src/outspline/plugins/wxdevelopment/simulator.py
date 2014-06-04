@@ -62,11 +62,11 @@ def stop(kwargs=None):
     # kwargs is passed from the binding to core_api.bind_to_exit_app_1
 
     # Do *not* check also if timer.IsRunning(), see also comment [1]
+    global timer
     if timer:
         log.debug('Stop simulator')
         timer.Stop()
 
-        global timer
         timer = None
 
 def is_active():
