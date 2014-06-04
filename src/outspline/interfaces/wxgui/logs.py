@@ -18,6 +18,7 @@
 
 import wx
 import wx.dataview
+import time as time_
 
 import outspline.core_api as core_api
 import outspline.coreaux_api as coreaux_api
@@ -115,7 +116,8 @@ class DatabaseHistory(object):
         self.view.AppendBitmapColumn('Icon', 0, width=wx.COL_WIDTH_AUTOSIZE)
         self.view.AppendTextColumn('Status', 1, width=wx.COL_WIDTH_AUTOSIZE,
                                                             flags=statusflags)
-        self.view.AppendTextColumn('Description', 2)
+        self.view.AppendTextColumn('Timestamp', 2, width=wx.COL_WIDTH_AUTOSIZE)
+        self.view.AppendTextColumn('Description', 3)
 
         self._make_icons(bgcolor)
 
@@ -211,9 +213,11 @@ class DatabaseHistory(object):
         descriptions = core_api.get_history_descriptions(self.filename)
 
         for row in descriptions:
+            tstamp = time_.strftime('%Y-%m-%d %H:%M', time_.localtime(
+                                                            row['H_tstamp']))
             item = self.view.AppendItem((self.icons[row['H_status']],
                                     "".join(("[", str(row['H_status']), "]")),
-                                    row['H_description']))
+                                    tstamp, row['H_description']))
 
 
 class ContextMenu(wx.Menu):

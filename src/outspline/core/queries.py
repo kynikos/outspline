@@ -129,9 +129,9 @@ history_select_status_redo = ('SELECT H_group, H_status '
                               'FROM History WHERE H_status IN (0, 2, 4) '
                               'ORDER BY H_group ASC LIMIT 1')
 
-history_select_description = ('SELECT DISTINCT H_group, H_status, '
+history_select_description = ('SELECT DISTINCT H_group, H_status, H_tstamp, '
                               'H_description FROM History '
-                              'ORDER BY H_group DESC')
+                              'ORDER BY H_group DESC, H_tstamp DESC')
 
 history_select_select = ('SELECT H_id FROM History '
                          'WHERE H_status IN (1, 3, 5) AND H_group NOT IN '
