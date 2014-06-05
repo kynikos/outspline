@@ -216,9 +216,9 @@ def snooze_alarms(alarmsd, stime):
                 qconn = core_api.get_connection(filename)
                 cursor = qconn.cursor()
                 cursor.execute(queries.alarms_update_id, (newalarm, alarmid))
-                cursor.execute(queries.alarmsofflog_insert, (id_, 0,
-                                                    text.partition('\n')[0]))
                 core_api.give_connection(filename, qconn)
+
+                insert_alarm_log(filename, id_, 0, text.partition('\n')[0])
 
                 # Signal the event after updating the database, so, for
                 # example, the tasklist can be correctly updated
@@ -240,9 +240,9 @@ def dismiss_alarms(alarmsd):
                 qconn = core_api.get_connection(filename)
                 cursor = qconn.cursor()
                 cursor.execute(queries.alarms_delete_id, (alarmid, ))
-                cursor.execute(queries.alarmsofflog_insert, (id_, 1,
-                                                    text.partition('\n')[0]))
                 core_api.give_connection(filename, qconn)
+
+                insert_alarm_log(filename, id_, 1, text.partition('\n')[0])
 
                 # It's necessary to change the dismiss status, otherwise it's
                 # possible that a database is loaded and some of its alarms are
@@ -316,17 +316,28 @@ def delete_alarms(filename, id_, text):
         cursor.execute(queries.alarms_delete_item, (id_, ))
 
         if cursor.rowcount > 0:
-            # Also store the text, otherwise it won't be possible to retrieve
-            # it, since the item has been deleted
-            cursor.execute(queries.alarmsofflog_insert, (id_, 2,
-                                                    text.partition('\n')[0]))
             core_api.give_connection(filename, qconn)
+
+            insert_alarm_log(filename, id_, 2, text.partition('\n')[0])
 
             # Signal the event after updating the database, so, for example,
             # the tasklist can be correctly updated
             alarm_off_event.signal(filename=filename, id_=id_)
         else:
             core_api.give_connection(filename, qconn)
+
+
+def insert_alarm_log(filename, id_, reason, text):
+    LIMIT = coreaux_api.get_extension_configuration('organism_alarms'
+                                                ).get_int('default_log_limit')
+
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+    # Also store the text, otherwise it won't be possible to retrieve it if the
+    # item has been deleted meanwhile
+    cursor.execute(queries.alarmsofflog_insert, (id_, reason, text))
+    cursor.execute(queries.alarmsofflog_delete_clean, (LIMIT, ))
+    core_api.give_connection(filename, qconn)
 
 
 def select_alarms_log(filename):
