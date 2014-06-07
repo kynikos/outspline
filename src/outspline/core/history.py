@@ -55,6 +55,9 @@ class DBHistory(object):
             },
         }
 
+    def set_limit(self, limit):
+        self.historylimit = limit
+
     def register_action_handlers(self, name, redo_handler, undo_handler):
         if name not in self.hactions:
             self.hactions[name] = {
@@ -70,9 +73,10 @@ class DBHistory(object):
         cur = qconn.cursor()
         cur.execute(queries.history_insert, (group, id_, type_, description,
                                                     query_redo, query_undo))
-        self.connection.give(qconn)
 
-        return cur.lastrowid
+        cur.execute(queries.history_delete_select, (self.historylimit, ))
+
+        self.connection.give(qconn)
 
     def get_next_history_group(self):
         qconn = self.connection.get()
@@ -296,10 +300,7 @@ class DBHistory(object):
         qconn = _sql.connect(self.filename)
         cursor = qconn.cursor()
 
-        cursor.execute(queries.properties_select_history)
-        hlimit = cursor.fetchone()[0]
-
-        cursor.execute(queries.history_delete_select, (hlimit, ))
+        cursor.execute(queries.history_delete_select, (self.historylimit, ))
         cursor.execute(queries.history_update_group)
 
         qconn.commit()

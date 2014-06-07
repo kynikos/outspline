@@ -137,6 +137,9 @@ class Database(object):
         else:
             cursor.execute(queries.properties_delete_dummy)
 
+        cursor.execute(queries.properties_select_history)
+        self.dbhistory.set_limit(cursor.fetchone()[0])
+
         dbitems = cursor.execute(queries.items_select_tree)
         conn.give(qconn)
 

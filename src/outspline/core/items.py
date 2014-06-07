@@ -61,15 +61,15 @@ class Item(object):
 
         cursor.execute(queries.items_insert, (None, parent, previous, text))
         id_ = cursor.lastrowid
+
+        databases.dbs[filename].connection.give(qconn)
+
         # For the moment it's necessary to pass 'text' for both the redo and
         # undo queries, because it's needed also when a history action removes
         # an item
-        cursor.execute(queries.history_insert,
-                    (group, id_, 'insert', description,
-                    json.dumps((parent, previous, text), separators=(',',':')),
-                    text))
-
-        databases.dbs[filename].connection.give(qconn)
+        databases.dbs[filename].dbhistory.insert_history(group, id_, 'insert',
+                            description, json.dumps((parent, previous, text),
+                            separators=(',',':')), text)
 
         databases.dbs[filename].items[id_] = cls(database=databases.dbs[
                                         filename], filename=filename, id_=id_)
@@ -124,13 +124,12 @@ class Item(object):
         query = queries.items_update_id.format(set_fields)
         qparams.append(self.id_)
         cursor.execute(query, qparams)
+        self.database.connection.give(qconn)
 
         jhparams = json.dumps(hparams, separators=(',',':'))
         jhunparams = json.dumps(hunparams, separators=(',',':'))
-        cursor.execute(queries.history_insert, (group, self.id_, 'update',
-                                            description, jhparams, jhunparams))
-
-        self.database.connection.give(qconn)
+        self.database.dbhistory.insert_history(group, self.id_, 'update',
+                                            description, jhparams, jhunparams)
 
     def delete(self, group, description='Delete item'):
         prev = self.get_previous()
@@ -157,13 +156,12 @@ class Item(object):
                     current_values['I_previous'], current_values['I_text']),
                     separators=(',',':'))
 
-
-
         cursor.execute(queries.items_delete_id, (self.id_, ))
-        cursor.execute(queries.history_insert, (group, self.id_, 'delete',
-                                            description, hparams, hunparams))
 
         self.database.connection.give(qconn)
+
+        self.database.dbhistory.insert_history(group, self.id_, 'delete',
+                                            description, hparams, hunparams)
 
         self.remove()
 
