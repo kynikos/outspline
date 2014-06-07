@@ -68,13 +68,13 @@ class GUI(wx.App):
         self.nb_left = self.root.mainpanes.nb_left
         self.nb_right = self.root.mainpanes.nb_right
 
-        coreaux_api.bind_to_uncaught_exception(self.handle_uncaught_exception)
+        coreaux_api.bind_to_uncaught_exception(self._handle_uncaught_exception)
 
     def get_main_icon_bundle(self):
         return self.MAIN_ICON_BUNDLE
 
     def exit_app(self, event):
-        self.export_options()
+        self._export_options()
 
         # Note that this event is also bound directly by the sessions module
         exit_application_event.signal()
@@ -83,11 +83,11 @@ class GUI(wx.App):
         if self.menu.file.close_all_databases(event, exit_=True):
             core_api.exit_()
             coreaux_api.bind_to_uncaught_exception(
-                                         self.handle_uncaught_exception, False)
+                                        self._handle_uncaught_exception, False)
             self.root.Destroy()
         # else: event.Veto() doesn't work here
 
-    def export_options(self):
+    def _export_options(self):
         self.config['show_logs'] = 'yes' if \
                                 self.logs_configuration.is_shown() else 'no'
 
@@ -96,8 +96,8 @@ class GUI(wx.App):
 
         self.config.export_upgrade(coreaux_api.get_user_config_file())
 
-    def handle_uncaught_exception(self, kwargs):
-        coreaux_api.bind_to_uncaught_exception(self.handle_uncaught_exception,
+    def _handle_uncaught_exception(self, kwargs):
+        coreaux_api.bind_to_uncaught_exception(self._handle_uncaught_exception,
                                                False)
         msgboxes.uncaught_exception(kwargs['exc_info']).ShowModal()
         self.root.Destroy()
@@ -194,9 +194,9 @@ class MainPanes(wx.SplitterWindow):
         self.nb_left.Show(False)
         self.nb_right.Show(False)
 
-        self.Bind(wx.EVT_SPLITTER_DCLICK, self.veto_dclick)
+        self.Bind(wx.EVT_SPLITTER_DCLICK, self._veto_dclick)
 
-    def veto_dclick(self, event):
+    def _veto_dclick(self, event):
         event.Veto()
 
     def split_window(self):

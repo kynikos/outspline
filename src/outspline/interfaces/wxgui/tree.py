@@ -734,12 +734,6 @@ class ContextMenu(wx.Menu):
 
 
 class TabContextMenu(wx.Menu):
-    filename = None
-    save = None
-    saveas = None
-    backup = None
-    close = None
-
     def __init__(self, filename):
         wx.Menu.__init__(self)
         self.filename = filename

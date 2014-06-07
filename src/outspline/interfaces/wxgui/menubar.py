@@ -42,12 +42,6 @@ delete_items_event = Event()
 
 
 class RootMenu(wx.MenuBar):
-    file = None
-    database = None
-    edit = None
-    logs = None
-    help = None
-
     def __init__(self):
         # Note that the menu can be accessed through F10, which is an
         # accelerator that doesn't seem to be overridable neither through
@@ -98,22 +92,6 @@ class RootMenu(wx.MenuBar):
 
 
 class MenuFile(wx.Menu):
-    new_ = None
-    open_ = None
-    ID_SAVE = None
-    save = None
-    ID_SAVE_AS = None
-    saveas = None
-    ID_BACKUP = None
-    backup = None
-    ID_SAVE_ALL = None
-    saveall = None
-    ID_CLOSE_DB = None
-    close_ = None
-    ID_CLOSE_DB_ALL = None
-    closeall = None
-    exit_ = None
-
     def __init__(self):
         wx.Menu.__init__(self)
 
@@ -168,9 +146,9 @@ class MenuFile(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self.new_database, self.new_)
         wx.GetApp().Bind(wx.EVT_MENU, self.open_database, self.open_)
         wx.GetApp().Bind(wx.EVT_MENU, self.save_database, self.save)
-        wx.GetApp().Bind(wx.EVT_MENU, self.save_database_as, self.saveas)
+        wx.GetApp().Bind(wx.EVT_MENU, self._save_database_as, self.saveas)
         wx.GetApp().Bind(wx.EVT_MENU, self.save_all_databases, self.saveall)
-        wx.GetApp().Bind(wx.EVT_MENU, self.save_database_backup, self.backup)
+        wx.GetApp().Bind(wx.EVT_MENU, self._save_database_backup, self.backup)
         wx.GetApp().Bind(wx.EVT_MENU, self.close_database, self.close_)
         wx.GetApp().Bind(wx.EVT_MENU, self.close_all_databases, self.closeall)
         wx.GetApp().Bind(wx.EVT_MENU, wx.GetApp().exit_app, self.exit_)
@@ -214,8 +192,10 @@ class MenuFile(wx.Menu):
     def new_database(self, event, filename=None):
         core_api.block_databases()
         fn = databases.create_database(filename=filename)
+
         if fn:
             databases.open_database(fn)
+
         core_api.release_databases()
 
     def open_database(self, event, filename=None):
@@ -226,38 +206,48 @@ class MenuFile(wx.Menu):
     def save_database(self, event):
         core_api.block_databases()
         treedb = wx.GetApp().nb_left.get_selected_tab()
+
         if treedb:
             filename = treedb.get_filename()
+
             if core_api.check_pending_changes(filename):
                 core_api.save_database(filename)
                 treedb.dbhistory.refresh()
+
         core_api.release_databases()
 
     def save_all_databases(self, event):
         core_api.block_databases()
+
         for filename in tuple(tree.dbs.keys()):
             if core_api.check_pending_changes(filename):
                 core_api.save_database(filename)
                 tree.dbs[filename].dbhistory.refresh()
+
         core_api.release_databases()
 
-    def save_database_as(self, event):
+    def _save_database_as(self, event):
         core_api.block_databases()
         treedb = wx.GetApp().nb_left.get_selected_tab()
+
         if treedb:
             databases.save_database_as(treedb.get_filename())
+
         core_api.release_databases()
 
-    def save_database_backup(self, event):
+    def _save_database_backup(self, event):
         core_api.block_databases()
         treedb = wx.GetApp().nb_left.get_selected_tab()
+
         if treedb:
             databases.save_database_backup(treedb.get_filename())
+
         core_api.release_databases()
 
     def close_database(self, event, no_confirm=False):
         core_api.block_databases()
         treedb = wx.GetApp().nb_left.get_selected_tab()
+
         if treedb:
             databases.close_database(treedb.get_filename(),
                                                         no_confirm=no_confirm)
@@ -265,6 +255,7 @@ class MenuFile(wx.Menu):
 
     def close_all_databases(self, event, no_confirm=False, exit_=False):
         core_api.block_databases()
+
         for filename in tuple(tree.dbs.keys()):
             if databases.close_database(filename, no_confirm=no_confirm,
                                                         exit_=exit_) == False:
@@ -276,29 +267,6 @@ class MenuFile(wx.Menu):
 
 
 class MenuDatabase(wx.Menu):
-    ID_UNDO = None
-    undo = None
-    ID_REDO = None
-    redo = None
-    ID_SIBLING = None
-    sibling = None
-    sibling_label_1 = None
-    sibling_help_1 = None
-    sibling_label_2 = None
-    sibling_help_2 = None
-    ID_CHILD = None
-    child = None
-    ID_MOVE_UP = None
-    moveup = None
-    ID_MOVE_DOWN = None
-    movedn = None
-    ID_MOVE_PARENT = None
-    movept = None
-    ID_EDIT = None
-    edit = None
-    ID_DELETE = None
-    delete = None
-
     def __init__(self):
         wx.Menu.__init__(self)
 
@@ -677,25 +645,6 @@ class MenuDatabase(wx.Menu):
 
 
 class MenuEdit(wx.Menu):
-    ID_SELECT_ALL = None
-    select = None
-    ID_CUT = None
-    cut = None
-    ID_COPY = None
-    copy = None
-    ID_PASTE = None
-    paste = None
-    ID_FIND = None
-    find = None
-    ID_APPLY = None
-    apply = None
-    ID_APPLY_ALL = None
-    applyall = None
-    ID_CLOSE = None
-    close_ = None
-    ID_CLOSE_ALL = None
-    closeall = None
-
     def __init__(self):
         wx.Menu.__init__(self)
 
@@ -755,11 +704,11 @@ class MenuEdit(wx.Menu):
         self.AppendItem(self.close_)
         self.AppendItem(self.closeall)
 
-        wx.GetApp().Bind(wx.EVT_MENU, self.select_all_text, self.select)
-        wx.GetApp().Bind(wx.EVT_MENU, self.cut_text, self.cut)
-        wx.GetApp().Bind(wx.EVT_MENU, self.copy_text, self.copy)
-        wx.GetApp().Bind(wx.EVT_MENU, self.paste_text, self.paste)
-        wx.GetApp().Bind(wx.EVT_MENU, self.find_item, self.find)
+        wx.GetApp().Bind(wx.EVT_MENU, self._select_all_text, self.select)
+        wx.GetApp().Bind(wx.EVT_MENU, self._cut_text, self.cut)
+        wx.GetApp().Bind(wx.EVT_MENU, self._copy_text, self.copy)
+        wx.GetApp().Bind(wx.EVT_MENU, self._paste_text, self.paste)
+        wx.GetApp().Bind(wx.EVT_MENU, self._find_item, self.find)
         wx.GetApp().Bind(wx.EVT_MENU, self.apply_tab, self.apply)
         wx.GetApp().Bind(wx.EVT_MENU, self.apply_all_tabs, self.applyall)
         wx.GetApp().Bind(wx.EVT_MENU, self.close_tab, self.close_)
@@ -831,27 +780,27 @@ class MenuEdit(wx.Menu):
         self.close_.Enable()
         self.closeall.Enable()
 
-    def select_all_text(self, event):
+    def _select_all_text(self, event):
         tab = wx.GetApp().nb_right.get_selected_editor()
         if tab:
             editor.tabs[tab].area.select_all()
 
-    def cut_text(self, event):
+    def _cut_text(self, event):
         tab = wx.GetApp().nb_right.get_selected_editor()
         if tab:
             editor.tabs[tab].area.cut()
 
-    def copy_text(self, event):
+    def _copy_text(self, event):
         tab = wx.GetApp().nb_right.get_selected_editor()
         if tab:
             editor.tabs[tab].area.copy()
 
-    def paste_text(self, event):
+    def _paste_text(self, event):
         tab = wx.GetApp().nb_right.get_selected_editor()
         if tab:
             editor.tabs[tab].area.paste()
 
-    def find_item(self, event):
+    def _find_item(self, event):
         tab = wx.GetApp().nb_right.get_selected_editor()
         if tab:
             editor.tabs[tab].find_in_tree()
@@ -892,9 +841,6 @@ class MenuEdit(wx.Menu):
 
 
 class MenuLogs(wx.Menu):
-    ID_LOGS = None
-    logs = None
-
     def __init__(self):
         wx.Menu.__init__(self)
 
@@ -904,13 +850,13 @@ class MenuLogs(wx.Menu):
                                             "Show &panel\tCTRL+SHIFT+l",
                                             "Show logs panel")
 
-        wx.GetApp().Bind(wx.EVT_MENU, self.toggle_logs, self.logs)
+        wx.GetApp().Bind(wx.EVT_MENU, self._toggle_logs, self.logs)
 
     def update_items(self):
         self.logs.Check(check=wx.GetApp().logs_configuration.is_shown())
         menu_logs_update_event.signal()
 
-    def toggle_logs(self, event):
+    def _toggle_logs(self, event):
         # Set logs_configuration.set_shown() here, and not in each
         # tree.dbs[].show_logs()... so that this method works also if there
         # aren't open databases
@@ -925,15 +871,13 @@ class MenuLogs(wx.Menu):
 
 
 class MenuHelp(wx.Menu):
-    about = None
-
     def __init__(self):
         wx.Menu.__init__(self)
 
         self.about = self.Append(wx.ID_ABOUT, '&About Outspline',
                     'Information about Outspline and the installed add-ons')
 
-        wx.GetApp().Bind(wx.EVT_MENU, self.show_about, self.about)
+        wx.GetApp().Bind(wx.EVT_MENU, self._show_about, self.about)
 
-    def show_about(self, event):
+    def _show_about(self, event):
         about.AboutWindow()
