@@ -96,7 +96,25 @@ alarmsofflog_insert = ('INSERT INTO AlarmsOffLog (AOL_id, AOL_item, '
 alarmsofflog_insert_copy = ('INSERT INTO AlarmsOffLog (AOL_id, AOL_item, '
                     'AOL_tstamp, AOL_reason, AOL_text) VALUES (?, ?, ?, ?, ?)')
 
-# DELETE FROM AlarmsOffLog ORDER BY AOL_tstamp DESC LIMIT -1 OFFSET ?
-alarmsofflog_delete_clean = ('DELETE FROM AlarmsOffLog '
-                        'WHERE AOL_id NOT IN (SELECT AOL_id FROM AlarmsOffLog '
-                        'ORDER BY AOL_tstamp DESC LIMIT ?)')
+# The following query is not supported:
+#   DELETE FROM AlarmsOffLog ORDER BY AOL_tstamp DESC LIMIT -1 OFFSET ?
+alarmsofflog_delete_clean_close = ('''
+DELETE FROM AlarmsOffLog WHERE AOL_id NOT IN (
+    SELECT AOL_id FROM AlarmsOffLog ORDER BY AOL_tstamp DESC LIMIT ?
+)''')
+
+# The following query is not supported:
+#   DELETE FROM AlarmsOffLog ORDER BY AOL_tstamp DESC LIMIT -1 OFFSET ?
+alarmsofflog_delete_clean = ('''
+DELETE FROM AlarmsOffLog WHERE AOL_id NOT IN (
+    SELECT AOL_id FROM (
+        SELECT DISTINCT AOL_id FROM AlarmsOffLog
+        ORDER BY AOL_tstamp DESC LIMIT ?
+    )
+    UNION
+    SELECT AOL_id FROM (
+        SELECT DISTINCT AOL_id FROM AlarmsOffLog
+        WHERE AOL_tstamp >= strftime("%s", "now") - ? * 60
+        ORDER BY AOL_tstamp DESC LIMIT ?
+    )
+)''')
