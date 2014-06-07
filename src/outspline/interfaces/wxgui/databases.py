@@ -84,6 +84,8 @@ def open_database(filename=None, startup=False):
             return False
         else:
             tree.Database.open(filename)
+            # Note that this event is also bound directly by the sessions
+            # module
             open_database_event.signal(filename=filename, startup=startup)
             return True
     else:
@@ -138,6 +140,7 @@ def close_database(filename, no_confirm=False, exit_=False):
 
     core_api.close_database(filename)
 
+    # Note that this event is also bound directly by the sessions module
     close_database_event.signal(filename=filename, exit_=exit_)
 
 

@@ -27,7 +27,7 @@ import menubar
 import notebooks
 import msgboxes
 import logs
-
+import sessions
 
 application_loaded_event = Event()
 show_main_window_event = Event()
@@ -76,6 +76,7 @@ class GUI(wx.App):
     def exit_app(self, event):
         self.export_options()
 
+        # Note that this event is also bound directly by the sessions module
         exit_application_event.signal()
 
         # close_all_databases() already blocks the databases
@@ -134,6 +135,10 @@ class MainFrame(wx.Frame):
 
     def _handle_creation(self, event):
         self.Unbind(wx.EVT_WINDOW_CREATE, handler=self._handle_creation)
+
+        if self.config.get_bool('remember_session'):
+            sessions.SessionManager()
+
         application_loaded_event.signal()
 
     def bind_to_close_event(self, handler):

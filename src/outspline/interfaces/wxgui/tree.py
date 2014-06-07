@@ -115,7 +115,7 @@ class Database(wx.SplitterWindow):
 
         # The logs panel must be shown only *after* adding the page to the
         # notebook, otherwise *for*some*reason* the databases opened
-        # automatically by the wxsession plugin (those opened manually aren't
+        # automatically by the sessions manager (those opened manually aren't
         # affected) will have the sash of the SplitterWindow not correctly
         # positioned (only if using SetSashGravity)
         if wx.GetApp().logs_configuration.is_shown():
