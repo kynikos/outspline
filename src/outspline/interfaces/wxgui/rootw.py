@@ -90,6 +90,10 @@ class GUI(wx.App):
     def export_options(self):
         self.config['show_logs'] = 'yes' if \
                                 self.logs_configuration.is_shown() else 'no'
+
+        if self.config.get_bool('remember_geometry'):
+            self.root.save_geometry()
+
         self.config.export_upgrade(coreaux_api.get_user_config_file())
 
     def handle_uncaught_exception(self, kwargs):
@@ -161,6 +165,14 @@ class MainFrame(wx.Frame):
             self.hide()
         else:
             self.show()
+
+    def save_geometry(self):
+        if self.IsMaximized():
+            self.config['maximized'] = 'yes'
+        else:
+            self.config['initial_geometry'] = 'x'.join([str(s) for s in
+                                                            self.GetSize()])
+            self.config['maximized'] = 'no'
 
 
 class MainPanes(wx.SplitterWindow):
