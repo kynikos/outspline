@@ -73,7 +73,7 @@ class Database(wx.SplitterWindow):
                                     self.treec.GetBackgroundColour())
 
         self.properties = Properties(self.treec)
-        self.base_properties = DatabaseProperties(self.properties)
+        self.base_properties = DBProperties(self.properties)
 
         self.Initialize(self.treec)
 
@@ -477,7 +477,7 @@ class Database(wx.SplitterWindow):
         return self.ctabmenu
 
 
-class DatabaseProperties(object):
+class DBProperties(object):
     def __init__(self, properties):
         config = coreaux_api.get_interface_configuration('wxgui')
         multichar = config['icon_multiline']
