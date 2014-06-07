@@ -138,7 +138,11 @@ class Database(object):
             cursor.execute(queries.properties_delete_dummy)
 
         cursor.execute(queries.properties_select_history)
-        self.dbhistory.set_limit(cursor.fetchone()[0])
+        softlimit = cursor.fetchone()[0]
+        config = coreaux_api.get_configuration()('History')
+        timelimit = config.get_int('time_limit')
+        hardlimit = config.get_int('hard_limit')
+        self.dbhistory.set_limits(softlimit, timelimit, hardlimit)
 
         dbitems = cursor.execute(queries.items_select_tree)
         conn.give(qconn)
@@ -167,8 +171,10 @@ class Database(object):
                 cursor = conn.cursor()
 
                 cursor.execute(queries.properties_create)
-                cursor.execute(queries.properties_insert_init,
-                               (coreaux_api.get_default_history_limit(), ))
+
+                limit = coreaux_api.get_configuration()('History').get_int(
+                                                        'default_soft_limit')
+                cursor.execute(queries.properties_insert_init, (limit, ))
 
                 cursor.execute(queries.compatibility_create)
                 # Only store major versions, as they are supposed to keep

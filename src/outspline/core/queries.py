@@ -159,6 +159,32 @@ history_delete_status = 'DELETE FROM History WHERE H_status IN (0, 2, 4)'
 # the current database status, and at most they should be deleted in ascending
 # order; however, they'll be deleted anyway the next time an action is done, so
 # they can just be left alone here
-history_delete_select = ('DELETE FROM History WHERE H_status IN (1, 3, 5) '
-                'AND H_group NOT IN (SELECT DISTINCT H_group FROM History '
-                'WHERE H_status IN (1, 3, 5) ORDER BY H_group DESC LIMIT ?)')
+# Don't just use ORDER BY and OFFSET directly in the main DELETE query, because
+# groups have to be kept intact
+history_delete_select = ('''
+DELETE FROM History WHERE H_group < (
+    SELECT MIN(H_group) FROM (
+        SELECT DISTINCT H_group FROM History WHERE H_status IN (1, 3, 5)
+        ORDER BY H_group DESC LIMIT ?
+    )
+)''')
+
+# There can't be entries with statuses 0, 2, 4 because this query is executed
+# only when *inserting* a group in the history, and before that all 0, 2 and 4
+# actions are deleted by history_delete_status
+# Don't just use ORDER BY and OFFSET directly in the main DELETE query, because
+# groups have to be kept intact
+history_delete_union = ('''
+DELETE FROM History WHERE H_group < (
+    SELECT MIN(H_group) FROM (
+        SELECT H_group FROM (
+            SELECT DISTINCT H_group FROM History ORDER BY H_group DESC LIMIT ?
+        )
+        UNION
+        SELECT H_group FROM (
+            SELECT DISTINCT H_group FROM History
+            WHERE H_tstamp >= strftime("%s", "now") - ? * 60
+            ORDER BY H_group DESC LIMIT ?
+        )
+    )
+)''')

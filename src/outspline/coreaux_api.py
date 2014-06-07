@@ -117,10 +117,6 @@ def get_plugin_configuration(plugin):
     return config('Plugins')(plugin)
 
 
-def get_default_history_limit():
-    return config('History').get_int('default_max_operations')
-
-
 def import_optional_extension_api(extension):
     if extension in config('Extensions').get_sections() and \
                         config('Extensions')(extension).get_bool('enabled'):
