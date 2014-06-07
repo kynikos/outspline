@@ -328,15 +328,14 @@ def delete_alarms(filename, id_, text):
 
 
 def insert_alarm_log(filename, id_, reason, text):
-    LIMIT = coreaux_api.get_extension_configuration('organism_alarms'
-                                                ).get_int('default_log_limit')
-
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
+    cursor.execute(queries.alarmsproperties_select_history)
+    hlimit = cursor.fetchone()[0]
     # Also store the text, otherwise it won't be possible to retrieve it if the
     # item has been deleted meanwhile
     cursor.execute(queries.alarmsofflog_insert, (id_, reason, text))
-    cursor.execute(queries.alarmsofflog_delete_clean, (LIMIT, ))
+    cursor.execute(queries.alarmsofflog_delete_clean, (hlimit, ))
     core_api.give_connection(filename, qconn)
 
 
@@ -350,14 +349,13 @@ def select_alarms_log(filename):
 
 
 def clean_alarms_log(filename):
-    LIMIT = coreaux_api.get_extension_configuration('organism_alarms'
-                                                ).get_int('default_log_limit')
-
     # filename has already been deleted from cdbs, use tempcdbs instead
     if filename in tempcdbs:
         qconn = sqlite3.connect(filename)
         cursor = qconn.cursor()
-        cursor.execute(queries.alarmsofflog_delete_clean, (LIMIT, ))
+        cursor.execute(queries.alarmsproperties_select_history)
+        hlimit = cursor.fetchone()[0]
+        cursor.execute(queries.alarmsofflog_delete_clean, (hlimit, ))
         qconn.commit()
         qconn.close()
         tempcdbs.discard(filename)

@@ -40,8 +40,13 @@ def create_copy_table():
 def handle_create_database(kwargs):
     # Cannot use core_api.get_connection() here because the database isn't open
     # yet
+    LIMIT = coreaux_api.get_extension_configuration('organism_alarms'
+                                                ).get_int('default_log_limit')
+
     conn = sqlite3.connect(kwargs['filename'])
     cur = conn.cursor()
+    cur.execute(queries.alarmsproperties_create)
+    cur.execute(queries.alarmsproperties_insert_init, (LIMIT, ))
     cur.execute(queries.alarms_create)
     cur.execute(queries.alarmsofflog_create)
     conn.commit()
@@ -103,6 +108,11 @@ def handle_save_database_copy(kwargs):
         qconnd = sqlite3.connect(kwargs['destination'])
         cur = qconn.cursor()
         curd = qconnd.cursor()
+
+        curd.execute(queries.alarmsproperties_delete)
+        cur.execute(queries.alarmsproperties_select)
+        for row in cur:
+            curd.execute(queries.alarmsproperties_insert_copy, tuple(row))
 
         cur.execute(queries.alarms_select)
         for row in cur:

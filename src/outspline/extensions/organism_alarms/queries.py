@@ -16,6 +16,23 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+alarmsproperties_create = ('CREATE TABLE AlarmsProperties '
+                          '(AP_id INTEGER PRIMARY KEY, '
+                           'AP_log_limit INTEGER)')
+
+alarmsproperties_select = 'SELECT * FROM AlarmsProperties'
+
+alarmsproperties_select_history = ('SELECT AP_log_limit FROM AlarmsProperties '
+                                    'WHERE AP_log_limit IS NOT NULL LIMIT 1')
+
+alarmsproperties_insert_init = ('INSERT INTO AlarmsProperties '
+                                    '(AP_id, AP_log_limit) VALUES (NULL, ?)')
+
+alarmsproperties_insert_copy = ('INSERT INTO AlarmsProperties '
+                                        '(AP_id, AP_log_limit) VALUES (?, ?)')
+
+alarmsproperties_delete = 'DELETE FROM AlarmsProperties'
+
 alarms_create = ("CREATE TABLE Alarms (A_id INTEGER PRIMARY KEY, "
                                       "A_item INTEGER, "
                                       "A_start INTEGER, "
