@@ -33,6 +33,8 @@ changes = {}
 dismiss_state = {}
 cdbs = set()
 tempcdbs = set()
+log_limits = {}
+temp_log_limit = {}
 
 
 def get_snoozed_alarms(last_search, filename, occs):
@@ -330,12 +332,11 @@ def delete_alarms(filename, id_, text):
 def insert_alarm_log(filename, id_, reason, text):
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
-    cursor.execute(queries.alarmsproperties_select_history)
-    hlimit = cursor.fetchone()[0]
     # Also store the text, otherwise it won't be possible to retrieve it if the
     # item has been deleted meanwhile
     cursor.execute(queries.alarmsofflog_insert, (id_, reason, text))
-    cursor.execute(queries.alarmsofflog_delete_clean, (hlimit, ))
+    cursor.execute(queries.alarmsofflog_delete_clean,
+                                                (log_limits[filename][0], ))
     core_api.give_connection(filename, qconn)
 
 
@@ -353,9 +354,13 @@ def clean_alarms_log(filename):
     if filename in tempcdbs:
         qconn = sqlite3.connect(filename)
         cursor = qconn.cursor()
-        cursor.execute(queries.alarmsproperties_select_history)
-        hlimit = cursor.fetchone()[0]
-        cursor.execute(queries.alarmsofflog_delete_clean, (hlimit, ))
+
+        # filename has already been deleted from log_limits, use
+        # temp_log_limit instead
+        global temp_log_limit
+        cursor.execute(queries.alarmsofflog_delete_clean,
+                                                (temp_log_limit[filename], ))
         qconn.commit()
         qconn.close()
         tempcdbs.discard(filename)
+        del temp_log_limit[filename]

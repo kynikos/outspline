@@ -41,7 +41,7 @@ def handle_create_database(kwargs):
     # Cannot use core_api.get_connection() here because the database isn't open
     # yet
     LIMIT = coreaux_api.get_extension_configuration('organism_alarms'
-                                                ).get_int('default_log_limit')
+                                            ).get_int('default_log_soft_limit')
 
     conn = sqlite3.connect(kwargs['filename'])
     cur = conn.cursor()
@@ -62,15 +62,34 @@ def handle_open_database_dirty(kwargs):
         alarmsmod.cdbs.add(kwargs['filename'])
 
 
+def handle_open_database(kwargs):
+    filename = kwargs['filename']
+
+    if filename in alarmsmod.cdbs:
+        conf = coreaux_api.get_extension_configuration('organism_alarms')
+
+        qconn = core_api.get_connection(filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.alarmsproperties_select_history)
+        core_api.give_connection(filename, qconn)
+
+        alarmsmod.log_limits[filename] = (cursor.fetchone()[0],
+                conf.get_int('log_time_limit'), conf.get_int('log_hard_limit'))
+
+
 def handle_close_database(kwargs):
+    filename = kwargs['filename']
+
     try:
-        del alarmsmod.changes[kwargs['filename']]
-        del alarmsmod.dismiss_state[kwargs['filename']]
+        del alarmsmod.changes[filename]
+        del alarmsmod.dismiss_state[filename]
     except KeyError:
         pass
     else:
-        alarmsmod.cdbs.discard(kwargs['filename'])
-        alarmsmod.tempcdbs.add(kwargs['filename'])
+        alarmsmod.cdbs.discard(filename)
+        alarmsmod.tempcdbs.add(filename)
+        alarmsmod.temp_log_limit[filename] = alarmsmod.log_limits[filename][0]
+        del alarmsmod.log_limits[filename]
 
 
 def handle_check_pending_changes(kwargs):
@@ -189,6 +208,7 @@ def main():
 
     core_api.bind_to_create_database(handle_create_database)
     core_api.bind_to_open_database_dirty(handle_open_database_dirty)
+    core_api.bind_to_open_database(handle_open_database)
     core_api.bind_to_check_pending_changes(handle_check_pending_changes)
     core_api.bind_to_reset_modified_state(handle_reset_modified_state)
     core_api.bind_to_close_database(handle_close_database)
