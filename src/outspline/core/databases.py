@@ -118,8 +118,8 @@ class Database(object):
         self.connection = DBQueue()
         self.filename = filename
         self.items = {}
-        self.dbhistory = history.DBHistory(self.filename, self.connection,
-                                                                    self.items)
+        self.dbhistory = history.DBHistory(self.connection, self.items,
+                                                                self.filename)
 
         conn = self.connection
         # Enable multi-threading, as the database is protected with a queue

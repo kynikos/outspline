@@ -35,10 +35,10 @@ history_clean_event = Event()
 
 
 class DBHistory(object):
-    def __init__(self, filename, connection, items):
-        self.filename = filename
+    def __init__(self, connection, items, filename):
         self.connection = connection
         self.items = items
+        self.filename = filename
 
         self.hactions = {
             'insert': {
