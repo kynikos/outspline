@@ -28,25 +28,17 @@ import notebooks
 import msgboxes
 import logs
 
-config = coreaux_api.get_interface_configuration('wxgui')
 
 application_loaded_event = Event()
 show_main_window_event = Event()
 hide_main_window_event = Event()
 exit_application_event = Event()
 
-_ROOT_MIN_SIZE = (600, 408)
-
 
 class GUI(wx.App):
-    MAIN_ICON_BUNDLE = None
-    root = None
-    logs_configuration = None
-    menu = None
-    nb_left = None
-    nb_right = None
-
     def __init__(self):
+        self.config = coreaux_api.get_interface_configuration('wxgui')
+
         wx.App.__init__(self, False)
 
         wx.ArtProvider.Push(art.ArtProvider())
@@ -95,9 +87,9 @@ class GUI(wx.App):
         # else: event.Veto() doesn't work here
 
     def export_options(self):
-        config['show_logs'] = 'yes' if \
+        self.config['show_logs'] = 'yes' if \
                                 self.logs_configuration.is_shown() else 'no'
-        config.export_upgrade(coreaux_api.get_user_config_file())
+        self.config.export_upgrade(coreaux_api.get_user_config_file())
 
     def handle_uncaught_exception(self, kwargs):
         coreaux_api.bind_to_uncaught_exception(self.handle_uncaught_exception,
@@ -107,19 +99,18 @@ class GUI(wx.App):
 
 
 class MainFrame(wx.Frame):
-    menu = None
-    mainpanes = None
-    close_handler = None
-
     def __init__(self):
-        confsize = [int(s) for s in config['initial_geometry'].split('x')]
+        self._ROOT_MIN_SIZE = (600, 408)
+        self.config = coreaux_api.get_interface_configuration('wxgui')
+
+        confsize = [int(s) for s in self.config['initial_geometry'].split('x')]
         clarea = wx.Display().GetClientArea()
         initsize = [min((confsize[0], clarea.GetWidth())),
                     min((confsize[1], clarea.GetHeight()))]
         wx.Frame.__init__(self, None, title='Outspline', size=initsize)
-        self.SetMinSize(_ROOT_MIN_SIZE)
+        self.SetMinSize(self._ROOT_MIN_SIZE)
 
-        if config.get_bool('maximized'):
+        if self.config.get_bool('maximized'):
             self.Maximize()
 
         self.SetIcons(wx.GetApp().get_main_icon_bundle())
@@ -130,6 +121,8 @@ class MainFrame(wx.Frame):
         self.mainpanes = MainPanes(self)
 
         self.CreateStatusBar()
+
+        self.close_handler = False
 
         self.Bind(wx.EVT_WINDOW_CREATE, self._handle_creation)
         self.Bind(wx.EVT_MENU_OPEN, self.menu.update_menus)
@@ -166,10 +159,6 @@ class MainFrame(wx.Frame):
 
 
 class MainPanes(wx.SplitterWindow):
-    parent = None
-    nb_left = None
-    nb_right = None
-
     def __init__(self, parent):
         wx.SplitterWindow.__init__(self, parent, style=wx.SP_LIVE_UPDATE)
 
