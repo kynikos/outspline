@@ -241,8 +241,8 @@ class DBHistory(object):
         select = cursor.fetchone()
         self.connection.give(qconn)
 
-        self.items[itemid] = items.Item(database=self, filename=self.filename,
-                                                                    id_=itemid)
+        self.items[itemid] = items.Item(self.connection, self, self.items,
+                                                        self.filename, itemid)
 
         history_insert_event.signal(filename=self.filename, id_=itemid,
                                                 parent=select['I_parent'],

@@ -144,9 +144,8 @@ class Database(object):
         conn.give(qconn)
 
         for item in dbitems:
-            self.items[item['I_id']] = items.Item(database=self,
-                                                  filename=filename,
-                                                  id_=item['I_id'])
+            self.items[item['I_id']] = items.Item(self.connection,
+                    self.dbhistory, self.items, self.filename, item['I_id'])
 
     @staticmethod
     def create(filename):
