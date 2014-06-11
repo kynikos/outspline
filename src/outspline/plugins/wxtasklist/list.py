@@ -266,20 +266,28 @@ class OccurrencesView(object):
 
     def _restart(self, kwargs=None):
         self.timer.Stop()
-        delay = self._refresh()
 
-        if delay is not None:
-            # delay may become too big (long instead of int), limit it to 24h
-            # This has also the advantage of limiting the drift of the timer
-            try:
-                self.timer.Restart(delay * 1000)
-            except OverflowError:
-                delay = min(86400000, sys.maxint)
-                self.timer.Restart(delay)
+        # This method is called with CallLater, so this may cause race bugs;
+        # for example it's possible that, when closing the application, this
+        # method is called when closing the last database, but when it's
+        # actually executed the tasklist has already been destroyed
+        if self.listview:
+            delay = self._refresh()
 
-            # Log after the try-except block because the delay can still be
-            # modified there
-            log.debug('Next tasklist refresh in {} seconds'.format(delay))
+            if delay is not None:
+                # delay may become too big (long instead of int), limit it to
+                # 24h
+                # This has also the advantage of limiting the drift of the
+                # timer
+                try:
+                    self.timer.Restart(delay * 1000)
+                except OverflowError:
+                    delay = min(86400000, sys.maxint)
+                    self.timer.Restart(delay)
+
+                # Log after the try-except block because the delay can still be
+                # modified there
+                log.debug('Next tasklist refresh in {} seconds'.format(delay))
 
     def set_filter(self, config):
         self.autoscroll.pre_execute()
