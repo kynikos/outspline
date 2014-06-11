@@ -20,7 +20,7 @@ import wx
 
 import outspline.core_api as core_api
 
-from wxgui import rootw, notebooks, editor, menubar, tree, databases
+from wxgui import rootw, notebooks, editor, menubar, tree, databases, dbprops
 
 
 ### DATABASE ###
@@ -538,3 +538,14 @@ def simulate_remove_items_from_selection(filename, ids):
     for id_ in ids:
         item = tree.dbs[filename].find_item(id_)
         tree.dbs[filename].remove_item_from_selection(item)
+
+
+### PROPERTIES ###
+
+def add_property_option(filename, property_, action):
+    manager = databases.dbpropmanager.get_manager(filename)
+    return manager.add_option(property_, action)
+
+
+def bind_to_load_property_options(handler, bind=True):
+    return dbprops.load_options_event.bind(handler, bind)
