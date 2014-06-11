@@ -36,6 +36,7 @@ create_database_event = Event()
 open_database_dirty_event = Event()
 open_database_event = Event()
 close_database_event = Event()
+save_database_event = Event()
 save_database_copy_event = Event()
 delete_items_event = Event()
 exit_app_event_1 = Event()
@@ -284,6 +285,8 @@ class Database(object):
         self.connection.give(qconn)
 
         self.dbhistory.reset_modified_state()
+
+        save_database_event.signal(filename=self.filename)
 
     def save_copy(self, destination):
         # Of course the original file cannot be simply copied, in fact in that
