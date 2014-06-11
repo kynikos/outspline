@@ -39,6 +39,14 @@ def get_alarms_log(filename):
     return alarmsmod.select_alarms_log(filename)
 
 
+def get_alarms_log_limit(filename):
+    return alarmsmod.log_limits[filename][0]
+
+
+def update_alarms_log_limit(filename, limit):
+    return alarmsmod.update_alarm_log_soft_limit(filename, limit)
+
+
 def bind_to_alarm(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
     # (Check for race conditions)
