@@ -56,7 +56,17 @@ class DBHistory(object):
         }
 
     def set_limits(self, soft, time, hard):
-        self.historylimits = (soft, time, hard)
+        self.historylimits = [soft, time, hard]
+
+    def update_soft_limit(self, limit):
+        qconn = self.connection.get()
+        cur = qconn.cursor()
+        cur.execute(queries.properties_update, (limit, ))
+        self.connection.give(qconn)
+
+        self.set_modified()
+
+        self.historylimits[0] = limit
 
     def register_action_handlers(self, name, redo_handler, undo_handler):
         if name not in self.hactions:

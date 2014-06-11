@@ -31,6 +31,8 @@ properties_select_history = ('SELECT P_max_history FROM Properties '
 properties_insert_dummy = ('INSERT INTO Properties (P_id, P_max_history) '
                                                         'VALUES (NULL, NULL)')
 
+properties_update = 'UPDATE Properties SET P_max_history=?'
+
 properties_insert_init = ('INSERT INTO Properties (P_id, P_max_history) '
                           'VALUES (NULL, ?)')
 

@@ -200,6 +200,10 @@ def is_item(filename, id_):
     return id_ in databases.dbs[filename].items
 
 
+def update_database_history_soft_limit(filename, limit):
+    return databases.dbs[filename].dbhistory.update_soft_limit(limit)
+
+
 def get_tree_item(filename, parent, previous):
     return items.Item.get_tree_item(filename, parent, previous)
 
