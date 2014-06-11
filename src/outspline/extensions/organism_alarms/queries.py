@@ -31,6 +31,8 @@ alarmsproperties_insert_init = ('INSERT INTO AlarmsProperties '
 alarmsproperties_insert_copy = ('INSERT INTO AlarmsProperties '
                                         '(AP_id, AP_log_limit) VALUES (?, ?)')
 
+alarmsproperties_update = 'UPDATE AlarmsProperties SET AP_log_limit=?'
+
 alarmsproperties_delete = 'DELETE FROM AlarmsProperties'
 
 alarms_create = ("CREATE TABLE Alarms (A_id INTEGER PRIMARY KEY, "

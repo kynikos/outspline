@@ -73,8 +73,8 @@ def handle_open_database(kwargs):
         cursor.execute(queries.alarmsproperties_select_history)
         core_api.give_connection(filename, qconn)
 
-        alarmsmod.log_limits[filename] = (cursor.fetchone()[0],
-                conf.get_int('log_time_limit'), conf.get_int('log_hard_limit'))
+        alarmsmod.log_limits[filename] = [cursor.fetchone()[0],
+                conf.get_int('log_time_limit'), conf.get_int('log_hard_limit')]
 
 
 def handle_close_database(kwargs):

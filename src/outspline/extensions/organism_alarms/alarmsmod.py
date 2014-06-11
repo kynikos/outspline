@@ -339,6 +339,19 @@ def insert_alarm_log(filename, id_, reason, text):
     core_api.give_connection(filename, qconn)
 
 
+def update_alarm_log_soft_limit(filename, limit):
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+    cursor.execute(queries.alarmsproperties_update, (limit, ))
+    core_api.give_connection(filename, qconn)
+
+    global modified_state
+    modified_state[filename] = True
+
+    global log_limits
+    log_limits[filename][0] = limit
+
+
 def select_alarms_log(filename):
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
