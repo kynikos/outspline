@@ -19,6 +19,7 @@
 import wx
 
 import outspline.coreaux_api as coreaux_api
+import outspline.core_api as core_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
 import list as list_
@@ -69,7 +70,7 @@ class TaskList(object):
         wxgui_api.bind_to_show_main_window(self._handle_show_main_window)
         wxgui_api.bind_to_hide_main_window(self._handle_hide_main_window)
         wxgui_api.bind_to_open_database(self._handle_open_database)
-        wxgui_api.bind_to_exit_application(self._handle_exit_application)
+        core_api.bind_to_exit_app_1(self._handle_exit_application)
 
     def _handle_tab_hide(self, kwargs):
         if kwargs['page'] is self.panel:
