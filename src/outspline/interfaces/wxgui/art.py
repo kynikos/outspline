@@ -80,6 +80,7 @@ class ArtProvider(wx.ArtProvider):
                                'stock_paste'),
                     '@preferences': ('package_settings', 'gtk-preferences'),
                     '@previous': ('go-previous', ),
+                    '@properties': ('document-properties', ),
                     '@remove-filter': ('list-remove', ),
                     '@save': ('document-save', 'gtk-save', 'filesave',
                                 'stock_save'),

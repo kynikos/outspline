@@ -747,6 +747,8 @@ class TabContextMenu(wx.Menu):
                                                                  "Sav&e as...")
         self.backup = wx.MenuItem(self, wx.GetApp().menu.file.ID_BACKUP,
                                                              "Save &backup...")
+        self.properties = wx.MenuItem(self,
+                            wx.GetApp().menu.file.ID_PROPERTIES, "&Properties")
         self.close = wx.MenuItem(self, wx.GetApp().menu.file.ID_CLOSE_DB,
                                                                       "&Close")
 
@@ -755,6 +757,8 @@ class TabContextMenu(wx.Menu):
         self.save.SetBitmap(wx.ArtProvider.GetBitmap('@save', wx.ART_MENU))
         self.saveas.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
         self.backup.SetBitmap(wx.ArtProvider.GetBitmap('@backup', wx.ART_MENU))
+        self.properties.SetBitmap(wx.ArtProvider.GetBitmap('@properties',
+                                                                wx.ART_MENU))
         self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
 
         self.AppendItem(self.undo)
@@ -763,6 +767,8 @@ class TabContextMenu(wx.Menu):
         self.AppendItem(self.save)
         self.AppendItem(self.saveas)
         self.AppendItem(self.backup)
+        self.AppendSeparator()
+        self.AppendItem(self.properties)
         self.AppendSeparator()
         self.AppendItem(self.close)
 

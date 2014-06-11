@@ -99,6 +99,7 @@ class MenuFile(wx.Menu):
         self.ID_SAVE_AS = wx.NewId()
         self.ID_BACKUP = wx.NewId()
         self.ID_SAVE_ALL = wx.NewId()
+        self.ID_PROPERTIES = wx.NewId()
         self.ID_CLOSE_DB = wx.NewId()
         self.ID_CLOSE_DB_ALL = wx.NewId()
 
@@ -114,6 +115,8 @@ class MenuFile(wx.Menu):
                                 "Create a backup of the selected database")
         self.saveall = wx.MenuItem(self, self.ID_SAVE_ALL,
                         "Save &all\tCTRL+SHIFT+s", "Save all open databases")
+        self.properties = wx.MenuItem(self, self.ID_PROPERTIES, "&Properties",
+                                                    "Open database properties")
         self.close_ = wx.MenuItem(self, self.ID_CLOSE_DB, "&Close\tCTRL+w",
                                 "Close the selected database")
         self.closeall = wx.MenuItem(self, self.ID_CLOSE_DB_ALL,
@@ -125,6 +128,8 @@ class MenuFile(wx.Menu):
         self.saveas.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
         self.backup.SetBitmap(wx.ArtProvider.GetBitmap('@backup', wx.ART_MENU))
         self.saveall.SetBitmap(wx.ArtProvider.GetBitmap('@saveall',
+                                                                wx.ART_MENU))
+        self.properties.SetBitmap(wx.ArtProvider.GetBitmap('@properties',
                                                                 wx.ART_MENU))
         self.close_.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
         self.closeall.SetBitmap(wx.ArtProvider.GetBitmap('@closeall',
@@ -138,6 +143,8 @@ class MenuFile(wx.Menu):
         self.AppendItem(self.backup)
         self.AppendItem(self.saveall)
         self.AppendSeparator()
+        self.AppendItem(self.properties)
+        self.AppendSeparator()
         self.AppendItem(self.close_)
         self.AppendItem(self.closeall)
         self.AppendSeparator()
@@ -149,6 +156,7 @@ class MenuFile(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self._save_database_as, self.saveas)
         wx.GetApp().Bind(wx.EVT_MENU, self.save_all_databases, self.saveall)
         wx.GetApp().Bind(wx.EVT_MENU, self._save_database_backup, self.backup)
+        wx.GetApp().Bind(wx.EVT_MENU, self._open_properties, self.properties)
         wx.GetApp().Bind(wx.EVT_MENU, self.close_database, self.close_)
         wx.GetApp().Bind(wx.EVT_MENU, self.close_all_databases, self.closeall)
         wx.GetApp().Bind(wx.EVT_MENU, wx.GetApp().exit_app, self.exit_)
@@ -158,6 +166,7 @@ class MenuFile(wx.Menu):
         self.saveas.Enable(False)
         self.backup.Enable(False)
         self.saveall.Enable(False)
+        self.properties.Enable(False)
         self.close_.Enable(False)
         self.closeall.Enable(False)
 
@@ -176,6 +185,8 @@ class MenuFile(wx.Menu):
             self.saveas.Enable()
             self.backup.Enable()
 
+            self.properties.Enable()
+
             self.close_.Enable()
             self.closeall.Enable()
 
@@ -186,6 +197,7 @@ class MenuFile(wx.Menu):
         self.saveas.Enable()
         self.backup.Enable()
         self.saveall.Enable()
+        self.properties.Enable()
         self.close_.Enable()
         self.closeall.Enable()
 
@@ -243,6 +255,12 @@ class MenuFile(wx.Menu):
             databases.save_database_backup(treedb.get_filename())
 
         core_api.release_databases()
+
+    def _open_properties(self, event):
+        treedb = wx.GetApp().nb_left.get_selected_tab()
+
+        if treedb:
+            databases.dbpropmanager.open(treedb.get_filename())
 
     def close_database(self, event, no_confirm=False):
         core_api.block_databases()

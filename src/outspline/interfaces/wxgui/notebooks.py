@@ -161,6 +161,8 @@ class RightNotebook(Notebook):
                 editor.tabs[item].close()
                 break
         else:
+            # Note that this event is also bound directly by the dbprops
+            # module
             plugin_close_event.signal(page=page)
 
         core_api.release_databases()

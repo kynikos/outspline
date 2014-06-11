@@ -27,9 +27,12 @@ import outspline.core_api as core_api
 import editor
 import msgboxes
 import tree
+import dbprops
 
 open_database_event = Event()
 close_database_event = Event()
+
+dbpropmanager = dbprops.DatabasePropertyManager()
 
 
 def create_database(deffname=None, filename=None):
@@ -140,7 +143,8 @@ def close_database(filename, no_confirm=False, exit_=False):
 
     core_api.close_database(filename)
 
-    # Note that this event is also bound directly by the sessions module
+    # Note that this event is also bound directly by the sessions and dbprops
+    # modules
     close_database_event.signal(filename=filename, exit_=exit_)
 
 
