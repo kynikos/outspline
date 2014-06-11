@@ -40,22 +40,16 @@ class SessionManager(object):
 
         databases.open_database_event.bind(self._handle_open_database)
         databases.close_database_event.bind(self._handle_close_database)
-        rootw.exit_application_event.bind(self._handle_exit_application)
 
     def _handle_open_database(self, kwargs):
         if not kwargs['startup']:
-            self._refresh_session()
+            self.refresh_session()
 
     def _handle_close_database(self, kwargs):
         if not kwargs['exit_']:
-            self._refresh_session()
+            self.refresh_session()
 
-    def _handle_exit_application(self, kwargs):
-        # Refresh also when exiting, in order to save the order of
-        # visualization of the tabs
-        self._refresh_session()
-
-    def _refresh_session(self):
+    def refresh_session(self):
         self.savedession.reset({})
         dbs = databases.get_open_databases()
 

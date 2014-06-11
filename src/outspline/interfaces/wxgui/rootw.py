@@ -76,8 +76,11 @@ class GUI(wx.App):
     def exit_app(self, event):
         self._export_options()
 
-        # Note that this event is also bound directly by the sessions module
         exit_application_event.signal()
+        # Refresh the session also when exiting, in order to save the order of
+        # visualization of the tabs
+        # Do it *before* closing the databases
+        self.root.sessionmanager.refresh_session()
 
         # close_all_databases() already blocks the databases
         if self.menu.file.close_all_databases(event, exit_=True):
@@ -141,7 +144,7 @@ class MainFrame(wx.Frame):
         self.Unbind(wx.EVT_WINDOW_CREATE, handler=self._handle_creation)
 
         if self.config.get_bool('remember_session'):
-            sessions.SessionManager()
+            self.sessionmanager = sessions.SessionManager()
 
         application_loaded_event.signal()
 
