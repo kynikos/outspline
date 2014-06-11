@@ -17,6 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import wx
+import wx.propgrid as wxpg
 # Temporary workaround for bug #279
 import time as time_
 
@@ -33,6 +34,7 @@ class Main(object):
         self.mainmenu = LogsMenu(self)
 
         wxgui_api.bind_to_creating_tree(self._handle_creating_tree)
+        wxgui_api.bind_to_load_property_options(self._handle_load_options)
         wxgui_api.bind_to_close_database(self._handle_close_database)
 
     def _handle_creating_tree(self, kwargs):
@@ -41,6 +43,14 @@ class Main(object):
         if filename in organism_alarms_api.get_supported_open_databases():
             self.alarmlogs[filename] = AlarmsLog(wxgui_api.get_logs_parent(
                                             filename), filename, self.mainmenu)
+
+    def _handle_load_options(self, kwargs):
+        filename = kwargs['filename']
+        alimit = organism_alarms_api.get_alarms_log_limit(filename)
+        prop = wxpg.IntProperty("Alarms log soft limit",
+                            "options.extension.organism_alarms.alimit", alimit)
+        wxgui_api.add_property_option(filename, prop,
+                                        self.alarmlogs[filename].set_log_limit)
 
     def _handle_close_database(self, kwargs):
         try:
@@ -124,6 +134,9 @@ class AlarmsLog(object):
         reason = self.reasons[row['AOL_reason']]
         text = row['AOL_text']
         return (tstamp, reason, text)
+
+    def set_log_limit(self, value):
+        organism_alarms_api.update_alarms_log_limit(self.filename, value)
 
 
 class LogsMenu(object):
