@@ -30,7 +30,7 @@ alarm_event = Event()
 alarm_off_event = Event()
 
 changes = {}
-dismiss_state = {}
+modified_state = {}
 cdbs = set()
 tempcdbs = set()
 log_limits = {}
@@ -251,8 +251,8 @@ def dismiss_alarms(alarmsd):
                 # activated: if at that point those alarms are dismissed and
                 # then the user tries to close the database, the database will
                 # seem unmodified, and won't ask to be saved
-                global dismiss_state
-                dismiss_state[filename] = True
+                global modified_state
+                modified_state[filename] = True
 
                 # Signal the event after updating the database, so, for
                 # example, the tasklist can be correctly updated

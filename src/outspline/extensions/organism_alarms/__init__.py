@@ -82,7 +82,7 @@ def handle_close_database(kwargs):
 
     try:
         del alarmsmod.changes[filename]
-        del alarmsmod.dismiss_state[filename]
+        del alarmsmod.modified_state[filename]
     except KeyError:
         pass
     else:
@@ -102,7 +102,7 @@ def handle_check_pending_changes(kwargs):
                                             cur.execute(queries.alarms_select)]
         core_api.give_connection(filename, conn)
 
-        if change_state or alarmsmod.dismiss_state[filename]:
+        if change_state or alarmsmod.modified_state[filename]:
             core_api.set_modified(filename)
 
 
@@ -116,7 +116,7 @@ def handle_reset_modified_state(kwargs):
                                                         queries.alarms_select)]
         core_api.give_connection(filename, conn)
 
-        alarmsmod.dismiss_state[filename] = False
+        alarmsmod.modified_state[filename] = False
 
 
 def handle_save_database_copy(kwargs):
