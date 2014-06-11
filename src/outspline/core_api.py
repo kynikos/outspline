@@ -243,6 +243,22 @@ def select_all_memory_table_names():
     return cur
 
 
+def get_database_dependencies(filename):
+    qconn = databases.dbs[filename].connection.get()
+    cur = qconn.cursor()
+    cur.execute(queries.compatibility_select)
+    databases.dbs[filename].connection.give(qconn)
+    return cur
+
+
+def get_database_history_soft_limit(filename):
+    qconn = databases.dbs[filename].connection.get()
+    cur = qconn.cursor()
+    cur.execute(queries.properties_select_history)
+    databases.dbs[filename].connection.give(qconn)
+    return cur.fetchone()[0]
+
+
 def select_all_table_names(filename):
     qconn = databases.dbs[filename].connection.get()
     cur = qconn.cursor()
