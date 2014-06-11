@@ -32,7 +32,6 @@ import sessions
 application_loaded_event = Event()
 show_main_window_event = Event()
 hide_main_window_event = Event()
-exit_application_event = Event()
 
 
 class GUI(wx.App):
@@ -76,7 +75,6 @@ class GUI(wx.App):
     def exit_app(self, event):
         self._export_options()
 
-        exit_application_event.signal()
         # Refresh the session also when exiting, in order to save the order of
         # visualization of the tabs
         # Do it *before* closing the databases

@@ -418,10 +418,6 @@ def bind_to_close_window(handler):
     return wx.GetApp().root.bind_to_close_event(handler)
 
 
-def bind_to_exit_application(handler, bind=True):
-    return rootw.exit_application_event.bind(handler, bind)
-
-
 ### TREE ###
 
 def get_tree_selections(filename, none=True, many=True, descendants=None):
