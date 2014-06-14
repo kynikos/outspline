@@ -33,9 +33,16 @@ load_options_event = Event()
 class DatabasePropertyManager(object):
     def __init__(self):
         self.open_panels = {}
+
         # No need to also bind to "save as" because it closes and opens the
         # database anyway, thus also closing the property tab if open
         core_api.bind_to_save_database(self._handle_save_database)
+        core_api.bind_to_history_insert(self._handle_items_number)
+        core_api.bind_to_history_remove(self._handle_items_number)
+        core_api.bind_to_insert_item(self._handle_items_number)
+        core_api.bind_to_delete_item(self._handle_items_number)
+        # No need to bind to pasting items
+
         databases.close_database_event.bind(self._handle_close_database)
 
     def open(self, filename):
@@ -52,7 +59,15 @@ class DatabasePropertyManager(object):
         except KeyError:
             pass
         else:
-            manager.refresh_file_statistics()
+            manager.refresh_file_properties()
+
+    def _handle_items_number(self, kwargs):
+        try:
+            manager = self.open_panels[kwargs['filename']]
+        except KeyError:
+            pass
+        else:
+            manager.refresh_database_statistics()
 
     def _handle_close_database(self, kwargs):
         filename = kwargs['filename']
@@ -139,17 +154,17 @@ class DatabaseProperties(object):
 
         self.propgrid.SetPropertyAttribute("file.size", "Units", "KiB")
 
-        self.refresh_file_statistics()
+        self.refresh_file_properties()
 
     def _init_db_stats(self):
         self.propgrid.Append(wxpg.PropertyCategory("Database statistics",
                                                                         "db"))
 
-        prop = wxpg.IntProperty("Number of items", "db.items",
-                                    core_api.get_items_count(self.filename))
+        prop = wxpg.IntProperty("Number of items", "db.items", 0)
         self.propgrid.Append(prop)
         prop.Enable(False)
 
+        self.refresh_database_statistics()
 
     def _init_dependencies(self):
         self.propgrid.Append(wxpg.PropertyCategory("Extension dependencies",
@@ -194,7 +209,7 @@ class DatabaseProperties(object):
     def _set_history_limit(self, value):
         core_api.update_database_history_soft_limit(self.filename, value)
 
-    def refresh_file_statistics(self):
+    def refresh_file_properties(self):
         self.propgrid.SetPropertyValue("file.location", self.filename)
         self.propgrid.SetPropertyValue("file.modified",
                                     time_.strftime('%x %X', time_.localtime(
@@ -208,6 +223,10 @@ class DatabaseProperties(object):
         #                            os.path.getctime(self.filename))))
         self.propgrid.SetPropertyValue("file.size",
                                 str(os.path.getsize(self.filename) / 1024.0))
+
+    def refresh_database_statistics(self):
+        self.propgrid.SetPropertyValue("db.items",
+                                    core_api.get_items_count(self.filename))
 
 
 class TabContextMenu(wx.Menu):
