@@ -89,6 +89,9 @@ class AlarmsWindow():
         minwidth = self.bottom.ComputeFittingWindowSize(self.window).GetWidth()
         self.window.SetMinSize((minwidth + 20, _ALARMS_MIN_HEIGHT))
 
+        self.DELAY = 50
+        self.timer = wx.CallLater(1, int)
+
         self.mainmenu = MainMenu(self)
         TrayMenu(self)
 
@@ -132,6 +135,19 @@ class AlarmsWindow():
     def show(self):
         self.window.Show(True)
         self.window.Centre()
+
+    def _display(self):
+        self.window.Layout()
+        self.update_title()
+
+        if not self.window.IsShown():
+            # Centre only if not already shown; using ShowWithoutActivating
+            # *before* the self.window.IsShown() test would never verify the
+            # condition
+            self.window.ShowWithoutActivating()
+            self.window.Centre()
+
+        self.window.RequestUserAttention()
 
     def hide(self):
         self.window.Show(False)
@@ -209,17 +225,12 @@ class AlarmsWindow():
                                         a not in self.alarms:
             self.alarms[a] = Alarm(self, filename, id_, alarmid, start, end,
                                                                         alarm)
-            self.update_title()
-            self.window.Layout()
 
-            if not self.window.IsShown():
-                # Centre only if not already shown; using ShowWithoutActivating
-                # *before* the self.window.IsShown() test would never verify
-                # the condition
-                self.window.ShowWithoutActivating()
-                self.window.Centre()
-
-            self.window.RequestUserAttention()
+            # Besides being much slower, calling Layout and the other functions
+            # at every append would raise an exception for excessive recursions
+            # in case of too many alarms are signalled at once
+            self.timer.Stop()
+            self.timer = wx.CallLater(self.DELAY, self._display)
 
     def update_title(self):
         self.window.SetTitle(''.join(('Outspline - ', str(len(self.alarms)),
