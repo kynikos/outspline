@@ -353,7 +353,7 @@ class Database(object):
 
     def delete_items(self, dids, group, description='Delete items'):
         while dids:
-            for id_ in dids:
+            for id_ in dids[:]:
                 # First delete the items without children
                 if not self.items[id_].has_children():
                     self.items[id_].delete(group, description=description)

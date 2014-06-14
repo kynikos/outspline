@@ -304,7 +304,7 @@ class Database(wx.SplitterWindow):
         # When deleting items, make sure to delete first those without
         # children, otherwise crashes without exceptions or errors could occur
         while treeitems:
-            for item in treeitems:
+            for item in treeitems[:]:
                 if not self.treec.ItemHasChildren(item):
                     del treeitems[treeitems.index(item)]
                     id_ = self.treec.GetItemPyData(item)[0]
