@@ -90,7 +90,14 @@ class AlarmsWindow():
         self.window.SetMinSize((minwidth + 20, _ALARMS_MIN_HEIGHT))
 
         self.DELAY = 50
+        # Set CDELAY shorter than DELAY, so that if an alarm is activated at
+        # the same time an alarm is dismissed, there's a better chance that
+        # the alarm window requests the user attention
+        self.CDELAY = 30
+
+        # Initialize self.timer and self.stimer with a dummy function (int)
         self.timer = wx.CallLater(1, int)
+        self.stimer = wx.CallLater(1, int)
 
         self.mainmenu = MainMenu(self)
         TrayMenu(self)
@@ -149,6 +156,13 @@ class AlarmsWindow():
 
         self.window.RequestUserAttention()
 
+    def _display2(self):
+        self.window.Layout()
+        self.update_title()
+
+        if len(self.alarms) == 0:
+            self.hide()
+
     def hide(self):
         self.window.Show(False)
 
@@ -187,6 +201,9 @@ class AlarmsWindow():
                                                         alarmid in (aid, None):
                 self.alarms[a].close()
 
+        self.stimer.Stop()
+        self.stimer = wx.CallLater(self.CDELAY, self._display2)
+
     def handle_close_db(self, kwargs):
         self.close_alarms(filename=kwargs['filename'])
 
@@ -206,6 +223,7 @@ class AlarmsWindow():
 
     def append(self, filename, id_, alarmid, start, end, alarm):
         a = self.make_alarmid(filename, alarmid)
+
         # Check whether the database is still open because this method is
         # called with wx.CallAfter in handle_alarm, thus running in a different
         # thread; this way it can happen that, when handle_alarm is called, a
@@ -429,18 +447,12 @@ class Alarm():
         log.debug('Destroying alarm id: {}'.format(self.alarmid))
 
         self.panel.Destroy()
-        self.awindow.window.Layout()
         del self.awindow.alarms[self.awindow.make_alarmid(self.filename,
                                                                  self.alarmid)]
 
         # It's necessary to explicitly unbind the handler, otherwise this
         # object will not be garbage-collected
         core_api.bind_to_update_item(self.update_info, False)
-
-        self.awindow.update_title()
-
-        if len(self.awindow.alarms) == 0:
-            self.awindow.hide()
 
     def get_filename(self):
         return self.filename
