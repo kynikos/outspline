@@ -743,6 +743,7 @@ class ListItem(object):
 
         if self.alarm is None:
             alarmdate = ''
+            self.alarmid = None
         elif self.alarm is False:
             alarmdate = 'active'
             self.alarmid = occ['alarmid']
@@ -755,6 +756,7 @@ class ListItem(object):
         else:
             alarmdate = _time.strftime(occview.alarmformat, _time.localtime(
                                                                    self.alarm))
+            self.alarmid = None
 
         listview.SetStringItem(index, occview.DATABASE_COLUMN, self.fname)
         listview.SetStringItem(index, occview.HEADING_COLUMN, self.title)
