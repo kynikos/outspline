@@ -94,6 +94,7 @@ class AlarmsWindow(object):
         self.stimer = wx.CallLater(1, int)
 
         self.LIMIT = self.config.get_int('limit')
+        self.hiddenalarms = set()
 
         self.mainmenu = MainMenu(self)
         TrayMenu(self)
@@ -198,6 +199,7 @@ class AlarmsWindow(object):
                                                         alarmid in (aid, None):
                 self.alarms[a].close()
                 del self.alarms[a]
+                self.hiddenalarms.discard(a)
 
         self.stimer.Stop()
         self.stimer = wx.CallLater(self.CDELAY, self._display_close)
@@ -244,6 +246,8 @@ class AlarmsWindow(object):
 
             if len(self.alarms) < self.LIMIT + 1:
                 self.alarms[a].show()
+            else:
+                self.hiddenalarms.add(a)
 
             # Besides being much slower, calling Layout and the other
             # functions at every append would raise an exception for
