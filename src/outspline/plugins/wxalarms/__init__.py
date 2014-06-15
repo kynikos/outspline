@@ -63,18 +63,20 @@ class AlarmsWindow(object):
         self.alarms = {}
         self._update_title()
 
-        box = wx.BoxSizer(wx.VERTICAL)
-        self.window.SetSizer(box)
+        self.box = wx.BoxSizer(wx.VERTICAL)
+        self.window.SetSizer(self.box)
 
         self.panel = wx.ScrolledWindow(self.window, style=wx.BORDER_THEME)
         self.panel.SetScrollRate(20, 20)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
-        box.Add(self.panel, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
+        self.box.Add(self.panel, proportion=1, flag=wx.EXPAND | wx.ALL,
+                                                                    border=4)
 
         self.bottom = wx.BoxSizer(wx.HORIZONTAL)
         self._init_bottom()
-        box.Add(self.bottom, flag=wx.LEFT | wx.RIGHT | wx.EXPAND, border=4)
+        self.box.Add(self.bottom, flag=wx.LEFT | wx.RIGHT | wx.EXPAND,
+                                                                    border=4)
 
         # Set the minimum width so that the bottom controls can fit, and also
         # add 20 px for the stretch spacer
