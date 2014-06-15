@@ -73,6 +73,12 @@ class AlarmsWindow(object):
         self.box.Add(self.panel, proportion=1, flag=wx.EXPAND | wx.ALL,
                                                                     border=4)
 
+        self.hidden_panel = wx.BoxSizer(wx.HORIZONTAL)
+        self._init_hidden_panel()
+        self.box.Add(self.hidden_panel, flag=wx.LEFT | wx.RIGHT | wx.BOTTOM |
+                                                        wx.EXPAND, border=4)
+        self._hide_hidden_panel()
+
         self.bottom = wx.BoxSizer(wx.HORIZONTAL)
         self._init_bottom()
         self.box.Add(self.bottom, flag=wx.LEFT | wx.RIGHT | wx.EXPAND,
@@ -104,6 +110,11 @@ class AlarmsWindow(object):
         organism_alarms_api.bind_to_alarm(self._handle_alarm)
         organism_alarms_api.bind_to_alarm_off(self._handle_alarm_off)
         wxgui_api.bind_to_close_database(self._handle_close_db)
+
+    def _init_hidden_panel(self):
+        label = wx.StaticText(self.window, label='Not all alarms are shown')
+        self.hidden_panel.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
 
     def _init_bottom(self):
         button_s = wx.Button(self.window, label='Snooze all')
@@ -141,8 +152,12 @@ class AlarmsWindow(object):
         self.window.Centre()
 
     def _display_append(self):
-        self.window.Layout()
         self._update_title()
+
+        if len(self.hiddenalarms) > 0:
+            self._show_hidden_panel()
+
+        self.window.Layout()
 
         if not self.window.IsShown():
             # Centre only if not already shown; using ShowWithoutActivating
@@ -154,8 +169,12 @@ class AlarmsWindow(object):
         self.window.RequestUserAttention()
 
     def _display_close(self):
-        self.window.Layout()
         self._update_title()
+
+        if len(self.hiddenalarms) == 0:
+            self._hide_hidden_panel()
+
+        self.window.Layout()
 
         if len(self.alarms) == 0:
             self._hide()
@@ -171,6 +190,12 @@ class AlarmsWindow(object):
             self._hide()
         else:
             self._show()
+
+    def _show_hidden_panel(self):
+        self.box.Show(self.hidden_panel)
+
+    def _hide_hidden_panel(self):
+        self.box.Hide(self.hidden_panel)
 
     def dismiss_all(self, event):
         core_api.block_databases()
