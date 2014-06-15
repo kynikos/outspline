@@ -112,11 +112,11 @@ class AlarmsWindow(object):
         wxgui_api.bind_to_close_database(self._handle_close_db)
 
     def _init_hidden_panel(self):
-        label1 = wx.StaticText(self.window, label='Some alarms are hidden:')
-        self.hidden_panel.Add(label1, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
-                                                                      border=4)
+        self.hiddenL = wx.StaticText(self.window, label='')
+        self.hidden_panel.Add(self.hiddenL, flag=wx.ALIGN_CENTER_VERTICAL |
+                                                            wx.RIGHT, border=4)
 
-        button_d = wx.Button(self.window, label='show')
+        button_d = wx.Button(self.window, label='show', style=wx.BU_EXACTFIT)
         self.hidden_panel.Add(button_d, flag=wx.RIGHT, border=4)
 
         label2 = wx.StaticText(self.window, label='up to')
@@ -177,6 +177,8 @@ class AlarmsWindow(object):
         if len(self.hiddenalarms) > 0:
             self._show_hidden_panel()
 
+        self._update_hidden_number()
+
         self.window.Layout()
 
         if not self.window.IsShown():
@@ -196,6 +198,8 @@ class AlarmsWindow(object):
         else:
             self._show_hidden_alarms(self.LIMIT - len(self.alarms) +
                                                         len(self.hiddenalarms))
+
+        self._update_hidden_number()
 
         if len(self.alarms) == 0:
             self._hide()
@@ -306,6 +310,7 @@ class AlarmsWindow(object):
 
     def _show_hidden_alarms_prepare(self, event):
         self._show_hidden_alarms(self.hiddenN.GetValue())
+        self._update_hidden_number()
         self.window.Layout()
 
     def _show_hidden_alarms(self, number):
@@ -323,8 +328,11 @@ class AlarmsWindow(object):
                 self._hide_hidden_panel()
 
     def _update_title(self):
-        self.window.SetTitle(''.join(('Outspline - ', str(len(self.alarms)),
-                                                                   ' alarms')))
+        self.window.SetTitle('Outspline - {} alarms'.format(len(self.alarms)))
+
+    def _update_hidden_number(self):
+        self.hiddenL.SetLabelText('{} alarms are hidden:'.format(
+                                                    len(self.hiddenalarms)))
 
     @staticmethod
     def make_alarmid(filename, alarmid):
