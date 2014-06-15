@@ -139,7 +139,7 @@ class AlarmsWindow(object):
         self.window.Show(True)
         self.window.Centre()
 
-    def _display(self):
+    def _display_append(self):
         self.window.Layout()
         self._update_title()
 
@@ -152,7 +152,7 @@ class AlarmsWindow(object):
 
         self.window.RequestUserAttention()
 
-    def _display2(self):
+    def _display_close(self):
         self.window.Layout()
         self._update_title()
 
@@ -198,7 +198,7 @@ class AlarmsWindow(object):
                 self.alarms[a].close()
 
         self.stimer.Stop()
-        self.stimer = wx.CallLater(self.CDELAY, self._display2)
+        self.stimer = wx.CallLater(self.CDELAY, self._display_close)
 
     def _handle_close_db(self, kwargs):
         self._close_alarms(filename=kwargs['filename'])
@@ -243,12 +243,12 @@ class AlarmsWindow(object):
             if len(self.alarms) < self.LIMIT + 1:
                 self.alarms[a].show()
 
-                # Besides being much slower, calling Layout and the other
-                # functions at every append would raise an exception for
-                # excessive recursions in case of too many alarms are signalled
-                # at once
-                self.timer.Stop()
-                self.timer = wx.CallLater(self.DELAY, self._display)
+            # Besides being much slower, calling Layout and the other
+            # functions at every append would raise an exception for
+            # excessive recursions in case of too many alarms are signalled
+            # at once
+            self.timer.Stop()
+            self.timer = wx.CallLater(self.DELAY, self._display_append)
 
     def _update_title(self):
         self.window.SetTitle(''.join(('Outspline - ', str(len(self.alarms)),
