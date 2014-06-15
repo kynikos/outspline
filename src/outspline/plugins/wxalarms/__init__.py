@@ -112,6 +112,11 @@ class AlarmsWindow(object):
         wxgui_api.bind_to_close_database(self._handle_close_db)
 
     def _init_hidden_panel(self):
+        icon = wx.StaticBitmap(self.window, bitmap=wx.ArtProvider.GetBitmap(
+                                            'dialog-warning', wx.ART_BUTTON))
+        self.hidden_panel.Add(icon, flag=wx.ALIGN_CENTER_VERTICAL |
+                                                            wx.RIGHT, border=4)
+
         self.hiddenL = wx.StaticText(self.window, label='')
         self.hidden_panel.Add(self.hiddenL, flag=wx.ALIGN_CENTER_VERTICAL |
                                                             wx.RIGHT, border=4)
