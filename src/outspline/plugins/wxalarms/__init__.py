@@ -112,9 +112,29 @@ class AlarmsWindow(object):
         wxgui_api.bind_to_close_database(self._handle_close_db)
 
     def _init_hidden_panel(self):
-        label = wx.StaticText(self.window, label='Not all alarms are shown')
-        self.hidden_panel.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+        label1 = wx.StaticText(self.window, label='Some alarms are hidden:')
+        self.hidden_panel.Add(label1, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                       border=4)
+
+        button_d = wx.Button(self.window, label='show')
+        self.hidden_panel.Add(button_d, flag=wx.RIGHT, border=4)
+
+        label2 = wx.StaticText(self.window, label='up to')
+        self.hidden_panel.Add(label2, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
+
+        self.hiddenN = NarrowSpinCtrl(self.window, min=1, max=99,
+                                                        style=wx.SP_ARROW_KEYS)
+        self.hiddenN.SetValue(5)
+        self.hidden_panel.Add(self.hiddenN, flag=wx.ALIGN_CENTER_VERTICAL |
+                                                            wx.RIGHT, border=4)
+
+        label3 = wx.StaticText(self.window, label='more')
+        self.hidden_panel.Add(label3, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
+
+        self.window.Bind(wx.EVT_BUTTON, self._show_hidden_alarms_prepare,
+                                                                    button_d)
 
     def _init_bottom(self):
         button_s = wx.Button(self.window, label='Snooze all')
@@ -173,11 +193,14 @@ class AlarmsWindow(object):
 
         if len(self.hiddenalarms) == 0:
             self._hide_hidden_panel()
-
-        self.window.Layout()
+        else:
+            self._show_hidden_alarms(self.LIMIT - len(self.alarms) +
+                                                        len(self.hiddenalarms))
 
         if len(self.alarms) == 0:
             self._hide()
+
+        self.window.Layout()
 
     def _hide(self):
         self.window.Show(False)
@@ -280,6 +303,24 @@ class AlarmsWindow(object):
             # at once
             self.timer.Stop()
             self.timer = wx.CallLater(self.DELAY, self._display_append)
+
+    def _show_hidden_alarms_prepare(self, event):
+        self._show_hidden_alarms(self.hiddenN.GetValue())
+        self.window.Layout()
+
+    def _show_hidden_alarms(self, number):
+        for i in range(number):
+            try:
+                alarmid = self.hiddenalarms.pop()
+            except KeyError:
+                self._hide_hidden_panel()
+                break
+            else:
+                self.alarms[alarmid].show()
+        else:
+            # KeyError may not be raised, so try to hide the panel also here
+            if len(self.hiddenalarms) == 0:
+                self._hide_hidden_panel()
 
     def _update_title(self):
         self.window.SetTitle(''.join(('Outspline - ', str(len(self.alarms)),
