@@ -189,13 +189,15 @@ class AlarmsWindow(object):
         core_api.release_databases()
 
     def _close_alarms(self, filename=None, id_=None, alarmid=None):
-        for a in tuple(self.alarms.keys()):
+        for a in self.alarms.keys():
             afilename = self.alarms[a].get_filename()
             aitem = self.alarms[a].get_id()
             aid = self.alarms[a].get_alarmid()
+
             if filename in (afilename, None) and id_ in (aitem, None) and \
                                                         alarmid in (aid, None):
                 self.alarms[a].close()
+                del self.alarms[a]
 
         self.stimer.Stop()
         self.stimer = wx.CallLater(self.CDELAY, self._display_close)
@@ -445,9 +447,6 @@ class Alarm(object):
             # It's necessary to explicitly unbind the handler, otherwise this
             # object will not be garbage-collected
             core_api.bind_to_update_item(self._update_info, False)
-
-        del self.awindow.alarms[self.awindow.make_alarmid(self.filename,
-                                                                 self.alarmid)]
 
     def get_filename(self):
         return self.filename
