@@ -91,6 +91,8 @@ class AlarmsWindow(object):
         self.timer = wx.CallLater(1, int)
         self.stimer = wx.CallLater(1, int)
 
+        self.LIMIT = self.config.get_int('limit')
+
         self.mainmenu = MainMenu(self)
         TrayMenu(self)
 
@@ -170,7 +172,7 @@ class AlarmsWindow(object):
     def dismiss_all(self, event):
         core_api.block_databases()
 
-        organism_alarms_api.dismiss_alarms(self._get_alarms_dictionary())
+        organism_alarms_api.dismiss_alarms(self._get_shown_alarms_dictionary())
         # Let the alarm off event close the alarms
 
         core_api.release_databases()
@@ -178,7 +180,7 @@ class AlarmsWindow(object):
     def snooze_all(self, event):
         core_api.block_databases()
 
-        organism_alarms_api.snooze_alarms(self._get_alarms_dictionary(),
+        organism_alarms_api.snooze_alarms(self._get_shown_alarms_dictionary(),
                                                   stime=self.get_snooze_time())
         # Let the alarm off event close the alarms
 
@@ -217,16 +219,16 @@ class AlarmsWindow(object):
         a = self.make_alarmid(filename, alarmid)
 
         # Check whether the database is still open because this method is
-        # called with wx.CallAfter in _handle_alarm, thus running in a different
-        # thread; this way it can happen that, when _handle_alarm is called, a
-        # database is still open, but when this method is called, that database
-        # has been already closed; this would happen for example when closing
-        # all the databases: after each database is closed (in rapid
-        # succession), all the remaining alarms are searched and signalled
-        # again, and when this method would be run (in a different thread) the
-        # alarm's database would have already been closed, thus raising an
-        # exception later when looking information for the item (e.g.
-        # core_api.get_item_text)
+        # called with wx.CallAfter in _handle_alarm, thus running in a
+        # different thread; this way it can happen that, when _handle_alarm is
+        # called, a database is still open, but when this method is called,
+        # that database has been already closed; this would happen for example
+        # when closing all the databases: after each database is closed (in
+        # rapid succession), all the remaining alarms are searched and
+        # signalled again, and when this method would be run (in a different
+        # thread) the alarm's database would have already been closed, thus
+        # raising an exception later when looking information for the item
+        # (e.g. core_api.get_item_text)
         # Also, for the same reason, check if the item exists, as for example
         # performing several undos/redos of the database in rapid succession
         # (e.g. using CTRL+Z/Y) would cause the same issue
@@ -236,11 +238,15 @@ class AlarmsWindow(object):
             self.alarms[a] = Alarm(self, filename, id_, alarmid, start, end,
                                                                         alarm)
 
-            # Besides being much slower, calling Layout and the other functions
-            # at every append would raise an exception for excessive recursions
-            # in case of too many alarms are signalled at once
-            self.timer.Stop()
-            self.timer = wx.CallLater(self.DELAY, self._display)
+            if len(self.alarms) < self.LIMIT + 1:
+                self.alarms[a].show()
+
+                # Besides being much slower, calling Layout and the other
+                # functions at every append would raise an exception for
+                # excessive recursions in case of too many alarms are signalled
+                # at once
+                self.timer.Stop()
+                self.timer = wx.CallLater(self.DELAY, self._display)
 
     def _update_title(self):
         self.window.SetTitle(''.join(('Outspline - ', str(len(self.alarms)),
@@ -259,24 +265,25 @@ class AlarmsWindow(object):
                                                     self.unit.GetSelection())]
         return stime
 
-    def _get_alarms_dictionary(self):
+    def _get_shown_alarms_dictionary(self):
         alarmsd = {}
 
         for a in self.alarms:
-            filename = self.alarms[a].get_filename()
-            id_ = self.alarms[a].get_id()
+            if self.alarms[a].is_shown():
+                filename = self.alarms[a].get_filename()
+                id_ = self.alarms[a].get_id()
 
-            try:
-                alarmsd[filename]
-            except KeyError:
-                alarmsd[filename] = {id_: []}
-            else:
                 try:
-                    alarmsd[filename][id_]
+                    alarmsd[filename]
                 except KeyError:
-                    alarmsd[filename][id_] = []
+                    alarmsd[filename] = {id_: []}
+                else:
+                    try:
+                        alarmsd[filename][id_]
+                    except KeyError:
+                        alarmsd[filename][id_] = []
 
-            alarmsd[filename][id_].append(self.alarms[a].get_alarmid())
+                alarmsd[filename][id_].append(self.alarms[a].get_alarmid())
 
         return alarmsd
 
@@ -287,22 +294,27 @@ class AlarmsWindow(object):
 class Alarm(object):
     def __init__(self, awindow, filename, id_, alarmid, start, end, alarm):
         self.awindow = awindow
-        self.panel = wx.Panel(awindow.panel)
-        self.pbox = wx.BoxSizer(wx.VERTICAL)
-        self.panel.SetSizer(self.pbox)
-
         self.filename = filename
         self.id_ = id_
         self.alarmid = alarmid
         self.start = start
         self.end = end
         self.alarm = alarm
+        self.panel = None
 
+    def show(self):
         log.debug('Appending alarm id: {}'.format(self.alarmid))
+
+        self.panel = wx.Panel(self.awindow.panel)
+        self.pbox = wx.BoxSizer(wx.VERTICAL)
+        self.panel.SetSizer(self.pbox)
 
         self._init_widgets(self.panel)
 
-        awindow.pbox.Add(self.panel, flag=wx.EXPAND)
+        self.awindow.pbox.Add(self.panel, flag=wx.EXPAND)
+
+    def is_shown(self):
+        return bool(self.panel)
 
     def _init_widgets(self, parent):
         hbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -423,15 +435,17 @@ class Alarm(object):
         wxgui_api.open_editor(self.filename, self.id_)
 
     def close(self):
-        log.debug('Destroying alarm id: {}'.format(self.alarmid))
+        if self.is_shown():
+            log.debug('Destroying alarm id: {}'.format(self.alarmid))
 
-        self.panel.Destroy()
+            self.panel.Destroy()
+
+            # It's necessary to explicitly unbind the handler, otherwise this
+            # object will not be garbage-collected
+            core_api.bind_to_update_item(self._update_info, False)
+
         del self.awindow.alarms[self.awindow.make_alarmid(self.filename,
                                                                  self.alarmid)]
-
-        # It's necessary to explicitly unbind the handler, otherwise this
-        # object will not be garbage-collected
-        core_api.bind_to_update_item(self._update_info, False)
 
     def get_filename(self):
         return self.filename
