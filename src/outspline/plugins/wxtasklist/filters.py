@@ -244,10 +244,15 @@ class Navigator(object):
 
     def _show(self):
         self.parent.GetSizer().Prepend(self.panel, flag=wx.EXPAND)
+        # Show explicitly because self._hide has to hide it
+        self.panel.Show()
         self.parent.GetSizer().Layout()
 
     def _hide(self):
         self.parent.GetSizer().Detach(self.panel)
+        # Also hide, otherwise the border of the buttons will still be visible
+        # at the top of the tasklist, see #318
+        self.panel.Hide()
         self.parent.GetSizer().Layout()
 
     def is_shown(self):
