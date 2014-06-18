@@ -94,9 +94,8 @@ class AlarmsLog(object):
                     cmenu.get_items(), cmenu.update)
         cmenu.store_items(menu_items)
 
-        # Disable context menu (temporary workaround for bug #278)
-        #self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
-                                                                #popup_cmenu)
+        self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
+                                                                popup_cmenu)
 
         self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_START_EDITING,
                                                     self._handle_item_editing)
