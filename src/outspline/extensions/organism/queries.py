@@ -21,6 +21,8 @@ rules_create = ("CREATE TABLE Rules (R_id INTEGER PRIMARY KEY, "
 
 rules_select = 'SELECT * FROM Rules'
 
+rules_select_all = 'SELECT * FROM Rules WHERE R_rules!=?'
+
 rules_select_id = 'SELECT R_rules FROM Rules WHERE R_id=? LIMIT 1'
 
 rules_insert = 'INSERT INTO Rules (R_id, R_rules) VALUES (?, ?)'

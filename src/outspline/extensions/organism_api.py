@@ -59,6 +59,10 @@ def get_item_rules(filename, id_):
     return items.get_item_rules(filename, id_)
 
 
+def get_all_valid_item_rules(filename):
+    return items.get_all_valid_item_rules(filename)
+
+
 def get_all_item_rules(filename):
     return items.get_all_item_rules(filename)
 

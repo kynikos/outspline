@@ -341,6 +341,15 @@ def get_item_rules(filename, id_):
     return string_to_rules(row['R_rules'])
 
 
+def get_all_valid_item_rules(filename):
+    qconn = core_api.get_connection(filename)
+    cursor = qconn.cursor()
+    cursor.execute(queries.rules_select_all, (rules_to_string([]), ))
+    core_api.give_connection(filename, qconn)
+
+    return cursor
+
+
 def get_all_item_rules(filename):
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
@@ -368,8 +377,10 @@ def get_occurrences_range(mint, maxt):
     search_start = (_time.time(), _time.clock())
 
     for filename in cdbs:
-        for id_ in core_api.get_items_ids(filename):
-            rules = get_item_rules(filename, id_)
+        for row in get_all_valid_item_rules(filename):
+            id_ = row['R_id']
+            rules = string_to_rules(row['R_rules'])
+
             for rule in rules:
                 rule_handlers[rule['rule']](mint, utcmint, maxt, utcoffset,
                                                     filename, id_, rule, occs)

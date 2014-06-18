@@ -197,8 +197,9 @@ def get_next_occurrences(base_time=None, base_times=None):
 
         utcbase = base_time - utcoffset.compute(base_time)
 
-        for id_ in core_api.get_items_ids(filename):
-            rules = organism_api.get_item_rules(filename, id_)
+        for row in organism_api.get_all_valid_item_rules(filename):
+            id_ = row['R_id']
+            rules = organism_api.convert_string_to_rules(row['R_rules'])
 
             for rule in rules:
                 rule_handlers[rule['rule']](base_time, utcbase, utcoffset,
