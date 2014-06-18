@@ -499,10 +499,10 @@ class TreeItemIcons(object):
                 self._update_item(id_, rules)
 
     def _update_all_items(self):
-        itemrules = organism_api.get_all_item_rules(self.filename)
-
-        for id_ in itemrules:
-            self._update_item(id_, itemrules[id_])
+        for row in organism_api.get_all_item_rules(self.filename):
+            id_ = row['R_id']
+            rules = organism_api.convert_string_to_rules(row['R_rules'])
+            self._update_item(id_, rules)
 
     def _update_item(self, id_, rules):
         if len(rules) > 0:

@@ -345,10 +345,9 @@ def get_all_item_rules(filename):
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
     cursor.execute(queries.rules_select)
-    rows = cursor.fetchall()
     core_api.give_connection(filename, qconn)
 
-    return rows
+    return cursor
 
 
 def rules_to_string(rules):

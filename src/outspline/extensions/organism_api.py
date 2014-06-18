@@ -60,14 +60,17 @@ def get_item_rules(filename, id_):
 
 
 def get_all_item_rules(filename):
-    return {row['R_id']: items.string_to_rules(row['R_rules']) for row in \
-                                            items.get_all_item_rules(filename)}
+    return items.get_all_item_rules(filename)
 
 
 def get_occurrences_range(mint, maxt):
     # Note that the list is practically unsorted: sorting its items is a duty
     # of the interface
     return items.get_occurrences_range(mint, maxt)
+
+
+def convert_string_to_rules(string):
+    return items.string_to_rules(string)
 
 
 def bind_to_update_item_rules_conditional(handler, bind=True):
