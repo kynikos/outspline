@@ -154,12 +154,6 @@ class LogsMenu(object):
                 "&Find in database\tCTRL+SHIFT+F6",
                 "Select the database items associated to the selected entries")
 
-        # Use an explicit accelerator (temporary workaround for bug #280)
-        accel = wx.AcceleratorEntry(wx.ACCEL_CTRL | wx.ACCEL_SHIFT, wx.WXK_F5,
-                                                                self.ID_FIND)
-        accelt = wx.AcceleratorTable([accel, ])
-        wx.GetApp().root.SetAcceleratorTable(accelt)
-
         self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
 
