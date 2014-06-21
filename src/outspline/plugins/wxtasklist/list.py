@@ -681,7 +681,8 @@ class Autoscroll(object):
     def _execute_maintain(self, yscroll):
         # This method must get the same arguments as the other execute_*
         # methods
-        self.listview.ScrollList(0, yscroll)
+        # For some reason it doesn't work without CallAfter...
+        wx.CallAfter(self.listview.ScrollList, 0, yscroll)
 
     def execute_force(self):
         self.listview.SortListItems(self.state_column, 1)
