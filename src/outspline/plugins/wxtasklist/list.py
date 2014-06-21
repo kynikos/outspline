@@ -161,6 +161,13 @@ class OccurrencesView(object):
         else:
             self.format_duration = self._format_duration_expanded
 
+        self.active_alarms_modes = {
+            'in_range': lambda mint, now, maxt: False,
+            'auto': lambda mint, now, maxt: mint <= now <= maxt,
+            'all': lambda mint, now, maxt: True,
+        }
+        self.active_alarms_mode = config['active_alarms']
+
         self.show_gaps = config.get_bool('show_gaps')
         self.show_overlappings = config.get_bool('show_overlappings')
 
@@ -317,7 +324,8 @@ class OccurrencesView(object):
 
         # Always add active (but not snoozed) alarms if time interval includes
         # current time
-        if self.min_time <= self.now <= self.max_time:
+        if self.active_alarms_modes[self.active_alarms_mode](self.min_time,
+                                                    self.now, self.max_time):
             occurrences.extend(occsobj.get_active_list())
 
         self.occs = {}
@@ -567,6 +575,7 @@ class OccurrencesView(object):
                                                             self.STATE_COLUMN))
         config['alarm_column'] = str(self.listview.GetColumnWidth(
                                                             self.ALARM_COLUMN))
+        config['active_alarms'] = self.active_alarms_mode
         config['show_gaps'] = 'yes' if self.show_gaps else 'no'
         config['show_overlappings'] = 'yes' if self.show_overlappings else 'no'
         config['autoscroll'] = 'on' if self.autoscroll.is_enabled() else 'off'

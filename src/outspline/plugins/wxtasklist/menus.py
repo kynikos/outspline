@@ -39,6 +39,7 @@ class MainMenu(wx.Menu):
 
         self.ID_SHOW = wx.NewId()
         self.ID_NAVIGATOR = wx.NewId()
+        self.ID_ALARMS = wx.NewId()
         self.ID_GAPS = wx.NewId()
         self.ID_OVERLAPS = wx.NewId()
         self.ID_SCROLL = wx.NewId()
@@ -51,13 +52,17 @@ class MainMenu(wx.Menu):
         self.ID_DISMISS_ALL = wx.NewId()
 
         self.navigator_submenu = NavigatorMenu(tasklist)
+        self.alarms_submenu = AlarmsMenu(tasklist)
 
         self.show = wx.MenuItem(self, self.ID_SHOW,
                                                 "Show &panel\tCTRL+SHIFT+F5",
                                                 "Show the occurrences panel",
                                                 kind=wx.ITEM_CHECK)
-        self.navigator = wx.MenuItem(self, self.ID_NAVIGATOR, 'N&avigator',
+        self.navigator = wx.MenuItem(self, self.ID_NAVIGATOR, 'Na&vigator',
                         'Navigator actions', subMenu=self.navigator_submenu)
+        self.alarms = wx.MenuItem(self, self.ID_ALARMS, '&Active alarms',
+                                        'Set the visibility of active alarms',
+                                        subMenu=self.alarms_submenu)
         self.gaps = wx.MenuItem(self, self.ID_GAPS, "Show &gaps\tCTRL+-",
                             "Show any unallocated time in the shown interval",
                             kind=wx.ITEM_CHECK)
@@ -94,6 +99,7 @@ class MainMenu(wx.Menu):
 
         self.navigator.SetBitmap(wx.ArtProvider.GetBitmap('@navigator',
                                                                 wx.ART_MENU))
+        self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
         self.scroll.SetBitmap(wx.ArtProvider.GetBitmap('@movedown',
                                                                 wx.ART_MENU))
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
@@ -109,6 +115,7 @@ class MainMenu(wx.Menu):
         self.AppendItem(self.show)
         self.AppendSeparator()
         self.AppendItem(self.navigator)
+        self.AppendItem(self.alarms)
         self.AppendItem(self.gaps)
         self.AppendItem(self.overlaps)
         self.AppendSeparator()
@@ -143,6 +150,7 @@ class MainMenu(wx.Menu):
         if kwargs['menu'] is self:
             self.show.Check(check=self.tasklist.is_shown())
             self.navigator.Enable(False)
+            self.alarms.Enable(False)
             self.gaps.Enable(False)
             self.gaps.Check(check=self.occview.show_gaps)
             self.overlaps.Enable(False)
@@ -158,6 +166,7 @@ class MainMenu(wx.Menu):
             self.dismiss_all.Enable(False)
 
             self.navigator_submenu.update_items()
+            self.alarms_submenu.update_items()
 
             tab = wxgui_api.get_selected_right_nb_tab()
 
@@ -200,6 +209,7 @@ class MainMenu(wx.Menu):
             if self.tasklist.is_shown():
                 # Already appropriately checked above
                 self.navigator.Enable()
+                self.alarms.Enable()
                 self.gaps.Enable()
                 self.overlaps.Enable()
                 self.autoscroll.Enable()
@@ -211,6 +221,7 @@ class MainMenu(wx.Menu):
         # accelerators
         self.show.Enable()
         self.navigator.Enable()
+        self.alarms.Enable()
         self.gaps.Enable()
         self.overlaps.Enable()
         self.scroll.Enable()
@@ -438,16 +449,74 @@ class NavigatorMenu(wx.Menu):
             self.tasklist.navigator.reset()
 
 
+class AlarmsMenu(wx.Menu):
+    def __init__(self, tasklist):
+        wx.Menu.__init__(self)
+        self.tasklist = tasklist
+        self.occview = tasklist.list_
+
+        self.ID_IN_RANGE = wx.NewId()
+        self.ID_AUTO = wx.NewId()
+        self.ID_ALL = wx.NewId()
+
+        self.inrange = wx.MenuItem(self, self.ID_IN_RANGE,
+                        "Show in &range",
+                        "Show only the active alarms in the filtered range",
+                        kind=wx.ITEM_RADIO)
+        self.auto = wx.MenuItem(self, self.ID_AUTO,
+                    "Show &smartly",
+                    "Show all the active alarms only if current time is shown",
+                    kind=wx.ITEM_RADIO)
+        self.all = wx.MenuItem(self, self.ID_ALL,
+                        "Show &all",
+                        "Always show all the active alarms",
+                        kind=wx.ITEM_RADIO)
+
+        self.modes_to_items = {
+            'in_range': self.inrange,
+            'auto': self.auto,
+            'all': self.all,
+        }
+
+        self.AppendItem(self.inrange)
+        self.AppendItem(self.auto)
+        self.AppendItem(self.all)
+
+        wxgui_api.bind_to_menu(self._set_in_range, self.inrange)
+        wxgui_api.bind_to_menu(self._set_auto, self.auto)
+        wxgui_api.bind_to_menu(self._set_all, self.all)
+
+    def update_items(self):
+        self.modes_to_items[self.occview.active_alarms_mode].Check()
+
+    def _set_in_range(self, event):
+        if self.tasklist.is_shown():
+            self.occview.active_alarms_mode = 'in_range'
+            self.occview.delay_restart()
+
+    def _set_auto(self, event):
+        if self.tasklist.is_shown():
+            self.occview.active_alarms_mode = 'auto'
+            self.occview.delay_restart()
+
+    def _set_all(self, event):
+        if self.tasklist.is_shown():
+            self.occview.active_alarms_mode = 'all'
+            self.occview.delay_restart()
+
+
 class TabContextMenu(wx.Menu):
     def __init__(self, tasklist):
         wx.Menu.__init__(self)
         self.tasklist = tasklist
 
         self.navigator_submenu = TabContextNavigatorMenu(tasklist)
+        self.alarms_submenu = TabContextAlarmsMenu(tasklist)
 
         self.navigator = wx.MenuItem(self, self.tasklist.mainmenu.ID_NAVIGATOR,
-                                            'N&avigator', 'Navigator actions',
-                                            subMenu=self.navigator_submenu)
+                                'Na&vigator', subMenu=self.navigator_submenu)
+        self.alarms = wx.MenuItem(self, self.tasklist.mainmenu.ID_ALARMS,
+                                '&Active alarms', subMenu=self.alarms_submenu)
         self.gaps = wx.MenuItem(self, self.tasklist.mainmenu.ID_GAPS,
                                             "Show &gaps", kind=wx.ITEM_CHECK)
         self.overlaps = wx.MenuItem(self,
@@ -467,6 +536,7 @@ class TabContextMenu(wx.Menu):
 
         self.navigator.SetBitmap(wx.ArtProvider.GetBitmap('@navigator',
                                                                 wx.ART_MENU))
+        self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
         self.scroll.SetBitmap(wx.ArtProvider.GetBitmap('@movedown',
                                                                 wx.ART_MENU))
         self.snooze_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarms',
@@ -475,6 +545,7 @@ class TabContextMenu(wx.Menu):
                                                                   wx.ART_MENU))
 
         self.AppendItem(self.navigator)
+        self.AppendItem(self.alarms)
         self.AppendItem(self.gaps)
         self.AppendItem(self.overlaps)
         self.AppendSeparator()
@@ -498,6 +569,7 @@ class TabContextMenu(wx.Menu):
                             check=self.tasklist.list_.autoscroll.is_enabled())
 
         self.navigator_submenu.update_items()
+        self.alarms_submenu.update_items()
 
 
 class TabContextNavigatorMenu(wx.Menu):
@@ -541,6 +613,35 @@ class TabContextNavigatorMenu(wx.Menu):
 
     def update_items(self):
         self.navigator.Check(check=self.tasklist.navigator.is_shown())
+
+
+class TabContextAlarmsMenu(wx.Menu):
+    def __init__(self, tasklist):
+        wx.Menu.__init__(self)
+        self.occview = tasklist.list_
+
+        self.inrange = wx.MenuItem(self,
+                                tasklist.mainmenu.alarms_submenu.ID_IN_RANGE,
+                                "Show in &range", kind=wx.ITEM_RADIO)
+        self.auto = wx.MenuItem(self,
+                                tasklist.mainmenu.alarms_submenu.ID_AUTO,
+                                "Show &smartly", kind=wx.ITEM_RADIO)
+        self.all = wx.MenuItem(self,
+                                tasklist.mainmenu.alarms_submenu.ID_ALL,
+                                "Show &all", kind=wx.ITEM_RADIO)
+
+        self.modes_to_items = {
+            'in_range': self.inrange,
+            'auto': self.auto,
+            'all': self.all,
+        }
+
+        self.AppendItem(self.inrange)
+        self.AppendItem(self.auto)
+        self.AppendItem(self.all)
+
+    def update_items(self):
+        self.modes_to_items[self.occview.active_alarms_mode].Check()
 
 
 class ListContextMenu(wx.Menu):
