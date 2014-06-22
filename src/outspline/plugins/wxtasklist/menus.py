@@ -761,6 +761,10 @@ class _SnoozeConfigMenu(wx.Menu):
                     organism_alarms_api.snooze_alarms(alarmsd, dlg.get_time())
                     # Let the alarm off event update the tasklist
 
+                # Unlike MessageDialog, a Dialog needs to be destroyed
+                # explicitly
+                dlg.Destroy()
+
         core_api.release_databases()
 
 
