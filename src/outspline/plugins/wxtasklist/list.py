@@ -315,7 +315,7 @@ class OccurrencesView(object):
                                         self.max_time > self.filterlimits[1]:
                 msgboxes.warn_out_of_range().ShowModal()
             else:
-                self._refresh_continue()
+                return self._refresh_continue()
 
     def _refresh_continue(self):
         occsobj = organism_api.get_occurrences_range(mint=self.min_time,
