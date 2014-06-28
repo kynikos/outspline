@@ -22,7 +22,7 @@ from organism import extension, items
 
 
 def install_rule_handler(rulename, handler):
-    return items.install_rule_handler(rulename, handler)
+    return extension.rules.install_rule_handler(rulename, handler)
 
 
 def update_item_rules(filename, id_, rules, group,

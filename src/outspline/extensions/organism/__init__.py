@@ -32,6 +32,7 @@ class Main(object):
     def __init__(self):
         self._ADDON_NAME = ('Extensions', 'organism')
 
+        self.rules = items.Rules()
         self.cdbs = set()
         self.databases = {}
 

@@ -32,8 +32,6 @@ update_item_rules_conditional_event = Event()
 delete_item_rules_event = Event()
 get_alarms_event = Event()
 
-rule_handlers = {}
-
 
 class Database(object):
     def __init__(self, filename):
@@ -216,6 +214,17 @@ class Database(object):
         return json.loads(string)
 
 
+class Rules(object):
+    def __init__(self):
+        self.handlers = {}
+
+    def install_rule_handler(self, rulename, handler):
+        if rulename not in self.handlers:
+            self.handlers[rulename] = handler
+        else:
+            raise ConflictingRuleHandlerError()
+
+
 class OccurrencesRange(object):
     def __init__(self, mint, maxt):
         self.mint = mint
@@ -386,15 +395,6 @@ class OccurrencesRange(object):
                 maxend = max((occ['start'], occ['end'], maxend))
 
             return (minstart, maxend)
-
-
-def install_rule_handler(rulename, handler):
-    global rule_handlers
-
-    if rulename not in rule_handlers:
-        rule_handlers[rulename] = handler
-    else:
-        raise ConflictingRuleHandlerError()
 
 
 def get_occurrences_range(mint, maxt):
