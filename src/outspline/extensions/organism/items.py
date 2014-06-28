@@ -36,6 +36,45 @@ rule_handlers = {}
 cdbs = set()
 
 
+class Database(object):
+    def __init__(self, filename):
+        self.filename = filename
+
+        core_api.register_history_action_handlers(filename, 'rules_insert',
+                    self._handle_history_insert, self._handle_history_delete)
+        core_api.register_history_action_handlers(filename, 'rules_update',
+                    self._handle_history_update, self._handle_history_update)
+        core_api.register_history_action_handlers(filename, 'rules_delete',
+                    self._handle_history_delete, self._handle_history_insert)
+
+    # This method has to accept filename as the first argument, even though
+    # it's part of this object
+    def _handle_history_insert(self, filename, action, jparams, hid, type_,
+                                                                    itemid):
+        qconn = core_api.get_connection(filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.rules_insert, (itemid, jparams))
+        core_api.give_connection(filename, qconn)
+
+    # This method has to accept filename as the first argument, even though
+    # it's part of this object
+    def _handle_history_update(self, filename, action, jparams, hid, type_,
+                                                                    itemid):
+        qconn = core_api.get_connection(filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.rules_update_id, (jparams, itemid))
+        core_api.give_connection(filename, qconn)
+
+    # This method has to accept filename as the first argument, even though
+    # it's part of this object
+    def _handle_history_delete(self, filename, action, jparams, hid, type_,
+                                                                    itemid):
+        qconn = core_api.get_connection(filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.rules_delete_id, (itemid, ))
+        core_api.give_connection(filename, qconn)
+
+
 class OccurrencesRange():
     def __init__(self, mint, maxt):
         self.mint = mint
@@ -395,24 +434,3 @@ def get_occurrences_range(mint, maxt):
     # Note that the list is practically unsorted: sorting its items is a duty
     # of the interface
     return occs
-
-
-def handle_history_insert(filename, action, jparams, hid, type_, itemid):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.rules_insert, (itemid, jparams))
-    core_api.give_connection(filename, qconn)
-
-
-def handle_history_update(filename, action, jparams, hid, type_, itemid):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.rules_update_id, (jparams, itemid))
-    core_api.give_connection(filename, qconn)
-
-
-def handle_history_delete(filename, action, jparams, hid, type_, itemid):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.rules_delete_id, (itemid, ))
-    core_api.give_connection(filename, qconn)

@@ -32,6 +32,8 @@ class Main(object):
     def __init__(self):
         self._ADDON_NAME = ('Extensions', 'organism')
 
+        self.databases = {}
+
         self._create_copy_table()
 
         core_api.bind_to_create_database(self._handle_create_database)
@@ -76,12 +78,7 @@ class Main(object):
         filename = kwargs['filename']
 
         if filename in items.cdbs:
-            core_api.register_history_action_handlers(filename, 'rules_insert',
-                    items.handle_history_insert, items.handle_history_delete)
-            core_api.register_history_action_handlers(filename, 'rules_update',
-                    items.handle_history_update, items.handle_history_update)
-            core_api.register_history_action_handlers(filename, 'rules_delete',
-                    items.handle_history_delete, items.handle_history_insert)
+            self.databases[filename] = items.Database(filename)
 
     def _handle_save_database_copy(self, kwargs):
         if kwargs['origin'] in items.cdbs:
@@ -100,7 +97,9 @@ class Main(object):
             qconnd.close()
 
     def _handle_close_database(self, kwargs):
-        items.cdbs.discard(kwargs['filename'])
+        filename = kwargs['filename']
+        items.cdbs.discard(filename)
+        del self.databases[filename]
 
     def _handle_insert_item(self, kwargs):
         items.insert_item(kwargs['filename'], kwargs['id_'], kwargs['group'],
