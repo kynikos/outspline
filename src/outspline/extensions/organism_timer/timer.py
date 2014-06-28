@@ -94,7 +94,7 @@ class Databases(object):
             core_api.give_connection(filename, conn)
 
 
-class NextOccurrences():
+class NextOccurrences(object):
     def __init__(self):
         self.occs = {}
         self.oldoccs = {}
@@ -172,9 +172,9 @@ class NextOccurrences():
                         if not self.occs[filename]:
                             del self.occs[filename]
         # Do not try to update self.next (even in case there are no occurrences
-        # left): this lets search_next_occurrences reset the last search time
-        # to this value, thus ignoring the excepted occurrences at the
-        # following search
+        # left): this lets NextOccurrencesEngine reset the last search time to
+        # this value, thus ignoring the excepted occurrences at the following
+        # search
 
     def try_delete_one(self, filename, id_, start, end, alarm):
         try:
