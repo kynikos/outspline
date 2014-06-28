@@ -18,7 +18,7 @@
 
 import outspline.core_api as core_api
 
-from organism import extension, items
+from organism import extension, items, database_open_event
 
 
 def install_rule_handler(rulename, handler):
@@ -74,6 +74,10 @@ def get_occurrences_range(mint, maxt):
 
 def convert_string_to_rules(string):
     return items.Database.string_to_rules(string)
+
+
+def bind_to_open_database(handler, bind=True):
+    return database_open_event.bind(handler, bind)
 
 
 def bind_to_update_item_rules_conditional(handler, bind=True):

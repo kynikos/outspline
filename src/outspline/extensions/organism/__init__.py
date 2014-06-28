@@ -18,12 +18,15 @@
 
 import sqlite3
 
+from outspline.coreaux_api import Event
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
 
 import queries
 import items
+
+database_open_event = Event()
 
 extension = None
 
@@ -81,6 +84,7 @@ class Main(object):
 
         if filename in self.cdbs:
             self.databases[filename] = items.Database(filename)
+            database_open_event.signal(filename=filename)
 
     def _handle_save_database_copy(self, kwargs):
         if kwargs['origin'] in self.cdbs:
