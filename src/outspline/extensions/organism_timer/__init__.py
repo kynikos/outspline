@@ -35,6 +35,8 @@ class Main(object):
         self._ADDON_NAME = ('Extensions', 'organism_timer')
 
         self.rules = timer.Rules()
+        self.cdbs = set()
+        self.databases = timer.Databases(self.cdbs)
 
         core_api.bind_to_create_database(self._handle_create_database)
         core_api.bind_to_open_database_dirty(self._handle_open_database_dirty)
@@ -67,19 +69,19 @@ class Main(object):
                                     )['database_dependency_group_1'].split(' ')
 
         if not set(dependencies) - set(kwargs['dependencies']):
-            timer.cdbs.add(kwargs['filename'])
+            self.cdbs.add(kwargs['filename'])
 
     def _handle_open_database(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in timer.cdbs:
+        if filename in self.cdbs:
             timer.search_old_occurrences(filename)
             timer.search_next_occurrences()
 
     def _handle_save_database_copy(self, kwargs):
         origin = kwargs['origin']
 
-        if origin in timer.cdbs:
+        if origin in self.cdbs:
             qconn = core_api.get_connection(origin)
             qconnd = sqlite3.connect(kwargs['destination'])
             cur = qconn.cursor()
@@ -95,7 +97,7 @@ class Main(object):
             qconnd.close()
 
     def _handle_close_database(self, kwargs):
-        timer.cdbs.discard(kwargs['filename'])
+        self.cdbs.discard(kwargs['filename'])
         timer.search_next_occurrences()
 
 

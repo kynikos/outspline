@@ -35,15 +35,13 @@ activate_old_occurrences_event = Event()
 activate_occurrences_event = Event()
 
 timer = None
-cdbs = set()
 
 
 class Databases(object):
-    def __init__(self):
-        pass
+    def __init__(self, cdbs):
+        self.cdbs = cdbs
 
-    @classmethod
-    def get_last_search(cls, filename):
+    def get_last_search(self, filename):
         conn = core_api.get_connection(filename)
         cur = conn.cursor()
         cur.execute(queries.timerproperties_select_search)
@@ -51,12 +49,11 @@ class Databases(object):
 
         return cur.fetchone()['TP_last_search']
 
-    @classmethod
-    def get_last_search_all(cls):
-        return {filename: cls.get_last_search(filename) for filename in cdbs}
+    def get_last_search_all(self):
+        return {filename: self.get_last_search(filename) for filename in
+                                                            self.cdbs.copy()}
 
-    @classmethod
-    def set_last_search(cls, filename, tstamp):
+    def set_last_search(self, filename, tstamp):
         conn = core_api.get_connection(filename)
         cur = conn.cursor()
         # Use a UTC timestamp, so that even if the local time zone is changed
@@ -64,14 +61,12 @@ class Databases(object):
         cur.execute(queries.timerproperties_update, (tstamp, ))
         core_api.give_connection(filename, conn)
 
-    @classmethod
-    def set_last_search_all(cls, tstamp):
-        for filename in cdbs:
-            cls.set_last_search(filename, tstamp)
+    def set_last_search_all(self, tstamp):
+        for filename in self.cdbs.copy():
+            self.set_last_search(filename, tstamp)
 
-    @classmethod
-    def set_last_search_all_safe(cls, tstamp):
-        for filename in cdbs:
+    def set_last_search_all_safe(self, tstamp):
+        for filename in self.cdbs.copy():
             conn = core_api.get_connection(filename)
             cur = conn.cursor()
 
