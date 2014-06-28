@@ -32,6 +32,7 @@ class Main(object):
     def __init__(self):
         self._ADDON_NAME = ('Extensions', 'organism')
 
+        self.cdbs = set()
         self.databases = {}
 
         self._create_copy_table()
@@ -72,16 +73,16 @@ class Main(object):
                                     )['database_dependency_group_1'].split(' ')
 
         if not set(dependencies) - set(kwargs['dependencies']):
-            items.cdbs.add(kwargs['filename'])
+            self.cdbs.add(kwargs['filename'])
 
     def _handle_open_database(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in items.cdbs:
+        if filename in self.cdbs:
             self.databases[filename] = items.Database(filename)
 
     def _handle_save_database_copy(self, kwargs):
-        if kwargs['origin'] in items.cdbs:
+        if kwargs['origin'] in self.cdbs:
             qconn = core_api.get_connection(kwargs['origin'])
             qconnd = sqlite3.connect(kwargs['destination'])
             cur = qconn.cursor()
@@ -98,26 +99,26 @@ class Main(object):
 
     def _handle_close_database(self, kwargs):
         filename = kwargs['filename']
-        items.cdbs.discard(filename)
+        self.cdbs.discard(filename)
         del self.databases[filename]
 
     def _handle_insert_item(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in items.cdbs:
+        if filename in self.cdbs:
             self.databases[filename].insert_item(kwargs['id_'],
                                         kwargs['group'], kwargs['description'])
 
     def _handle_delete_item(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in items.cdbs:
+        if filename in self.cdbs:
             self.databases[filename].delete_item_rules(kwargs['id_'],
                         kwargs['text'], kwargs['group'], kwargs['description'])
 
     def _handle_copy_items(self, kwargs):
-        # Do not check if kwargs['filename'] is in cdbs, always clear the table
-        # as the other functions rely on the table to be clear
+        # Do not check if kwargs['filename'] is in self.cdbs, always clear the
+        # table as the other functions rely on the table to be clear
         mem = core_api.get_memory_connection()
         cur = mem.cursor()
         cur.execute(queries.copyrules_delete)
@@ -126,20 +127,19 @@ class Main(object):
     def _handle_copy_item(self, kwargs):
         filename = kwargs['filename']
         self.databases[filename].copy_item_rules(kwargs['id_'],
-                                                        filename in items.cdbs)
+                                                        filename in self.cdbs)
 
     def _handle_paste_item(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in items.cdbs:
+        if filename in self.cdbs:
             self.databases[filename].paste_item_rules(kwargs['id_'],
                     kwargs['oldid'], kwargs['group'], kwargs['description'])
-
 
     def _handle_safe_paste_check(self, kwargs):
         filename = kwargs['filename']
         self.databases[filename].can_paste_safely(kwargs['exception'],
-                                                        filename in items.cdbs)
+                                                        filename in self.cdbs)
 
 
 def main():

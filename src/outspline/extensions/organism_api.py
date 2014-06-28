@@ -18,7 +18,7 @@
 
 import outspline.core_api as core_api
 
-from organism import queries, items
+from organism import extension, items
 
 
 def install_rule_handler(rulename, handler):
@@ -52,7 +52,7 @@ def update_item_rules_no_event(filename, id_, rules, group,
 
 
 def get_supported_open_databases():
-    return items.cdbs
+    return extension.cdbs
 
 
 def get_item_rules(filename, id_):

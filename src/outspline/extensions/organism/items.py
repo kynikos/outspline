@@ -33,7 +33,6 @@ delete_item_rules_event = Event()
 get_alarms_event = Event()
 
 rule_handlers = {}
-cdbs = set()
 
 
 class Database(object):
