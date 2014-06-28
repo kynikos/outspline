@@ -121,7 +121,9 @@ class Main(object):
         core_api.give_memory_connection(mem)
 
     def _handle_copy_item(self, kwargs):
-        items.copy_item_rules(kwargs['filename'], kwargs['id_'])
+        filename = kwargs['filename']
+        self.databases[filename].copy_item_rules(kwargs['id_'],
+                                                        filename in items.cdbs)
 
     def _handle_paste_item(self, kwargs):
         items.paste_item_rules(kwargs['filename'], kwargs['id_'],

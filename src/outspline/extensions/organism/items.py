@@ -85,6 +85,25 @@ class Database(object):
         core_api.insert_history(self.filename, group, id_, 'rules_insert',
                                                     description, srules, None)
 
+    def copy_item_rules(self, id_, rules_supported):
+        record = [id_, ]
+
+        if rules_supported:
+            conn = core_api.get_connection(self.filename)
+            cur = conn.cursor()
+            cur.execute(queries.rules_select_id, (id_, ))
+            record.extend(cur.fetchone())
+            core_api.give_connection(self.filename, conn)
+        else:
+            # Even if the database doesn't support rules, create a correct
+            # table that can be safely used when pasting
+            record.append(rules_to_string([]))
+
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+        curm.execute(queries.copyrules_insert, record)
+        core_api.give_memory_connection(mem)
+
 
 class OccurrencesRange():
     def __init__(self, mint, maxt):
@@ -298,26 +317,6 @@ def update_item_rules_no_event(filename, id_, rules, group,
 
     core_api.insert_history(filename, group, id_, 'rules_update', description,
                                                                 rules, unrules)
-
-
-def copy_item_rules(filename, id_):
-    record = [id_, ]
-
-    if filename in cdbs:
-        conn = core_api.get_connection(filename)
-        cur = conn.cursor()
-        cur.execute(queries.rules_select_id, (id_, ))
-        record.extend(cur.fetchone())
-        core_api.give_connection(filename, conn)
-    else:
-        # Even if filename doesn't support rules, create a correct table that
-        # can be safely used when pasting
-        record.append(rules_to_string([]))
-
-    mem = core_api.get_memory_connection()
-    curm = mem.cursor()
-    curm.execute(queries.copyrules_insert, record)
-    core_api.give_memory_connection(mem)
 
 
 def can_paste_safely(filename, exception):
