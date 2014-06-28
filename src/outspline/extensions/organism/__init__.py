@@ -109,7 +109,10 @@ class Main(object):
                                         kwargs['group'], kwargs['description'])
 
     def _handle_delete_item(self, kwargs):
-        items.delete_item_rules(kwargs['filename'], kwargs['id_'],
+        filename = kwargs['filename']
+
+        if filename in items.cdbs:
+            self.databases[filename].delete_item_rules(kwargs['id_'],
                         kwargs['text'], kwargs['group'], kwargs['description'])
 
     def _handle_copy_items(self, kwargs):

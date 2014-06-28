@@ -127,6 +127,27 @@ class Database(object):
         update_item_rules_no_event(self.filename, id_,
                             curm.fetchone()['CR_rules'], group, description)
 
+    def delete_item_rules(self, id_, text, group,
+                                            description='Delete item rules'):
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+
+        cursor.execute(queries.rules_select_id, (id_, ))
+        sel = cursor.fetchone()
+
+        # The query should always return a result, so sel should never be None
+        current_rules = sel['R_rules']
+
+        cursor.execute(queries.rules_delete_id, (id_, ))
+
+        core_api.give_connection(self.filename, qconn)
+
+        core_api.insert_history(self.filename, group, id_, 'rules_delete',
+                                            description, None, current_rules)
+
+        delete_item_rules_event.signal(filename=self.filename, id_=id_,
+                                                                    text=text)
+
 
 class OccurrencesRange():
     def __init__(self, mint, maxt):
@@ -340,28 +361,6 @@ def update_item_rules_no_event(filename, id_, rules, group,
 
     core_api.insert_history(filename, group, id_, 'rules_update', description,
                                                                 rules, unrules)
-
-
-def delete_item_rules(filename, id_, text, group,
-                                            description='Delete item rules'):
-    if filename in cdbs:
-        qconn = core_api.get_connection(filename)
-        cursor = qconn.cursor()
-
-        cursor.execute(queries.rules_select_id, (id_, ))
-        sel = cursor.fetchone()
-
-        # The query should always return a result, so sel should never be None
-        current_rules = sel['R_rules']
-
-        cursor.execute(queries.rules_delete_id, (id_, ))
-
-        core_api.give_connection(filename, qconn)
-
-        core_api.insert_history(filename, group, id_, 'rules_delete',
-                                            description, None, current_rules)
-
-        delete_item_rules_event.signal(filename=filename, id_=id_, text=text)
 
 
 def get_item_rules(filename, id_):
