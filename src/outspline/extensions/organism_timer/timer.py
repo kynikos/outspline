@@ -232,35 +232,45 @@ class Rules(object):
             raise ConflictingRuleHandlerError()
 
 
-def get_next_occurrences(base_time=None, base_times=None):
-    # Note that this function must be kept separate from
-    # search_next_occurrences because it can be used without the latter (e.g.
-    # by wxtasklist); note also that both functions generate their own events
-    occs = NextOccurrences()
-    utcoffset = timeaux.UTCOffset()
-    search_start = (time_.time(), time_.clock())
+class NextOccurrencesSearch(object):
+    def __init__(self, cdbs, rule_handlers, base_time=None, base_times=None):
+        self.cdbs = cdbs
+        self.rule_handlers = rule_handlers
+        self.base_time = base_time
+        self.base_times = base_times
 
-    for filename in cdbs:
-        if not base_time:
-            base_time = base_times[filename]
+    def start(self):
+        # Note that this function must be kept separate from
+        # search_next_occurrences because it can be used without the latter
+        # (e.g. by wxtasklist); note also that both functions generate their
+        # own events
+        self.occs = NextOccurrences()
+        utcoffset = timeaux.UTCOffset()
+        search_start = (time_.time(), time_.clock())
 
-        utcbase = base_time - utcoffset.compute(base_time)
+        for filename in self.cdbs.copy():
+            if not self.base_time:
+                self.base_time = self.base_times[filename]
 
-        for row in organism_api.get_all_valid_item_rules(filename):
-            id_ = row['R_id']
-            rules = organism_api.convert_string_to_rules(row['R_rules'])
+            utcbase = self.base_time - utcoffset.compute(self.base_time)
 
-            for rule in rules:
-                rule_handlers[rule['rule']](base_time, utcbase, utcoffset,
-                                                    filename, id_, rule, occs)
+            for row in organism_api.get_all_valid_item_rules(filename):
+                id_ = row['R_id']
+                rules = organism_api.convert_string_to_rules(row['R_rules'])
 
-        get_next_occurrences_event.signal(base_time=base_time,
-                                                  filename=filename, occs=occs)
+                for rule in rules:
+                    self.rule_handlers[rule['rule']](self.base_time, utcbase,
+                                    utcoffset, filename, id_, rule, self.occs)
 
-    log.debug('Next occurrences found in {} (time) / {} (clock) s'.format(
-              time_.time() - search_start[0], time_.clock() - search_start[1]))
+            get_next_occurrences_event.signal(base_time=self.base_time,
+                                            filename=filename, occs=self.occs)
 
-    return occs
+        log.debug('Next occurrences found in {} (time) / {} (clock) s'.format(
+                                              time_.time() - search_start[0],
+                                              time_.clock() - search_start[1]))
+
+    def get_results(self):
+        return self.occs
 
 
 def search_old_occurrences(filename):
@@ -302,12 +312,14 @@ def search_next_occurrences(kwargs=None):
     # kwargs is passed from the bindings in __init__
 
     # Note that this function must be kept separate from
-    # get_next_occurrences because the latter can be used without this (e.g.
+    # NextOccurrencesSearch because the latter can be used without this (e.g.
     # by wxtasklist); note also that both functions generate their own events
 
     log.debug('Search next occurrences')
 
-    occs = get_next_occurrences(base_times=Databases.get_last_search_all())
+    search = NextOccurrencesSearch(base_times=Databases.get_last_search_all())
+    search.start()
+    occs = search.get_results()
     next_occurrence = occs.get_next_occurrence_time()
     occsd = occs.get_dict()
     oldoccsd = occs.get_old_dict()
@@ -338,8 +350,8 @@ def search_next_occurrences(kwargs=None):
     else:
         # Even if no occurrence is found, reset last search time in every open
         # database, so that:
-        # 1) this will let the next get_next_occurrences ignore the occurrences
-        # excepted in the previous search
+        # 1) this will let the next NextOccurrencesSearch ignore the
+        # occurrences excepted in the previous search
         # 2) if a rule is created with an alarm time between the last search
         # and now, the alarm won't be activated
         Databases.set_last_search_all(now)

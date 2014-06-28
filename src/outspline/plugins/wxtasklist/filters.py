@@ -1048,7 +1048,9 @@ class FilterRelativeMinutes(object):
         # organism_timer_api.search_next_occurrences which would signal
         # search_next_occurrences_event, thus making this very method recur
         # infinitely
-        nextoccs = organism_timer_api.get_next_occurrences(base_time=maxt)
+        search = organism_timer_api.get_next_occurrences(base_time=maxt)
+        search.start()
+        nextoccs = search.get_results()
 
         # Note that next_occurrence could even be a time of an occurrence
         # that's already displayed in the list (e.g. if an occurrence has a
