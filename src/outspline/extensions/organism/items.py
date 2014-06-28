@@ -397,28 +397,51 @@ class OccurrencesRange(object):
             return (minstart, maxend)
 
 
-def get_occurrences_range(mint, maxt):
-    occs = OccurrencesRange(mint, maxt)
-    utcoffset = timeaux.UTCOffset()
-    utcmint = mint - utcoffset.compute(mint)
-    search_start = (time_.time(), time_.clock())
+class OccurrencesRangeSearch(object):
+    def __init__(self, mint, maxt, cdbs, databases, rule_handlers):
+        self.mint = mint
+        self.maxt = maxt
+        self.cdbs = cdbs
+        self.databases = databases
+        self.rule_handlers = rule_handlers
+        self.occs = OccurrencesRange(mint, maxt)
+        self.utcoffset = timeaux.UTCOffset()
+        self.utcmint = mint - self.utcoffset.compute(mint)
+        self._search_item = self._search_item_continue
 
-    for filename in cdbs:
-        for row in get_all_valid_item_rules(filename):
-            id_ = row['R_id']
-            rules = string_to_rules(row['R_rules'])
+    def start(self):
+        search_start = (time_.time(), time_.clock())
 
-            for rule in rules:
-                rule_handlers[rule['rule']](mint, utcmint, maxt, utcoffset,
-                                                    filename, id_, rule, occs)
+        for filename in self.cdbs.copy():
+            for row in self.databases[filename].get_all_valid_item_rules():
+                id_ = row['R_id']
+                rules = Database.string_to_rules(row['R_rules'])
+                self._search_item(filename, id_, rules)
 
-        # Get active alarms *after* all occurrences, to avoid except rules
-        get_alarms_event.signal(mint=mint, maxt=maxt, filename=filename,
-                                                                     occs=occs)
+            # Get active alarms *after* all occurrences, to avoid except rules
+            get_alarms_event.signal(mint=self.mint, maxt=self.maxt,
+                                            filename=filename, occs=self.occs)
 
-    log.debug('Occurrences range found in {} (time) / {} (clock) s'.format(
-              time_.time() - search_start[0], time_.clock() - search_start[1]))
+        log.debug('Occurrences range found in {} (time) / {} (clock) s'.format(
+                                            time_.time() - search_start[0],
+                                            time_.clock() - search_start[1]))
 
-    # Note that the list is practically unsorted: sorting its items is a duty
-    # of the interface
-    return occs
+    def stop(self):
+        self._search_item = self._search_item_stop
+
+    def get_results(self):
+        # Note that the list is practically unsorted: sorting its items is a
+        # duty of the interface
+        return self.occs
+
+    def _search_item(self, filename, id_, rules):
+        # This method is defined dynamically
+        pass
+
+    def _search_item_continue(self, filename, id_, rules):
+        for rule in rules:
+            self.rule_handlers[rule['rule']](self.mint, self.utcmint,
+                    self.maxt, self.utcoffset, filename,  id_, rule, self.occs)
+
+    def _search_item_stop(self, filename, id_, rules):
+        raise Exception()

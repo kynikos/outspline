@@ -68,9 +68,8 @@ def get_all_item_rules(filename):
 
 
 def get_occurrences_range(mint, maxt):
-    # Note that the list is practically unsorted: sorting its items is a duty
-    # of the interface
-    return items.get_occurrences_range(mint, maxt)
+    return items.OccurrencesRangeSearch(mint, maxt, extension.cdbs,
+                                extension.databases, extension.rules.handlers)
 
 
 def convert_string_to_rules(string):

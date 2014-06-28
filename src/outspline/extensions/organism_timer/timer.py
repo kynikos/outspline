@@ -280,8 +280,10 @@ def search_old_occurrences(filename):
     if whileago > last_search:
         log.debug('Search old occurrences')
 
-        occs = organism_api.get_occurrences_range(mint=last_search,
+        search = organism_api.get_occurrences_range(mint=last_search,
                                                                  maxt=whileago)
+        search.start()
+        occs = search.get_results()
         occsd = occs.get_dict()
         # Executing occs.get_active_dict here wouldn't make sense; let
         # search_next_occurrences deal with snoozed and active alarms

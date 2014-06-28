@@ -318,8 +318,10 @@ class OccurrencesView(object):
                 return self._refresh_continue()
 
     def _refresh_continue(self):
-        occsobj = organism_api.get_occurrences_range(mint=self.min_time,
+        search = organism_api.get_occurrences_range(mint=self.min_time,
                                                             maxt=self.max_time)
+        search.start()
+        occsobj = search.get_results()
         occurrences = occsobj.get_list()
 
         # Always add active (but not snoozed) alarms if time interval includes
