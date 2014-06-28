@@ -57,6 +57,42 @@ class Databases(object):
     def get_last_search_all(cls):
         return {filename: cls.get_last_search(filename) for filename in cdbs}
 
+    @classmethod
+    def set_last_search(cls, filename, tstamp):
+        conn = core_api.get_connection(filename)
+        cur = conn.cursor()
+        # Use a UTC timestamp, so that even if the local time zone is changed
+        # on the system, the timer behaves properly
+        cur.execute(queries.timerproperties_update, (tstamp, ))
+        core_api.give_connection(filename, conn)
+
+    @classmethod
+    def set_last_search_all(cls, tstamp):
+        for filename in cdbs:
+            cls.set_last_search(filename, tstamp)
+
+    @classmethod
+    def set_last_search_all_safe(cls, tstamp):
+        for filename in cdbs:
+            conn = core_api.get_connection(filename)
+            cur = conn.cursor()
+
+            cur.execute(queries.timerproperties_select_search)
+            last_search = cur.fetchone()['TP_last_search']
+
+            # It's possible that the database has last_search > tstamp, for
+            # example when a database has just been opened while others were
+            # already open: it would have a lower last_search than the other
+            # databases, and when the next occurrences are searched, all the
+            # databases' last_search values would be updated to the lower
+            # value, thus possibly reactivating old alarms
+            if tstamp > last_search:
+                # Use a UTC timestamp, so that even if the local time zone is
+                # changed on the system, the timer behaves properly
+                cur.execute(queries.timerproperties_update, (tstamp, ))
+
+            core_api.give_connection(filename, conn)
+
 
 class NextOccurrences():
     def __init__(self):
@@ -232,42 +268,6 @@ def get_next_occurrences(base_time=None, base_times=None):
     return occs
 
 
-def set_last_search(filename, tstamp):
-    conn = core_api.get_connection(filename)
-    cur = conn.cursor()
-    # Use a UTC timestamp, so that even if the local time zone is changed on
-    # the system, the timer behaves properly
-    cur.execute(queries.timerproperties_update, (tstamp, ))
-    core_api.give_connection(filename, conn)
-
-
-def set_last_search_all(tstamp):
-    for filename in cdbs:
-        set_last_search(filename, tstamp)
-
-
-def set_last_search_all_safe(tstamp):
-    for filename in cdbs:
-        conn = core_api.get_connection(filename)
-        cur = conn.cursor()
-
-        cur.execute(queries.timerproperties_select_search)
-        last_search = cur.fetchone()['TP_last_search']
-
-        # It's possible that the database has last_search > tstamp, for example
-        # when a database has just been opened while others were already open:
-        # it would have a lower last_search than the other databases, and when
-        # the next occurrences are searched, all the databases' last_search
-        # values would be updated to the lower value, thus possibly
-        # reactivating old alarms
-        if tstamp > last_search:
-            # Use a UTC timestamp, so that even if the local time zone is
-            # changed on the system, the timer behaves properly
-            cur.execute(queries.timerproperties_update, (tstamp, ))
-
-        core_api.give_connection(filename, conn)
-
-
 def search_old_occurrences(filename):
     # Do not use directly search_next_occurrences to search for old occurrences
     # when opening a database, in fact if the database hasn't been opened for a
@@ -293,7 +293,7 @@ def search_old_occurrences(filename):
         # Executing occs.get_active_dict here wouldn't make sense; let
         # search_next_occurrences deal with snoozed and active alarms
 
-        set_last_search(filename, whileago)
+        Databases.set_last_search(filename, whileago)
 
         if filename in occsd:
             # Note that occsd still includes occurrence times equal to
@@ -325,13 +325,13 @@ def search_next_occurrences(kwargs=None):
 
     if next_occurrence != None:
         if next_occurrence <= now:
-            set_last_search_all_safe(next_occurrence)
+            Databases.set_last_search_all_safe(next_occurrence)
             activate_occurrences(next_occurrence, occsd)
         else:
             # Reset last search time in every open database, so that if a rule
             # is created with an alarm time between the last search and now,
             # the alarm won't be activated
-            set_last_search_all(now)
+            Databases.set_last_search_all(now)
 
             next_loop = next_occurrence - now
             global timer
@@ -347,7 +347,7 @@ def search_next_occurrences(kwargs=None):
         # excepted in the previous search
         # 2) if a rule is created with an alarm time between the last search
         # and now, the alarm won't be activated
-        set_last_search_all(now)
+        Databases.set_last_search_all(now)
 
     search_next_occurrences_event.signal()
 
