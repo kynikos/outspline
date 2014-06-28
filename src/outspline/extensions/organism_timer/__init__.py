@@ -43,15 +43,18 @@ class Main(object):
         core_api.bind_to_open_database(self._handle_open_database)
         core_api.bind_to_close_database(self._handle_close_database)
         core_api.bind_to_save_database_copy(self._handle_save_database_copy)
-        core_api.bind_to_delete_items(timer.search_next_occurrences)
-        core_api.bind_to_history(timer.search_next_occurrences)
-        core_api.bind_to_exit_app_1(timer.cancel_search_next_occurrences)
+        core_api.bind_to_delete_items(
+                                self._handle_search_next_occurrences_request)
+        core_api.bind_to_history(self._handle_search_next_occurrences_request)
+        core_api.bind_to_exit_app_1(
+                        self._handle_search_next_occurrences_cancel_request)
 
         organism_api.bind_to_update_item_rules_conditional(
-                                                timer.search_next_occurrences)
+                                self._handle_search_next_occurrences_request)
 
         if copypaste_api:
-            copypaste_api.bind_to_items_pasted(timer.search_next_occurrences)
+            copypaste_api.bind_to_items_pasted(
+                                self._handle_search_next_occurrences_request)
 
     def _handle_create_database(self, kwargs):
         # Cannot use core_api.get_connection() here because the database isn't
@@ -95,6 +98,12 @@ class Main(object):
 
             qconnd.commit()
             qconnd.close()
+
+    def _handle_search_next_occurrences_request(self, kwargs):
+         timer.search_next_occurrences()
+
+    def _handle_search_next_occurrences_cancel_request(self, kwargs):
+         timer.cancel_search_next_occurrences()
 
     def _handle_close_database(self, kwargs):
         self.cdbs.discard(kwargs['filename'])
