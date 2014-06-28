@@ -35,8 +35,6 @@ activate_old_occurrences_event = Event()
 activate_occurrences_event = Event()
 
 timer = None
-
-rule_handlers = {}
 cdbs = set()
 
 
@@ -228,13 +226,15 @@ class NextOccurrences(object):
             return (minstart, maxend)
 
 
-def install_rule_handler(rulename, handler):
-    global rule_handlers
+class Rules(object):
+    def __init__(self):
+        self.handlers = {}
 
-    if rulename not in rule_handlers:
-        rule_handlers[rulename] = handler
-    else:
-        raise ConflictingRuleHandlerError()
+    def install_rule_handler(self, rulename, handler):
+        if rulename not in self.handlers:
+            self.handlers[rulename] = handler
+        else:
+            raise ConflictingRuleHandlerError()
 
 
 def get_next_occurrences(base_time=None, base_times=None):

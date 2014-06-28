@@ -34,6 +34,8 @@ class Main(object):
     def __init__(self):
         self._ADDON_NAME = ('Extensions', 'organism_timer')
 
+        self.rules = timer.Rules()
+
         core_api.bind_to_create_database(self._handle_create_database)
         core_api.bind_to_open_database_dirty(self._handle_open_database_dirty)
         core_api.bind_to_open_database(self._handle_open_database)

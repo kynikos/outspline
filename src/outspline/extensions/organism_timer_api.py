@@ -16,13 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-from organism_timer import timer
+from organism_timer import extension, timer
 
 
 def install_rule_handler(rulename, handler):
     # Warning, the handler will be executed on a separate thread!!!
     # (Check for race conditions)
-    return timer.install_rule_handler(rulename, handler)
+    return extension.rules.install_rule_handler(rulename, handler)
 
 
 def get_next_occurrences(base_time=None, base_times=None):
