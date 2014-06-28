@@ -32,7 +32,7 @@ def get_next_occurrences(base_time=None, base_times=None):
 
 
 def search_next_occurrences():
-    return timer.search_next_occurrences()
+    return extension.nextoccsengine.search_next_occurrences()
 
 
 def bind_to_get_next_occurrences(handler, bind=True):

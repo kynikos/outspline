@@ -37,6 +37,8 @@ class Main(object):
         self.rules = timer.Rules()
         self.cdbs = set()
         self.databases = timer.Databases(self.cdbs)
+        self.nextoccsengine = timer.NextOccurrencesEngine(self.cdbs,
+                                        self.databases, self.rules.handlers)
 
         core_api.bind_to_create_database(self._handle_create_database)
         core_api.bind_to_open_database_dirty(self._handle_open_database_dirty)
@@ -79,7 +81,7 @@ class Main(object):
 
         if filename in self.cdbs:
             timer.OldOccurrencesSearch(self.databases, filename).start()
-            timer.search_next_occurrences()
+            self.nextoccsengine.search_next_occurrences()
 
     def _handle_save_database_copy(self, kwargs):
         origin = kwargs['origin']
@@ -100,14 +102,14 @@ class Main(object):
             qconnd.close()
 
     def _handle_search_next_occurrences_request(self, kwargs):
-         timer.search_next_occurrences()
+         self.nextoccsengine.search_next_occurrences()
 
     def _handle_search_next_occurrences_cancel_request(self, kwargs):
-         timer.cancel_search_next_occurrences()
+         self.nextoccsengine.cancel_search_next_occurrences()
 
     def _handle_close_database(self, kwargs):
         self.cdbs.discard(kwargs['filename'])
-        timer.search_next_occurrences()
+        self.nextoccsengine.search_next_occurrences()
 
 
 def main():

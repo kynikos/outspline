@@ -34,8 +34,6 @@ activate_occurrences_range_event = Event()
 activate_old_occurrences_event = Event()
 activate_occurrences_event = Event()
 
-timer = None
-
 
 class Databases(object):
     def __init__(self, cdbs):
@@ -186,7 +184,7 @@ class NextOccurrences(object):
                     # Delete only one occurrence, hence the name try_delete_one
                     return True
         # Do not try to update self.next (even in case there are no occurrences
-        # left): this would let search_next_occurrences reset the last search
+        # left): this would let NextOccurrencesEngine reset the last search
         # time to this value, thus avoiding repeating this same procedure
         # This function is however designed to be used just before adding a
         # very similar occurrence, so self.next will be updated by that anyway
@@ -241,9 +239,9 @@ class NextOccurrencesSearch(object):
 
     def start(self):
         # Note that this function must be kept separate from
-        # search_next_occurrences because it can be used without the latter
-        # (e.g. by wxtasklist); note also that both functions generate their
-        # own events
+        # NextOccurrencesEngine because it can be used without the latter (e.g.
+        # by wxtasklist); note also that both functions generate their own
+        # events
         self.occs = NextOccurrences()
         utcoffset = timeaux.UTCOffset()
         search_start = (time_.time(), time_.clock())
@@ -279,15 +277,15 @@ class OldOccurrencesSearch(object):
         self.filename = filename
 
     def start(self):
-        # Do not use directly search_next_occurrences to search for old
+        # Do not use directly NextOccurrencesEngine to search for old
         # occurrences when opening a database, in fact if the database hasn't
         # been opened for a while and it has _many_ old occurrences to
-        # activate, search_next_occurrences could recurse too many times,
+        # activate, NextOccurrencesEngine could recurse too many times,
         # eventually raising a RuntimeError exception
         # This function can also speed up opening an old database if it has
         # many occurrences to activate immediately
 
-        # Search until 2 minutes ago and let search_next_occurrences handle the
+        # Search until 2 minutes ago and let NextOccurrencesEngine handle the
         # rest, so as to make sure not to interfere with its functionality
         whileago = int(time_.time()) - 120
         last_search = self.databases.get_last_search(self.filename)
@@ -301,7 +299,7 @@ class OldOccurrencesSearch(object):
             occs = search.get_results()
             occsd = occs.get_dict()
             # Executing occs.get_active_dict here wouldn't make sense; let
-            # search_next_occurrences deal with snoozed and active alarms
+            # NextOccurrencesEngine deal with snoozed and active alarms
 
             self.databases.set_last_search(self.filename, whileago)
 
@@ -314,73 +312,79 @@ class OldOccurrencesSearch(object):
                                             occsd=occsd[self.filename])
 
 
-def search_next_occurrences(kwargs=None):
-    # kwargs is passed from the bindings in __init__
+class NextOccurrencesEngine(object):
+    def __init__(self, cdbs, databases, rule_handlers):
+        self.cdbs = cdbs
+        self.databases = databases
+        self.rule_handlers = rule_handlers
+        self.timer = None
 
-    # Note that this function must be kept separate from
-    # NextOccurrencesSearch because the latter can be used without this (e.g.
-    # by wxtasklist); note also that both functions generate their own events
+    def search_next_occurrences(self):
+        # Note that this function must be kept separate from
+        # NextOccurrencesSearch because the latter can be used without this
+        # (e.g. by wxtasklist); note also that both functions generate their
+        # own events
 
-    log.debug('Search next occurrences')
+        log.debug('Search next occurrences')
 
-    search = NextOccurrencesSearch(base_times=Databases.get_last_search_all())
-    search.start()
-    occs = search.get_results()
-    next_occurrence = occs.get_next_occurrence_time()
-    occsd = occs.get_dict()
-    oldoccsd = occs.get_old_dict()
+        search = NextOccurrencesSearch(self.cdbs, self.rule_handlers,
+                            base_times=self.databases.get_last_search_all())
+        search.start()
+        occs = search.get_results()
+        next_occurrence = occs.get_next_occurrence_time()
+        occsd = occs.get_dict()
+        oldoccsd = occs.get_old_dict()
 
-    cancel_search_next_occurrences()
+        self.cancel_search_next_occurrences()
 
-    now = int(time_.time())
+        now = int(time_.time())
 
-    activate_old_occurrences_event.signal(oldoccsd=oldoccsd)
+        activate_old_occurrences_event.signal(oldoccsd=oldoccsd)
 
-    if next_occurrence != None:
-        if next_occurrence <= now:
-            Databases.set_last_search_all_safe(next_occurrence)
-            activate_occurrences(next_occurrence, occsd)
+        if next_occurrence != None:
+            if next_occurrence <= now:
+                self.databases.set_last_search_all_safe(next_occurrence)
+                self.activate_occurrences(next_occurrence, occsd)
+            else:
+                # Reset last search time in every open database, so that if a
+                # rule is created with an alarm time between the last search
+                # and now, the alarm won't be activated
+                self.databases.set_last_search_all(now)
+
+                next_loop = next_occurrence - now
+
+                self.timer = Timer(next_loop, self.activate_occurrences_block,
+                                                    (next_occurrence, occsd))
+                self.timer.start()
+
+                log.debug('Next occurrence in {} seconds'.format(next_loop))
         else:
-            # Reset last search time in every open database, so that if a rule
-            # is created with an alarm time between the last search and now,
-            # the alarm won't be activated
-            Databases.set_last_search_all(now)
+            # Even if no occurrence is found, reset last search time in every
+            # open database, so that:
+            # 1) this will let the next NextOccurrencesSearch ignore the
+            # occurrences excepted in the previous search
+            # 2) if a rule is created with an alarm time between the last
+            # search and now, the alarm won't be activated
+            self.databases.set_last_search_all(now)
 
-            next_loop = next_occurrence - now
-            global timer
-            timer = Timer(next_loop, activate_occurrences_block,
-                                                      (next_occurrence, occsd))
-            timer.start()
-
-            log.debug('Next occurrence in {} seconds'.format(next_loop))
-    else:
-        # Even if no occurrence is found, reset last search time in every open
-        # database, so that:
-        # 1) this will let the next NextOccurrencesSearch ignore the
-        # occurrences excepted in the previous search
-        # 2) if a rule is created with an alarm time between the last search
-        # and now, the alarm won't be activated
-        Databases.set_last_search_all(now)
-
-    search_next_occurrences_event.signal()
+        search_next_occurrences_event.signal()
 
 
-def cancel_search_next_occurrences(kwargs=None):
-    # kwargs is passed from the binding to core_api.bind_to_exit_app_1
-    if timer and timer.is_alive():
-        log.debug('Cancel timer')
-        timer.cancel()
+    def cancel_search_next_occurrences(self, kwargs=None):
+        if self.timer and self.timer.is_alive():
+            log.debug('Cancel timer')
+            self.timer.cancel()
 
 
-def activate_occurrences_block(time, occsd):
-    # It's important that the databases are blocked on this thread, and not on
-    # the main thread, otherwise the program would hang if some occurrences are
-    # activated while the user is performing an action
-    core_api.block_databases()
-    activate_occurrences(time, occsd)
-    core_api.release_databases()
+    def activate_occurrences_block(self, time, occsd):
+        # It's important that the databases are blocked on this thread, and not
+        # on the main thread, otherwise the program would hang if some
+        # occurrences are activated while the user is performing an action
+        core_api.block_databases()
+        self.activate_occurrences(time, occsd)
+        core_api.release_databases()
 
 
-def activate_occurrences(time, occsd):
-    activate_occurrences_event.signal(time=time, occsd=occsd)
-    search_next_occurrences()
+    def activate_occurrences(self, time, occsd):
+        activate_occurrences_event.signal(time=time, occsd=occsd)
+        self.search_next_occurrences()

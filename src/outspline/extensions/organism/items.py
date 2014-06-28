@@ -149,9 +149,9 @@ class Database(object):
         core_api.give_memory_connection(mem)
 
         # Do not signal update_item_rules_conditional_event because it's
-        # handled by organism_timer.timer.search_next_occurrences, and it
-        # would slow down the pasting of items a lot; search_next_occurrences
-        # is bound anyway to copypaste_api.bind_to_items_pasted
+        # handled by organism_timer.timer.NextOccurrencesEngine, and it would
+        # slow down the pasting of items a lot; NextOccurrencesEngine is bound
+        # anyway to copypaste_api.bind_to_items_pasted
         self.update_item_rules_no_event(id_, curm.fetchone()['CR_rules'],
                                                             group, description)
 
