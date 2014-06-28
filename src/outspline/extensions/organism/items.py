@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-import time as _time
+import time as time_
 import sqlite3
 
 from outspline.static.pyaux import timeaux
@@ -374,7 +374,7 @@ def get_occurrences_range(mint, maxt):
     occs = OccurrencesRange(mint, maxt)
     utcoffset = timeaux.UTCOffset()
     utcmint = mint - utcoffset.compute(mint)
-    search_start = (_time.time(), _time.clock())
+    search_start = (time_.time(), time_.clock())
 
     for filename in cdbs:
         for row in get_all_valid_item_rules(filename):
@@ -390,7 +390,7 @@ def get_occurrences_range(mint, maxt):
                                                                      occs=occs)
 
     log.debug('Occurrences range found in {} (time) / {} (clock) s'.format(
-              _time.time() - search_start[0], _time.clock() - search_start[1]))
+              time_.time() - search_start[0], time_.clock() - search_start[1]))
 
     # Note that the list is practically unsorted: sorting its items is a duty
     # of the interface
