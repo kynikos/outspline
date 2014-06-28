@@ -74,6 +74,17 @@ class Database(object):
         cursor.execute(queries.rules_delete_id, (itemid, ))
         core_api.give_connection(filename, qconn)
 
+    def insert_item(self, id_, group, description='Insert item'):
+        srules = rules_to_string([])
+
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.rules_insert, (id_, srules, ))
+        core_api.give_connection(self.filename, qconn)
+
+        core_api.insert_history(self.filename, group, id_, 'rules_insert',
+                                                    description, srules, None)
+
 
 class OccurrencesRange():
     def __init__(self, mint, maxt):
@@ -254,18 +265,6 @@ def install_rule_handler(rulename, handler):
         rule_handlers[rulename] = handler
     else:
         raise ConflictingRuleHandlerError()
-
-def insert_item(filename, id_, group, description='Insert item'):
-    if filename in cdbs:
-        srules = rules_to_string([])
-
-        qconn = core_api.get_connection(filename)
-        cursor = qconn.cursor()
-        cursor.execute(queries.rules_insert, (id_, srules, ))
-        core_api.give_connection(filename, qconn)
-
-        core_api.insert_history(filename, group, id_, 'rules_insert',
-                                                    description, srules, None)
 
 
 def update_item_rules(filename, id_, rules, group,

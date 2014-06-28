@@ -102,8 +102,11 @@ class Main(object):
         del self.databases[filename]
 
     def _handle_insert_item(self, kwargs):
-        items.insert_item(kwargs['filename'], kwargs['id_'], kwargs['group'],
-                                                        kwargs['description'])
+        filename = kwargs['filename']
+
+        if filename in items.cdbs:
+            self.databases[filename].insert_item(kwargs['id_'],
+                                        kwargs['group'], kwargs['description'])
 
     def _handle_delete_item(self, kwargs):
         items.delete_item_rules(kwargs['filename'], kwargs['id_'],
