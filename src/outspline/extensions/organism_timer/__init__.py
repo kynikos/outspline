@@ -27,73 +27,76 @@ copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
 import queries
 import timer
 
-_ADDON_NAME = ('Extensions', 'organism_timer')
+extension = None
 
 
-def handle_create_database(kwargs):
-    # Cannot use core_api.get_connection() here because the database isn't
-    # open yet
-    conn = sqlite3.connect(kwargs['filename'])
-    cur = conn.cursor()
-    cur.execute(queries.timerproperties_create)
-    cur.execute(queries.timerproperties_insert, (int(_time.time()), ))
-    conn.commit()
-    conn.close()
+class Main(object):
+    def __init__(self):
+        self._ADDON_NAME = ('Extensions', 'organism_timer')
 
+        core_api.bind_to_create_database(self._handle_create_database)
+        core_api.bind_to_open_database_dirty(self._handle_open_database_dirty)
+        core_api.bind_to_open_database(self._handle_open_database)
+        core_api.bind_to_close_database(self._handle_close_database)
+        core_api.bind_to_save_database_copy(self._handle_save_database_copy)
+        core_api.bind_to_delete_items(timer.search_next_occurrences)
+        core_api.bind_to_history(timer.search_next_occurrences)
+        core_api.bind_to_exit_app_1(timer.cancel_search_next_occurrences)
 
-def handle_open_database_dirty(kwargs):
-    info = coreaux_api.get_addons_info()
-    dependencies = info(_ADDON_NAME[0])(_ADDON_NAME[1]
-                                     )['database_dependency_group_1'].split(' ')
+        organism_api.bind_to_update_item_rules_conditional(
+                                                timer.search_next_occurrences)
 
-    if not set(dependencies) - set(kwargs['dependencies']):
-        timer.cdbs.add(kwargs['filename'])
+        if copypaste_api:
+            copypaste_api.bind_to_items_pasted(timer.search_next_occurrences)
 
+    def _handle_create_database(self, kwargs):
+        # Cannot use core_api.get_connection() here because the database isn't
+        # open yet
+        conn = sqlite3.connect(kwargs['filename'])
+        cur = conn.cursor()
+        cur.execute(queries.timerproperties_create)
+        cur.execute(queries.timerproperties_insert, (int(_time.time()), ))
+        conn.commit()
+        conn.close()
 
-def handle_open_database(kwargs):
-    filename = kwargs['filename']
+    def _handle_open_database_dirty(self, kwargs):
+        info = coreaux_api.get_addons_info()
+        dependencies = info(self._ADDON_NAME[0])(self._ADDON_NAME[1]
+                                    )['database_dependency_group_1'].split(' ')
 
-    if filename in timer.cdbs:
-        timer.search_old_occurrences(filename)
+        if not set(dependencies) - set(kwargs['dependencies']):
+            timer.cdbs.add(kwargs['filename'])
+
+    def _handle_open_database(self, kwargs):
+        filename = kwargs['filename']
+
+        if filename in timer.cdbs:
+            timer.search_old_occurrences(filename)
+            timer.search_next_occurrences()
+
+    def _handle_save_database_copy(self, kwargs):
+        origin = kwargs['origin']
+
+        if origin in timer.cdbs:
+            qconn = core_api.get_connection(origin)
+            qconnd = sqlite3.connect(kwargs['destination'])
+            cur = qconn.cursor()
+            curd = qconnd.cursor()
+
+            cur.execute(queries.timerproperties_select)
+            for row in cur:
+                curd.execute(queries.timerproperties_update_copy, tuple(row))
+
+            core_api.give_connection(origin, qconn)
+
+            qconnd.commit()
+            qconnd.close()
+
+    def _handle_close_database(self, kwargs):
+        timer.cdbs.discard(kwargs['filename'])
         timer.search_next_occurrences()
 
 
-def handle_save_database_copy(kwargs):
-    origin = kwargs['origin']
-
-    if origin in timer.cdbs:
-        qconn = core_api.get_connection(origin)
-        qconnd = sqlite3.connect(kwargs['destination'])
-        cur = qconn.cursor()
-        curd = qconnd.cursor()
-
-        cur.execute(queries.timerproperties_select)
-        for row in cur:
-            curd.execute(queries.timerproperties_update_copy, tuple(row))
-
-        core_api.give_connection(origin, qconn)
-
-        qconnd.commit()
-        qconnd.close()
-
-
-def handle_close_database(kwargs):
-    timer.cdbs.discard(kwargs['filename'])
-    timer.search_next_occurrences()
-
-
 def main():
-    core_api.bind_to_create_database(handle_create_database)
-    core_api.bind_to_open_database_dirty(handle_open_database_dirty)
-    core_api.bind_to_open_database(handle_open_database)
-    core_api.bind_to_close_database(handle_close_database)
-    core_api.bind_to_save_database_copy(handle_save_database_copy)
-    core_api.bind_to_delete_items(timer.search_next_occurrences)
-    core_api.bind_to_history(timer.search_next_occurrences)
-    core_api.bind_to_exit_app_1(timer.cancel_search_next_occurrences)
-
-    organism_api.bind_to_update_item_rules_conditional(
-                                                 timer.search_next_occurrences)
-
-    if copypaste_api:
-        copypaste_api.bind_to_items_pasted(timer.search_next_occurrences)
+    global extension
+    extension = Main()
