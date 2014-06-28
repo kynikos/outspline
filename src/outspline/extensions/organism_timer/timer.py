@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 from threading import Timer
-import time as _time
+import time as time_
 
 from outspline.static.pyaux import timeaux
 from outspline.coreaux_api import log, Event
@@ -189,7 +189,7 @@ def get_next_occurrences(base_time=None, base_times=None):
     # by wxtasklist); note also that both functions generate their own events
     occs = NextOccurrences()
     utcoffset = timeaux.UTCOffset()
-    search_start = (_time.time(), _time.clock())
+    search_start = (time_.time(), time_.clock())
 
     for filename in cdbs:
         if not base_time:
@@ -209,7 +209,7 @@ def get_next_occurrences(base_time=None, base_times=None):
                                                   filename=filename, occs=occs)
 
     log.debug('Next occurrences found in {} (time) / {} (clock) s'.format(
-              _time.time() - search_start[0], _time.clock() - search_start[1]))
+              time_.time() - search_start[0], time_.clock() - search_start[1]))
 
     return occs
 
@@ -274,7 +274,7 @@ def search_old_occurrences(filename):
 
     # Search until 2 minutes ago and let search_next_occurrences handle the
     # rest, so as to make sure not to interfere with its functionality
-    whileago = int(_time.time()) - 120
+    whileago = int(time_.time()) - 120
     last_search = get_last_search(filename)
 
     if whileago > last_search:
@@ -314,7 +314,7 @@ def search_next_occurrences(kwargs=None):
 
     cancel_search_next_occurrences()
 
-    now = int(_time.time())
+    now = int(time_.time())
 
     activate_old_occurrences_event.signal(oldoccsd=oldoccsd)
 
