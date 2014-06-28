@@ -78,7 +78,7 @@ class Main(object):
         filename = kwargs['filename']
 
         if filename in self.cdbs:
-            timer.search_old_occurrences(filename)
+            timer.OldOccurrencesSearch(self.databases, filename).start()
             timer.search_next_occurrences()
 
     def _handle_save_database_copy(self, kwargs):

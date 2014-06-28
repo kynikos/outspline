@@ -273,39 +273,45 @@ class NextOccurrencesSearch(object):
         return self.occs
 
 
-def search_old_occurrences(filename):
-    # Do not use directly search_next_occurrences to search for old occurrences
-    # when opening a database, in fact if the database hasn't been opened for a
-    # while and it has _many_ old occurrences to activate,
-    # search_next_occurrences could recurse too many times, eventually raising
-    # a RuntimeError exception
-    # This function can also speed up opening an old database if it has many
-    # occurrences to activate immediately
+class OldOccurrencesSearch(object):
+    def __init__(self, databases, filename):
+        self.databases = databases
+        self.filename = filename
 
-    # Search until 2 minutes ago and let search_next_occurrences handle the
-    # rest, so as to make sure not to interfere with its functionality
-    whileago = int(time_.time()) - 120
-    last_search = Databases.get_last_search(filename)
+    def start(self):
+        # Do not use directly search_next_occurrences to search for old
+        # occurrences when opening a database, in fact if the database hasn't
+        # been opened for a while and it has _many_ old occurrences to
+        # activate, search_next_occurrences could recurse too many times,
+        # eventually raising a RuntimeError exception
+        # This function can also speed up opening an old database if it has
+        # many occurrences to activate immediately
 
-    if whileago > last_search:
-        log.debug('Search old occurrences')
+        # Search until 2 minutes ago and let search_next_occurrences handle the
+        # rest, so as to make sure not to interfere with its functionality
+        whileago = int(time_.time()) - 120
+        last_search = self.databases.get_last_search(self.filename)
 
-        search = organism_api.get_occurrences_range(mint=last_search,
-                                                                 maxt=whileago)
-        search.start()
-        occs = search.get_results()
-        occsd = occs.get_dict()
-        # Executing occs.get_active_dict here wouldn't make sense; let
-        # search_next_occurrences deal with snoozed and active alarms
+        if whileago > last_search:
+            log.debug('Search old occurrences')
 
-        Databases.set_last_search(filename, whileago)
+            search = organism_api.get_occurrences_range(mint=last_search,
+                                                                maxt=whileago)
+            search.start()
+            occs = search.get_results()
+            occsd = occs.get_dict()
+            # Executing occs.get_active_dict here wouldn't make sense; let
+            # search_next_occurrences deal with snoozed and active alarms
 
-        if filename in occsd:
-            # Note that occsd still includes occurrence times equal to
-            # last_search: these must be excluded because last_search is the
-            # time that was last already activated
-            activate_occurrences_range_event.signal(filename=filename,
-                        mint=last_search, maxt=whileago, occsd=occsd[filename])
+            self.databases.set_last_search(self.filename, whileago)
+
+            if self.filename in occsd:
+                # Note that occsd still includes occurrence times equal to
+                # last_search: these must be excluded because last_search is
+                # the time that was last already activated
+                activate_occurrences_range_event.signal(filename=self.filename,
+                                            mint=last_search, maxt=whileago,
+                                            occsd=occsd[self.filename])
 
 
 def search_next_occurrences(kwargs=None):
