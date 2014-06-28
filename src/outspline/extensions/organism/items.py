@@ -74,7 +74,7 @@ class Database(object):
         core_api.give_connection(filename, qconn)
 
     def insert_item(self, id_, group, description='Insert item'):
-        srules = rules_to_string([])
+        srules = self.rules_to_string([])
 
         qconn = core_api.get_connection(self.filename)
         cursor = qconn.cursor()
@@ -97,7 +97,7 @@ class Database(object):
     def update_item_rules_no_event(self, id_, rules, group,
                                             description='Update item rules'):
         if isinstance(rules, list):
-            rules = rules_to_string(rules)
+            rules = self.rules_to_string(rules)
 
         qconn = core_api.get_connection(self.filename)
         cursor = qconn.cursor()
@@ -127,7 +127,7 @@ class Database(object):
         else:
             # Even if the database doesn't support rules, create a correct
             # table that can be safely used when pasting
-            record.append(rules_to_string([]))
+            record.append(self.rules_to_string([]))
 
         mem = core_api.get_memory_connection()
         curm = mem.cursor()
@@ -137,7 +137,7 @@ class Database(object):
     def can_paste_safely(self, exception, rules_supported):
         mem = core_api.get_memory_connection()
         curm = mem.cursor()
-        curm.execute(queries.copyrules_select, (rules_to_string([]), ))
+        curm.execute(queries.copyrules_select, (self.rules_to_string([]), ))
         core_api.give_memory_connection(mem)
 
         # Warn if CopyRules table has rules but filename doesn't support them
@@ -186,12 +186,12 @@ class Database(object):
         core_api.give_connection(self.filename, qconn)
 
         # The query should always return a result, so row should never be None
-        return string_to_rules(row['R_rules'])
+        return self.string_to_rules(row['R_rules'])
 
     def get_all_valid_item_rules(self):
         qconn = core_api.get_connection(self.filename)
         cursor = qconn.cursor()
-        cursor.execute(queries.rules_select_all, (rules_to_string([]), ))
+        cursor.execute(queries.rules_select_all, (self.rules_to_string([]), ))
         core_api.give_connection(self.filename, qconn)
 
         return cursor
@@ -203,6 +203,17 @@ class Database(object):
         core_api.give_connection(self.filename, qconn)
 
         return cursor
+
+    @staticmethod
+    def rules_to_string(rules):
+        # rules should always be a list, never equal to None
+        return json.dumps(rules, separators=(',',':'))
+
+    @staticmethod
+    def string_to_rules(string):
+        # Items without rules should have an empty list anyway (thus manageable
+        # by json.loads)
+        return json.loads(string)
 
 
 class OccurrencesRange():
@@ -384,17 +395,6 @@ def install_rule_handler(rulename, handler):
         rule_handlers[rulename] = handler
     else:
         raise ConflictingRuleHandlerError()
-
-
-def rules_to_string(rules):
-    # rules should always be a list, never equal to None
-    return json.dumps(rules, separators=(',',':'))
-
-
-def string_to_rules(string):
-    # Items without rules should have an empty list anyway (thus manageable by
-    # json.loads)
-    return json.loads(string)
 
 
 def get_occurrences_range(mint, maxt):

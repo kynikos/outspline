@@ -74,7 +74,7 @@ def get_occurrences_range(mint, maxt):
 
 
 def convert_string_to_rules(string):
-    return items.string_to_rules(string)
+    return items.Database.string_to_rules(string)
 
 
 def bind_to_update_item_rules_conditional(handler, bind=True):
