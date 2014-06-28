@@ -178,6 +178,32 @@ class Database(object):
         delete_item_rules_event.signal(filename=self.filename, id_=id_,
                                                                     text=text)
 
+    def get_item_rules(self, id_):
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.rules_select_id, (id_, ))
+        row = cursor.fetchone()
+        core_api.give_connection(self.filename, qconn)
+
+        # The query should always return a result, so row should never be None
+        return string_to_rules(row['R_rules'])
+
+    def get_all_valid_item_rules(self):
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.rules_select_all, (rules_to_string([]), ))
+        core_api.give_connection(self.filename, qconn)
+
+        return cursor
+
+    def get_all_item_rules(self):
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.rules_select)
+        core_api.give_connection(self.filename, qconn)
+
+        return cursor
+
 
 class OccurrencesRange():
     def __init__(self, mint, maxt):
@@ -358,35 +384,6 @@ def install_rule_handler(rulename, handler):
         rule_handlers[rulename] = handler
     else:
         raise ConflictingRuleHandlerError()
-
-
-def get_item_rules(filename, id_):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.rules_select_id, (id_, ))
-    row = cursor.fetchone()
-    core_api.give_connection(filename, qconn)
-
-    # The query should always return a result, so row should never be None
-    return string_to_rules(row['R_rules'])
-
-
-def get_all_valid_item_rules(filename):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.rules_select_all, (rules_to_string([]), ))
-    core_api.give_connection(filename, qconn)
-
-    return cursor
-
-
-def get_all_item_rules(filename):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.rules_select)
-    core_api.give_connection(filename, qconn)
-
-    return cursor
 
 
 def rules_to_string(rules):

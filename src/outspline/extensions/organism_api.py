@@ -56,15 +56,15 @@ def get_supported_open_databases():
 
 
 def get_item_rules(filename, id_):
-    return items.get_item_rules(filename, id_)
+    return extension.databases[filename].get_item_rules(id_)
 
 
 def get_all_valid_item_rules(filename):
-    return items.get_all_valid_item_rules(filename)
+    return extension.databases[filename].get_all_valid_item_rules()
 
 
 def get_all_item_rules(filename):
-    return items.get_all_item_rules(filename)
+    return extension.databases[filename].get_all_item_rules()
 
 
 def get_occurrences_range(mint, maxt):
