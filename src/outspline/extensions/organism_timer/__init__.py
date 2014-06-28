@@ -40,7 +40,6 @@ class Main(object):
 
         core_api.bind_to_create_database(self._handle_create_database)
         core_api.bind_to_open_database_dirty(self._handle_open_database_dirty)
-        core_api.bind_to_open_database(self._handle_open_database)
         core_api.bind_to_close_database(self._handle_close_database)
         core_api.bind_to_save_database_copy(self._handle_save_database_copy)
         core_api.bind_to_delete_items(
@@ -49,6 +48,7 @@ class Main(object):
         core_api.bind_to_exit_app_1(
                         self._handle_search_next_occurrences_cancel_request)
 
+        organism_api.bind_to_open_database(self._handle_open_database)
         organism_api.bind_to_update_item_rules_conditional(
                                 self._handle_search_next_occurrences_request)
 
