@@ -319,7 +319,7 @@ class NextOccurrencesEngine(object):
         self.rule_handlers = rule_handlers
         self.timer = None
 
-    def search_next_occurrences(self):
+    def restart(self):
         # Note that this function must be kept separate from
         # NextOccurrencesSearch because the latter can be used without this
         # (e.g. by wxtasklist); note also that both functions generate their
@@ -335,7 +335,7 @@ class NextOccurrencesEngine(object):
         occsd = occs.get_dict()
         oldoccsd = occs.get_old_dict()
 
-        self.cancel_search_next_occurrences()
+        self.cancel()
 
         now = int(time_.time())
 
@@ -344,7 +344,7 @@ class NextOccurrencesEngine(object):
         if next_occurrence != None:
             if next_occurrence <= now:
                 self.databases.set_last_search_all_safe(next_occurrence)
-                self.activate_occurrences(next_occurrence, occsd)
+                self._activate_occurrences(next_occurrence, occsd)
             else:
                 # Reset last search time in every open database, so that if a
                 # rule is created with an alarm time between the last search
@@ -353,7 +353,7 @@ class NextOccurrencesEngine(object):
 
                 next_loop = next_occurrence - now
 
-                self.timer = Timer(next_loop, self.activate_occurrences_block,
+                self.timer = Timer(next_loop, self._activate_occurrences_block,
                                                     (next_occurrence, occsd))
                 self.timer.start()
 
@@ -369,22 +369,19 @@ class NextOccurrencesEngine(object):
 
         search_next_occurrences_event.signal()
 
-
-    def cancel_search_next_occurrences(self, kwargs=None):
+    def cancel(self):
         if self.timer and self.timer.is_alive():
             log.debug('Cancel timer')
             self.timer.cancel()
 
-
-    def activate_occurrences_block(self, time, occsd):
+    def _activate_occurrences_block(self, time, occsd):
         # It's important that the databases are blocked on this thread, and not
         # on the main thread, otherwise the program would hang if some
         # occurrences are activated while the user is performing an action
         core_api.block_databases()
-        self.activate_occurrences(time, occsd)
+        self._activate_occurrences(time, occsd)
         core_api.release_databases()
 
-
-    def activate_occurrences(self, time, occsd):
+    def _activate_occurrences(self, time, occsd):
         activate_occurrences_event.signal(time=time, occsd=occsd)
-        self.search_next_occurrences()
+        self.restart()
