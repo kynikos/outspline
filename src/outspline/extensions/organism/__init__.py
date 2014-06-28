@@ -126,11 +126,17 @@ class Main(object):
                                                         filename in items.cdbs)
 
     def _handle_paste_item(self, kwargs):
-        items.paste_item_rules(kwargs['filename'], kwargs['id_'],
+        filename = kwargs['filename']
+
+        if filename in items.cdbs:
+            self.databases[filename].paste_item_rules(kwargs['id_'],
                     kwargs['oldid'], kwargs['group'], kwargs['description'])
 
+
     def _handle_safe_paste_check(self, kwargs):
-        items.can_paste_safely(kwargs['filename'], kwargs['exception'])
+        filename = kwargs['filename']
+        self.databases[filename].can_paste_safely(kwargs['exception'],
+                                                        filename in items.cdbs)
 
 
 def main():

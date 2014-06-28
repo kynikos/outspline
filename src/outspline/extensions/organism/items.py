@@ -104,6 +104,29 @@ class Database(object):
         curm.execute(queries.copyrules_insert, record)
         core_api.give_memory_connection(mem)
 
+    def can_paste_safely(self, exception, rules_supported):
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+        curm.execute(queries.copyrules_select, (rules_to_string([]), ))
+        core_api.give_memory_connection(mem)
+
+        # Warn if CopyRules table has rules but filename doesn't support them
+        if curm.fetchone() and not rules_supported:
+            raise exception()
+
+    def paste_item_rules(self, id_, oldid, group, description):
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+        curm.execute(queries.copyrules_select_id, (oldid, ))
+        core_api.give_memory_connection(mem)
+
+        # Do not signal update_item_rules_conditional_event because it's
+        # handled by organism_timer.timer.search_next_occurrences, and it
+        # would slow down the pasting of items a lot; search_next_occurrences
+        # is bound anyway to copypaste_api.bind_to_items_pasted
+        update_item_rules_no_event(self.filename, id_,
+                            curm.fetchone()['CR_rules'], group, description)
+
 
 class OccurrencesRange():
     def __init__(self, mint, maxt):
@@ -317,32 +340,6 @@ def update_item_rules_no_event(filename, id_, rules, group,
 
     core_api.insert_history(filename, group, id_, 'rules_update', description,
                                                                 rules, unrules)
-
-
-def can_paste_safely(filename, exception):
-    mem = core_api.get_memory_connection()
-    curm = mem.cursor()
-    curm.execute(queries.copyrules_select, (rules_to_string([]), ))
-    core_api.give_memory_connection(mem)
-
-    # Warn if CopyRules table has rules but filename doesn't support them
-    if curm.fetchone() and filename not in cdbs:
-        raise exception()
-
-
-def paste_item_rules(filename, id_, oldid, group, description):
-    if filename in cdbs:
-        mem = core_api.get_memory_connection()
-        curm = mem.cursor()
-        curm.execute(queries.copyrules_select_id, (oldid, ))
-        core_api.give_memory_connection(mem)
-
-        # Do not signal update_item_rules_conditional_event because it's
-        # handled by organism_timer.timer.search_next_occurrences, and it would
-        # slow down the pasting of items a lot; search_next_occurrences is
-        # bound anyway to copypaste_api.bind_to_items_pasted
-        update_item_rules_no_event(filename, id_, curm.fetchone()['CR_rules'],
-                                                            group, description)
 
 
 def delete_item_rules(filename, id_, text, group,
