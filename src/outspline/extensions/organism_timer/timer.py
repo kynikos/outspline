@@ -40,6 +40,24 @@ rule_handlers = {}
 cdbs = set()
 
 
+class Databases(object):
+    def __init__(self):
+        pass
+
+    @classmethod
+    def get_last_search(cls, filename):
+        conn = core_api.get_connection(filename)
+        cur = conn.cursor()
+        cur.execute(queries.timerproperties_select_search)
+        core_api.give_connection(filename, conn)
+
+        return cur.fetchone()['TP_last_search']
+
+    @classmethod
+    def get_last_search_all(cls):
+        return {filename: cls.get_last_search(filename) for filename in cdbs}
+
+
 class NextOccurrences():
     def __init__(self):
         self.occs = {}
@@ -214,19 +232,6 @@ def get_next_occurrences(base_time=None, base_times=None):
     return occs
 
 
-def get_last_search(filename):
-    conn = core_api.get_connection(filename)
-    cur = conn.cursor()
-    cur.execute(queries.timerproperties_select_search)
-    core_api.give_connection(filename, conn)
-
-    return cur.fetchone()['TP_last_search']
-
-
-def get_last_search_all():
-    return {filename: get_last_search(filename) for filename in cdbs}
-
-
 def set_last_search(filename, tstamp):
     conn = core_api.get_connection(filename)
     cur = conn.cursor()
@@ -275,7 +280,7 @@ def search_old_occurrences(filename):
     # Search until 2 minutes ago and let search_next_occurrences handle the
     # rest, so as to make sure not to interfere with its functionality
     whileago = int(time_.time()) - 120
-    last_search = get_last_search(filename)
+    last_search = Databases.get_last_search(filename)
 
     if whileago > last_search:
         log.debug('Search old occurrences')
@@ -307,7 +312,7 @@ def search_next_occurrences(kwargs=None):
 
     log.debug('Search next occurrences')
 
-    occs = get_next_occurrences(base_times=get_last_search_all())
+    occs = get_next_occurrences(base_times=Databases.get_last_search_all())
     next_occurrence = occs.get_next_occurrence_time()
     occsd = occs.get_dict()
     oldoccsd = occs.get_old_dict()
