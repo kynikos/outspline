@@ -26,7 +26,7 @@ def install_rule_handler(rulename, handler):
 
 
 def update_item_rules(filename, id_, rules, group,
-                      description='Update item rules'):
+                                            description='Update item rules'):
     # All rules must be able to produce only occurrences compliant with the
     # following requirements:
     # - Normal rules:
@@ -40,15 +40,15 @@ def update_item_rules(filename, id_, rules, group,
     #   * 'inclusive' must be a boolean value
     #   * 'start', 'end' and 'inclusive' must always be set
     #   * 'end' must always be greater than 'start'
-    return items.update_item_rules(filename, id_, rules, group,
+    return extension.databases[filename].update_item_rules(id_, rules, group,
                                    description=description)
 
 
 def update_item_rules_no_event(filename, id_, rules, group,
                                             description='Update item rules'):
     # See update_item_rules for guidelines
-    return items.update_item_rules_no_event(filename, id_, rules, group,
-                                                    description=description)
+    return extension.databases[filename].update_item_rules_no_event(id_, rules,
+                                                group, description=description)
 
 
 def get_supported_open_databases():

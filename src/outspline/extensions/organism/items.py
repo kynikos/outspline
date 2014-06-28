@@ -85,6 +85,37 @@ class Database(object):
         core_api.insert_history(self.filename, group, id_, 'rules_insert',
                                                     description, srules, None)
 
+    def update_item_rules(self, id_, rules, group,
+                                            description='Update item rules'):
+        self.update_item_rules_no_event(id_, rules, group,
+                                                    description=description)
+
+        # Note that update_item_rules_no_event can be called directly, thus not
+        # signalling this event
+        update_item_rules_conditional_event.signal(filename=self.filename,
+                                                        id_=id_, rules=rules)
+
+    def update_item_rules_no_event(self, id_, rules, group,
+                                            description='Update item rules'):
+        if isinstance(rules, list):
+            rules = rules_to_string(rules)
+
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+
+        cursor.execute(queries.rules_select_id, (id_, ))
+        sel = cursor.fetchone()
+
+        # The query should always return a result, so sel should never be None
+        unrules = sel['R_rules']
+
+        cursor.execute(queries.rules_update_id, (rules, id_))
+
+        core_api.give_connection(self.filename, qconn)
+
+        core_api.insert_history(self.filename, group, id_, 'rules_update',
+                                                description, rules, unrules)
+
     def copy_item_rules(self, id_, rules_supported):
         record = [id_, ]
 
@@ -124,8 +155,8 @@ class Database(object):
         # handled by organism_timer.timer.search_next_occurrences, and it
         # would slow down the pasting of items a lot; search_next_occurrences
         # is bound anyway to copypaste_api.bind_to_items_pasted
-        update_item_rules_no_event(self.filename, id_,
-                            curm.fetchone()['CR_rules'], group, description)
+        self.update_item_rules_no_event(id_, curm.fetchone()['CR_rules'],
+                                                            group, description)
 
     def delete_item_rules(self, id_, text, group,
                                             description='Delete item rules'):
@@ -328,39 +359,6 @@ def install_rule_handler(rulename, handler):
         rule_handlers[rulename] = handler
     else:
         raise ConflictingRuleHandlerError()
-
-
-def update_item_rules(filename, id_, rules, group,
-                                              description='Update item rules'):
-    update_item_rules_no_event(filename, id_, rules, group,
-                                                       description=description)
-
-    # Note that update_item_rules_no_event can be called directly, thus not
-    # signalling this event
-    update_item_rules_conditional_event.signal(filename=filename, id_=id_,
-                                                                rules=rules)
-
-
-def update_item_rules_no_event(filename, id_, rules, group,
-                                              description='Update item rules'):
-    if isinstance(rules, list):
-        rules = rules_to_string(rules)
-
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-
-    cursor.execute(queries.rules_select_id, (id_, ))
-    sel = cursor.fetchone()
-
-    # The query should always return a result, so sel should never be None
-    unrules = sel['R_rules']
-
-    cursor.execute(queries.rules_update_id, (rules, id_))
-
-    core_api.give_connection(filename, qconn)
-
-    core_api.insert_history(filename, group, id_, 'rules_update', description,
-                                                                rules, unrules)
 
 
 def get_item_rules(filename, id_):
