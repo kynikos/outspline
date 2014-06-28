@@ -216,7 +216,7 @@ class Database(object):
         return json.loads(string)
 
 
-class OccurrencesRange():
+class OccurrencesRange(object):
     def __init__(self, mint, maxt):
         self.mint = mint
         self.maxt = maxt
