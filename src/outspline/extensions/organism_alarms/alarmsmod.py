@@ -118,19 +118,17 @@ class Database(object):
                     for occ in occsd[id_]:
                         activate_alarm(occ)
 
-
-def activate_alarms(time, occsd):
-    for filename in occsd:
+    def activate_alarms(self, time, occsd):
         # Due to race conditions, filename could have been closed meanwhile
         # (e.g. if the modal dialog for closing the database was open in the
         # interface)
-        if core_api.is_database_open(filename):
-            for id_ in occsd[filename]:
+        if core_api.is_database_open(self.filename):
+            for id_ in occsd:
                 # Due to race conditions, id_ could have been deleted meanwhile
                 # (e.g. if the modal dialog for deleting the item was open in
                 # the interface)
-                if core_api.is_item(filename, id_):
-                    for occ in occsd[filename][id_]:
+                if core_api.is_item(self.filename, id_):
+                    for occ in occsd[id_]:
                         # occ may have start or end == time
                         if occ['alarm'] == time:
                             activate_alarm(occ)
