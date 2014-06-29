@@ -126,28 +126,7 @@ class Main(object):
         origin = kwargs['origin']
 
         if origin in self.cdbs:
-            qconn = core_api.get_connection(origin)
-            qconnd = sqlite3.connect(kwargs['destination'])
-            cur = qconn.cursor()
-            curd = qconnd.cursor()
-
-            curd.execute(queries.alarmsproperties_delete)
-            cur.execute(queries.alarmsproperties_select)
-            for row in cur:
-                curd.execute(queries.alarmsproperties_insert_copy, tuple(row))
-
-            cur.execute(queries.alarms_select)
-            for row in cur:
-                curd.execute(queries.alarms_insert_copy, tuple(row))
-
-            cur.execute(queries.alarmsofflog_select)
-            for row in cur:
-                curd.execute(queries.alarmsofflog_insert_copy, tuple(row))
-
-            core_api.give_connection(origin, qconn)
-
-            qconnd.commit()
-            qconnd.close()
+            self.databases[origin].save_copy(kwargs['destination'])
 
     def _handle_copy_items(self, kwargs):
         # Do not check if kwargs['filename'] is in cdbs, always clear the table
