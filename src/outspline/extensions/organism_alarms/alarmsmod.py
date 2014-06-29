@@ -103,7 +103,7 @@ class Database(object):
                         # interval, but none of those occurrences must be
                         # activated
                         if mint < occ['alarm'] <= maxt:
-                            activate_alarm(occ)
+                            self._activate_alarm(occ)
 
     def activate_old_alarms(self, occsd):
         # Due to race conditions, filename could have been closed meanwhile
@@ -116,7 +116,7 @@ class Database(object):
                 # the interface)
                 if core_api.is_item(self.filename, id_):
                     for occ in occsd[id_]:
-                        activate_alarm(occ)
+                        self._activate_alarm(occ)
 
     def activate_alarms(self, time, occsd):
         # Due to race conditions, filename could have been closed meanwhile
@@ -131,36 +131,35 @@ class Database(object):
                     for occ in occsd[id_]:
                         # occ may have start or end == time
                         if occ['alarm'] == time:
-                            activate_alarm(occ)
+                            self._activate_alarm(occ)
 
+    def _activate_alarm(self, alarm):
+        if 'alarmid' not in alarm:
+            alarmid = insert_alarm(filename=alarm['filename'],
+                                   id_=alarm['id_'],
+                                   start=alarm['start'],
+                                   end=alarm['end'],
+                                   origalarm=alarm['alarm'],
+                                   # Note that here passing None is correct (do
+                                   # not pass False)
+                                   snooze=None)
+        else:
+            alarmid = alarm['alarmid']
+            # Occurrence dictionaries store active alarms with False, not None
+            if alarm['alarm']:
+                filename = alarm['filename']
+                qconn = core_api.get_connection(filename)
+                cursor = qconn.cursor()
+                # Note that here using None is correct (do not use False)
+                cursor.execute(queries.alarms_update_id, (None, alarmid))
+                core_api.give_connection(filename, qconn)
 
-def activate_alarm(alarm):
-    if 'alarmid' not in alarm:
-        alarmid = insert_alarm(filename=alarm['filename'],
-                               id_=alarm['id_'],
-                               start=alarm['start'],
-                               end=alarm['end'],
-                               origalarm=alarm['alarm'],
-                               # Note that here passing None is correct (do not
-                               # pass False)
-                               snooze=None)
-    else:
-        alarmid = alarm['alarmid']
-        # Occurrence dictionaries store active alarms with False, not None
-        if alarm['alarm']:
-            filename = alarm['filename']
-            qconn = core_api.get_connection(filename)
-            cursor = qconn.cursor()
-            # Note that here using None is correct (do not use False)
-            cursor.execute(queries.alarms_update_id, (None, alarmid))
-            core_api.give_connection(filename, qconn)
-
-    alarm_event.signal(filename=alarm['filename'],
-                       id_=alarm['id_'],
-                       alarmid=alarmid,
-                       start=alarm['start'],
-                       end=alarm['end'],
-                       alarm=alarm['alarm'])
+        alarm_event.signal(filename=alarm['filename'],
+                           id_=alarm['id_'],
+                           alarmid=alarmid,
+                           start=alarm['start'],
+                           end=alarm['end'],
+                           alarm=alarm['alarm'])
 
 
 def get_alarms(mint, maxt, filename, occs):
