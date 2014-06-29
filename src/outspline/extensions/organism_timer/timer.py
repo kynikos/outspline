@@ -328,13 +328,16 @@ class OldOccurrencesSearch(object):
         # Executing occs.get_active_dict here wouldn't make sense; let
         # NextOccurrencesEngine deal with snoozed and active alarms
 
-        if self.filename in occsd:
-            # Note that occsd still includes occurrence times equal to
+        try:
+            occsdf = occsd[self.filename]
+        except KeyError:
+            pass
+        else:
+            # Note that occsdf still includes occurrence times equal to
             # self.last_search: these must be excluded because self.last_search
             # is the time that was last already activated
             activate_occurrences_range_event.signal(filename=self.filename,
-                                    mint=self.last_search, maxt=self.whileago,
-                                    occsd=occsd[self.filename])
+                    mint=self.last_search, maxt=self.whileago, occsd=occsdf)
 
         search_old_occurrences_end_event.signal(filename=self.filename)
 
