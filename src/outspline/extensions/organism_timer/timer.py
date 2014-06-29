@@ -57,26 +57,25 @@ class Databases(object):
         cur.execute(queries.timerproperties_update, (tstamp, ))
         core_api.give_connection(filename, conn)
 
-    def set_last_search_all_safe(self, tstamp):
-        for filename in self.cdbs.copy():
-            conn = core_api.get_connection(filename)
-            cur = conn.cursor()
+    def set_last_search_safe(self, filename, tstamp):
+        conn = core_api.get_connection(filename)
+        cur = conn.cursor()
 
-            cur.execute(queries.timerproperties_select_search)
-            last_search = cur.fetchone()['TP_last_search']
+        cur.execute(queries.timerproperties_select_search)
+        last_search = cur.fetchone()['TP_last_search']
 
-            # It's possible that the database has last_search > tstamp, for
-            # example when a database has just been opened while others were
-            # already open: it would have a lower last_search than the other
-            # databases, and when the next occurrences are searched, all the
-            # databases' last_search values would be updated to the lower
-            # value, thus possibly reactivating old alarms
-            if tstamp > last_search:
-                # Use a UTC timestamp, so that even if the local time zone is
-                # changed on the system, the timer behaves properly
-                cur.execute(queries.timerproperties_update, (tstamp, ))
+        # It's possible that the database has last_search > tstamp, for example
+        # when a database has just been opened while others were already open:
+        # it would have a lower last_search than the other databases, and when
+        # the next occurrences are searched, all the databases' last_search
+        # values would be updated to the lower value, thus possibly
+        # reactivating old alarms
+        if tstamp > last_search:
+            # Use a UTC timestamp, so that even if the local time zone is
+            # changed on the system, the timer behaves properly
+            cur.execute(queries.timerproperties_update, (tstamp, ))
 
-            core_api.give_connection(filename, conn)
+        core_api.give_connection(filename, conn)
 
 
 class NextOccurrences(object):
@@ -379,7 +378,10 @@ class NextOccurrencesEngine(object):
 
         if next_occurrence != None:
             if next_occurrence <= now:
-                self.databases.set_last_search_all_safe(next_occurrence)
+                for filename in filenames:
+                    self.databases.set_last_search_safe(filename,
+                                                            next_occurrence)
+
                 self._activate_occurrences(next_occurrence, occsd)
             else:
                 # Reset last search time in every searched database, so that if
