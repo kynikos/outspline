@@ -200,7 +200,8 @@ def get_alarms(mint, maxt, filename, occs):
 def get_number_of_active_alarms():
     count = 0
 
-    for filename in cdbs:
+    # cdbs may change size during the loop because of races with other threads
+    for filename in cdbs.copy():
         conn = core_api.get_connection(filename)
         cur = conn.cursor()
         cur.execute(queries.alarms_select_count)
