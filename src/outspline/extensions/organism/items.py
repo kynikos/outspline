@@ -37,12 +37,16 @@ class Database(object):
     def __init__(self, filename):
         self.filename = filename
 
-        core_api.register_history_action_handlers(filename, 'rules_insert',
-                    self._handle_history_insert, self._handle_history_delete)
-        core_api.register_history_action_handlers(filename, 'rules_update',
-                    self._handle_history_update, self._handle_history_update)
-        core_api.register_history_action_handlers(filename, 'rules_delete',
-                    self._handle_history_delete, self._handle_history_insert)
+    def post_init(self):
+        core_api.register_history_action_handlers(self.filename,
+                                'rules_insert', self._handle_history_insert,
+                                self._handle_history_delete)
+        core_api.register_history_action_handlers(self.filename,
+                                'rules_update', self._handle_history_update,
+                                self._handle_history_update)
+        core_api.register_history_action_handlers(self.filename,
+                                'rules_delete', self._handle_history_delete,
+                                self._handle_history_insert)
 
     # This method has to accept filename as the first argument, even though
     # it's part of this object
@@ -416,10 +420,10 @@ class OccurrencesRangeSearch(object):
     def start(self):
         search_start = (time_.time(), time_.clock())
 
-        # Don't use cdbs because the searched filenames must be coherent with
-        #  the other operations that this class is used in
-        # Note that cdbs could also change size during the search, so it should
-        #  be copied to iterate in it
+        # Don't use Main.databases because the searched filenames must be
+        #  coherent with the other operations that this class is used in
+        # Note that Main.databases could also change size during the search, so
+        #  it should be copied to iterate in it
         for filename in self.filenames:
             for row in self.databases[filename].get_all_valid_item_rules():
                 id_ = row['R_id']

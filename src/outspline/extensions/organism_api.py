@@ -52,7 +52,7 @@ def update_item_rules_no_event(filename, id_, rules, group,
 
 
 def get_supported_open_databases():
-    return extension.cdbs
+    return extension.databases.keys()
 
 
 def get_item_rules(filename, id_):

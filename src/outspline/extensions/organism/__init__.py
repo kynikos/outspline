@@ -36,7 +36,6 @@ class Main(object):
         self._ADDON_NAME = ('Extensions', 'organism')
 
         self.rules = items.Rules()
-        self.cdbs = set()
         self.databases = {}
 
         self._create_copy_table()
@@ -77,18 +76,24 @@ class Main(object):
                                     )['database_dependency_group_1'].split(' ')
 
         if not set(dependencies) - set(kwargs['dependencies']):
-            self.cdbs.add(kwargs['filename'])
+            filename = kwargs['filename']
+            self.databases[filename] = items.Database(filename)
 
     def _handle_open_database(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in self.cdbs:
-            self.databases[filename] = items.Database(filename)
+        try:
+            self.databases[filename].post_init()
+        except KeyError:
+            pass
+        else:
             database_open_event.signal(filename=filename)
 
     def _handle_save_database_copy(self, kwargs):
-        if kwargs['origin'] in self.cdbs:
-            qconn = core_api.get_connection(kwargs['origin'])
+        origin = kwargs['origin']
+
+        if origin in self.databases:
+            qconn = core_api.get_connection(origin)
             qconnd = sqlite3.connect(kwargs['destination'])
             cur = qconn.cursor()
             curd = qconnd.cursor()
@@ -97,33 +102,31 @@ class Main(object):
             for row in cur:
                 curd.execute(queries.rules_insert, tuple(row))
 
-            core_api.give_connection(kwargs['origin'], qconn)
+            core_api.give_connection(origin, qconn)
 
             qconnd.commit()
             qconnd.close()
 
     def _handle_close_database(self, kwargs):
-        filename = kwargs['filename']
-        self.cdbs.discard(filename)
-        del self.databases[filename]
+        del self.databases[kwargs['filename']]
 
     def _handle_insert_item(self, kwargs):
-        filename = kwargs['filename']
-
-        if filename in self.cdbs:
-            self.databases[filename].insert_item(kwargs['id_'],
+        try:
+            self.databases[kwargs['filename']].insert_item(kwargs['id_'],
                                         kwargs['group'], kwargs['description'])
+        except KeyError:
+            pass
 
     def _handle_delete_item(self, kwargs):
-        filename = kwargs['filename']
-
-        if filename in self.cdbs:
-            self.databases[filename].delete_item_rules(kwargs['id_'],
+        try:
+            self.databases[kwargs['filename']].delete_item_rules(kwargs['id_'],
                         kwargs['text'], kwargs['group'], kwargs['description'])
+        except KeyError:
+            pass
 
     def _handle_copy_items(self, kwargs):
-        # Do not check if kwargs['filename'] is in self.cdbs, always clear the
-        # table as the other functions rely on the table to be clear
+        # Do not check if kwargs['filename'] is in self.databases, always clear
+        # the table as the other functions rely on the table to be clear
         mem = core_api.get_memory_connection()
         cur = mem.cursor()
         cur.execute(queries.copyrules_delete)
@@ -132,19 +135,19 @@ class Main(object):
     def _handle_copy_item(self, kwargs):
         filename = kwargs['filename']
         self.databases[filename].copy_item_rules(kwargs['id_'],
-                                                        filename in self.cdbs)
+                                                    filename in self.databases)
 
     def _handle_paste_item(self, kwargs):
-        filename = kwargs['filename']
-
-        if filename in self.cdbs:
-            self.databases[filename].paste_item_rules(kwargs['id_'],
+        try:
+            self.databases[kwargs['filename']].paste_item_rules(kwargs['id_'],
                     kwargs['oldid'], kwargs['group'], kwargs['description'])
+        except KeyError:
+            pass
 
     def _handle_safe_paste_check(self, kwargs):
         filename = kwargs['filename']
         self.databases[filename].can_paste_safely(kwargs['exception'],
-                                                        filename in self.cdbs)
+                                                    filename in self.databases)
 
 
 def main():
