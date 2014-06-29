@@ -216,8 +216,11 @@ class Main(object):
         alarmsmod.clean_alarms_log(kwargs['filename'])
 
     def _handle_get_alarms(self, kwargs):
-        alarmsmod.get_alarms(kwargs['mint'], kwargs['maxt'],
-                                            kwargs['filename'], kwargs['occs'])
+        filename = kwargs['filename']
+
+        if filename in alarmsmod.cdbs:
+            self.databases[filename].get_alarms(kwargs['mint'], kwargs['maxt'],
+                                                                kwargs['occs'])
 
     def _handle_get_next_occurrences(self, kwargs):
         filename = kwargs['filename']

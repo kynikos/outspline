@@ -161,13 +161,11 @@ class Database(object):
                            end=alarm['end'],
                            alarm=alarm['alarm'])
 
-
-def get_alarms(mint, maxt, filename, occs):
-    if filename in cdbs:
-        conn = core_api.get_connection(filename)
+    def get_alarms(self, mint, maxt, occs):
+        conn = core_api.get_connection(self.filename)
         cur = conn.cursor()
         cur.execute(queries.alarms_select)
-        core_api.give_connection(filename, conn)
+        core_api.give_connection(self.filename, conn)
 
         for row in cur:
             origalarm = row['A_alarm']
@@ -178,7 +176,7 @@ def get_alarms(mint, maxt, filename, occs):
             # generic boolean tests
             snooze = False if row['A_snooze'] is None else row['A_snooze']
 
-            alarmd = {'filename': filename,
+            alarmd = {'filename': self.filename,
                       'id_': row['A_item'],
                       'alarmid': row['A_id'],
                       'start': row['A_start'],
