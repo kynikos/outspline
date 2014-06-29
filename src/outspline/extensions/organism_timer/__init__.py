@@ -35,10 +35,9 @@ class Main(object):
         self._ADDON_NAME = ('Extensions', 'organism_timer')
 
         self.rules = timer.Rules()
-        self.cdbs = set()
         self.databases = {}
-        self.nextoccsengine = timer.NextOccurrencesEngine(self.cdbs,
-                                        self.databases, self.rules.handlers)
+        self.nextoccsengine = timer.NextOccurrencesEngine(self.databases,
+                                                        self.rules.handlers)
 
         core_api.bind_to_create_database(self._handle_create_database)
         core_api.bind_to_open_database_dirty(self._handle_open_database_dirty)
@@ -74,20 +73,20 @@ class Main(object):
                                     )['database_dependency_group_1'].split(' ')
 
         if not set(dependencies) - set(kwargs['dependencies']):
-            self.cdbs.add(kwargs['filename'])
+            filename = kwargs['filename']
+            self.databases[filename] = timer.Database(filename)
 
     def _handle_open_database(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in self.cdbs:
-            self.databases[filename] = timer.Database(filename)
+        if filename in self.databases:
             timer.OldOccurrencesSearch(self.databases, filename).start()
             self.nextoccsengine.restart()
 
     def _handle_save_database_copy(self, kwargs):
         origin = kwargs['origin']
 
-        if origin in self.cdbs:
+        if origin in self.databases:
             qconn = core_api.get_connection(origin)
             qconnd = sqlite3.connect(kwargs['destination'])
             cur = qconn.cursor()
@@ -109,9 +108,7 @@ class Main(object):
          self.nextoccsengine.cancel()
 
     def _handle_close_database(self, kwargs):
-        filename = kwargs['filename']
-        self.cdbs.discard(filename)
-        del self.databases[filename]
+        del self.databases[kwargs['filename']]
         self.nextoccsengine.restart()
 
 
