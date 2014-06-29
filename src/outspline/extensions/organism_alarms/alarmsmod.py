@@ -330,14 +330,13 @@ class Database(object):
         global log_limits
         log_limits[self.filename][0] = limit
 
+    def select_alarms_log(self):
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.alarmsofflog_select_order)
+        core_api.give_connection(self.filename, qconn)
 
-def select_alarms_log(filename):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.alarmsofflog_select_order)
-    core_api.give_connection(filename, qconn)
-
-    return cursor
+        return cursor
 
 
 def clean_alarms_log(filename):

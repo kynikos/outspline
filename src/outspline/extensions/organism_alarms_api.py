@@ -36,7 +36,7 @@ def dismiss_alarms(alarmsd):
 
 
 def get_alarms_log(filename):
-    return alarmsmod.select_alarms_log(filename)
+    return extension.databases[filename].select_alarms_log()
 
 
 def get_alarms_log_limit(filename):
