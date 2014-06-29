@@ -57,10 +57,6 @@ class Databases(object):
         cur.execute(queries.timerproperties_update, (tstamp, ))
         core_api.give_connection(filename, conn)
 
-    def set_last_search_all(self, tstamp):
-        for filename in self.cdbs.copy():
-            self.set_last_search(filename, tstamp)
-
     def set_last_search_all_safe(self, tstamp):
         for filename in self.cdbs.copy():
             conn = core_api.get_connection(filename)
@@ -386,10 +382,11 @@ class NextOccurrencesEngine(object):
                 self.databases.set_last_search_all_safe(next_occurrence)
                 self._activate_occurrences(next_occurrence, occsd)
             else:
-                # Reset last search time in every open database, so that if a
-                # rule is created with an alarm time between the last search
+                # Reset last search time in every searched database, so that if
+                # a rule is created with an alarm time between the last search
                 # and now, the alarm won't be activated
-                self.databases.set_last_search_all(now)
+                for filename in filenames:
+                    self.databases.set_last_search(filename, now)
 
                 next_loop = next_occurrence - now
 
@@ -400,12 +397,13 @@ class NextOccurrencesEngine(object):
                 log.debug('Next occurrence in {} seconds'.format(next_loop))
         else:
             # Even if no occurrence is found, reset last search time in every
-            # open database, so that:
+            # searched database, so that:
             # 1) this will let the next NextOccurrencesSearch ignore the
             # occurrences excepted in the previous search
             # 2) if a rule is created with an alarm time between the last
             # search and now, the alarm won't be activated
-            self.databases.set_last_search_all(now)
+            for filename in filenames:
+                self.databases.set_last_search(filename, now)
 
         search_next_occurrences_event.signal()
 
