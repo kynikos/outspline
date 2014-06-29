@@ -134,8 +134,7 @@ class Database(object):
 
     def _activate_alarm(self, alarm):
         if 'alarmid' not in alarm:
-            alarmid = insert_alarm(filename=alarm['filename'],
-                                   id_=alarm['id_'],
+            alarmid = self._insert_alarm(id_=alarm['id_'],
                                    start=alarm['start'],
                                    end=alarm['end'],
                                    origalarm=alarm['alarm'],
@@ -244,6 +243,15 @@ class Database(object):
                 alarm_off_event.signal(filename=self.filename, id_=id_,
                                                             alarmid=alarmid)
 
+    def _insert_alarm(self, id_, start, end, origalarm, snooze):
+        conn = core_api.get_connection(self.filename)
+        cur = conn.cursor()
+        cur.execute(queries.alarms_insert, (id_, start, end, origalarm,
+                                                                    snooze))
+        core_api.give_connection(self.filename, conn)
+        aid = cur.lastrowid
+        return aid
+
     def copy_alarms(self, id_):
         occs = []
 
@@ -282,17 +290,8 @@ class Database(object):
         core_api.give_memory_connection(mem)
 
         for occ in curm:
-            insert_alarm(self.filename, id_, occ['CA_start'], occ['CA_end'],
-                         occ['CA_alarm'], occ['CA_snooze'])
-
-
-def insert_alarm(filename, id_, start, end, origalarm, snooze):
-    conn = core_api.get_connection(filename)
-    cur = conn.cursor()
-    cur.execute(queries.alarms_insert, (id_, start, end, origalarm, snooze))
-    core_api.give_connection(filename, conn)
-    aid = cur.lastrowid
-    return aid
+            self._insert_alarm(id_, occ['CA_start'], occ['CA_end'],
+                                            occ['CA_alarm'], occ['CA_snooze'])
 
 
 def delete_alarms(filename, id_, text):
