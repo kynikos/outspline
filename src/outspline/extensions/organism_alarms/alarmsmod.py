@@ -318,18 +318,17 @@ class Database(object):
                                                     log_limits[self.filename])
         core_api.give_connection(self.filename, qconn)
 
+    def update_alarm_log_soft_limit(self, limit):
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.alarmsproperties_update, (limit, ))
+        core_api.give_connection(self.filename, qconn)
 
-def update_alarm_log_soft_limit(filename, limit):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.alarmsproperties_update, (limit, ))
-    core_api.give_connection(filename, qconn)
+        global modified_state
+        modified_state[self.filename] = True
 
-    global modified_state
-    modified_state[filename] = True
-
-    global log_limits
-    log_limits[filename][0] = limit
+        global log_limits
+        log_limits[self.filename][0] = limit
 
 
 def select_alarms_log(filename):

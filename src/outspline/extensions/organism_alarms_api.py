@@ -44,7 +44,7 @@ def get_alarms_log_limit(filename):
 
 
 def update_alarms_log_limit(filename, limit):
-    return alarmsmod.update_alarm_log_soft_limit(filename, limit)
+    return extension.databases[filename].update_alarm_log_soft_limit(limit)
 
 
 def bind_to_alarm(handler, bind=True):
