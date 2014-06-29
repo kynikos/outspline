@@ -36,7 +36,7 @@ class Main(object):
 
         self.rules = timer.Rules()
         self.cdbs = set()
-        self.databases = timer.Databases(self.cdbs)
+        self.databases = {}
         self.nextoccsengine = timer.NextOccurrencesEngine(self.cdbs,
                                         self.databases, self.rules.handlers)
 
@@ -80,6 +80,7 @@ class Main(object):
         filename = kwargs['filename']
 
         if filename in self.cdbs:
+            self.databases[filename] = timer.Database(filename)
             timer.OldOccurrencesSearch(self.databases, filename).start()
             self.nextoccsengine.restart()
 
@@ -108,7 +109,9 @@ class Main(object):
          self.nextoccsengine.cancel()
 
     def _handle_close_database(self, kwargs):
-        self.cdbs.discard(kwargs['filename'])
+        filename = kwargs['filename']
+        self.cdbs.discard(filename)
+        del self.databases[filename]
         self.nextoccsengine.restart()
 
 

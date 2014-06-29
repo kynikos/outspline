@@ -37,28 +37,28 @@ activate_old_occurrences_event = Event()
 activate_occurrences_event = Event()
 
 
-class Databases(object):
-    def __init__(self, cdbs):
-        self.cdbs = cdbs
+class Database(object):
+    def __init__(self, filename):
+        self.filename = filename
 
-    def get_last_search(self, filename):
-        conn = core_api.get_connection(filename)
+    def get_last_search(self):
+        conn = core_api.get_connection(self.filename)
         cur = conn.cursor()
         cur.execute(queries.timerproperties_select_search)
-        core_api.give_connection(filename, conn)
+        core_api.give_connection(self.filename, conn)
 
         return cur.fetchone()['TP_last_search']
 
-    def set_last_search(self, filename, tstamp):
-        conn = core_api.get_connection(filename)
+    def set_last_search(self, tstamp):
+        conn = core_api.get_connection(self.filename)
         cur = conn.cursor()
         # Use a UTC timestamp, so that even if the local time zone is changed
         # on the system, the timer behaves properly
         cur.execute(queries.timerproperties_update, (tstamp, ))
-        core_api.give_connection(filename, conn)
+        core_api.give_connection(self.filename, conn)
 
-    def set_last_search_safe(self, filename, tstamp):
-        conn = core_api.get_connection(filename)
+    def set_last_search_safe(self, tstamp):
+        conn = core_api.get_connection(self.filename)
         cur = conn.cursor()
 
         cur.execute(queries.timerproperties_select_search)
@@ -75,7 +75,7 @@ class Databases(object):
             # changed on the system, the timer behaves properly
             cur.execute(queries.timerproperties_update, (tstamp, ))
 
-        core_api.give_connection(filename, conn)
+        core_api.give_connection(self.filename, conn)
 
 
 class NextOccurrences(object):
@@ -282,7 +282,7 @@ class OldOccurrencesSearch(object):
         # Search until 2 minutes ago and let NextOccurrencesEngine handle the
         # rest, so as to make sure not to interfere with its functionality
         self.whileago = int(time_.time()) - 120
-        self.last_search = self.databases.get_last_search(self.filename)
+        self.last_search = self.databases[self.filename].get_last_search()
 
         if self.whileago > self.last_search:
             log.debug('Search old occurrences')
@@ -294,7 +294,7 @@ class OldOccurrencesSearch(object):
             # Note that saving and closing the database after this point, but
             # before the search is finished and the old alarms are activated,
             # would lose all the old alarms
-            self.databases.set_last_search(self.filename, self.whileago)
+            self.databases[self.filename].set_last_search(self.whileago)
 
             # Use a thread to let the GUI be responsive and possibly abort the
             # search
@@ -360,7 +360,7 @@ class NextOccurrencesEngine(object):
         #  cdbs itself could change meanwhile due to race conditions
         filenames = self.cdbs.copy()
 
-        base_times = {filename: self.databases.get_last_search(filename) for
+        base_times = {filename: self.databases[filename].get_last_search() for
                                                         filename in filenames}
         search = NextOccurrencesSearch(filenames, self.rule_handlers,
                                                         base_times=base_times)
@@ -379,7 +379,7 @@ class NextOccurrencesEngine(object):
         if next_occurrence != None:
             if next_occurrence <= now:
                 for filename in filenames:
-                    self.databases.set_last_search_safe(filename,
+                    self.databases[filename].set_last_search_safe(
                                                             next_occurrence)
 
                 self._activate_occurrences(next_occurrence, occsd)
@@ -388,7 +388,7 @@ class NextOccurrencesEngine(object):
                 # a rule is created with an alarm time between the last search
                 # and now, the alarm won't be activated
                 for filename in filenames:
-                    self.databases.set_last_search(filename, now)
+                    self.databases[filename].set_last_search(now)
 
                 next_loop = next_occurrence - now
 
@@ -405,7 +405,7 @@ class NextOccurrencesEngine(object):
             # 2) if a rule is created with an alarm time between the last
             # search and now, the alarm won't be activated
             for filename in filenames:
-                self.databases.set_last_search(filename, now)
+                self.databases[filename].set_last_search(now)
 
         search_next_occurrences_event.signal()
 
