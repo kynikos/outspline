@@ -49,10 +49,6 @@ class Databases(object):
 
         return cur.fetchone()['TP_last_search']
 
-    def get_last_search_all(self):
-        return {filename: self.get_last_search(filename) for filename in
-                                                            self.cdbs.copy()}
-
     def set_last_search(self, filename, tstamp):
         conn = core_api.get_connection(filename)
         cur = conn.cursor()
@@ -369,8 +365,10 @@ class NextOccurrencesEngine(object):
         #  cdbs itself could change meanwhile due to race conditions
         filenames = self.cdbs.copy()
 
-        search = NextOccurrencesSearch(self.cdbs, self.rule_handlers,
-                            base_times=self.databases.get_last_search_all())
+        base_times = {filename: self.databases.get_last_search(filename) for
+                                                        filename in filenames}
+        search = NextOccurrencesSearch(filenames, self.rule_handlers,
+                                                        base_times=base_times)
         search.start()
         occs = search.get_results()
         next_occurrence = occs.get_next_occurrence_time()
