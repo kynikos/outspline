@@ -213,11 +213,17 @@ class Main(object):
                                                         kwargs['exception'])
 
     def _handle_delete_item_rules(self, kwargs):
-        alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'],
+        filename = kwargs['filename']
+
+        if filename in alarmsmod.cdbs:
+            self.databases[filename].delete_alarms(kwargs['id_'],
                                                                 kwargs['text'])
 
     def _handle_history_remove(self, kwargs):
-        alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'],
+        filename = kwargs['filename']
+
+        if filename in alarmsmod.cdbs:
+            self.databases[filename].delete_alarms(kwargs['id_'],
                                                                 kwargs['text'])
 
     def _handle_history_clean(self, kwargs):

@@ -293,23 +293,21 @@ class Database(object):
             self._insert_alarm(id_, occ['CA_start'], occ['CA_end'],
                                             occ['CA_alarm'], occ['CA_snooze'])
 
-
-def delete_alarms(filename, id_, text):
-    if filename in cdbs:
-        qconn = core_api.get_connection(filename)
+    def delete_alarms(self, id_, text):
+        qconn = core_api.get_connection(self.filename)
         cursor = qconn.cursor()
         cursor.execute(queries.alarms_delete_item, (id_, ))
 
         if cursor.rowcount > 0:
-            core_api.give_connection(filename, qconn)
+            core_api.give_connection(self.filename, qconn)
 
-            insert_alarm_log(filename, id_, 2, text.partition('\n')[0])
+            insert_alarm_log(self.filename, id_, 2, text.partition('\n')[0])
 
             # Signal the event after updating the database, so, for example,
             # the tasklist can be correctly updated
-            alarm_off_event.signal(filename=filename, id_=id_)
+            alarm_off_event.signal(filename=self.filename, id_=id_)
         else:
-            core_api.give_connection(filename, qconn)
+            core_api.give_connection(self.filename, qconn)
 
 
 def insert_alarm_log(filename, id_, reason, text):
