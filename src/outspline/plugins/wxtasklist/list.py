@@ -171,9 +171,9 @@ class OccurrencesView(object):
         self.show_gaps = config.get_bool('show_gaps')
         self.show_overlappings = config.get_bool('show_overlappings')
 
-        # Initialize self.delay with a dummy function (int)
-        self.delay = wx.CallLater(self.DELAY, int)
         self.timer = wx.CallLater(0, self._restart)
+        # Initialize self.timerdelay with a dummy function (int)
+        self.timerdelay = wx.CallLater(self.DELAY, int)
 
         self.enable_refresh()
 
@@ -275,8 +275,8 @@ class OccurrencesView(object):
         # Instead of self._restart, bind _this_ function to events that can be
         # signalled many times in a loop, so that self._restart is executed
         # only once after the last signal
-        self.delay.Stop()
-        self.delay = wx.CallLater(self.DELAY, self._restart)
+        self.timerdelay.Stop()
+        self.timerdelay = wx.CallLater(self.DELAY, self._restart)
 
     def _restart(self, kwargs=None):
         self.timer.Stop()
