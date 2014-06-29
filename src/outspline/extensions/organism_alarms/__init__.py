@@ -206,7 +206,8 @@ class Main(object):
                                                             kwargs['oldid'])
 
     def _handle_safe_paste_check(self, kwargs):
-        alarmsmod.can_paste_safely(kwargs['filename'], kwargs['exception'])
+        self.databases[kwargs['filename']].can_paste_safely(
+                                                        kwargs['exception'])
 
     def _handle_delete_item_rules(self, kwargs):
         alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'],
