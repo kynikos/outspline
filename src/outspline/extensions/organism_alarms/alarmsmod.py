@@ -194,21 +194,13 @@ class Database(object):
             if not occs.update(alarmd, origalarm) and snooze is False:
                 occs.move_active(alarmd, origalarm)
 
-
-def get_number_of_active_alarms():
-    count = 0
-
-    # cdbs may change size during the loop because of races with other threads
-    for filename in cdbs.copy():
-        conn = core_api.get_connection(filename)
+    def get_number_of_active_alarms(self):
+        conn = core_api.get_connection(self.filename)
         cur = conn.cursor()
         cur.execute(queries.alarms_select_count)
-        core_api.give_connection(filename, conn)
-
+        core_api.give_connection(self.filename, conn)
         row = cur.fetchone()
-        count += row['A_active_alarms']
-
-    return count
+        return row['A_active_alarms']
 
 
 def snooze_alarms(alarmsd, stime):

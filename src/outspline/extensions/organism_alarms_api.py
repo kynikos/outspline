@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-from organism_alarms import alarmsmod
+from organism_alarms import extension, alarmsmod
 
 
 def get_supported_open_databases():
@@ -24,7 +24,7 @@ def get_supported_open_databases():
 
 
 def get_number_of_active_alarms():
-    return alarmsmod.get_number_of_active_alarms()
+    return extension.get_number_of_active_alarms()
 
 
 def snooze_alarms(alarmsd, stime):

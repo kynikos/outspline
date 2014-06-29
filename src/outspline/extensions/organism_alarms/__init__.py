@@ -246,6 +246,16 @@ class Main(object):
             self.databases[filename].activate_alarms(kwargs['time'],
                                                             occsd[filename])
 
+    def get_number_of_active_alarms(self):
+        count = 0
+
+        # cdbs may change size during the loop because of races with other
+        # threads
+        for filename in alarmsmod.cdbs.copy():
+            count += self.databases[filename].get_number_of_active_alarms()
+
+        return count
+
 
 def main():
     global extension
