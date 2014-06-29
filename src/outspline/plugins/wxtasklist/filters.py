@@ -1043,12 +1043,14 @@ class FilterRelativeMinutes(object):
 
     def compute_delay(self, occsobj, now, mint, maxt):
         next_completion = occsobj.get_next_completion_time()
+        filenames = occsobj.get_found_filenames()
 
         # Note that this does *not* use
         # organism_timer_api.search_next_occurrences which would signal
         # search_next_occurrences_event, thus making this very method recur
         # infinitely
-        search = organism_timer_api.get_next_occurrences(base_time=maxt)
+        search = organism_timer_api.get_next_occurrences(base_time=maxt,
+                                                        filenames=filenames)
         search.start()
         nextoccs = search.get_results()
 

@@ -233,8 +233,9 @@ class Rules(object):
 
 
 class NextOccurrencesSearch(object):
-    def __init__(self, cdbs, rule_handlers, base_time=None, base_times=None):
-        self.cdbs = cdbs
+    def __init__(self, filenames, rule_handlers, base_time=None,
+                                                            base_times=None):
+        self.filenames = filenames
         self.rule_handlers = rule_handlers
         self.base_time = base_time
         self.base_times = base_times
@@ -248,7 +249,7 @@ class NextOccurrencesSearch(object):
         utcoffset = timeaux.UTCOffset()
         search_start = (time_.time(), time_.clock())
 
-        for filename in self.cdbs.copy():
+        for filename in self.filenames:
             if not self.base_time:
                 self.base_time = self.base_times[filename]
 

@@ -25,8 +25,8 @@ def install_rule_handler(rulename, handler):
     return extension.rules.install_rule_handler(rulename, handler)
 
 
-def get_next_occurrences(base_time=None, base_times=None):
-    return timer.NextOccurrencesSearch(extension.cdbs,
+def get_next_occurrences(base_time=None, base_times=None, filenames=()):
+    return timer.NextOccurrencesSearch(filenames,
                                     extension.rules.handlers,
                                     base_time=base_time, base_times=base_times)
 
