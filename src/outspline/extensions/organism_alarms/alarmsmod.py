@@ -37,12 +37,15 @@ log_limits = {}
 temp_log_limit = {}
 
 
-def get_snoozed_alarms(last_search, filename, occs):
-    if filename in cdbs:
-        conn = core_api.get_connection(filename)
+class Database(object):
+    def __init__(self, filename):
+        self.filename = filename
+
+    def get_snoozed_alarms(self, last_search, occs):
+        conn = core_api.get_connection(self.filename)
         cur = conn.cursor()
         cur.execute(queries.alarms_select)
-        core_api.give_connection(filename, conn)
+        core_api.give_connection(self.filename, conn)
 
         for row in cur:
             itemid = row['A_item']
@@ -55,25 +58,27 @@ def get_snoozed_alarms(last_search, filename, occs):
             # generic boolean tests
             snooze = False if row['A_snooze'] is None else row['A_snooze']
 
-            # Check whether the snoozed alarm has a duplicate among the alarms
-            # found using the alarm rules, and in that case delete the latter;
-            # the creation of duplicates is possible especially when alarm
-            # searches are performed in rapid succession, for example when
-            # launching outspline with multiple databases automatically opened
-            # and many new alarms to be immediately activated
-            occs.try_delete_one(filename, itemid, start, end, row['A_alarm'])
+            # Check whether the snoozed alarm has a duplicate among the
+            # alarms found using the alarm rules, and in that case delete
+            # the latter; the creation of duplicates is possible especially
+            # when alarm searches are performed in rapid succession, for
+            # example when launching outspline with multiple databases
+            # automatically opened and many new alarms to be immediately
+            # activated
+            occs.try_delete_one(self.filename, itemid, start, end,
+                                                                row['A_alarm'])
 
-            alarmd = {'filename': filename,
+            alarmd = {'filename': self.filename,
                       'id_': itemid,
                       'alarmid': row['A_id'],
                       'start': start,
                       'end': end,
                       'alarm': snooze}
 
-            # For safety, also check that there aren't any alarms with snooze
-            # <= last_search left (for example this may happen if an alarm is
-            # temporarily undone together with its item, and then it's restored
-            # with a redo)
+            # For safety, also check that there aren't any alarms with
+            # snooze <= last_search left (for example this may happen if an
+            # alarm is temporarily undone together with its item, and then it's
+            # restored with a redo)
             # Note that whatever the value of last_search is, it doesn't really
             # have the possibility to prevent the activation of a snoozed
             # alarm, be it immediately or later (last_search can't be set on a

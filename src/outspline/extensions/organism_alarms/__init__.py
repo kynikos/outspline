@@ -34,6 +34,8 @@ class Main(object):
     def __init__(self):
         self._ADDON_NAME = ('Extensions', 'organism_alarms')
 
+        self.databases = {}
+
         self._create_copy_table()
 
         core_api.bind_to_create_database(self._handle_create_database)
@@ -103,6 +105,8 @@ class Main(object):
         filename = kwargs['filename']
 
         if filename in alarmsmod.cdbs:
+            self.databases[filename] = alarmsmod.Database(filename)
+
             conf = coreaux_api.get_extension_configuration('organism_alarms')
 
             qconn = core_api.get_connection(filename)
@@ -120,6 +124,7 @@ class Main(object):
         try:
             del alarmsmod.changes[filename]
             del alarmsmod.modified_state[filename]
+            del self.databases[filename]
         except KeyError:
             pass
         else:
@@ -215,8 +220,12 @@ class Main(object):
                                             kwargs['filename'], kwargs['occs'])
 
     def _handle_get_next_occurrences(self, kwargs):
-        alarmsmod.get_snoozed_alarms(kwargs['base_time'], kwargs['filename'],
+        filename = kwargs['filename']
+
+        if self.filename in alarmsmod.cdbs:
+            self.databases[filename].get_snoozed_alarms(kwargs['base_time'],
                                                                 kwargs['occs'])
+
 
     def _handle_activate_occurrences_range(self, kwargs):
         alarmsmod.activate_alarms_range(kwargs['filename'], kwargs['mint'],
