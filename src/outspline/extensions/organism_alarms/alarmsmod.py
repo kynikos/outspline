@@ -244,6 +244,27 @@ class Database(object):
                 alarm_off_event.signal(filename=self.filename, id_=id_,
                                                             alarmid=alarmid)
 
+    def copy_alarms(self, id_):
+        occs = []
+
+        conn = core_api.get_connection(self.filename)
+        cur = conn.cursor()
+        cur.execute(queries.alarms_select_item, (id_, ))
+
+        for row in cur:
+            occs.append(row)
+
+        core_api.give_connection(self.filename, conn)
+
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+
+        for o in occs:
+            curm.execute(queries.copyalarms_insert, (o['A_id'], id_,
+                        o['A_start'], o['A_end'], o['A_alarm'], o['A_snooze']))
+
+        core_api.give_memory_connection(mem)
+
 
 def insert_alarm(filename, id_, start, end, origalarm, snooze):
     conn = core_api.get_connection(filename)
@@ -252,25 +273,6 @@ def insert_alarm(filename, id_, start, end, origalarm, snooze):
     core_api.give_connection(filename, conn)
     aid = cur.lastrowid
     return aid
-
-
-def copy_alarms(filename, id_):
-    if filename in cdbs:
-        occs = []
-
-        conn = core_api.get_connection(filename)
-        cur = conn.cursor()
-        cur.execute(queries.alarms_select_item, (id_, ))
-        for row in cur:
-            occs.append(row)
-        core_api.give_connection(filename, conn)
-
-        mem = core_api.get_memory_connection()
-        curm = mem.cursor()
-        for o in occs:
-            curm.execute(queries.copyalarms_insert, (o['A_id'], id_,
-                        o['A_start'], o['A_end'], o['A_alarm'], o['A_snooze']))
-        core_api.give_memory_connection(mem)
 
 
 def can_paste_safely(filename, exception):

@@ -196,7 +196,10 @@ class Main(object):
         core_api.give_memory_connection(mem)
 
     def _handle_copy_item(self, kwargs):
-        alarmsmod.copy_alarms(kwargs['filename'], kwargs['id_'])
+        filename = kwargs['filename']
+
+        if filename in alarmsmod.cdbs:
+            self.databases[filename].copy_alarms(kwargs['id_'])
 
     def _handle_paste_item(self, kwargs):
         alarmsmod.paste_alarms(kwargs['filename'], kwargs['id_'],
