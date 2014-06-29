@@ -326,7 +326,7 @@ class OccurrencesView(object):
 
     def _refresh_continue(self):
         search = organism_api.get_occurrences_range(mint=self.min_time,
-                                                            maxt=self.max_time)
+                maxt=self.max_time, filenames=core_api.get_open_databases())
         search.start()
         occsobj = search.get_results()
         occurrences = occsobj.get_list()

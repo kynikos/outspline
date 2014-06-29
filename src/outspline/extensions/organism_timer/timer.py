@@ -316,7 +316,7 @@ class OldOccurrencesSearch(object):
                                                 last_search=self.last_search)
 
         self.search = organism_api.get_occurrences_range(mint=self.last_search,
-                                                            maxt=self.whileago)
+                            maxt=self.whileago, filenames=(self.filename, ))
         self.search.start()
 
         # Bind only here, in fact the search may not even be started if

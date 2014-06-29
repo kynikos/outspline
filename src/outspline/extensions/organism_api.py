@@ -67,8 +67,8 @@ def get_all_item_rules(filename):
     return extension.databases[filename].get_all_item_rules()
 
 
-def get_occurrences_range(mint, maxt):
-    return items.OccurrencesRangeSearch(mint, maxt, extension.cdbs,
+def get_occurrences_range(mint, maxt, filenames):
+    return items.OccurrencesRangeSearch(mint, maxt, filenames,
                                 extension.databases, extension.rules.handlers)
 
 

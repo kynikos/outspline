@@ -398,10 +398,10 @@ class OccurrencesRange(object):
 
 
 class OccurrencesRangeSearch(object):
-    def __init__(self, mint, maxt, cdbs, databases, rule_handlers):
+    def __init__(self, mint, maxt, filenames, databases, rule_handlers):
         self.mint = mint
         self.maxt = maxt
-        self.cdbs = cdbs
+        self.filenames = filenames
         self.databases = databases
         self.rule_handlers = rule_handlers
         self.occs = OccurrencesRange(mint, maxt)
@@ -412,7 +412,11 @@ class OccurrencesRangeSearch(object):
     def start(self):
         search_start = (time_.time(), time_.clock())
 
-        for filename in self.cdbs.copy():
+        # Don't use cdbs because the searched filenames must be coherent with
+        #  the other operations that this class is used in
+        # Note that cdbs could also change size during the search, so it should
+        #  be copied to iterate in it
+        for filename in self.filenames:
             for row in self.databases[filename].get_all_valid_item_rules():
                 id_ = row['R_id']
                 rules = Database.string_to_rules(row['R_rules'])
