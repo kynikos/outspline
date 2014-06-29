@@ -265,7 +265,6 @@ class Database(object):
 
         core_api.give_memory_connection(mem)
 
-
     def can_paste_safely(self, exception):
         mem = core_api.get_memory_connection()
         curm = mem.cursor()
@@ -276,6 +275,16 @@ class Database(object):
         if curm.fetchone() and self.filename not in cdbs:
             raise exception()
 
+    def paste_alarms(self, id_, oldid):
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+        curm.execute(queries.copyalarms_select_id, (oldid, ))
+        core_api.give_memory_connection(mem)
+
+        for occ in curm:
+            insert_alarm(self.filename, id_, occ['CA_start'], occ['CA_end'],
+                         occ['CA_alarm'], occ['CA_snooze'])
+
 
 def insert_alarm(filename, id_, start, end, origalarm, snooze):
     conn = core_api.get_connection(filename)
@@ -284,18 +293,6 @@ def insert_alarm(filename, id_, start, end, origalarm, snooze):
     core_api.give_connection(filename, conn)
     aid = cur.lastrowid
     return aid
-
-
-def paste_alarms(filename, id_, oldid):
-    if filename in cdbs:
-        mem = core_api.get_memory_connection()
-        curm = mem.cursor()
-        curm.execute(queries.copyalarms_select_id, (oldid, ))
-        core_api.give_memory_connection(mem)
-
-        for occ in curm:
-            insert_alarm(filename, id_, occ['CA_start'], occ['CA_end'],
-                         occ['CA_alarm'], occ['CA_snooze'])
 
 
 def delete_alarms(filename, id_, text):

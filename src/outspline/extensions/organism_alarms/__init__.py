@@ -202,7 +202,10 @@ class Main(object):
             self.databases[filename].copy_alarms(kwargs['id_'])
 
     def _handle_paste_item(self, kwargs):
-        alarmsmod.paste_alarms(kwargs['filename'], kwargs['id_'],
+        filename = kwargs['filename']
+
+        if filename in alarmsmod.cdbs:
+            self.databases[filename].paste_alarms(kwargs['id_'],
                                                             kwargs['oldid'])
 
     def _handle_safe_paste_check(self, kwargs):
