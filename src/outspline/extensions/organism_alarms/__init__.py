@@ -125,7 +125,6 @@ class Main(object):
         filename = kwargs['filename']
 
         try:
-            del alarmsmod.modified_state[filename]
             del self.databases[filename]
         except KeyError:
             pass

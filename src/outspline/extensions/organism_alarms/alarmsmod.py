@@ -28,7 +28,6 @@ import queries
 alarm_event = Event()
 alarm_off_event = Event()
 
-modified_state = {}
 log_limits = {}
 temp_log_limit = {}
 
@@ -37,6 +36,7 @@ class Database(object):
     def __init__(self, filename):
         self.filename = filename
         self.changes = None
+        self.modified_state = False
 
     def get_snoozed_alarms(self, last_search, occs):
         conn = core_api.get_connection(self.filename)
@@ -232,8 +232,7 @@ class Database(object):
                 # activated: if at that point those alarms are dismissed and
                 # then the user tries to close the database, the database will
                 # seem unmodified, and won't ask to be saved
-                global modified_state
-                modified_state[self.filename] = True
+                self.modified_state = True
 
                 # Signal the event after updating the database, so, for
                 # example, the tasklist can be correctly updated
@@ -322,8 +321,7 @@ class Database(object):
         cursor.execute(queries.alarmsproperties_update, (limit, ))
         core_api.give_connection(self.filename, qconn)
 
-        global modified_state
-        modified_state[self.filename] = True
+        self.modified_state = True
 
         global log_limits
         log_limits[self.filename][0] = limit
@@ -354,7 +352,7 @@ class Database(object):
                                             cur.execute(queries.alarms_select)]
         core_api.give_connection(self.filename, conn)
 
-        if change_state or modified_state[self.filename]:
+        if change_state or self.modified_state:
             core_api.set_modified(self.filename)
 
     def reset_modified_state(self):
@@ -363,5 +361,4 @@ class Database(object):
         self.changes = [row for row in cur.execute(queries.alarms_select)]
         core_api.give_connection(self.filename, conn)
 
-        global modified_state
-        modified_state[self.filename] = False
+        self.modified_state = False
