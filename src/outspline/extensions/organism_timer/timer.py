@@ -351,6 +351,7 @@ class OldOccurrencesSearch(object):
 
 class NextOccurrencesEngine(object):
     def __init__(self, cdbs, databases, rule_handlers):
+        # self.cdbs must be a live reference
         self.cdbs = cdbs
         self.databases = databases
         self.rule_handlers = rule_handlers
@@ -363,6 +364,10 @@ class NextOccurrencesEngine(object):
         # own events
 
         log.debug('Search next occurrences')
+
+        # Make sure to use the same set of filenames during the search, because
+        #  cdbs itself could change meanwhile due to race conditions
+        filenames = self.cdbs.copy()
 
         search = NextOccurrencesSearch(self.cdbs, self.rule_handlers,
                             base_times=self.databases.get_last_search_all())
