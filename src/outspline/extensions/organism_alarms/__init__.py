@@ -35,6 +35,8 @@ class Main(object):
     def __init__(self):
         self._ADDON_NAME = ('Extensions', 'organism_alarms')
 
+        self.cdbs = set()
+        self.tempcdbs = set()
         self.databases = {}
 
         self._create_copy_table()
@@ -100,12 +102,12 @@ class Main(object):
                                     )['database_dependency_group_1'].split(' ')
 
         if not set(dependencies) - set(kwargs['dependencies']):
-            alarmsmod.cdbs.add(kwargs['filename'])
+            self.cdbs.add(kwargs['filename'])
 
     def _handle_open_database(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in alarmsmod.cdbs:
+        if filename in self.cdbs:
             self.databases[filename] = alarmsmod.Database(filename)
 
             conf = coreaux_api.get_extension_configuration('organism_alarms')
@@ -129,8 +131,8 @@ class Main(object):
         except KeyError:
             pass
         else:
-            alarmsmod.cdbs.discard(filename)
-            alarmsmod.tempcdbs.add(filename)
+            self.cdbs.discard(filename)
+            self.tempcdbs.add(filename)
             alarmsmod.temp_log_limit[filename] = alarmsmod.log_limits[
                                                                 filename][0]
             del alarmsmod.log_limits[filename]
@@ -138,7 +140,7 @@ class Main(object):
     def _handle_check_pending_changes(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in alarmsmod.cdbs:
+        if filename in self.cdbs:
             conn = core_api.get_connection(filename)
             cur = conn.cursor()
             change_state = alarmsmod.changes[filename] != [row for row in
@@ -151,7 +153,7 @@ class Main(object):
     def _handle_reset_modified_state(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in alarmsmod.cdbs:
+        if filename in self.cdbs:
             conn = core_api.get_connection(filename)
             cur = conn.cursor()
             alarmsmod.changes[filename] = [row for row in cur.execute(
@@ -163,7 +165,7 @@ class Main(object):
     def _handle_save_database_copy(self, kwargs):
         origin = kwargs['origin']
 
-        if origin in alarmsmod.cdbs:
+        if origin in self.cdbs:
             qconn = core_api.get_connection(origin)
             qconnd = sqlite3.connect(kwargs['destination'])
             cur = qconn.cursor()
@@ -198,52 +200,54 @@ class Main(object):
     def _handle_copy_item(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in alarmsmod.cdbs:
+        if filename in self.cdbs:
             self.databases[filename].copy_alarms(kwargs['id_'])
 
     def _handle_paste_item(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in alarmsmod.cdbs:
+        if filename in self.cdbs:
             self.databases[filename].paste_alarms(kwargs['id_'],
                                                             kwargs['oldid'])
 
     def _handle_safe_paste_check(self, kwargs):
-        self.databases[kwargs['filename']].can_paste_safely(
-                                                        kwargs['exception'])
+        filename = kwargs['filename']
+
+        self.databases[filename].can_paste_safely(kwargs['exception'],
+                                                            filename in cdbs)
 
     def _handle_delete_item_rules(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in alarmsmod.cdbs:
+        if filename in self.cdbs:
             self.databases[filename].delete_alarms(kwargs['id_'],
                                                                 kwargs['text'])
 
     def _handle_history_remove(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in alarmsmod.cdbs:
+        if filename in self.cdbs:
             self.databases[filename].delete_alarms(kwargs['id_'],
                                                                 kwargs['text'])
 
     def _handle_history_clean(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in alarmsmod.tempcdbs:
+        if filename in self.tempcdbs:
             self.databases[filename].clean_alarms_log()
-            alarmsmod.tempcdbs.discard(filename)
+            self.tempcdbs.discard(filename)
 
     def _handle_get_alarms(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in alarmsmod.cdbs:
+        if filename in self.cdbs:
             self.databases[filename].get_alarms(kwargs['mint'], kwargs['maxt'],
                                                                 kwargs['occs'])
 
     def _handle_get_next_occurrences(self, kwargs):
         filename = kwargs['filename']
 
-        if self.filename in alarmsmod.cdbs:
+        if self.filename in self.cdbs:
             self.databases[filename].get_snoozed_alarms(kwargs['base_time'],
                                                                 kwargs['occs'])
 
@@ -269,7 +273,7 @@ class Main(object):
 
         # cdbs may change size during the loop because of races with other
         # threads
-        for filename in alarmsmod.cdbs.copy():
+        for filename in self.cdbs.copy():
             count += self.databases[filename].get_number_of_active_alarms()
 
         return count
