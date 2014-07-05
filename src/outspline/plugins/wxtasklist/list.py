@@ -39,9 +39,11 @@ from exceptions import OutOfRangeError
 
 
 class Model(dataview.PyDataViewIndexListModel):
-    def __init__(self, column_count, occs):
+    def __init__(self, column_count, start_column, state_column, occs):
         super(Model, self).__init__(len(occs))
         self.column_count = column_count
+        self.start_column = start_column
+        self.state_column = state_column
         self.occs = occs
 
     def GetCount(self):
@@ -51,7 +53,7 @@ class Model(dataview.PyDataViewIndexListModel):
         return self.column_count
 
     def GetValueByRow(self, row, col):
-        return self.occs[row].get_values()[col]
+        return self.occs[row].get_value(col)
 
     def GetAttrByRow(self, row, col, attr):
         # Could be set for each column it the row! (Also the bg color) *********************
@@ -59,14 +61,29 @@ class Model(dataview.PyDataViewIndexListModel):
         return True
 
     def HasDefaultCompare(self):
-        # ********************************************************************************
         return True
 
     def Compare(self, item1, item2, col, ascending):
-        # Implement ************************************************************************
-        # When sorting by state, use the start time as a secondary comparison **************
-        print('CCCCCCCCCCCCC', item1, item2, col, ascending)  # *************************
-        return 1#super(Model, self).Compare(item1, item2, col, ascending)
+        if col < 0:
+            col = self.state_column
+
+        if not ascending:
+            item2, item1 = item1, item2
+
+        row1 = self.GetRow(item1)
+        row2 = self.GetRow(item2)
+
+        val1 = self.occs[row1].get_comparison_value(col)
+        val2 = self.occs[row2].get_comparison_value(col)
+
+        result = cmp(val1, val2)
+
+        if result != 0 or col == self.start_column:
+            return result
+        else:
+            val3 = self.occs[row1].get_comparison_value(self.start_column)
+            val4 = self.occs[row2].get_comparison_value(self.start_column)
+            return cmp(val3, val4)
 
 
 class OccurrencesView(object):
@@ -86,7 +103,8 @@ class OccurrencesView(object):
                             style=dataview.DV_MULTIPLE | dataview.DV_ROW_LINES)
 
         self.occs = []
-        self.dvmodel = Model(COLUMN_COUNT, self.occs)
+        self.dvmodel = Model(COLUMN_COUNT, self.START_COLUMN,
+                                                self.STATE_COLUMN, self.occs)
         self.listview.AssociateModel(self.dvmodel)
         # DataViewModel is reference counted (derives from RefCounter), the
         # count needs to be decreased explicitly here to avoid memory leaks
@@ -109,17 +127,18 @@ class OccurrencesView(object):
                         flags=flags, width=config.get_int('duration_column'))
         self.listview.AppendTextColumn('End', self.END_COLUMN, flags=flags,
                                             width=config.get_int('end_column'))
-        default_sort_column = self.listview.AppendTextColumn('State',
+        self.listview.AppendTextColumn('State',
                                         self.STATE_COLUMN, flags=flags,
                                         width=config.get_int('state_column'))
         self.listview.AppendTextColumn('Alarm', self.ALARM_COLUMN, flags=flags,
                                         width=config.get_int('alarm_column'))
 
-        # Initialize sort column and order *before* enabling the autoscroll
-        default_sort_column.SetSortOrder(True)
-        self.dvmodel.Resort()
+        # Open a bug report for this **********************************************************
+        #  I should mark the column sorted by default (self.STATE_COLUMN) with  ***************
+        #  the sorting arrow, but DataViewColumn.SetSortOrder doesn't work, see ***************
+        #  bug #260                                                             ***************
 
-        self.autoscroll = Autoscroll(self, self.listview,
+        self.autoscroll = Autoscroll(self, self.listview, self.dvmodel,
                     config.get_int('autoscroll_padding'), self.STATE_COLUMN)
 
         if config.get_bool('autoscroll'):
@@ -375,14 +394,6 @@ class OccurrencesView(object):
 
         self.dvmodel.Reset(len(self.occs))
 
-        # *******************************************************************************************
-        # Use SortListItems instead of occurrences.sort(), so that the heading
-        # will properly display the arrow icon
-        # Using (-1, -1) will preserve the current sort column and order
-        # *******************************************************************************************
-        #self.listview.SortListItems(-1, -1)  # *********************************************
-        self.dvmodel.Resort()  # ***************************************************
-
         # The list must be autoscrolled *after* sorting the items, so that the
         # correct y values will be got
         self.autoscroll.execute(yscroll)
@@ -624,9 +635,10 @@ class OccurrencesView(object):
 
 
 class Autoscroll(object):
-    def __init__(self, occview, listview, padding, state_column):
+    def __init__(self, occview, listview, dvmodel, padding, state_column):
         self.occview = occview
         self.listview = listview
+        self.dvmodel = dvmodel
         self.padding = padding
         self.state_column = state_column
         self.enabled = False
@@ -650,8 +662,9 @@ class Autoscroll(object):
         if self.enabled:
             scol = self.listview.GetSortingColumn()
 
-            if scol and self.listview.GetColumnPosition(scol) == \
-                            self.state_column and scol.IsSortOrderAscending():
+            # **********************************************************************************
+            if scol is None or (self.listview.GetColumnPosition(scol) == \
+                            self.state_column and scol.IsSortOrderAscending()):
                 self.execute = self._execute_auto
             else:
                 self.execute = self._execute_maintain
@@ -673,9 +686,9 @@ class Autoscroll(object):
             # Note that the autoscroll relies on the items to be initially
             # sorted by State ascending
             # *******************************************************************************************
-            top = self.listview.GetTopItem()
+            top = 0#self.listview.GetTopItem()
             # *******************************************************************************************
-            height = self.listview.GetItemRect(top).GetHeight()
+            height = 20#self.listview.GetItemRect(top).GetHeight()
 
             # If given a negative dy, ScrollList doesn't work if abs(dy) is
             # less than the current y position (cannot scroll "over the top",
@@ -683,7 +696,8 @@ class Autoscroll(object):
             scroll = max(pastn - self.padding, 0)
             yscrollauto = (scroll - top) * height
             # *******************************************************************************************
-            self.listview.ScrollList(0, yscrollauto)
+            #self.listview.ScrollList(0, yscrollauto)  # *************************************
+            self.listview.ScrollLines(yscrollauto)  # **********************************
 
         self.execute = self._execute_maintain
 
@@ -698,109 +712,96 @@ class Autoscroll(object):
         # For some reason it doesn't work without CallAfter...
         # *******************************************************************************************
         #wx.CallAfter(self.listview.ScrollList, 0, yscroll)  # *******************************
-        wx.CallAfter(self.listview.ScrollLines, yscroll)  # *******************************
+        self.listview.ScrollLines(yscroll)  # ************************************************
 
     def execute_force(self):
         # *******************************************************************************************
-        self.listview.SortListItems(self.state_column, 1)
+        #self.listview.SortListItems(self.state_column, 1)
         self._execute_auto(None)
 
 
 class ListItem(object):
     def __init__(self, occ, occview):
-        self.filename = occ['filename']
-        self.id_ = occ['id_']
-        self.start = occ['start']
-        self.end = occ['end']
-        self.alarm = occ['alarm']
+        filename = occ['filename']
+        id_ = occ['id_']
+        start = occ['start']
+        end = occ['end']
+        alarm = occ['alarm']
 
-        self.fname = occview.format_database(self.filename)
+        fname = occview.format_database(filename)
 
         mnow = occview.now // 60 * 60
 
-        if mnow < self.start:
+        if mnow < start:
             state = 'future'
-            self.stateid = 2
+            stateid = 2
             self.pastN = 0
             self.color = occview.colors['future']
-        # If self.end is None, as soon as the start time arrives, the
+        # If end is None, as soon as the start time arrives, the
         # occurrence is finished, so it can't have an 'ongoing' state and has
         # to be be immediately marked as 'past'
         # Besides, if an 'ongoing' state was set, e.g. for 1 minute from the
         # start, the dynamic filter should be able to calculate the time to
         # refresh the list in order to mark the occurrence as 'past', which
         # wouldn't happen with the current implementation
-        # There's no need to test if self.end is None here, as mnow can be <
-        # self.end only if self.end is not None
-        elif self.start <= mnow < self.end:
+        # There's no need to test if end is None here, as mnow can be <
+        # end only if end is not None
+        elif start <= mnow < end:
             state = 'ongoing'
-            self.stateid = 1
+            stateid = 1
             self.pastN = 0
             self.color = occview.colors['ongoing']
         else:
             state = 'past'
-            self.stateid = 0
+            stateid = 0
             self.pastN = 1
             self.color = occview.colors['past']
 
-        text = core_api.get_item_text(self.filename, self.id_)
-        self.title = text.partition('\n')[0]
+        text = core_api.get_item_text(filename, id_)
+        title = text.partition('\n')[0]
 
-        startdate = _time.strftime(occview.startformat, _time.localtime(
-                                                                self.start))
+        startdate = _time.strftime(occview.startformat, _time.localtime(start))
 
-        if self.end is not None:
-            enddate = _time.strftime(occview.endformat, _time.localtime(
-                                                                    self.end))
-            self.duration = self.end - self.start
-            durationstr = occview.format_duration(self.duration)
+        if end is not None:
+            enddate = _time.strftime(occview.endformat, _time.localtime(end))
+            duration = end - start
+            durationstr = occview.format_duration(duration)
         else:
             enddate = ''
-            self.duration = None
+            duration = None
             durationstr = ''
 
-        if self.alarm is None:
+        if alarm is None:
             alarmdate = ''
-            self.alarmid = None
-        elif self.alarm is False:
+            alarmid = None
+        elif alarm is False:
             alarmdate = 'active'
-            self.alarmid = occ['alarmid']
-            occview.add_active_alarm(self.filename, self.id_, self.alarmid)
+            alarmid = occ['alarmid']
+            occview.add_active_alarm(filename, id_, alarmid)
             # Note that the assignment of the active color must come after any
             # previous color assignment, in order to override them
             self.color = occview.colors['active']
-        # Note that testing if isinstance(self.alarm, int) *before* testing if
-        # self.alarm is False would return True also when self.alarm is False!
+        # Note that testing if isinstance(alarm, int) *before* testing if
+        # alarm is False would return True also when alarm is False!
         else:
             alarmdate = _time.strftime(occview.alarmformat, _time.localtime(
-                                                                   self.alarm))
-            self.alarmid = None
+                                                                        alarm))
+            alarmid = None
 
-        self.values = (self.fname, self.title, startdate, durationstr, enddate,
-                                                            state, alarmdate)
+        self.values = (fname, title, startdate, durationstr, enddate, state,
+                                                                    alarmdate)
+        self.compvalues = (fname, title, start, duration, end, stateid, alarm)
 
-        occview.compute_time_allocation(self.start, self.end)
+        occview.compute_time_allocation(start, end)
 
-    def get_values(self):
-        return self.values
+    def get_value(self, col):
+        return self.values[col]
+
+    def get_comparison_value(self, col):
+        return self.compvalues[col]
 
     def get_color(self):
         return self.color
-
-    def get_start_time(self):
-        return self.start
-
-    def get_end_time(self):
-        return self.end
-
-    def get_duration(self):
-        return self.duration
-
-    def get_alarm_time(self):
-        return self.alarm
-
-    def get_state_id(self):
-        return self.stateid
 
     def get_past_counter(self):
         return self.pastN
@@ -808,29 +809,29 @@ class ListItem(object):
 
 class ListAuxiliaryItem(object):
     def __init__(self, title, start, end, minstart, maxend, color, occview):
-        self.filename = None
-        self.id_ = None
-        self.fname = ''
-        self.title = title
-        self.start = start
-        self.end = end
-        self.alarm = None
-        self.alarmid = None
+        filename = None
+        id_ = None
+        fname = ''
+        title = title
+        start = start
+        end = end
+        alarm = None
+        alarmid = None
         self.color = color
 
         mnow = occview.now // 60 * 60
 
-        if mnow < self.start:
+        if mnow < start:
             state = 'future'
-            self.stateid = 2
+            stateid = 2
             self.pastN = 0
-        elif self.start <= mnow < self.end:
+        elif start <= mnow < end:
             state = 'ongoing'
-            self.stateid = 1
+            stateid = 1
             self.pastN = 0
         else:
             state = 'past'
-            self.stateid = 0
+            stateid = 0
             self.pastN = 1
 
         if minstart:
@@ -840,7 +841,7 @@ class ListAuxiliaryItem(object):
             startdate = ''
         else:
             startdate = _time.strftime(occview.startformat, _time.localtime(
-                                                                self.start))
+                                                                        start))
 
         # Do *not* merge this check with the others for minstart (above) and
         # maxend (below)
@@ -848,45 +849,33 @@ class ListAuxiliaryItem(object):
             # Don't show the duration if the gap/overlapping is at the start or
             # the end of the search interval, otherwise it should be updated
             # every minute
-            self.duration = None
+            duration = None
             durationstr = ''
         else:
-            self.duration = self.end - self.start
-            durationstr = occview.format_duration(self.duration)
+            duration = end - start
+            durationstr = occview.format_duration(duration)
 
         if maxend:
             # Don't show the end date if the gap/overlapping is at the end of
             # the search interval, otherwise it should be updated every minute
             enddate = ''
         else:
-            enddate = _time.strftime(occview.endformat,
-                                                    _time.localtime(self.end))
+            enddate = _time.strftime(occview.endformat, _time.localtime(end))
 
         alarmdate = ''
 
-        self.values = (self.fname, self.title, startdate, durationstr, enddate,
-                                                            state, alarmdate)
+        self.values = (fname, title, startdate, durationstr, enddate, state,
+                                                                    alarmdate)
+        self.compvalues = (fname, title, start, duration, end, stateid, alarm)
 
-    def get_values(self):
-        return self.values
+    def get_values(self, col):
+        return self.values[col]
+
+    def get_comparison_value(self, col):
+        return self.compvalues[col]
 
     def get_color(self):
         return self.color
-
-    def get_start_time(self):
-        return self.start
-
-    def get_end_time(self):
-        return self.end
-
-    def get_duration(self):
-        return self.duration
-
-    def get_alarm_time(self):
-        return self.alarm
-
-    def get_state_id(self):
-        return self.stateid
 
     def get_past_counter(self):
         return self.pastN
