@@ -44,14 +44,19 @@ class Model(dataview.PyDataViewIndexListModel):
         self.column_count = column_count
         self.occs = occs
 
-    def GetValueByRow(self, row, col):
-        return self.occs[row].get_values()[col]
-
     def GetCount(self):
         return len(self.occs)
 
     def GetColumnCount(self):
         return self.column_count
+
+    def GetValueByRow(self, row, col):
+        return self.occs[row].get_values()[col]
+
+    def GetAttrByRow(self, row, col, attr):
+        # Could be set for each column it the row! (Also the bg color) *********************
+        attr.SetColour(self.occs[row].get_color())
+        return True
 
     def Compare(self, item1, item2, col, ascending):
         # Implement ************************************************************************
@@ -90,7 +95,6 @@ class OccurrencesView(object):
         # No need to validate the values, as they are reset every time the
         # application is closed, and if a user edits them manually he knows
         # he's done something wrong in the configuration file
-        # *******************************************************************************************
         self.listview.AppendTextColumn('Database', self.DATABASE_COLUMN,
                         flags=flags, width=config.get_int('database_column'))
         self.listview.AppendTextColumn('Heading', self.HEADING_COLUMN,
@@ -101,14 +105,14 @@ class OccurrencesView(object):
                         flags=flags, width=config.get_int('duration_column'))
         self.listview.AppendTextColumn('End', self.END_COLUMN, flags=flags,
                                             width=config.get_int('end_column'))
-        def_sort_column = self.listview.AppendTextColumn('State',
+        default_sort_column = self.listview.AppendTextColumn('State',
                                         self.STATE_COLUMN, flags=flags,
                                         width=config.get_int('state_column'))
         self.listview.AppendTextColumn('Alarm', self.ALARM_COLUMN, flags=flags,
                                         width=config.get_int('alarm_column'))
 
         # Initialize sort column and order *before* enabling the autoscroll
-        def_sort_column.SetSortOrder(True)
+        default_sort_column.SetSortOrder(True)
         self.dvmodel.Resort()
 
         self.autoscroll = Autoscroll(self, self.listview,
@@ -187,7 +191,6 @@ class OccurrencesView(object):
 
     def _set_colors(self, config):
         system = self.listview.GetForegroundColour()
-        print('COLOUR', system)  # ******************************************************
         colpast = config['color_past']
         colongoing = config['color_ongoing']
         colfuture = config['color_future']
@@ -366,7 +369,6 @@ class OccurrencesView(object):
         # Do this *after* inserting the items but *before* sorting
         self.insert_gaps_and_overlappings()
 
-        # ***********************************************************************************
         self.dvmodel.Reset(len(self.occs))
 
         # *******************************************************************************************
@@ -716,8 +718,7 @@ class ListItem(object):
             state = 'future'
             self.stateid = 2
             self.pastN = 0
-            # *******************************************************************************************
-            #listview.SetItemTextColour(index, occview.colors['future'])
+            self.color = occview.colors['future']
         # If self.end is None, as soon as the start time arrives, the
         # occurrence is finished, so it can't have an 'ongoing' state and has
         # to be be immediately marked as 'past'
@@ -731,14 +732,12 @@ class ListItem(object):
             state = 'ongoing'
             self.stateid = 1
             self.pastN = 0
-            # *******************************************************************************************
-            #listview.SetItemTextColour(index, occview.colors['ongoing'])
+            self.color = occview.colors['ongoing']
         else:
             state = 'past'
             self.stateid = 0
             self.pastN = 1
-            # *******************************************************************************************
-            #listview.SetItemTextColour(index, occview.colors['past'])
+            self.color = occview.colors['past']
 
         text = core_api.get_item_text(self.filename, self.id_)
         self.title = text.partition('\n')[0]
@@ -765,8 +764,7 @@ class ListItem(object):
             occview.add_active_alarm(self.filename, self.id_, self.alarmid)
             # Note that the assignment of the active color must come after any
             # previous color assignment, in order to override them
-            # *******************************************************************************************
-            #listview.SetItemTextColour(index, occview.colors['active'])
+            self.color = occview.colors['active']
         # Note that testing if isinstance(self.alarm, int) *before* testing if
         # self.alarm is False would return True also when self.alarm is False!
         else:
@@ -781,6 +779,9 @@ class ListItem(object):
 
     def get_values(self):
         return self.values
+
+    def get_color(self):
+        return self.color
 
     def get_start_time(self):
         return self.start
@@ -811,6 +812,7 @@ class ListAuxiliaryItem(object):
         self.end = end
         self.alarm = None
         self.alarmid = None
+        self.color = color
 
         mnow = occview.now // 60 * 60
 
@@ -826,9 +828,6 @@ class ListAuxiliaryItem(object):
             state = 'past'
             self.stateid = 0
             self.pastN = 1
-
-        # *******************************************************************************************
-        #listview.SetItemTextColour(index, color)
 
         if minstart:
             # Don't show the start date if the gap/overlapping is at the
@@ -866,6 +865,9 @@ class ListAuxiliaryItem(object):
 
     def get_values(self):
         return self.values
+
+    def get_color(self):
+        return self.color
 
     def get_start_time(self):
         return self.start
