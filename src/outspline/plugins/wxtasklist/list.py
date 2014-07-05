@@ -39,22 +39,16 @@ from exceptions import OutOfRangeError
 
 
 class Model(dataview.PyDataViewIndexListModel):
-    def __init__(self, column_count, data):
-        super(Model, self).__init__(len(data))
+    def __init__(self, column_count, occs):
+        super(Model, self).__init__(len(occs))
         self.column_count = column_count
-        self.data = data
+        self.occs = occs
 
     def GetValueByRow(self, row, col):
-        print('VVVVVVVVVVVV', row, col)  # ***********************************************
-        print('VVVVVVVVVVVV', self.data)  # ***********************************************
-        #print('VVVVVVVVVVVV', self.data[row])  # ***********************************************
-        try:
-            return self.data[row][col]
-        except KeyError:  # ***************************************************************
-            return 'A'
+        return self.occs[row].get_values()[col]
 
     def GetCount(self):
-        return len(self.data)
+        return len(self.occs)
 
     def GetColumnCount(self):
         return self.column_count
@@ -82,16 +76,15 @@ class OccurrencesView(object):
         self.listview = dataview.DataViewCtrl(tasklist.panel,
                             style=dataview.DV_MULTIPLE | dataview.DV_ROW_LINES)
 
-        # Pass proper data **********************************************************************
-        self.occs = {}
+        self.occs = []
         self.dvmodel = Model(COLUMN_COUNT, self.occs)
         self.listview.AssociateModel(self.dvmodel)
-        # Avoid memory leak ? ****************************************************************
-        self.dvmodel.DecRef()  # *************************************************************
+        # DataViewModel is reference counted (derives from RefCounter), the
+        # count needs to be decreased explicitly here to avoid memory leaks
+        self.dvmodel.DecRef()
 
         config = coreaux_api.get_plugin_configuration('wxtasklist')
 
-        # COL_REORDERABLE ********************************************************************
         flags = wx.COL_RESIZABLE | wx.COL_SORTABLE
 
         # No need to validate the values, as they are reset every time the
@@ -345,17 +338,11 @@ class OccurrencesView(object):
                                                     self.now, self.max_time):
             occurrences.extend(occsobj.get_active_list())
 
-        self.occs = {}
-
-        # *******************************************************************************************
-        self.datamap = {}
-
-        self.states = {
-            'past': [],
-            'ongoing': [],
-            'future': [],
-        }
-
+        # Don't re-assign = {} or the other references to the object (e.g. in
+        # Model) won't be updated anymore (they'll still refer to the old
+        # object)
+        self.occs[:] = []
+        self.pastN = 0
         self.activealarms = {}
 
         self._prepare_time_allocation()
@@ -368,14 +355,9 @@ class OccurrencesView(object):
             #   case that disappears or moves in the list, the thing should
             #   start being complicated, and probably even confusing for the
             #   user
-            # ********************************************************************************
-            # Note that self.listview.GetItemRect(0).GetY() gives a slightly
-            # wrong value
-            # *******************************************************************************************
             print('SCROLL', self.listview.GetScrollPos())  # **************************************
-            yscroll = abs(self.listview.GetItemPosition(0).y)
             # *******************************************************************************************
-            #self.listview.DeleteAllItems()
+            yscroll = abs(self.listview.GetItemPosition(0).y)
         else:
             yscroll = 0
 
@@ -399,19 +381,14 @@ class OccurrencesView(object):
         # correct y values will be got
         self.autoscroll.execute(yscroll)
 
-        print('############')  # *****************************************************
-        print('$$$$$$$$$$$$')  # *****************************************************
         return self.filter_.compute_delay(occsobj, self.now, self.min_time,
                                                                 self.max_time)
 
     def _insert_items(self, occurrences):
-        for i, o in enumerate(occurrences):
-            self.occs[i] = ListItem(i, o, self, self.listview)
-
-            # *******************************************************************************
-            self.datamap[i] = self.occs[i].get_values()
-
-            self.states[self.occs[i].get_state()].append(i)
+        for occurrence in occurrences:
+            item = ListItem(occurrence, self)
+            self.occs.append(item)
+            self.pastN += item.get_past_counter()
 
     def _prepare_time_allocation(self):
         if self.show_gaps or self.show_overlappings:
@@ -507,30 +484,20 @@ class OccurrencesView(object):
                 call(bitstart, bitend, False, maxend)
 
     def _insert_gap(self, mstart, mend, minstart, maxend):
-        i = len(self.occs)
         start = mstart * 60 + self.min_time
         end = mend * 60 + self.min_time
-
-        self.occs[i] = ListAuxiliaryItem(i, '[gap]', start, end, minstart,
-                            maxend, self.colors['gap'], self, self.listview)
-
-        # *******************************************************************************
-        self.datamap[i] = self.occs[i].get_values()
-
-        self.states[self.occs[i].get_state()].append(i)
+        item = ListAuxiliaryItem('[gap]', start, end, minstart, maxend,
+                                                    self.colors['gap'], self)
+        self.occs.append(item)
+        self.pastN += item.get_past_counter()
 
     def _insert_overlapping(self, mstart, mend, minstart, maxend):
-        i = len(self.occs)
         start = mstart * 60 + self.min_time
         end = mend * 60 + self.min_time
-
-        self.occs[i] = ListAuxiliaryItem(i, '[overlapping]', start, end,
-            minstart, maxend, self.colors['overlapping'], self, self.listview)
-
-        # *******************************************************************************
-        self.datamap[i] = self.occs[i].get_values()
-
-        self.states[self.occs[i].get_state()].append(i)
+        item = ListAuxiliaryItem('[overlapping]', start, end, minstart, maxend,
+                                            self.colors['overlapping'], self)
+        self.occs.append(item)
+        self.pastN += item.get_past_counter()
 
     def _popup_context_menu(self, event):
         self.cmenu.update()
@@ -583,8 +550,8 @@ class OccurrencesView(object):
 
         return alarmsd
 
-    def get_states(self):
-        return self.states
+    def get_past_number(self):
+        return self.pastN
 
     def save_configuration(self):
         config = coreaux_api.get_plugin_configuration('wxtasklist')
@@ -694,7 +661,7 @@ class Autoscroll(object):
     def _execute_auto(self, yscroll):
         # This method must get the same arguments as the other execute_*
         # methods
-        pastn = len(self.occview.get_states()['past'])
+        pastn = self.occview.get_past_number()
 
         if self.dvmodel.GetCount() > 0:
             # Note that the autoscroll relies on the items to be initially
@@ -734,24 +701,21 @@ class Autoscroll(object):
 
 
 class ListItem(object):
-    def __init__(self, i, occ, occview, listview):
+    def __init__(self, occ, occview):
         self.filename = occ['filename']
         self.id_ = occ['id_']
         self.start = occ['start']
         self.end = occ['end']
         self.alarm = occ['alarm']
 
-        # Initialize the first column with an empty string
-        # *******************************************************************************************
-        #index = listview.InsertStringItem(sys.maxint, '')  # *******************************
-
         self.fname = occview.format_database(self.filename)
 
         mnow = occview.now // 60 * 60
 
         if mnow < self.start:
-            self.state = 'future'
+            state = 'future'
             self.stateid = 2
+            self.pastN = 0
             # *******************************************************************************************
             #listview.SetItemTextColour(index, occview.colors['future'])
         # If self.end is None, as soon as the start time arrives, the
@@ -764,18 +728,20 @@ class ListItem(object):
         # There's no need to test if self.end is None here, as mnow can be <
         # self.end only if self.end is not None
         elif self.start <= mnow < self.end:
-            self.state = 'ongoing'
+            state = 'ongoing'
             self.stateid = 1
+            self.pastN = 0
             # *******************************************************************************************
             #listview.SetItemTextColour(index, occview.colors['ongoing'])
         else:
-            self.state = 'past'
+            state = 'past'
             self.stateid = 0
+            self.pastN = 1
             # *******************************************************************************************
             #listview.SetItemTextColour(index, occview.colors['past'])
 
         text = core_api.get_item_text(self.filename, self.id_)
-        self.title = self._make_heading(text)
+        self.title = text.partition('\n')[0]
 
         startdate = _time.strftime(occview.startformat, _time.localtime(
                                                                 self.start))
@@ -808,40 +774,35 @@ class ListItem(object):
                                                                    self.alarm))
             self.alarmid = None
 
-        # *******************************************************************************************
-        #listview.SetStringItem(index, occview.DATABASE_COLUMN, self.fname)
-        #listview.SetStringItem(index, occview.HEADING_COLUMN, self.title)
-        #listview.SetStringItem(index, occview.START_COLUMN, startdate)
-        #listview.SetStringItem(index, occview.DURATION_COLUMN, durationstr)
-        #listview.SetStringItem(index, occview.END_COLUMN, enddate)
-        #listview.SetStringItem(index, occview.STATE_COLUMN, self.state)
-        #listview.SetStringItem(index, occview.ALARM_COLUMN, alarmdate)
-        #listview.AppendItem((self.fname, self.title, startdate, durationstr,
-        #                            enddate, self.state, alarmdate), data=i)  # *************************************
-
-        # In order for ColumnSorterMixin to work, all items must have a unique
-        # data value
-        # *******************************************************************************************
-        #listview.SetItemData(index, i)
+        self.values = (self.fname, self.title, startdate, durationstr, enddate,
+                                                            state, alarmdate)
 
         occview.compute_time_allocation(self.start, self.end)
 
     def get_values(self):
-        # These values must comply with the requirements of ColumnSorterMixin
-        return (self.fname, self.title, self.start, self.duration, self.end,
-                                                    self.stateid, self.alarm)
+        return self.values
 
-    def get_state(self):
-        return self.state
+    def get_start_time(self):
+        return self.start
 
-    @staticmethod
-    def _make_heading(text):
-        return text.partition('\n')[0]
+    def get_end_time(self):
+        return self.end
+
+    def get_duration(self):
+        return self.duration
+
+    def get_alarm_time(self):
+        return self.alarm
+
+    def get_state_id(self):
+        return self.stateid
+
+    def get_past_counter(self):
+        return self.pastN
 
 
 class ListAuxiliaryItem(object):
-    def __init__(self, i, title, start, end, minstart, maxend, color, occview,
-                                                                    listview):
+    def __init__(self, title, start, end, minstart, maxend, color, occview):
         self.filename = None
         self.id_ = None
         self.fname = ''
@@ -851,21 +812,20 @@ class ListAuxiliaryItem(object):
         self.alarm = None
         self.alarmid = None
 
-        # Initialize the first column with an empty string
-        # *******************************************************************************************
-        #index = listview.InsertStringItem(sys.maxint, '')
-
         mnow = occview.now // 60 * 60
 
         if mnow < self.start:
-            self.state = 'future'
+            state = 'future'
             self.stateid = 2
+            self.pastN = 0
         elif self.start <= mnow < self.end:
-            self.state = 'ongoing'
+            state = 'ongoing'
             self.stateid = 1
+            self.pastN = 0
         else:
-            self.state = 'past'
+            state = 'past'
             self.stateid = 0
+            self.pastN = 1
 
         # *******************************************************************************************
         #listview.SetItemTextColour(index, color)
@@ -901,24 +861,26 @@ class ListAuxiliaryItem(object):
 
         alarmdate = ''
 
-        # *******************************************************************************************
-        #listview.SetStringItem(index, occview.DATABASE_COLUMN, self.fname)
-        #listview.SetStringItem(index, occview.HEADING_COLUMN, self.title)
-        #listview.SetStringItem(index, occview.START_COLUMN, startdate)
-        #listview.SetStringItem(index, occview.DURATION_COLUMN, durationstr)
-        #listview.SetStringItem(index, occview.END_COLUMN, enddate)
-        #listview.SetStringItem(index, occview.STATE_COLUMN, self.state)
-        #listview.SetStringItem(index, occview.ALARM_COLUMN, alarmdate)
-
-        # In order for ColumnSorterMixin to work, all items must have a unique
-        # data value
-        # *******************************************************************************************
-        #listview.SetItemData(index, i)
+        self.values = (self.fname, self.title, startdate, durationstr, enddate,
+                                                            state, alarmdate)
 
     def get_values(self):
-        # These values must comply with the requirements of ColumnSorterMixin
-        return (self.fname, self.title, self.start, self.duration, self.end,
-                                                    self.stateid, self.alarm)
+        return self.values
 
-    def get_state(self):
-        return self.state
+    def get_start_time(self):
+        return self.start
+
+    def get_end_time(self):
+        return self.end
+
+    def get_duration(self):
+        return self.duration
+
+    def get_alarm_time(self):
+        return self.alarm
+
+    def get_state_id(self):
+        return self.stateid
+
+    def get_past_counter(self):
+        return self.pastN
