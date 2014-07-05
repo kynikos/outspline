@@ -58,11 +58,15 @@ class Model(dataview.PyDataViewIndexListModel):
         attr.SetColour(self.occs[row].get_color())
         return True
 
+    def HasDefaultCompare(self):
+        # ********************************************************************************
+        return True
+
     def Compare(self, item1, item2, col, ascending):
         # Implement ************************************************************************
         # When sorting by state, use the start time as a secondary comparison **************
         print('CCCCCCCCCCCCC', item1, item2, col, ascending)  # *************************
-        return 1
+        return 1#super(Model, self).Compare(item1, item2, col, ascending)
 
 
 class OccurrencesView(object):
@@ -360,7 +364,7 @@ class OccurrencesView(object):
             #   user
             print('SCROLL', self.listview.GetScrollPos())  # **************************************
             # *******************************************************************************************
-            yscroll = abs(self.listview.GetItemPosition(0).y)
+            yscroll = 0#abs(self.listview.GetItemPosition(0).y)
         else:
             yscroll = 0
 
