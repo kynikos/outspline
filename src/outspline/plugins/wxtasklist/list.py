@@ -69,6 +69,24 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
 
 class OccurrencesView(object):
     def __init__(self, tasklist, navigator):
+        self.tasklist = tasklist
+        self.navigator = navigator
+
+        self.occs = []
+
+        self.config = coreaux_api.get_plugin_configuration('wxtasklist')
+
+        self._init_list()
+        self._init_autoscroll()
+        self._init_filters()
+        self._init_colors()
+        self._init_formats()
+        self._init_show_options()
+        self._init_timers()
+
+        self.enable_refresh()
+
+    def _init_list(self):
         self.DATABASE_COLUMN = 0
         self.HEADING_COLUMN = 1
         self.START_COLUMN = 2
@@ -78,15 +96,11 @@ class OccurrencesView(object):
         self.ALARM_COLUMN = 6
         COLUMNS_COUNT = 7
 
-        self.tasklist = tasklist
-        self.navigator = navigator
-        self.listview = ListView(tasklist.panel, COLUMNS_COUNT)
+        self.listview = ListView(self.tasklist.panel, COLUMNS_COUNT)
 
         # Override ColumnSorterMixin's method for sorting items that have equal
         # primary sort value
         self.listview.GetSecondarySortValues = self._get_secondary_sort_values
-
-        self.occs = []
 
         # Defining an itemDataMap dictionary is required by ColumnSorterMixin
         self.listview.itemDataMap = {}
@@ -94,42 +108,50 @@ class OccurrencesView(object):
         # attribute renaming
         self.datamap = self.listview.itemDataMap
 
-        config = coreaux_api.get_plugin_configuration('wxtasklist')
-
         # No need to validate the values, as they are reset every time the
         # application is closed, and if a user edits them manually he knows
         # he's done something wrong in the configuration file
         self.listview.InsertColumn(self.DATABASE_COLUMN, 'Database',
-                                    width=config.get_int('database_column'))
+                                width=self.config.get_int('database_column'))
         self.listview.InsertColumn(self.HEADING_COLUMN, 'Heading',
-                                        width=config.get_int('heading_column'))
+                                width=self.config.get_int('heading_column'))
         self.listview.InsertColumn(self.START_COLUMN, 'Start',
-                                        width=config.get_int('start_column'))
+                                width=self.config.get_int('start_column'))
         self.listview.InsertColumn(self.DURATION_COLUMN, 'Duration',
-                                    width=config.get_int('duration_column'))
+                                width=self.config.get_int('duration_column'))
         self.listview.InsertColumn(self.END_COLUMN, 'End',
-                                            width=config.get_int('end_column'))
+                                width=self.config.get_int('end_column'))
         self.listview.InsertColumn(self.STATE_COLUMN, 'State',
-                                        width=config.get_int('state_column'))
+                                width=self.config.get_int('state_column'))
         self.listview.InsertColumn(self.ALARM_COLUMN, 'Alarm',
-                                        width=config.get_int('alarm_column'))
+                                width=self.config.get_int('alarm_column'))
 
         # Initialize sort column and order *before* enabling the autoscroll
         self.listview.SortListItems(self.STATE_COLUMN, 1)
 
-        self.autoscroll = Autoscroll(self, self.listview,
-                    config.get_int('autoscroll_padding'), self.STATE_COLUMN)
+        # Do not self.listview.setResizeColumn(self.HEADING_COLUMN) because it
+        # gives a non-standard feeling; the last column is auto-resized by
+        # default
 
-        if config.get_bool('autoscroll'):
+        self.listview.Bind(wx.EVT_CONTEXT_MENU, self._popup_context_menu)
+
+    def _init_autoscroll(self):
+        self.autoscroll = Autoscroll(self, self.listview,
+                self.config.get_int('autoscroll_padding'), self.STATE_COLUMN)
+
+        if self.config.get_bool('autoscroll'):
             # Autoscroll is instantiated as disabled, so there's no need for an
             # else clause
             self.autoscroll.enable()
 
+    def _init_filters(self):
         self.filterlimits = (
-            int(_time.mktime(_datetime.datetime(config.get_int('minimum_year'),
-                                                        1, 1).timetuple())),
             int(_time.mktime(_datetime.datetime(
-                    config.get_int('maximum_year') + 1, 1, 1).timetuple())) - 1
+                                            self.config.get_int('minimum_year'
+                                            ), 1, 1).timetuple())),
+            int(_time.mktime(_datetime.datetime(
+                                            self.config.get_int('maximum_year'
+                                            ) + 1, 1, 1).timetuple())) - 1
         )
 
         self.filterclasses = {
@@ -143,65 +165,14 @@ class OccurrencesView(object):
         except OutOfRangeError:
             self.set_filter(self.navigator.get_default_configuration())
 
-        self._set_colors(config)
-
-        # Do not self.listview.setResizeColumn(2) because it gives a
-        # non-standard feeling; the last column is auto-resized by default
-
-        self.DELAY = config.get_int('refresh_delay')
-        self.startformat = config['start_format']
-        self.endformat = config['end_format']
-        self.alarmformat = config['alarm_format']
-
-        if self.endformat == 'start':
-            self.endformat = self.startformat
-
-        if self.alarmformat == 'start':
-            self.alarmformat = self.startformat
-
-        if config['database_format'] == 'full':
-            self.format_database = self._format_database_full
-        else:
-            self.format_database = self._format_database_short
-
-        if config['duration_format'] == 'compact':
-            self.format_duration = self._format_duration_compact
-        else:
-            self.format_duration = self._format_duration_expanded
-
-        self.active_alarms_modes = {
-            'in_range': lambda mint, now, maxt: False,
-            'auto': lambda mint, now, maxt: mint <= now <= maxt,
-            'all': lambda mint, now, maxt: True,
-        }
-        self.active_alarms_mode = config['active_alarms']
-
-        self.show_gaps = config.get_bool('show_gaps')
-        self.show_overlappings = config.get_bool('show_overlappings')
-
-        self.timer = wx.CallLater(0, self._restart)
-        # Initialize self.timerdelay with a dummy function (int)
-        self.timerdelay = wx.CallLater(self.DELAY, int)
-
-        self.enable_refresh()
-
-        self.listview.Bind(wx.EVT_CONTEXT_MENU, self._popup_context_menu)
-
-    def _init_context_menu(self, mainmenu):
-        self.cmenu = menus.ListContextMenu(self.tasklist, mainmenu)
-
-    def _get_secondary_sort_values(self, col, key1, key2):
-        return (self.datamap[key1][self.START_COLUMN],
-                                        self.datamap[key2][self.START_COLUMN])
-
-    def _set_colors(self, config):
+    def _init_colors(self):
         system = self.listview.GetTextColour()
-        colpast = config['color_past']
-        colongoing = config['color_ongoing']
-        colfuture = config['color_future']
-        colactive = config['color_active']
-        colgap = config['color_gap']
-        coloverlap = config['color_overlapping']
+        colpast = self.config['color_past']
+        colongoing = self.config['color_ongoing']
+        colfuture = self.config['color_future']
+        colactive = self.config['color_active']
+        colgap = self.config['color_gap']
+        coloverlap = self.config['color_overlapping']
         self.colors = {}
 
         if colpast == 'system':
@@ -244,6 +215,52 @@ class OccurrencesView(object):
 
         self.colors['gap'] = colgap
         self.colors['overlapping'] = coloverlap
+
+    def _init_formats(self):
+        self.startformat = self.config['start_format']
+        self.endformat = self.config['end_format']
+        self.alarmformat = self.config['alarm_format']
+
+        if self.endformat == 'start':
+            self.endformat = self.startformat
+
+        if self.alarmformat == 'start':
+            self.alarmformat = self.startformat
+
+        if self.config['database_format'] == 'full':
+            self.format_database = self._format_database_full
+        else:
+            self.format_database = self._format_database_short
+
+        if self.config['duration_format'] == 'compact':
+            self.format_duration = self._format_duration_compact
+        else:
+            self.format_duration = self._format_duration_expanded
+
+    def _init_show_options(self):
+        self.active_alarms_modes = {
+            'in_range': lambda mint, now, maxt: False,
+            'auto': lambda mint, now, maxt: mint <= now <= maxt,
+            'all': lambda mint, now, maxt: True,
+        }
+        self.active_alarms_mode = self.config['active_alarms']
+
+        self.show_gaps = self.config.get_bool('show_gaps')
+        self.show_overlappings = self.config.get_bool('show_overlappings')
+
+    def _init_timers(self):
+        self.DELAY = self.config.get_int('refresh_delay')
+
+        self.timer = wx.CallLater(0, self._restart)
+        # Initialize self.timerdelay with a dummy function (int)
+        self.timerdelay = wx.CallLater(self.DELAY, int)
+
+    def _init_context_menu(self, mainmenu):
+        self.cmenu = menus.ListContextMenu(self.tasklist, mainmenu)
+
+    def _get_secondary_sort_values(self, col, key1, key2):
+        return (self.datamap[key1][self.START_COLUMN],
+                                        self.datamap[key2][self.START_COLUMN])
 
     def _delay_restart_on_text_update(self, kwargs):
         if kwargs['text'] is not None:
