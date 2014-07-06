@@ -569,13 +569,8 @@ class TimeAllocation(object):
         if bitstring[0] == '1':
             bitstart = 0
 
-            try:
-                bitend = bitstring.index('10', bitstart) + 1
-            except ValueError:
-                bitend = len(bitstring)
-                maxend = True
-
-            call(bitstart, bitend, True, maxend)
+            bitend, maxend = self._find_gaps_or_overlappings_continue(
+                                    bitstring, bitstart, True, maxend, call)
         else:
             bitend = 0
 
@@ -585,13 +580,20 @@ class TimeAllocation(object):
             except ValueError:
                 break
             else:
-                try:
-                    bitend = bitstring.index('10', bitstart) + 1
-                except ValueError:
-                    bitend = len(bitstring)
-                    maxend = True
+                bitend, maxend = self._find_gaps_or_overlappings_continue(
+                                    bitstring, bitstart, False, maxend, call)
 
-                call(bitstart, bitend, False, maxend)
+    def _find_gaps_or_overlappings_continue(self, bitstring, bitstart,
+                                                    minstart, maxend, call):
+        try:
+            bitend = bitstring.index('10', bitstart) + 1
+        except ValueError:
+            bitend = len(bitstring)
+            maxend = True
+
+        call(bitstart, bitend, minstart, maxend)
+
+        return (bitend, maxend)
 
     def _insert_gap(self, mstart, mend, minstart, maxend):
         start = mstart * 60 + self.min_time
