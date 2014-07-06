@@ -868,7 +868,7 @@ class ListAuxiliaryItem(object):
                                                                     alarmdate)
         self.compvalues = (fname, title, start, duration, end, stateid, alarm)
 
-    def get_values(self, col):
+    def get_value(self, col):
         return self.values[col]
 
     def get_comparison_value(self, col):
