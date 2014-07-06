@@ -173,9 +173,11 @@ class MainMenu(wx.Menu):
             if tab is self.tasklist.panel:
                 self.scroll.Enable()
 
+                # ************************************************************************
                 sel = self.occview.listview.GetFirstSelected()
 
                 while sel > -1:
+                    # ************************************************************************
                     item = self.occview.occs[
                                     self.occview.listview.GetItemData(sel)]
 
@@ -195,6 +197,7 @@ class MainMenu(wx.Menu):
                     if canbreak > 1:
                         break
 
+                    # ************************************************************************
                     sel = self.occview.listview.GetNextSelected(sel)
 
                 # Note that "all" means all the visible active alarms; some
@@ -261,6 +264,7 @@ class MainMenu(wx.Menu):
         tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.tasklist.panel:
+            # ************************************************************************
             sel = self.occview.listview.GetFirstSelected()
 
             if sel > -1:
@@ -269,6 +273,7 @@ class MainMenu(wx.Menu):
 
                 # Loop that selects a database tab (but doesn't select items)
                 while sel > -1:
+                    # ************************************************************************
                     item = self.occview.occs[self.occview.listview.GetItemData(
                                                                         sel)]
 
@@ -277,11 +282,13 @@ class MainMenu(wx.Menu):
                         # The item is selected in the loop below
                         break
                     else:
+                        # ************************************************************************
                         sel = self.occview.listview.GetNextSelected(sel)
 
                 # Loop that doesn't select a database tab but selects items,
                 # including the one found in the loop above
                 while sel > -1:
+                    # ************************************************************************
                     item = self.occview.occs[self.occview.listview.GetItemData(
                                                                         sel)]
 
@@ -289,21 +296,25 @@ class MainMenu(wx.Menu):
                         wxgui_api.add_item_to_selection(item.filename,
                                                                     item.id_)
 
+                    # ************************************************************************
                     sel = self.occview.listview.GetNextSelected(sel)
 
     def _edit_items(self, event):
         tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.tasklist.panel:
+            # ************************************************************************
             sel = self.occview.listview.GetFirstSelected()
 
             while sel > -1:
+                # ************************************************************************
                 item = self.occview.occs[self.occview.listview.GetItemData(
                                                                         sel)]
 
                 if item.filename is not None:
                     wxgui_api.open_editor(item.filename, item.id_)
 
+                # ************************************************************************
                 sel = self.occview.listview.GetNextSelected(sel)
 
     def _dismiss_selected_alarms(self, event):
@@ -679,9 +690,11 @@ class ListContextMenu(wx.Menu):
         self.snooze.Enable(False)
         self.dismiss.Enable(False)
 
+        # ***************************************************************************************
         sel = self.occview.listview.GetFirstSelected()
 
         while sel > -1:
+            # ***************************************************************************************
             item = self.occview.occs[self.occview.listview.GetItemData(sel)]
 
             canbreak = 0
@@ -700,6 +713,7 @@ class ListContextMenu(wx.Menu):
             if canbreak > 1:
                 break
 
+            # ***************************************************************************************
             sel = self.occview.listview.GetNextSelected(sel)
 
 

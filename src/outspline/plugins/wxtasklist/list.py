@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import wx
-from wx.lib.mixins.listctrl import ListCtrlAutoWidthMixin, ColumnSorterMixin
+import wx.dataview as dataview
 import sys
 import time as _time
 import datetime as _datetime
@@ -38,33 +38,32 @@ import msgboxes
 from exceptions import OutOfRangeError
 
 
-class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
-    def __init__(self, parent, colsn):
-        wx.ListView.__init__(self, parent, style=wx.LC_REPORT)
-        ListCtrlAutoWidthMixin.__init__(self)
-        ColumnSorterMixin.__init__(self, colsn)
+class Model(dataview.PyDataViewIndexListModel):
+    def __init__(self, column_count, data):
+        super(Model, self).__init__(len(data))
+        self.column_count = column_count
+        self.data = data
 
-        self._set_image_lists()
+    def GetValueByRow(self, row, col):
+        print('VVVVVVVVVVVV', row, col)  # ***********************************************
+        print('VVVVVVVVVVVV', self.data)  # ***********************************************
+        #print('VVVVVVVVVVVV', self.data[row])  # ***********************************************
+        try:
+            return self.data[row][col]
+        except KeyError:  # ***************************************************************
+            return 'A'
 
-    def GetListCtrl(self):
-        return self
+    def GetCount(self):
+        return len(self.data)
 
-    def _set_image_lists(self):
-        self.imagelistsmall = wx.ImageList(16, 16)
-        self.imagemap = {
-            'small': {}
-        }
+    def GetColumnCount(self):
+        return self.column_count
 
-        self.imagemap['small']['sortup'] = self.imagelistsmall.Add(
-                 wx.ArtProvider.GetBitmap('@sortup', wx.ART_TOOLBAR, (16, 16)))
-        self.imagemap['small']['sortdown'] = self.imagelistsmall.Add(
-               wx.ArtProvider.GetBitmap('@sortdown', wx.ART_TOOLBAR, (16, 16)))
-
-        self.SetImageList(self.imagelistsmall, wx.IMAGE_LIST_SMALL)
-
-    def GetSortImages(self):
-        return (self.imagemap['small']['sortup'],
-                                            self.imagemap['small']['sortdown'])
+    def Compare(self, item1, item2, col, ascending):
+        # Implement ************************************************************************
+        # When sorting by state, use the start time as a secondary comparison **************
+        print('CCCCCCCCCCCCC', item1, item2, col, ascending)  # *************************
+        return 1
 
 
 class OccurrencesView(object):
@@ -76,38 +75,48 @@ class OccurrencesView(object):
         self.END_COLUMN = 4
         self.STATE_COLUMN = 5
         self.ALARM_COLUMN = 6
-        COLUMNS_NUMBER = 7
+        COLUMN_COUNT = 7
 
         self.tasklist = tasklist
         self.navigator = navigator
-        self.listview = ListView(tasklist.panel, COLUMNS_NUMBER)
+        self.listview = dataview.DataViewCtrl(tasklist.panel,
+                            style=dataview.DV_MULTIPLE | dataview.DV_ROW_LINES)
 
-        # Override ColumnSorterMixin's method for sorting items that have equal
-        # primary sort value
-        self.listview.GetSecondarySortValues = self._get_secondary_sort_values
+        # Pass proper data **********************************************************************
+        self.occs = {}
+        self.dvmodel = Model(COLUMN_COUNT, self.occs)
+        self.listview.AssociateModel(self.dvmodel)
+        # Avoid memory leak ? ****************************************************************
+        self.dvmodel.DecRef()  # *************************************************************
 
         config = coreaux_api.get_plugin_configuration('wxtasklist')
+
+        # COL_REORDERABLE ********************************************************************
+        flags = wx.COL_RESIZABLE | wx.COL_SORTABLE
 
         # No need to validate the values, as they are reset every time the
         # application is closed, and if a user edits them manually he knows
         # he's done something wrong in the configuration file
-        self.listview.InsertColumn(self.DATABASE_COLUMN, 'Database',
-                                    width=config.get_int('database_column'))
-        self.listview.InsertColumn(self.HEADING_COLUMN, 'Heading',
-                                        width=config.get_int('heading_column'))
-        self.listview.InsertColumn(self.START_COLUMN, 'Start',
+        # *******************************************************************************************
+        self.listview.AppendTextColumn('Database', self.DATABASE_COLUMN,
+                        flags=flags, width=config.get_int('database_column'))
+        self.listview.AppendTextColumn('Heading', self.HEADING_COLUMN,
+                        flags=flags, width=config.get_int('heading_column'))
+        self.listview.AppendTextColumn('Start', self.START_COLUMN, flags=flags,
                                         width=config.get_int('start_column'))
-        self.listview.InsertColumn(self.DURATION_COLUMN, 'Duration',
-                                    width=config.get_int('duration_column'))
-        self.listview.InsertColumn(self.END_COLUMN, 'End',
+        self.listview.AppendTextColumn('Duration', self.DURATION_COLUMN,
+                        flags=flags, width=config.get_int('duration_column'))
+        self.listview.AppendTextColumn('End', self.END_COLUMN, flags=flags,
                                             width=config.get_int('end_column'))
-        self.listview.InsertColumn(self.STATE_COLUMN, 'State',
+        def_sort_column = self.listview.AppendTextColumn('State',
+                                        self.STATE_COLUMN, flags=flags,
                                         width=config.get_int('state_column'))
-        self.listview.InsertColumn(self.ALARM_COLUMN, 'Alarm',
+        self.listview.AppendTextColumn('Alarm', self.ALARM_COLUMN, flags=flags,
                                         width=config.get_int('alarm_column'))
 
         # Initialize sort column and order *before* enabling the autoscroll
-        self.listview.SortListItems(self.STATE_COLUMN, 1)
+        def_sort_column.SetSortOrder(True)
+        self.dvmodel.Resort()
 
         self.autoscroll = Autoscroll(self, self.listview,
                     config.get_int('autoscroll_padding'), self.STATE_COLUMN)
@@ -177,16 +186,15 @@ class OccurrencesView(object):
 
         self.enable_refresh()
 
-        self.listview.Bind(wx.EVT_CONTEXT_MENU, self._popup_context_menu)
+        self.listview.Bind(dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
+                                                    self._popup_context_menu)
 
     def _init_context_menu(self, mainmenu):
         self.cmenu = menus.ListContextMenu(self.tasklist, mainmenu)
 
-    def _get_secondary_sort_values(self, col, key1, key2):
-        return (self.datamap[key1][2], self.datamap[key2][2])
-
     def _set_colors(self, config):
-        system = self.listview.GetTextColour()
+        system = self.listview.GetForegroundColour()
+        print('COLOUR', system)  # ******************************************************
         colpast = config['color_past']
         colongoing = config['color_ongoing']
         colfuture = config['color_future']
@@ -339,12 +347,8 @@ class OccurrencesView(object):
 
         self.occs = {}
 
-        # Defining an itemDataMap dictionary is required by ColumnSorterMixin
-        self.listview.itemDataMap = {}
-
-        # Create an alias for self.itemDataMap to save it from any future
-        # attribute renaming
-        self.datamap = self.listview.itemDataMap
+        # *******************************************************************************************
+        self.datamap = {}
 
         self.states = {
             'past': [],
@@ -356,17 +360,22 @@ class OccurrencesView(object):
 
         self._prepare_time_allocation()
 
-        if self.listview.GetItemCount() > 0:
+        if self.dvmodel.GetCount() > 0:  # ********************************************
             # Save the scroll y for restoring it after inserting the items
             # I could instead save
+                # ****************************************************************************
             #   self.listview.GetItemData(self.listview.GetTopItem()), but in
             #   case that disappears or moves in the list, the thing should
             #   start being complicated, and probably even confusing for the
             #   user
+            # ********************************************************************************
             # Note that self.listview.GetItemRect(0).GetY() gives a slightly
             # wrong value
+            # *******************************************************************************************
+            print('SCROLL', self.listview.GetScrollPos())  # **************************************
             yscroll = abs(self.listview.GetItemPosition(0).y)
-            self.listview.DeleteAllItems()
+            # *******************************************************************************************
+            #self.listview.DeleteAllItems()
         else:
             yscroll = 0
 
@@ -375,15 +384,23 @@ class OccurrencesView(object):
         # Do this *after* inserting the items but *before* sorting
         self.insert_gaps_and_overlappings()
 
+        # ***********************************************************************************
+        self.dvmodel.Reset(len(self.occs))
+
+        # *******************************************************************************************
         # Use SortListItems instead of occurrences.sort(), so that the heading
         # will properly display the arrow icon
         # Using (-1, -1) will preserve the current sort column and order
-        self.listview.SortListItems(-1, -1)
+        # *******************************************************************************************
+        #self.listview.SortListItems(-1, -1)  # *********************************************
+        self.dvmodel.Resort()  # ***************************************************
 
         # The list must be autoscrolled *after* sorting the items, so that the
         # correct y values will be got
         self.autoscroll.execute(yscroll)
 
+        print('############')  # *****************************************************
+        print('$$$$$$$$$$$$')  # *****************************************************
         return self.filter_.compute_delay(occsobj, self.now, self.min_time,
                                                                 self.max_time)
 
@@ -391,8 +408,7 @@ class OccurrencesView(object):
         for i, o in enumerate(occurrences):
             self.occs[i] = ListItem(i, o, self, self.listview)
 
-            # Both the key and the values of self.datamap must comply with the
-            # requirements of ColumnSorterMixin
+            # *******************************************************************************
             self.datamap[i] = self.occs[i].get_values()
 
             self.states[self.occs[i].get_state()].append(i)
@@ -498,8 +514,7 @@ class OccurrencesView(object):
         self.occs[i] = ListAuxiliaryItem(i, '[gap]', start, end, minstart,
                             maxend, self.colors['gap'], self, self.listview)
 
-        # Both the key and the values of self.datamap must comply with the
-        # requirements of ColumnSorterMixin
+        # *******************************************************************************
         self.datamap[i] = self.occs[i].get_values()
 
         self.states[self.occs[i].get_state()].append(i)
@@ -512,14 +527,14 @@ class OccurrencesView(object):
         self.occs[i] = ListAuxiliaryItem(i, '[overlapping]', start, end,
             minstart, maxend, self.colors['overlapping'], self, self.listview)
 
-        # Both the key and the values of self.datamap must comply with the
-        # requirements of ColumnSorterMixin
+        # *******************************************************************************
         self.datamap[i] = self.occs[i].get_values()
 
         self.states[self.occs[i].get_state()].append(i)
 
     def _popup_context_menu(self, event):
         self.cmenu.update()
+        # *******************************************************************************************
         self.listview.PopupMenu(self.cmenu)
 
     def add_active_alarm(self, filename, id_, alarmid):
@@ -536,10 +551,13 @@ class OccurrencesView(object):
         self.activealarms[filename][id_].append(alarmid)
 
     def get_selected_active_alarms(self):
+        # *******************************************************************************************
+        print('SELS', self.listview.GetSelections())  # *********************************************
         sel = self.listview.GetFirstSelected()
         alarmsd = {}
 
         while sel > -1:
+            # *******************************************************************************************
             item = self.occs[self.listview.GetItemData(sel)]
             filename = item.filename
             id_ = item.id_
@@ -560,6 +578,7 @@ class OccurrencesView(object):
 
                 alarmsd[filename][id_].append(item.alarmid)
 
+            # *******************************************************************************************
             sel = self.listview.GetNextSelected(sel)
 
         return alarmsd
@@ -570,20 +589,20 @@ class OccurrencesView(object):
     def save_configuration(self):
         config = coreaux_api.get_plugin_configuration('wxtasklist')
 
-        config['database_column'] = str(self.listview.GetColumnWidth(
-                                                        self.DATABASE_COLUMN))
-        config['heading_column'] = str(self.listview.GetColumnWidth(
-                                                        self.HEADING_COLUMN))
-        config['start_column'] = str(self.listview.GetColumnWidth(
-                                                            self.START_COLUMN))
-        config['duration_column'] = str(self.listview.GetColumnWidth(
-                                                        self.DURATION_COLUMN))
-        config['end_column'] = str(self.listview.GetColumnWidth(
-                                                            self.END_COLUMN))
-        config['state_column'] = str(self.listview.GetColumnWidth(
-                                                            self.STATE_COLUMN))
-        config['alarm_column'] = str(self.listview.GetColumnWidth(
-                                                            self.ALARM_COLUMN))
+        config['database_column'] = str(self.listview.GetColumn(
+                                            self.DATABASE_COLUMN).GetWidth())
+        config['heading_column'] = str(self.listview.GetColumn(
+                                            self.HEADING_COLUMN).GetWidth())
+        config['start_column'] = str(self.listview.GetColumn(
+                                            self.START_COLUMN).GetWidth())
+        config['duration_column'] = str(self.listview.GetColumn(
+                                            self.DURATION_COLUMN).GetWidth())
+        config['end_column'] = str(self.listview.GetColumn(
+                                            self.END_COLUMN).GetWidth())
+        config['state_column'] = str(self.listview.GetColumn(
+                                            self.STATE_COLUMN).GetWidth())
+        config['alarm_column'] = str(self.listview.GetColumn(
+                                            self.ALARM_COLUMN).GetWidth())
         config['active_alarms'] = self.active_alarms_mode
         config['show_gaps'] = 'yes' if self.show_gaps else 'no'
         config['show_overlappings'] = 'yes' if self.show_overlappings else 'no'
@@ -656,9 +675,10 @@ class Autoscroll(object):
 
     def pre_execute(self):
         if self.enabled:
-            column, ascending = self.listview.GetSortState()
+            scol = self.listview.GetSortingColumn()
 
-            if column == self.state_column and ascending == 1:
+            if scol and self.listview.GetColumnPosition(scol) == \
+                            self.state_column and scol.IsSortOrderAscending():
                 self.execute = self._execute_auto
             else:
                 self.execute = self._execute_maintain
@@ -676,10 +696,12 @@ class Autoscroll(object):
         # methods
         pastn = len(self.occview.get_states()['past'])
 
-        if self.listview.GetItemCount() > 0:
+        if self.dvmodel.GetCount() > 0:
             # Note that the autoscroll relies on the items to be initially
             # sorted by State ascending
+            # *******************************************************************************************
             top = self.listview.GetTopItem()
+            # *******************************************************************************************
             height = self.listview.GetItemRect(top).GetHeight()
 
             # If given a negative dy, ScrollList doesn't work if abs(dy) is
@@ -687,6 +709,7 @@ class Autoscroll(object):
             # or to negative item indices).
             scroll = max(pastn - self.padding, 0)
             yscrollauto = (scroll - top) * height
+            # *******************************************************************************************
             self.listview.ScrollList(0, yscrollauto)
 
         self.execute = self._execute_maintain
@@ -700,9 +723,12 @@ class Autoscroll(object):
         # This method must get the same arguments as the other execute_*
         # methods
         # For some reason it doesn't work without CallAfter...
-        wx.CallAfter(self.listview.ScrollList, 0, yscroll)
+        # *******************************************************************************************
+        #wx.CallAfter(self.listview.ScrollList, 0, yscroll)  # *******************************
+        wx.CallAfter(self.listview.ScrollLines, yscroll)  # *******************************
 
     def execute_force(self):
+        # *******************************************************************************************
         self.listview.SortListItems(self.state_column, 1)
         self._execute_auto(None)
 
@@ -716,7 +742,8 @@ class ListItem(object):
         self.alarm = occ['alarm']
 
         # Initialize the first column with an empty string
-        index = listview.InsertStringItem(sys.maxint, '')
+        # *******************************************************************************************
+        #index = listview.InsertStringItem(sys.maxint, '')  # *******************************
 
         self.fname = occview.format_database(self.filename)
 
@@ -725,7 +752,8 @@ class ListItem(object):
         if mnow < self.start:
             self.state = 'future'
             self.stateid = 2
-            listview.SetItemTextColour(index, occview.colors['future'])
+            # *******************************************************************************************
+            #listview.SetItemTextColour(index, occview.colors['future'])
         # If self.end is None, as soon as the start time arrives, the
         # occurrence is finished, so it can't have an 'ongoing' state and has
         # to be be immediately marked as 'past'
@@ -738,11 +766,13 @@ class ListItem(object):
         elif self.start <= mnow < self.end:
             self.state = 'ongoing'
             self.stateid = 1
-            listview.SetItemTextColour(index, occview.colors['ongoing'])
+            # *******************************************************************************************
+            #listview.SetItemTextColour(index, occview.colors['ongoing'])
         else:
             self.state = 'past'
             self.stateid = 0
-            listview.SetItemTextColour(index, occview.colors['past'])
+            # *******************************************************************************************
+            #listview.SetItemTextColour(index, occview.colors['past'])
 
         text = core_api.get_item_text(self.filename, self.id_)
         self.title = self._make_heading(text)
@@ -769,7 +799,8 @@ class ListItem(object):
             occview.add_active_alarm(self.filename, self.id_, self.alarmid)
             # Note that the assignment of the active color must come after any
             # previous color assignment, in order to override them
-            listview.SetItemTextColour(index, occview.colors['active'])
+            # *******************************************************************************************
+            #listview.SetItemTextColour(index, occview.colors['active'])
         # Note that testing if isinstance(self.alarm, int) *before* testing if
         # self.alarm is False would return True also when self.alarm is False!
         else:
@@ -777,17 +808,21 @@ class ListItem(object):
                                                                    self.alarm))
             self.alarmid = None
 
-        listview.SetStringItem(index, occview.DATABASE_COLUMN, self.fname)
-        listview.SetStringItem(index, occview.HEADING_COLUMN, self.title)
-        listview.SetStringItem(index, occview.START_COLUMN, startdate)
-        listview.SetStringItem(index, occview.DURATION_COLUMN, durationstr)
-        listview.SetStringItem(index, occview.END_COLUMN, enddate)
-        listview.SetStringItem(index, occview.STATE_COLUMN, self.state)
-        listview.SetStringItem(index, occview.ALARM_COLUMN, alarmdate)
+        # *******************************************************************************************
+        #listview.SetStringItem(index, occview.DATABASE_COLUMN, self.fname)
+        #listview.SetStringItem(index, occview.HEADING_COLUMN, self.title)
+        #listview.SetStringItem(index, occview.START_COLUMN, startdate)
+        #listview.SetStringItem(index, occview.DURATION_COLUMN, durationstr)
+        #listview.SetStringItem(index, occview.END_COLUMN, enddate)
+        #listview.SetStringItem(index, occview.STATE_COLUMN, self.state)
+        #listview.SetStringItem(index, occview.ALARM_COLUMN, alarmdate)
+        #listview.AppendItem((self.fname, self.title, startdate, durationstr,
+        #                            enddate, self.state, alarmdate), data=i)  # *************************************
 
         # In order for ColumnSorterMixin to work, all items must have a unique
         # data value
-        listview.SetItemData(index, i)
+        # *******************************************************************************************
+        #listview.SetItemData(index, i)
 
         occview.compute_time_allocation(self.start, self.end)
 
@@ -817,7 +852,8 @@ class ListAuxiliaryItem(object):
         self.alarmid = None
 
         # Initialize the first column with an empty string
-        index = listview.InsertStringItem(sys.maxint, '')
+        # *******************************************************************************************
+        #index = listview.InsertStringItem(sys.maxint, '')
 
         mnow = occview.now // 60 * 60
 
@@ -831,7 +867,8 @@ class ListAuxiliaryItem(object):
             self.state = 'past'
             self.stateid = 0
 
-        listview.SetItemTextColour(index, color)
+        # *******************************************************************************************
+        #listview.SetItemTextColour(index, color)
 
         if minstart:
             # Don't show the start date if the gap/overlapping is at the
@@ -864,17 +901,19 @@ class ListAuxiliaryItem(object):
 
         alarmdate = ''
 
-        listview.SetStringItem(index, occview.DATABASE_COLUMN, self.fname)
-        listview.SetStringItem(index, occview.HEADING_COLUMN, self.title)
-        listview.SetStringItem(index, occview.START_COLUMN, startdate)
-        listview.SetStringItem(index, occview.DURATION_COLUMN, durationstr)
-        listview.SetStringItem(index, occview.END_COLUMN, enddate)
-        listview.SetStringItem(index, occview.STATE_COLUMN, self.state)
-        listview.SetStringItem(index, occview.ALARM_COLUMN, alarmdate)
+        # *******************************************************************************************
+        #listview.SetStringItem(index, occview.DATABASE_COLUMN, self.fname)
+        #listview.SetStringItem(index, occview.HEADING_COLUMN, self.title)
+        #listview.SetStringItem(index, occview.START_COLUMN, startdate)
+        #listview.SetStringItem(index, occview.DURATION_COLUMN, durationstr)
+        #listview.SetStringItem(index, occview.END_COLUMN, enddate)
+        #listview.SetStringItem(index, occview.STATE_COLUMN, self.state)
+        #listview.SetStringItem(index, occview.ALARM_COLUMN, alarmdate)
 
         # In order for ColumnSorterMixin to work, all items must have a unique
         # data value
-        listview.SetItemData(index, i)
+        # *******************************************************************************************
+        #listview.SetItemData(index, i)
 
     def get_values(self):
         # These values must comply with the requirements of ColumnSorterMixin
