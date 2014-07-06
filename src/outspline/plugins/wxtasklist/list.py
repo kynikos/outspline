@@ -364,15 +364,6 @@ class OccurrencesView(object):
                                                     self.now, self.max_time):
             occurrences.extend(occsobj.get_active_list())
 
-        # Don't re-assign = {} or the other references to the object (e.g. in
-        # Model) won't be updated anymore (they'll still refer to the old
-        # object)
-        self.occs[:] = []
-        self.pastN = 0
-        self.activealarms = {}
-
-        self._prepare_time_allocation()
-
         if self.dvmodel.GetCount() > 0:  # ********************************************
             # Save the scroll y for restoring it after inserting the items
             # I could instead save
@@ -381,11 +372,20 @@ class OccurrencesView(object):
             #   case that disappears or moves in the list, the thing should
             #   start being complicated, and probably even confusing for the
             #   user
-            print('SCROLL', self.listview.GetScrollPos())  # **************************************
+            print('SCROLL', self.listview.GetScrollPos(wx.VERTICAL))  # **************************************
             # *******************************************************************************************
             yscroll = 0#abs(self.listview.GetItemPosition(0).y)
         else:
             yscroll = 0
+
+        # Don't re-assign = {} or the other references to the object (e.g. in
+        # Model) won't be updated anymore (they'll still refer to the old
+        # object)
+        self.occs[:] = []
+        self.pastN = 0
+        self.activealarms = {}
+
+        self._prepare_time_allocation()
 
         self._insert_items(occurrences)
 
