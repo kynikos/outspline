@@ -459,9 +459,7 @@ class RefreshEngine(object):
                                                 self.occview, self.formatter)
 
         for occurrence in occurrences:
-            item = ListRegularItem(occurrence, self.occview, self.now,
-                                                self.formatter, self.timealloc)
-            self.occview.insert_item(item)
+            self._insert_occurrence(occurrence)
 
         # Do this *after* inserting the items but *before* sorting
         self.timealloc.insert_gaps_and_overlappings()
@@ -477,6 +475,11 @@ class RefreshEngine(object):
 
         return self.filter_.compute_delay(occsobj, self.now, self.min_time,
                                                                 self.max_time)
+
+    def _insert_occurrence(self, occurrence):
+        item = ListRegularItem(occurrence, self.occview, self.now,
+                                                self.formatter, self.timealloc)
+        self.occview.insert_item(item)
 
 
 class TimeAllocation(object):
