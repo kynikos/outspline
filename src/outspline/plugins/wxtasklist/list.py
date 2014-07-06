@@ -387,7 +387,7 @@ class OccurrencesView(object):
         self._prepare_time_allocation()
 
         for occurrence in occurrences:
-            item = ListItem(occurrence, self)
+            item = ListRegularItem(occurrence, self)
             self._insert_item(item)
 
         # Do this *after* inserting the items but *before* sorting
@@ -735,7 +735,53 @@ class Autoscroll(object):
         self._execute_auto(None)
 
 
-class ListItem(object):
+class _ListItem(object):
+    # Virtual class
+
+    def get_filename(self):
+        return self.filename
+
+    def get_id(self):
+        return self.id_
+
+    def get_alarm(self):
+        return self.alarm
+
+    def get_alarm_id(self):
+        return self.alarmid
+
+    def get_formatted_filename(self):
+        return self.fname
+
+    def get_title(self):
+        return self.title
+
+    def get_start_date(self):
+        return self.startdate
+
+    def get_duration(self):
+        return self.durationstr
+
+    def get_end_date(self):
+        return self.enddate
+
+    def get_state(self):
+        return self.state
+
+    def get_alarm_date(self):
+        return self.alarmdate
+
+    def get_comparison_values(self):
+        return self.compvalues
+
+    def get_color(self):
+        return self.color
+
+    def get_past_counter(self):
+        return self.pastN
+
+
+class ListRegularItem(_ListItem):
     def __init__(self, occ, occview):
         self.filename = occ['filename']
         self.id_ = occ['id_']
@@ -810,50 +856,8 @@ class ListItem(object):
 
         occview.compute_time_allocation(self.start, self.end)
 
-    def get_filename(self):
-        return self.filename
 
-    def get_id(self):
-        return self.id_
-
-    def get_alarm(self):
-        return self.alarm
-
-    def get_alarm_id(self):
-        return self.alarmid
-
-    def get_formatted_filename(self):
-        return self.fname
-
-    def get_title(self):
-        return self.title
-
-    def get_start_date(self):
-        return self.startdate
-
-    def get_duration(self):
-        return self.durationstr
-
-    def get_end_date(self):
-        return self.enddate
-
-    def get_state(self):
-        return self.state
-
-    def get_alarm_date(self):
-        return self.alarmdate
-
-    def get_comparison_values(self):
-        return self.compvalues
-
-    def get_color(self):
-        return self.color
-
-    def get_past_counter(self):
-        return self.pastN
-
-
-class ListAuxiliaryItem(object):
+class ListAuxiliaryItem(_ListItem):
     def __init__(self, title, start, end, minstart, maxend, color, occview):
         self.filename = None
         self.id_ = None
@@ -913,45 +917,3 @@ class ListAuxiliaryItem(object):
 
         self.compvalues = (self.fname, self.title, self.start, self.duration,
                                             self.end, self.stateid, self.alarm)
-
-    def get_filename(self):
-        return self.filename
-
-    def get_id(self):
-        return self.id_
-
-    def get_alarm(self):
-        return self.alarm
-
-    def get_alarm_id(self):
-        return self.alarmid
-
-    def get_formatted_filename(self):
-        return self.fname
-
-    def get_title(self):
-        return self.title
-
-    def get_start_date(self):
-        return self.startdate
-
-    def get_duration(self):
-        return self.durationstr
-
-    def get_end_date(self):
-        return self.enddate
-
-    def get_state(self):
-        return self.state
-
-    def get_alarm_date(self):
-        return self.alarmdate
-
-    def get_comparison_values(self):
-        return self.compvalues
-
-    def get_color(self):
-        return self.color
-
-    def get_past_counter(self):
-        return self.pastN
