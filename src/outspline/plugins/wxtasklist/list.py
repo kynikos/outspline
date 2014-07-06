@@ -76,11 +76,12 @@ class OccurrencesView(object):
 
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
+        self.formatter = Formatter(self.config)
+
         self._init_list()
         self._init_autoscroll()
         self._init_filters()
         self._init_colors()
-        self._init_formats()
         self._init_show_options()
         self._init_timers()
 
@@ -215,27 +216,6 @@ class OccurrencesView(object):
 
         self.colors['gap'] = colgap
         self.colors['overlapping'] = coloverlap
-
-    def _init_formats(self):
-        self.startformat = self.config['start_format']
-        self.endformat = self.config['end_format']
-        self.alarmformat = self.config['alarm_format']
-
-        if self.endformat == 'start':
-            self.endformat = self.startformat
-
-        if self.alarmformat == 'start':
-            self.alarmformat = self.startformat
-
-        if self.config['database_format'] == 'full':
-            self.format_database = self._format_database_full
-        else:
-            self.format_database = self._format_database_short
-
-        if self.config['duration_format'] == 'compact':
-            self.format_duration = self._format_duration_compact
-        else:
-            self.format_duration = self._format_duration_expanded
 
     def _init_show_options(self):
         self.active_alarms_modes = {
@@ -387,7 +367,7 @@ class OccurrencesView(object):
         self._prepare_time_allocation()
 
         for occurrence in occurrences:
-            item = ListRegularItem(occurrence, self)
+            item = ListRegularItem(occurrence, self, self.formatter)
             self._insert_item(item)
 
         # Do this *after* inserting the items but *before* sorting
@@ -535,14 +515,14 @@ class OccurrencesView(object):
         start = mstart * 60 + self.min_time
         end = mend * 60 + self.min_time
         item = ListAuxiliaryItem('[gap]', start, end, minstart, maxend,
-                                                    self.colors['gap'], self)
+                                    self.colors['gap'], self, self.formatter)
         self._insert_item(item)
 
     def _insert_overlapping(self, mstart, mend, minstart, maxend):
         start = mstart * 60 + self.min_time
         end = mend * 60 + self.min_time
         item = ListAuxiliaryItem('[overlapping]', start, end, minstart, maxend,
-                                            self.colors['overlapping'], self)
+                            self.colors['overlapping'], self, self.formatter)
         self._insert_item(item)
 
     def _popup_context_menu(self, event):
@@ -617,16 +597,53 @@ class OccurrencesView(object):
         config['show_overlappings'] = 'yes' if self.show_overlappings else 'no'
         config['autoscroll'] = 'on' if self.autoscroll.is_enabled() else 'off'
 
-    @staticmethod
-    def _format_database_short(filename):
+
+class Formatter(object):
+    def __init__(self, config):
+        self.startformat = config['start_format']
+        self.endformat = config['end_format']
+        self.alarmformat = config['alarm_format']
+
+        if self.endformat == 'start':
+            self.endformat = self.startformat
+
+        if self.alarmformat == 'start':
+            self.alarmformat = self.startformat
+
+        if config['database_format'] == 'full':
+            self.format_database = self._format_database_full
+        else:
+            self.format_database = self._format_database_short
+
+        if config['duration_format'] == 'compact':
+            self.format_duration = self._format_duration_compact
+        else:
+            self.format_duration = self._format_duration_expanded
+
+    def get_start_format(self):
+        return self.startformat
+
+    def get_end_format(self):
+        return self.endformat
+
+    def get_alarm_format(self):
+        return self.alarmformat
+
+    def format_database(self, filename):
+        # This method is assigned dynamically
+        pass
+
+    def _format_database_short(self, filename):
         return os.path.basename(filename)
 
-    @staticmethod
-    def _format_database_full(filename):
+    def _format_database_full(self, filename):
         return filename
 
-    @staticmethod
-    def _format_duration_compact(duration):
+    def format_duration(self, duration):
+        # This method is assigned dynamically
+        pass
+
+    def _format_duration_compact(self, duration):
         if duration % 604800 == 0:
             return '{} weeks'.format(str(duration // 604800))
         elif duration % 86400 == 0:
@@ -636,8 +653,7 @@ class OccurrencesView(object):
         elif duration % 60 == 0:
             return '{} minutes'.format(str(duration // 60))
 
-    @staticmethod
-    def _format_duration_expanded(duration):
+    def _format_duration_expanded(self, duration):
         strings = []
         w, r = divmod(duration, 604800)
         d, r = divmod(r, 86400)
@@ -782,14 +798,14 @@ class _ListItem(object):
 
 
 class ListRegularItem(_ListItem):
-    def __init__(self, occ, occview):
+    def __init__(self, occ, occview, formatter):
         self.filename = occ['filename']
         self.id_ = occ['id_']
         self.start = occ['start']
         self.end = occ['end']
         self.alarm = occ['alarm']
 
-        self.fname = occview.format_database(self.filename)
+        self.fname = formatter.format_database(self.filename)
 
         mnow = occview.now // 60 * 60
 
@@ -821,14 +837,14 @@ class ListRegularItem(_ListItem):
         text = core_api.get_item_text(self.filename, self.id_)
         self.title = text.partition('\n')[0]
 
-        self.startdate = _time.strftime(occview.startformat,
+        self.startdate = _time.strftime(formatter.get_start_format(),
                                                 _time.localtime(self.start))
 
         if self.end is not None:
-            self.enddate = _time.strftime(occview.endformat,
+            self.enddate = _time.strftime(formatter.get_end_format(),
                                                     _time.localtime(self.end))
             self.duration = self.end - self.start
-            self.durationstr = occview.format_duration(self.duration)
+            self.durationstr = formatter.format_duration(self.duration)
         else:
             self.enddate = ''
             self.duration = None
@@ -847,7 +863,7 @@ class ListRegularItem(_ListItem):
         # Note that testing if isinstance(alarm, int) *before* testing if
         # alarm is False would return True also when alarm is False!
         else:
-            self.alarmdate = _time.strftime(occview.alarmformat,
+            self.alarmdate = _time.strftime(formatter.get_alarm_format(),
                                                 _time.localtime(self.alarm))
             self.alarmid = None
 
@@ -858,7 +874,8 @@ class ListRegularItem(_ListItem):
 
 
 class ListAuxiliaryItem(_ListItem):
-    def __init__(self, title, start, end, minstart, maxend, color, occview):
+    def __init__(self, title, start, end, minstart, maxend, color, occview,
+                                                                    formatter):
         self.filename = None
         self.id_ = None
         self.fname = ''
@@ -890,7 +907,7 @@ class ListAuxiliaryItem(_ListItem):
             # every minute
             self.startdate = ''
         else:
-            self.startdate = _time.strftime(occview.startformat,
+            self.startdate = _time.strftime(formatter.get_start_format(),
                                                 _time.localtime(self.start))
 
         # Do *not* merge this check with the others for minstart (above) and
@@ -903,15 +920,15 @@ class ListAuxiliaryItem(_ListItem):
             self.durationstr = ''
         else:
             self.duration = self.end - self.start
-            self.durationstr = occview.format_duration(self.duration)
+            self.durationstr = formatter.format_duration(self.duration)
 
         if maxend:
             # Don't show the end date if the gap/overlapping is at the end of
             # the search interval, otherwise it should be updated every minute
             self.enddate = ''
         else:
-            self.enddate = _time.strftime(occview.endformat, _time.localtime(
-                                                                    self.end))
+            self.enddate = _time.strftime(formatter.get_end_format(),
+                                                    _time.localtime(self.end))
 
         self.alarmdate = ''
 
