@@ -455,8 +455,8 @@ class RefreshEngine(object):
         self.occview.reset_past_count()
         self.occview.reset_active_alarms()
 
-        self.timealloc = TimeAllocation(self.min_time, self.max_time, self.now,
-                                                self.occview, self.formatter)
+        self.timealloc = TimeAllocation(self.min_time, self.max_time,
+                                                            self.occview, self)
 
         for occurrence in occurrences:
             self._insert_occurrence(occurrence)
@@ -481,14 +481,23 @@ class RefreshEngine(object):
                                                 self.formatter, self.timealloc)
         self.occview.insert_item(item)
 
+    def insert_gap(self, start, end, minstart, maxend):
+        item = ListAuxiliaryItem('[gap]', start, end, minstart, maxend, 'gap',
+                                                    self.now, self.formatter)
+        self.occview.insert_item(item)
+
+    def insert_overlapping(self, start, end, minstart, maxend):
+        item = ListAuxiliaryItem('[overlapping]', start, end, minstart, maxend,
+                                    'overlapping', self.now, self.formatter)
+        self.occview.insert_item(item)
+
 
 class TimeAllocation(object):
-    def __init__(self, min_time, max_time, now, occview, formatter):
+    def __init__(self, min_time, max_time, occview, refengine):
         self.min_time = min_time
         self.max_time = max_time
-        self.now = now
         self.occview = occview
-        self.formatter = formatter
+        self.refengine = refengine
 
         self.show_gaps, self.show_overlappings = \
                             self.occview.get_gaps_and_overlappings_setting()
@@ -551,13 +560,13 @@ class TimeAllocation(object):
         if self.show_gaps:
             gaps = '{:b}'.format(self.time_allocation).zfill(interval
                                 ).translate(string_.maketrans("10","01"))[::-1]
-            self._find_gaps_or_overlappings(gaps, self._insert_gap)
+            self._find_gaps_or_overlappings(gaps, self.refengine.insert_gap)
 
         if self.show_overlappings:
             overlappings = '{:b}'.format(self.time_allocation_overlap).zfill(
                                                                 interval)[::-1]
             self._find_gaps_or_overlappings(overlappings,
-                                                    self._insert_overlapping)
+                                            self.refengine.insert_overlapping)
 
     def _insert_gaps_and_overlappings_dummy(self):
         pass
@@ -591,23 +600,12 @@ class TimeAllocation(object):
             bitend = len(bitstring)
             maxend = True
 
-        call(bitstart, bitend, minstart, maxend)
+        start = bitstart * 60 + self.min_time
+        end = bitend * 60 + self.min_time
+
+        call(start, end, minstart, maxend)
 
         return (bitend, maxend)
-
-    def _insert_gap(self, mstart, mend, minstart, maxend):
-        start = mstart * 60 + self.min_time
-        end = mend * 60 + self.min_time
-        item = ListAuxiliaryItem('[gap]', start, end, minstart, maxend, 'gap',
-                                                    self.now, self.formatter)
-        self.occview.insert_item(item)
-
-    def _insert_overlapping(self, mstart, mend, minstart, maxend):
-        start = mstart * 60 + self.min_time
-        end = mend * 60 + self.min_time
-        item = ListAuxiliaryItem('[overlapping]', start, end, minstart, maxend,
-                                    'overlapping', self.now, self.formatter)
-        self.occview.insert_item(item)
 
 
 class Formatter(object):
