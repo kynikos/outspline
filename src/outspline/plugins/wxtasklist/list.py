@@ -364,14 +364,17 @@ class OccurrencesView(object):
         self.pastN = 0
         self.activealarms = {}
 
-        self._prepare_time_allocation()
+        self.timealloc = TimeAllocation(self.show_gaps, self.show_overlappings,
+                                    self.min_time, self.max_time, self.colors,
+                                    self.now, self, self.formatter)
 
         for occurrence in occurrences:
-            item = ListRegularItem(occurrence, self, self.formatter)
-            self._insert_item(item)
+            item = ListRegularItem(occurrence, self, self.formatter,
+                                                                self.timealloc)
+            self.insert_item(item)
 
         # Do this *after* inserting the items but *before* sorting
-        self.insert_gaps_and_overlappings()
+        self.timealloc.insert_gaps_and_overlappings()
 
         # Use SortListItems instead of occurrences.sort(), so that the heading
         # will properly display the arrow icon
@@ -385,48 +388,7 @@ class OccurrencesView(object):
         return self.filter_.compute_delay(occsobj, self.now, self.min_time,
                                                                 self.max_time)
 
-    def _prepare_time_allocation(self):
-        if self.show_gaps or self.show_overlappings:
-            # Bit array that stores the minutes occupied by at least an
-            # occurrence
-            self.time_allocation = 0
-
-            # Bit array that stores the minutes occupied by at least two
-            # occurrences
-            self.time_allocation_overlap = 0
-
-            self.compute_time_allocation = self._compute_time_allocation_real
-            self.insert_gaps_and_overlappings = \
-                                        self._insert_gaps_and_overlappings_real
-        else:
-            self.compute_time_allocation = self._compute_time_allocation_dummy
-            self.insert_gaps_and_overlappings = \
-                                    self._insert_gaps_and_overlappings_dummy
-
-    def _compute_time_allocation_real(self, start, end):
-        # Don't even think of using the duration calculated for the occurrence,
-        # since part of it may be out of the interval
-        # The occurrence could span outside of the interval, for example if
-        # it's been retrieved because its alarm time is in the interval instead
-        # If end is None the following test will never be True
-        # Also consider start == self.max_time, in accordance with the
-        # behaviour of the occurrence search algorithm
-        if start <= self.max_time and end > self.min_time:
-            minr = max((start - self.min_time, 0)) // 60
-            # Add 1 to self.max_time because if an occurrence is exceeding it,
-            # it *is* occupying that minute too
-            maxr = (min((end, self.max_time + 60)) - self.min_time) // 60
-            interval = maxr - minr
-            occrarr = 2 ** interval - 1
-            occarr = occrarr << minr
-            occoverlap = self.time_allocation & occarr
-            self.time_allocation |= occarr
-            self.time_allocation_overlap |= occoverlap
-
-    def _compute_time_allocation_dummy(self, start, end):
-        pass
-
-    def _insert_item(self, item):
+    def insert_item(self, item):
         i = len(self.occs)
         self.occs.append(item)
 
@@ -458,72 +420,6 @@ class OccurrencesView(object):
         # In order for ColumnSorterMixin to work, all items must have a
         # unique data value
         self.listview.SetItemData(index, i)
-
-    def _insert_gaps_and_overlappings_real(self):
-        # Don't find gaps/overlappings for occurrences out of the search
-        # interval, e.g. old active alarms
-        # Add 1 minute to self.max_time (and hence to the whole interval)
-        # because that minute is *included* in the occurrence search interval
-        interval = (self.max_time + 60 - self.min_time) // 60
-
-        if self.show_gaps:
-            gaps = '{:b}'.format(self.time_allocation).zfill(interval
-                                ).translate(string_.maketrans("10","01"))[::-1]
-            self._find_gaps_or_overlappings(gaps,self._insert_gap)
-
-        if self.show_overlappings:
-            overlappings = '{:b}'.format(self.time_allocation_overlap).zfill(
-                                                                interval)[::-1]
-            self._find_gaps_or_overlappings(overlappings,
-                                                    self._insert_overlapping)
-
-    def _insert_gaps_and_overlappings_dummy(self):
-        pass
-
-    def _find_gaps_or_overlappings(self, bitstring, call):
-        maxend = False
-
-        # Find a gap/overlapping at the beginning of the interval separately
-        if bitstring[0] == '1':
-            bitstart = 0
-
-            try:
-                bitend = bitstring.index('10', bitstart) + 1
-            except ValueError:
-                bitend = len(bitstring)
-                maxend = True
-
-            call(bitstart, bitend, True, maxend)
-        else:
-            bitend = 0
-
-        while True:
-            try:
-                bitstart = bitstring.index('01', bitend) + 1
-            except ValueError:
-                break
-            else:
-                try:
-                    bitend = bitstring.index('10', bitstart) + 1
-                except ValueError:
-                    bitend = len(bitstring)
-                    maxend = True
-
-                call(bitstart, bitend, False, maxend)
-
-    def _insert_gap(self, mstart, mend, minstart, maxend):
-        start = mstart * 60 + self.min_time
-        end = mend * 60 + self.min_time
-        item = ListAuxiliaryItem('[gap]', start, end, minstart, maxend,
-                                    self.colors['gap'], self, self.formatter)
-        self._insert_item(item)
-
-    def _insert_overlapping(self, mstart, mend, minstart, maxend):
-        start = mstart * 60 + self.min_time
-        end = mend * 60 + self.min_time
-        item = ListAuxiliaryItem('[overlapping]', start, end, minstart, maxend,
-                            self.colors['overlapping'], self, self.formatter)
-        self._insert_item(item)
 
     def _popup_context_menu(self, event):
         self.cmenu.update()
@@ -596,6 +492,133 @@ class OccurrencesView(object):
         config['show_gaps'] = 'yes' if self.show_gaps else 'no'
         config['show_overlappings'] = 'yes' if self.show_overlappings else 'no'
         config['autoscroll'] = 'on' if self.autoscroll.is_enabled() else 'off'
+
+
+class TimeAllocation(object):
+    def __init__(self, show_gaps, show_overlappings, min_time, max_time,
+                                            colors, now, occview, formatter):
+        self.show_gaps = show_gaps
+        self.show_overlappings = show_overlappings
+        self.min_time = min_time
+        self.max_time = max_time
+        self.colors = colors
+        self.now = now
+        self.occview = occview
+        self.formatter = formatter
+
+        if self.show_gaps or self.show_overlappings:
+            # Bit array that stores the minutes occupied by at least an
+            # occurrence
+            self.time_allocation = 0
+
+            # Bit array that stores the minutes occupied by at least two
+            # occurrences
+            self.time_allocation_overlap = 0
+
+            self.compute_time_allocation = self._compute_time_allocation_real
+            self.insert_gaps_and_overlappings = \
+                                        self._insert_gaps_and_overlappings_real
+        else:
+            self.compute_time_allocation = self._compute_time_allocation_dummy
+            self.insert_gaps_and_overlappings = \
+                                    self._insert_gaps_and_overlappings_dummy
+
+    def compute_time_allocation(self, start, end):
+        # This method is assigned dynamically
+        pass
+
+    def _compute_time_allocation_real(self, start, end):
+        # Don't even think of using the duration calculated for the occurrence,
+        # since part of it may be out of the interval
+        # The occurrence could span outside of the interval, for example if
+        # it's been retrieved because its alarm time is in the interval instead
+        # If end is None the following test will never be True
+        # Also consider start == self.max_time, in accordance with the
+        # behaviour of the occurrence search algorithm
+        if start <= self.max_time and end > self.min_time:
+            minr = max((start - self.min_time, 0)) // 60
+            # Add 1 to self.max_time because if an occurrence is exceeding it,
+            # it *is* occupying that minute too
+            maxr = (min((end, self.max_time + 60)) - self.min_time) // 60
+            interval = maxr - minr
+            occrarr = 2 ** interval - 1
+            occarr = occrarr << minr
+            occoverlap = self.time_allocation & occarr
+            self.time_allocation |= occarr
+            self.time_allocation_overlap |= occoverlap
+
+    def _compute_time_allocation_dummy(self, start, end):
+        pass
+
+    def insert_gaps_and_overlappings(self):
+        # This method is assigned dynamically
+        pass
+
+    def _insert_gaps_and_overlappings_real(self):
+        # Don't find gaps/overlappings for occurrences out of the search
+        # interval, e.g. old active alarms
+        # Add 1 minute to self.max_time (and hence to the whole interval)
+        # because that minute is *included* in the occurrence search interval
+        interval = (self.max_time + 60 - self.min_time) // 60
+
+        if self.show_gaps:
+            gaps = '{:b}'.format(self.time_allocation).zfill(interval
+                                ).translate(string_.maketrans("10","01"))[::-1]
+            self._find_gaps_or_overlappings(gaps, self._insert_gap)
+
+        if self.show_overlappings:
+            overlappings = '{:b}'.format(self.time_allocation_overlap).zfill(
+                                                                interval)[::-1]
+            self._find_gaps_or_overlappings(overlappings,
+                                                    self._insert_overlapping)
+
+    def _insert_gaps_and_overlappings_dummy(self):
+        pass
+
+    def _find_gaps_or_overlappings(self, bitstring, call):
+        maxend = False
+
+        # Find a gap/overlapping at the beginning of the interval separately
+        if bitstring[0] == '1':
+            bitstart = 0
+
+            try:
+                bitend = bitstring.index('10', bitstart) + 1
+            except ValueError:
+                bitend = len(bitstring)
+                maxend = True
+
+            call(bitstart, bitend, True, maxend)
+        else:
+            bitend = 0
+
+        while True:
+            try:
+                bitstart = bitstring.index('01', bitend) + 1
+            except ValueError:
+                break
+            else:
+                try:
+                    bitend = bitstring.index('10', bitstart) + 1
+                except ValueError:
+                    bitend = len(bitstring)
+                    maxend = True
+
+                call(bitstart, bitend, False, maxend)
+
+    def _insert_gap(self, mstart, mend, minstart, maxend):
+        start = mstart * 60 + self.min_time
+        end = mend * 60 + self.min_time
+        item = ListAuxiliaryItem('[gap]', start, end, minstart, maxend,
+                                self.colors['gap'], self.now, self.formatter)
+        self.occview.insert_item(item)
+
+    def _insert_overlapping(self, mstart, mend, minstart, maxend):
+        start = mstart * 60 + self.min_time
+        end = mend * 60 + self.min_time
+        item = ListAuxiliaryItem('[overlapping]', start, end, minstart, maxend,
+                        self.colors['overlapping'], self.now, self.formatter)
+        self.occview.insert_item(item)
 
 
 class Formatter(object):
@@ -798,7 +821,7 @@ class _ListItem(object):
 
 
 class ListRegularItem(_ListItem):
-    def __init__(self, occ, occview, formatter):
+    def __init__(self, occ, occview, formatter, timealloc):
         self.filename = occ['filename']
         self.id_ = occ['id_']
         self.start = occ['start']
@@ -870,11 +893,11 @@ class ListRegularItem(_ListItem):
         self.compvalues = (self.fname, self.title, self.start, self.duration,
                                             self.end, self.stateid, self.alarm)
 
-        occview.compute_time_allocation(self.start, self.end)
+        timealloc.compute_time_allocation(self.start, self.end)
 
 
 class ListAuxiliaryItem(_ListItem):
-    def __init__(self, title, start, end, minstart, maxend, color, occview,
+    def __init__(self, title, start, end, minstart, maxend, color, now,
                                                                     formatter):
         self.filename = None
         self.id_ = None
@@ -886,7 +909,7 @@ class ListAuxiliaryItem(_ListItem):
         self.alarmid = None
         self.color = color
 
-        mnow = occview.now // 60 * 60
+        mnow = now // 60 * 60
 
         if mnow < self.start:
             self.state = 'future'
