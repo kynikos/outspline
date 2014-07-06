@@ -73,19 +73,21 @@ class OccurrencesView(object):
         self.navigator = navigator
 
         self.occs = []
+        self.pastN = 0
+        self.activealarms = {}
 
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
-        self.formatter = Formatter(self.config)
-
         self._init_list()
+
+        self.refengine = RefreshEngine(self.config, self, self.listview,
+                                                    self.occs, self.datamap)
+
         self._init_autoscroll()
         self._init_filters()
-        self._init_colors()
         self._init_show_options()
-        self._init_timers()
 
-        self.enable_refresh()
+        self.refengine.enable()
 
     def _init_list(self):
         self.DATABASE_COLUMN = 0
@@ -146,76 +148,10 @@ class OccurrencesView(object):
             self.autoscroll.enable()
 
     def _init_filters(self):
-        self.filterlimits = (
-            int(_time.mktime(_datetime.datetime(
-                                            self.config.get_int('minimum_year'
-                                            ), 1, 1).timetuple())),
-            int(_time.mktime(_datetime.datetime(
-                                            self.config.get_int('maximum_year'
-                                            ) + 1, 1, 1).timetuple())) - 1
-        )
-
-        self.filterclasses = {
-            'relative': filters.FilterRelative,
-            'date': filters.FilterDate,
-            'month': filters.FilterMonth,
-        }
-
         try:
             self.set_filter(self.navigator.get_current_configuration())
         except OutOfRangeError:
             self.set_filter(self.navigator.get_default_configuration())
-
-    def _init_colors(self):
-        system = self.listview.GetTextColour()
-        colpast = self.config['color_past']
-        colongoing = self.config['color_ongoing']
-        colfuture = self.config['color_future']
-        colactive = self.config['color_active']
-        colgap = self.config['color_gap']
-        coloverlap = self.config['color_overlapping']
-        self.colors = {}
-
-        if colpast == 'system':
-            self.colors['past'] = system
-        elif colpast == 'auto':
-            DIFF = 64
-            avg = (system.Red() + system.Green() + system.Blue()) // 3
-
-            if avg > 127:
-                self.colors['past'] = wx.Colour(
-                                              max((system.Red() - DIFF, 0)),
-                                              max((system.Green() - DIFF, 0)),
-                                              max((system.Blue() - DIFF, 0)))
-            else:
-                self.colors['past'] = wx.Colour(
-                                            min((system.Red() + DIFF, 255)),
-                                            min((system.Green() + DIFF, 255)),
-                                            min((system.Blue() + DIFF, 255)))
-        else:
-            self.colors['past'] = wx.Colour()
-            self.colors['past'].SetFromString(colpast)
-
-        if colongoing == 'system':
-            self.colors['ongoing'] = system
-        else:
-            self.colors['ongoing'] = wx.Colour()
-            self.colors['ongoing'].SetFromString(colongoing)
-
-        if colfuture == 'system':
-            self.colors['future'] = system
-        else:
-            self.colors['future'] = wx.Colour()
-            self.colors['future'].SetFromString(colfuture)
-
-        if colactive == 'system':
-            self.colors['active'] = system
-        else:
-            self.colors['active'] = wx.Colour()
-            self.colors['active'].SetFromString(colactive)
-
-        self.colors['gap'] = colgap
-        self.colors['overlapping'] = coloverlap
 
     def _init_show_options(self):
         self.active_alarms_modes = {
@@ -223,17 +159,11 @@ class OccurrencesView(object):
             'auto': lambda mint, now, maxt: mint <= now <= maxt,
             'all': lambda mint, now, maxt: True,
         }
+
         self.active_alarms_mode = self.config['active_alarms']
 
         self.show_gaps = self.config.get_bool('show_gaps')
         self.show_overlappings = self.config.get_bool('show_overlappings')
-
-    def _init_timers(self):
-        self.DELAY = self.config.get_int('refresh_delay')
-
-        self.timer = wx.CallLater(0, self._restart)
-        # Initialize self.timerdelay with a dummy function (int)
-        self.timerdelay = wx.CallLater(self.DELAY, int)
 
     def _init_context_menu(self, mainmenu):
         self.cmenu = menus.ListContextMenu(self.tasklist, mainmenu)
@@ -242,151 +172,31 @@ class OccurrencesView(object):
         return (self.datamap[key1][self.START_COLUMN],
                                         self.datamap[key2][self.START_COLUMN])
 
-    def _delay_restart_on_text_update(self, kwargs):
-        if kwargs['text'] is not None:
-            self.delay_restart()
-
     def enable_refresh(self):
-        core_api.bind_to_update_item(self._delay_restart_on_text_update)
-        # The old occurrences are searched on a separate thread, so they may be
-        # found *after* the next occurrences, so _delay_restart must be bound
-        # to this one too
-        organism_timer_api.bind_to_activate_occurrences_range(
-                                                        self._delay_restart)
-        # Note that self.delay_restart is *not* bound to
-        # organism_timer_api.bind_to_get_next_occurrences which is signalled by
-        # self._refresh signal because of the call to
-        # organism_timer_api.get_next_occurrences, otherwise this would make
-        # self._refresh recur infinitely
-        organism_timer_api.bind_to_search_next_occurrences(self._delay_restart)
-        organism_alarms_api.bind_to_alarm_off(self._delay_restart)
+        self.refengine.enable()
 
     def disable_refresh(self):
-        # Do not even think of disabling refreshing when the notebook tab is
-        # not selected, because then it should always be refreshed when
-        # selecting it, which would make everything more sluggish
-        core_api.bind_to_update_item(self._delay_restart_on_text_update, False)
-        organism_timer_api.bind_to_activate_occurrences_range(
-                                                    self._delay_restart, False)
-        organism_timer_api.bind_to_search_next_occurrences(self._delay_restart,
-                                                                        False)
-        organism_alarms_api.bind_to_alarm_off(self._delay_restart, False)
+        self.refengine.disable()
 
-    def _delay_restart(self, kwargs):
-        # self.delay_restart uses wx.CallLater, which cannot be called from
-        # other threads than the main one
-        wx.CallAfter(self.delay_restart)
-
-    def delay_restart(self):
-        # Instead of self._restart, bind _this_ function to events that can be
-        # signalled many times in a loop, so that self._restart is executed
-        # only once after the last signal
-        self.timerdelay.Stop()
-        self.timerdelay = wx.CallLater(self.DELAY, self._restart)
-
-    def _restart(self):
-        self.timer.Stop()
-
-        # This method is called with CallLater, so this may cause race bugs;
-        # for example it's possible that, when closing the application, this
-        # method is called when closing the last database, but when it's
-        # actually executed the tasklist has already been destroyed
-        if self.listview:
-            delay = self._refresh()
-
-            if delay is not None:
-                # delay may become too big (long instead of int), limit it to
-                # 24h
-                # This has also the advantage of limiting the drift of the
-                # timer
-                try:
-                    self.timer.Restart(delay * 1000)
-                except OverflowError:
-                    delay = min(86400000, sys.maxint)
-                    self.timer.Restart(delay)
-
-                # Log after the try-except block because the delay can still be
-                # modified there
-                log.debug('Next tasklist refresh in {} seconds'.format(delay))
+    def refresh(self):
+        self.refengine.delay_restart()
 
     def set_filter(self, config):
         self.autoscroll.pre_execute()
-        self.filter_ = self.filterclasses[config['mode']](config)
+        self.refengine.set_filter(config)
 
-    def _refresh(self):
-        log.debug('Refresh tasklist')
-
-        self.now = int(_time.time())
-
-        try:
-            self.min_time, self.max_time = self.filter_.compute_limits(
-                                                                    self.now)
-        except OutOfRangeError:
-            msgboxes.warn_out_of_range().ShowModal()
-        else:
-            if self.min_time < self.filterlimits[0] or \
-                                        self.max_time > self.filterlimits[1]:
-                msgboxes.warn_out_of_range().ShowModal()
-            else:
-                return self._refresh_continue()
-
-    def _refresh_continue(self):
-        search = organism_api.get_occurrences_range(mint=self.min_time,
-                maxt=self.max_time, filenames=core_api.get_open_databases())
-        search.start()
-        occsobj = search.get_results()
-        occurrences = occsobj.get_list()
-
-        # Always add active (but not snoozed) alarms if time interval includes
-        # current time
-        if self.active_alarms_modes[self.active_alarms_mode](self.min_time,
-                                                    self.now, self.max_time):
-            occurrences.extend(occsobj.get_active_list())
-
-        if self.listview.GetItemCount() > 0:
-            # Save the scroll y for restoring it after inserting the items
-            # I could instead save
-            #   self.listview.GetItemData(self.listview.GetTopItem()), but in
-            #   case that disappears or moves in the list, the thing should
-            #   start being complicated, and probably even confusing for the
-            #   user
-            # Note that self.listview.GetItemRect(0).GetY() gives a slightly
-            # wrong value
-            yscroll = abs(self.listview.GetItemPosition(0).y)
-            self.listview.DeleteAllItems()
-        else:
-            yscroll = 0
-
-        # Don't re-assign = {} or the other live references to the object won't
-        # be updated anymore (they'll still refer to the old object)
-        self.occs[:] = []
-        self.datamap.clear()
-        self.pastN = 0
-        self.activealarms = {}
-
-        self.timealloc = TimeAllocation(self.show_gaps, self.show_overlappings,
-                                    self.min_time, self.max_time, self.colors,
-                                    self.now, self, self.formatter)
-
-        for occurrence in occurrences:
-            item = ListRegularItem(occurrence, self, self.formatter,
-                                                                self.timealloc)
-            self.insert_item(item)
-
-        # Do this *after* inserting the items but *before* sorting
-        self.timealloc.insert_gaps_and_overlappings()
-
-        # Use SortListItems instead of occurrences.sort(), so that the heading
-        # will properly display the arrow icon
-        # Using (-1, -1) will preserve the current sort column and order
-        self.listview.SortListItems(-1, -1)
-
-        # The list must be autoscrolled *after* sorting the items, so that the
-        # correct y values will be got
+    def autoscroll_list(self, yscroll):
         self.autoscroll.execute(yscroll)
 
-        return self.filter_.compute_delay(occsobj, self.now, self.min_time,
-                                                                self.max_time)
+    def is_time_in_range(self, now, min_time, max_time):
+        return self.active_alarms_modes[self.active_alarms_mode](min_time, now,
+                                                                    max_time)
+
+    def reset_past_count(self):
+        self.pastN = 0
+
+    def reset_active_alarms(self):
+        self.activealarms.clear()
 
     def insert_item(self, item):
         i = len(self.occs)
@@ -471,6 +281,9 @@ class OccurrencesView(object):
     def get_past_number(self):
         return self.pastN
 
+    def get_gaps_and_overlappings_setting(self):
+        return (self.show_gaps, self.show_overlappings)
+
     def save_configuration(self):
         config = coreaux_api.get_plugin_configuration('wxtasklist')
 
@@ -494,17 +307,188 @@ class OccurrencesView(object):
         config['autoscroll'] = 'on' if self.autoscroll.is_enabled() else 'off'
 
 
+class RefreshEngine(object):
+    def __init__(self, config, occview, listview, occs, datamap):
+        self.occview = occview
+        self.listview = listview
+        self.occs = occs
+        self.datamap = datamap
+        self.DELAY = config.get_int('refresh_delay')
+
+        self.formatter = Formatter(config, self.listview)
+
+        self.filterclasses = {
+            'relative': filters.FilterRelative,
+            'date': filters.FilterDate,
+            'month': filters.FilterMonth,
+        }
+
+        self.filterlimits = (
+            int(_time.mktime(_datetime.datetime(
+                    config.get_int('minimum_year'), 1, 1).timetuple())),
+            int(_time.mktime(_datetime.datetime(
+                    config.get_int('maximum_year') + 1, 1, 1).timetuple())) - 1
+        )
+
+        self.timer = wx.CallLater(0, self._restart)
+        # Initialize self.timerdelay with a dummy function (int)
+        self.timerdelay = wx.CallLater(self.DELAY, int)
+
+    def enable(self):
+        core_api.bind_to_update_item(self._delay_restart_on_text_update)
+        # The old occurrences are searched on a separate thread, so they may be
+        # found *after* the next occurrences, so _delay_restart must be bound
+        # to this one too
+        organism_timer_api.bind_to_activate_occurrences_range(
+                                                        self._delay_restart)
+        # Note that self.delay_restart is *not* bound to
+        # organism_timer_api.bind_to_get_next_occurrences which is signalled by
+        # self._refresh signal because of the call to
+        # organism_timer_api.get_next_occurrences, otherwise this would make
+        # self._refresh recur infinitely
+        organism_timer_api.bind_to_search_next_occurrences(self._delay_restart)
+        organism_alarms_api.bind_to_alarm_off(self._delay_restart)
+
+    def disable(self):
+        # Do not even think of disabling refreshing when the notebook tab is
+        # not selected, because then it should always be refreshed when
+        # selecting it, which would make everything more sluggish
+        core_api.bind_to_update_item(self._delay_restart_on_text_update, False)
+        organism_timer_api.bind_to_activate_occurrences_range(
+                                                    self._delay_restart, False)
+        organism_timer_api.bind_to_search_next_occurrences(self._delay_restart,
+                                                                        False)
+        organism_alarms_api.bind_to_alarm_off(self._delay_restart, False)
+
+    def set_filter(self, config):
+        self.filter_ = self.filterclasses[config['mode']](config)
+
+    def _delay_restart_on_text_update(self, kwargs):
+        if kwargs['text'] is not None:
+            self.delay_restart()
+
+    def _delay_restart(self, kwargs):
+        # self.delay_restart uses wx.CallLater, which cannot be called from
+        # other threads than the main one
+        wx.CallAfter(self.delay_restart)
+
+    def delay_restart(self):
+        # Instead of self._restart, bind _this_ function to events that can be
+        # signalled many times in a loop, so that self._restart is executed
+        # only once after the last signal
+        self.timerdelay.Stop()
+        self.timerdelay = wx.CallLater(self.DELAY, self._restart)
+
+    def _restart(self):
+        self.timer.Stop()
+
+        # This method is called with CallLater, so this may cause race bugs;
+        # for example it's possible that, when closing the application, this
+        # method is called when closing the last database, but when it's
+        # actually executed the tasklist has already been destroyed
+        if self.listview:
+            delay = self._refresh()
+
+            if delay is not None:
+                # delay may become too big (long instead of int), limit it to
+                # 24h
+                # This has also the advantage of limiting the drift of the
+                # timer
+                try:
+                    self.timer.Restart(delay * 1000)
+                except OverflowError:
+                    delay = min(86400000, sys.maxint)
+                    self.timer.Restart(delay)
+
+                # Log after the try-except block because the delay can still be
+                # modified there
+                log.debug('Next tasklist refresh in {} seconds'.format(delay))
+
+    def _refresh(self):
+        log.debug('Refresh tasklist')
+
+        self.now = int(_time.time())
+
+        try:
+            self.min_time, self.max_time = self.filter_.compute_limits(
+                                                                    self.now)
+        except OutOfRangeError:
+            msgboxes.warn_out_of_range().ShowModal()
+        else:
+            if self.min_time < self.filterlimits[0] or \
+                                        self.max_time > self.filterlimits[1]:
+                msgboxes.warn_out_of_range().ShowModal()
+            else:
+                return self._refresh_continue()
+
+    def _refresh_continue(self):
+        search = organism_api.get_occurrences_range(mint=self.min_time,
+                maxt=self.max_time, filenames=core_api.get_open_databases())
+        search.start()
+        occsobj = search.get_results()
+        occurrences = occsobj.get_list()
+
+        # Always add active (but not snoozed) alarms if time interval includes
+        # current time
+        if self.occview.is_time_in_range(self.now, self.min_time,
+                                                                self.max_time):
+            occurrences.extend(occsobj.get_active_list())
+
+        if self.listview.GetItemCount() > 0:
+            # Save the scroll y for restoring it after inserting the items
+            # I could instead save
+            #   self.listview.GetItemData(self.listview.GetTopItem()), but in
+            #   case that disappears or moves in the list, the thing should
+            #   start being complicated, and probably even confusing for the
+            #   user
+            # Note that self.listview.GetItemRect(0).GetY() gives a slightly
+            # wrong value
+            yscroll = abs(self.listview.GetItemPosition(0).y)
+            self.listview.DeleteAllItems()
+        else:
+            yscroll = 0
+
+        # Don't re-assign = [] or the other live references to the object won't
+        # be updated anymore (they'll still refer to the old object)
+        self.occs[:] = []
+        self.datamap.clear()
+        self.occview.reset_past_count()
+        self.occview.reset_active_alarms()
+
+        self.timealloc = TimeAllocation(self.min_time, self.max_time, self.now,
+                                                self.occview, self.formatter)
+
+        for occurrence in occurrences:
+            item = ListRegularItem(occurrence, self.occview, self.now,
+                                                self.formatter, self.timealloc)
+            self.occview.insert_item(item)
+
+        # Do this *after* inserting the items but *before* sorting
+        self.timealloc.insert_gaps_and_overlappings()
+
+        # Use SortListItems instead of occurrences.sort(), so that the heading
+        # will properly display the arrow icon
+        # Using (-1, -1) will preserve the current sort column and order
+        self.listview.SortListItems(-1, -1)
+
+        # The list must be autoscrolled *after* sorting the items, so that the
+        # correct y values will be got
+        self.occview.autoscroll_list(yscroll)
+
+        return self.filter_.compute_delay(occsobj, self.now, self.min_time,
+                                                                self.max_time)
+
+
 class TimeAllocation(object):
-    def __init__(self, show_gaps, show_overlappings, min_time, max_time,
-                                            colors, now, occview, formatter):
-        self.show_gaps = show_gaps
-        self.show_overlappings = show_overlappings
+    def __init__(self, min_time, max_time, now, occview, formatter):
         self.min_time = min_time
         self.max_time = max_time
-        self.colors = colors
         self.now = now
         self.occview = occview
         self.formatter = formatter
+
+        self.show_gaps, self.show_overlappings = \
+                            self.occview.get_gaps_and_overlappings_setting()
 
         if self.show_gaps or self.show_overlappings:
             # Bit array that stores the minutes occupied by at least an
@@ -609,20 +593,22 @@ class TimeAllocation(object):
     def _insert_gap(self, mstart, mend, minstart, maxend):
         start = mstart * 60 + self.min_time
         end = mend * 60 + self.min_time
-        item = ListAuxiliaryItem('[gap]', start, end, minstart, maxend,
-                                self.colors['gap'], self.now, self.formatter)
+        item = ListAuxiliaryItem('[gap]', start, end, minstart, maxend, 'gap',
+                                                    self.now, self.formatter)
         self.occview.insert_item(item)
 
     def _insert_overlapping(self, mstart, mend, minstart, maxend):
         start = mstart * 60 + self.min_time
         end = mend * 60 + self.min_time
         item = ListAuxiliaryItem('[overlapping]', start, end, minstart, maxend,
-                        self.colors['overlapping'], self.now, self.formatter)
+                                    'overlapping', self.now, self.formatter)
         self.occview.insert_item(item)
 
 
 class Formatter(object):
-    def __init__(self, config):
+    def __init__(self, config, listview):
+        self.config = config
+        self.listview = listview
         self.startformat = config['start_format']
         self.endformat = config['end_format']
         self.alarmformat = config['alarm_format']
@@ -643,6 +629,59 @@ class Formatter(object):
         else:
             self.format_duration = self._format_duration_expanded
 
+        self._init_colors()
+
+    def _init_colors(self):
+        system = self.listview.GetTextColour()
+        colpast = self.config['color_past']
+        colongoing = self.config['color_ongoing']
+        colfuture = self.config['color_future']
+        colactive = self.config['color_active']
+        colgap = self.config['color_gap']
+        coloverlap = self.config['color_overlapping']
+        self.colors = {}
+
+        if colpast == 'system':
+            self.colors['past'] = system
+        elif colpast == 'auto':
+            DIFF = 64
+            avg = (system.Red() + system.Green() + system.Blue()) // 3
+
+            if avg > 127:
+                self.colors['past'] = wx.Colour(
+                                              max((system.Red() - DIFF, 0)),
+                                              max((system.Green() - DIFF, 0)),
+                                              max((system.Blue() - DIFF, 0)))
+            else:
+                self.colors['past'] = wx.Colour(
+                                            min((system.Red() + DIFF, 255)),
+                                            min((system.Green() + DIFF, 255)),
+                                            min((system.Blue() + DIFF, 255)))
+        else:
+            self.colors['past'] = wx.Colour()
+            self.colors['past'].SetFromString(colpast)
+
+        if colongoing == 'system':
+            self.colors['ongoing'] = system
+        else:
+            self.colors['ongoing'] = wx.Colour()
+            self.colors['ongoing'].SetFromString(colongoing)
+
+        if colfuture == 'system':
+            self.colors['future'] = system
+        else:
+            self.colors['future'] = wx.Colour()
+            self.colors['future'].SetFromString(colfuture)
+
+        if colactive == 'system':
+            self.colors['active'] = system
+        else:
+            self.colors['active'] = wx.Colour()
+            self.colors['active'].SetFromString(colactive)
+
+        self.colors['gap'] = colgap
+        self.colors['overlapping'] = coloverlap
+
     def get_start_format(self):
         return self.startformat
 
@@ -651,6 +690,9 @@ class Formatter(object):
 
     def get_alarm_format(self):
         return self.alarmformat
+
+    def get_color(self, type_):
+        return self.colors[type_]
 
     def format_database(self, filename):
         # This method is assigned dynamically
@@ -821,7 +863,7 @@ class _ListItem(object):
 
 
 class ListRegularItem(_ListItem):
-    def __init__(self, occ, occview, formatter, timealloc):
+    def __init__(self, occ, occview, now, formatter, timealloc):
         self.filename = occ['filename']
         self.id_ = occ['id_']
         self.start = occ['start']
@@ -830,13 +872,13 @@ class ListRegularItem(_ListItem):
 
         self.fname = formatter.format_database(self.filename)
 
-        mnow = occview.now // 60 * 60
+        mnow = now // 60 * 60
 
         if mnow < self.start:
             self.state = 'future'
             self.stateid = 2
             self.pastN = 0
-            self.color = occview.colors['future']
+            self.color = formatter.get_color('future')
         # If end is None, as soon as the start time arrives, the
         # occurrence is finished, so it can't have an 'ongoing' state and has
         # to be be immediately marked as 'past'
@@ -850,12 +892,12 @@ class ListRegularItem(_ListItem):
             self.state = 'ongoing'
             self.stateid = 1
             self.pastN = 0
-            self.color = occview.colors['ongoing']
+            self.color = formatter.get_color('ongoing')
         else:
             self.state = 'past'
             self.stateid = 0
             self.pastN = 1
-            self.color = occview.colors['past']
+            self.color = formatter.get_color('past')
 
         text = core_api.get_item_text(self.filename, self.id_)
         self.title = text.partition('\n')[0]
@@ -882,7 +924,7 @@ class ListRegularItem(_ListItem):
             occview.add_active_alarm(self.filename, self.id_, self.alarmid)
             # Note that the assignment of the active color must come after any
             # previous color assignment, in order to override them
-            self.color = occview.colors['active']
+            self.color = formatter.get_color('active')
         # Note that testing if isinstance(alarm, int) *before* testing if
         # alarm is False would return True also when alarm is False!
         else:
@@ -897,7 +939,7 @@ class ListRegularItem(_ListItem):
 
 
 class ListAuxiliaryItem(_ListItem):
-    def __init__(self, title, start, end, minstart, maxend, color, now,
+    def __init__(self, title, start, end, minstart, maxend, type_, now,
                                                                     formatter):
         self.filename = None
         self.id_ = None
@@ -907,7 +949,8 @@ class ListAuxiliaryItem(_ListItem):
         self.end = end
         self.alarm = None
         self.alarmid = None
-        self.color = color
+
+        self.color = formatter.get_color(type_)
 
         mnow = now // 60 * 60
 

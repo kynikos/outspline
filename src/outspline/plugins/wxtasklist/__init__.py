@@ -116,7 +116,7 @@ class TaskList(object):
 
     def _enable(self):
         self.list_.enable_refresh()
-        self.list_.delay_restart()
+        self.list_.refresh()
 
     def _disable(self):
         self.list_.disable_refresh()

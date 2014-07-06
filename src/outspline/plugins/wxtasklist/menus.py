@@ -238,12 +238,12 @@ class MainMenu(wx.Menu):
     def _show_gaps(self, event):
         if self.tasklist.is_shown():
             self.occview.show_gaps = not self.occview.show_gaps
-            self.occview.delay_restart()
+            self.occview.refresh()
 
     def _show_overlappings(self, event):
         if self.tasklist.is_shown():
             self.occview.show_overlappings = not self.occview.show_overlappings
-            self.occview.delay_restart()
+            self.occview.refresh()
 
     def _scroll_to_ongoing(self, event):
         tab = wxgui_api.get_selected_right_nb_tab()
@@ -492,17 +492,17 @@ class AlarmsMenu(wx.Menu):
     def _set_in_range(self, event):
         if self.tasklist.is_shown():
             self.occview.active_alarms_mode = 'in_range'
-            self.occview.delay_restart()
+            self.occview.refresh()
 
     def _set_auto(self, event):
         if self.tasklist.is_shown():
             self.occview.active_alarms_mode = 'auto'
-            self.occview.delay_restart()
+            self.occview.refresh()
 
     def _set_all(self, event):
         if self.tasklist.is_shown():
             self.occview.active_alarms_mode = 'all'
-            self.occview.delay_restart()
+            self.occview.refresh()
 
 
 class TabContextMenu(wx.Menu):

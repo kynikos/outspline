@@ -169,7 +169,7 @@ class Navigator(object):
         except OutOfRangeError:
             msgboxes.warn_out_of_range().ShowModal()
         else:
-            self.tasklist.list_.delay_restart()
+            self.tasklist.list_.refresh()
 
     def _show_previous_page(self, event):
         self.show_previous_page()
@@ -1091,7 +1091,7 @@ class FilterRelativeMinutes(object):
 
         try:
             # Note that the delay can still be further limited in
-            # OccurrencesView._restart
+            # RefreshEngine._restart
             # Subtract `now % 60` so that the refresh will occur at an exact
             # minute
             return min(delays) - now % 60
@@ -1115,7 +1115,7 @@ class FilterRelativeHours(object):
 
     def compute_delay(self, occsobj, now, mint, maxt):
         # Note that the delay can still be further limited in
-        # OccurrencesView._restart
+        # RefreshEngine._restart
         return 3600 - now % 3600
 
 
@@ -1143,7 +1143,7 @@ class FilterRelativeDays(object):
 
     def compute_delay(self, occsobj, now, mint, maxt):
         # Note that the delay can still be further limited in
-        # OccurrencesView._restart
+        # RefreshEngine._restart
         return 86400 - now % 86400 + self.nowoffset
 
 
@@ -1174,7 +1174,7 @@ class FilterRelativeWeeks(object):
 
     def compute_delay(self, occsobj, now, mint, maxt):
         # Note that the delay can still be further limited in
-        # OccurrencesView._restart
+        # RefreshEngine._restart
         return self.weekstart + 604800 - now
 
 
@@ -1212,7 +1212,7 @@ class FilterRelativeMonths(object):
         ndate = _datetime.date(year=self.dnow.year + rnyear, month=nmonth + 1,
                                                                         day=1)
         # Note that the delay can still be further limited in
-        # OccurrencesView._restart
+        # RefreshEngine._restart
         return _time.mktime(ndate.timetuple()) - now
 
 
@@ -1245,7 +1245,7 @@ class FilterRelativeYears(object):
     def compute_delay(self, occsobj, now, mint, maxt):
         ndate = _datetime.date(year=self.dnow.year + 1, month=1, day=1)
         # Note that the delay can still be further limited in
-        # OccurrencesView._restart
+        # RefreshEngine._restart
         return _time.mktime(ndate.timetuple()) - now
 
 
