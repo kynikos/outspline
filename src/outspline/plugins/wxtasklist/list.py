@@ -204,14 +204,7 @@ class OccurrencesView(object):
     def reset_active_alarms(self):
         self.activealarms.clear()
 
-    def insert_item(self, item):
-        i = len(self.occs)
-        self.occs.append(item)
-
-        # Both the key and the values of self.datamap must comply with the
-        # requirements of ColumnSorterMixin
-        self.datamap[i] = item.get_comparison_values()
-
+    def insert_item(self, i, item):
         self.pastN += item.get_past_count()
 
         # Initialize the first column with an empty string
@@ -479,17 +472,27 @@ class RefreshEngine(object):
     def _insert_occurrence(self, occurrence):
         item = ListRegularItem(occurrence, self.occview, self.now,
                                                 self.formatter, self.timealloc)
-        self.occview.insert_item(item)
+        self._insert_item(item)
 
     def insert_gap(self, start, end, minstart, maxend):
         item = ListAuxiliaryItem('[gap]', start, end, minstart, maxend, 'gap',
                                                     self.now, self.formatter)
-        self.occview.insert_item(item)
+        self._insert_item(item)
 
     def insert_overlapping(self, start, end, minstart, maxend):
         item = ListAuxiliaryItem('[overlapping]', start, end, minstart, maxend,
                                     'overlapping', self.now, self.formatter)
-        self.occview.insert_item(item)
+        self._insert_item(item)
+
+    def _insert_item(self, item):
+        i = len(self.occs)
+        self.occs.append(item)
+
+        # Both the key and the values of self.datamap must comply with the
+        # requirements of ColumnSorterMixin
+        self.datamap[i] = item.get_comparison_values()
+
+        self.occview.insert_item(i, item)
 
 
 class TimeAllocation(object):
