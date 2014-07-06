@@ -195,6 +195,12 @@ class OccurrencesView(object):
     def reset_past_count(self):
         self.pastN = 0
 
+    def get_past_count(self):
+        return self.pastN
+
+    def get_gaps_and_overlappings_setting(self):
+        return (self.show_gaps, self.show_overlappings)
+
     def reset_active_alarms(self):
         self.activealarms.clear()
 
@@ -206,7 +212,7 @@ class OccurrencesView(object):
         # requirements of ColumnSorterMixin
         self.datamap[i] = item.get_comparison_values()
 
-        self.pastN += item.get_past_counter()
+        self.pastN += item.get_past_count()
 
         # Initialize the first column with an empty string
         index = self.listview.InsertStringItem(sys.maxint, '')
@@ -277,12 +283,6 @@ class OccurrencesView(object):
             sel = self.listview.GetNextSelected(sel)
 
         return alarmsd
-
-    def get_past_number(self):
-        return self.pastN
-
-    def get_gaps_and_overlappings_setting(self):
-        return (self.show_gaps, self.show_overlappings)
 
     def save_configuration(self):
         config = coreaux_api.get_plugin_configuration('wxtasklist')
@@ -786,7 +786,7 @@ class Autoscroll(object):
     def _execute_auto(self, yscroll):
         # This method must get the same arguments as the other execute_*
         # methods
-        pastn = self.occview.get_past_number()
+        pastn = self.occview.get_past_count()
 
         if self.listview.GetItemCount() > 0:
             # Note that the autoscroll relies on the items to be initially
@@ -861,7 +861,7 @@ class _ListItem(object):
     def get_color(self):
         return self.color
 
-    def get_past_counter(self):
+    def get_past_count(self):
         return self.pastN
 
 
