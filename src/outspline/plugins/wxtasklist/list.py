@@ -183,9 +183,6 @@ class OccurrencesView(object):
         self.autoscroll.pre_execute()
         self.refengine.set_filter(config)
 
-    def autoscroll_list(self, yscroll):
-        self.autoscroll.execute(yscroll)
-
     def is_time_in_range(self, now, min_time, max_time):
         return self.active_alarms_modes[self.active_alarms_mode](min_time, now,
                                                                     max_time)
@@ -193,29 +190,53 @@ class OccurrencesView(object):
     def get_gaps_and_overlappings_setting(self):
         return (self.show_gaps, self.show_overlappings)
 
-    def insert_item(self, i, item):
-        # Initialize the first column with an empty string
-        index = self.listview.InsertStringItem(sys.maxint, '')
-        self.listview.SetStringItem(index, self.DATABASE_COLUMN,
+    def insert_items(self):
+        if self.listview.GetItemCount() > 0:
+            # Save the scroll y for restoring it after inserting the items
+            # I could instead save
+            #   self.listview.GetItemData(self.listview.GetTopItem()), but in
+            #   case that disappears or moves in the list, the thing should
+            #   start being complicated, and probably even confusing for the
+            #   user
+            # Note that self.listview.GetItemRect(0).GetY() gives a slightly
+            # wrong value
+            yscroll = abs(self.listview.GetItemPosition(0).y)
+            self.listview.DeleteAllItems()
+        else:
+            yscroll = 0
+
+        for i, item in enumerate(self.occs):
+            # Initialize the first column with an empty string
+            index = self.listview.InsertStringItem(sys.maxint, '')
+            self.listview.SetStringItem(index, self.DATABASE_COLUMN,
                                                 item.get_formatted_filename())
-        self.listview.SetStringItem(index, self.HEADING_COLUMN,
+            self.listview.SetStringItem(index, self.HEADING_COLUMN,
                                                 item.get_title())
-        self.listview.SetStringItem(index, self.START_COLUMN,
+            self.listview.SetStringItem(index, self.START_COLUMN,
                                                 item.get_start_date())
-        self.listview.SetStringItem(index, self.DURATION_COLUMN,
+            self.listview.SetStringItem(index, self.DURATION_COLUMN,
                                                 item.get_duration())
-        self.listview.SetStringItem(index, self.END_COLUMN,
+            self.listview.SetStringItem(index, self.END_COLUMN,
                                                 item.get_end_date())
-        self.listview.SetStringItem(index, self.STATE_COLUMN,
+            self.listview.SetStringItem(index, self.STATE_COLUMN,
                                                 item.get_state())
-        self.listview.SetStringItem(index, self.ALARM_COLUMN,
+            self.listview.SetStringItem(index, self.ALARM_COLUMN,
                                                 item.get_alarm_date())
 
-        self.listview.SetItemTextColour(index, item.get_color())
+            self.listview.SetItemTextColour(index, item.get_color())
 
-        # In order for ColumnSorterMixin to work, all items must have a
-        # unique data value
-        self.listview.SetItemData(index, i)
+            # In order for ColumnSorterMixin to work, all items must have a
+            # unique data value
+            self.listview.SetItemData(index, i)
+
+        # Use SortListItems instead of occurrences.sort(), so that the heading
+        # will properly display the arrow icon
+        # Using (-1, -1) will preserve the current sort column and order
+        self.listview.SortListItems(-1, -1)
+
+        # The list must be autoscrolled *after* sorting the items, so that the
+        # correct y values will be got
+        self.autoscroll.execute(yscroll)
 
     def _popup_context_menu(self, event):
         self.cmenu.update()
@@ -435,34 +456,13 @@ class RefreshEngine(object):
         self.timealloc = TimeAllocation(self.min_time, self.max_time,
                                                             self.occview, self)
 
-        if self.listview.GetItemCount() > 0:
-            # Save the scroll y for restoring it after inserting the items
-            # I could instead save
-            #   self.listview.GetItemData(self.listview.GetTopItem()), but in
-            #   case that disappears or moves in the list, the thing should
-            #   start being complicated, and probably even confusing for the
-            #   user
-            # Note that self.listview.GetItemRect(0).GetY() gives a slightly
-            # wrong value
-            yscroll = abs(self.listview.GetItemPosition(0).y)
-            self.listview.DeleteAllItems()
-        else:
-            yscroll = 0
-
         for occurrence in occurrences:
             self._insert_occurrence(occurrence)
 
         # Do this *after* inserting the items but *before* sorting
         self.timealloc.insert_gaps_and_overlappings()
 
-        # Use SortListItems instead of occurrences.sort(), so that the heading
-        # will properly display the arrow icon
-        # Using (-1, -1) will preserve the current sort column and order
-        self.listview.SortListItems(-1, -1)
-
-        # The list must be autoscrolled *after* sorting the items, so that the
-        # correct y values will be got
-        self.occview.autoscroll_list(yscroll)
+        self.occview.insert_items()
 
         return self.filter_.compute_delay(occsobj, self.now, self.min_time,
                                                                 self.max_time)
@@ -492,8 +492,6 @@ class RefreshEngine(object):
         self.datamap[i] = item.get_comparison_values()
 
         self.pastN += item.get_past_count()
-
-        self.occview.insert_item(i, item)
 
 
 class TimeAllocation(object):
