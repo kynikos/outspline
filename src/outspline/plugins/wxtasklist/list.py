@@ -238,6 +238,9 @@ class OccurrencesView(object):
 
         self.activealarms[filename][id_].append(alarmid)
 
+    def get_active_alarms(self):
+        return self.activealarms
+
     def get_selected_active_alarms(self):
         sel = self.listview.GetFirstSelected()
         alarmsd = {}

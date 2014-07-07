@@ -200,7 +200,7 @@ class MainMenu(wx.Menu):
                 # Note that "all" means all the visible active alarms; some
                 # may be hidden in the current view; this is also why these
                 # actions must be disabled if the tasklist is not focused
-                if len(self.occview.activealarms) > 0:
+                if len(self.occview.get_active_alarms()) > 0:
                     self.snooze_all.Enable()
                     self.dismiss_all.Enable()
 
@@ -328,7 +328,7 @@ class MainMenu(wx.Menu):
         tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.tasklist.panel:
-            alarmsd = self.occview.activealarms
+            alarmsd = self.occview.get_active_alarms()
 
             if len(alarmsd) > 0:
                 organism_alarms_api.dismiss_alarms(alarmsd)
@@ -556,7 +556,7 @@ class TabContextMenu(wx.Menu):
         self.AppendItem(self.dismiss_all)
 
     def update(self):
-        if len(self.tasklist.list_.activealarms) > 0:
+        if len(self.tasklist.list_.get_active_alarms()) > 0:
             self.snooze_all.Enable()
             self.dismiss_all.Enable()
         else:
@@ -836,6 +836,6 @@ class SnoozeAllConfigMenu(_SnoozeConfigMenu):
     def get_alarms(self):
         # Note that "all" means all the visible active alarms; some may be
         # hidden in the current view
-        return self.tasklist.list_.activealarms
+        return self.tasklist.list_.get_active_alarms()
 
 
