@@ -468,8 +468,9 @@ class RefreshEngine(object):
                                                                 self.max_time)
 
     def _insert_occurrence(self, occurrence):
-        item = ListRegularItem(occurrence, self, self.now, self.formatter,
-                                                                self.timealloc)
+        item = ListRegularItem(occurrence, self, self.now, self.formatter)
+        self.timealloc.compute_time_allocation(item.get_start(),
+                                                                item.get_end())
         self._insert_item(item)
 
     def insert_gap(self, start, end, minstart, maxend):
@@ -843,11 +844,17 @@ class _ListItem(object):
     def get_title(self):
         return self.title
 
+    def get_start(self):
+        return self.start
+
     def get_start_date(self):
         return self.startdate
 
     def get_duration(self):
         return self.durationstr
+
+    def get_end(self):
+        return self.end
 
     def get_end_date(self):
         return self.enddate
@@ -869,7 +876,7 @@ class _ListItem(object):
 
 
 class ListRegularItem(_ListItem):
-    def __init__(self, occ, refengine, now, formatter, timealloc):
+    def __init__(self, occ, refengine, now, formatter):
         self.filename = occ['filename']
         self.id_ = occ['id_']
         self.start = occ['start']
@@ -940,8 +947,6 @@ class ListRegularItem(_ListItem):
 
         self.compvalues = (self.fname, self.title, self.start, self.duration,
                                             self.end, self.stateid, self.alarm)
-
-        timealloc.compute_time_allocation(self.start, self.end)
 
 
 class ListAuxiliaryItem(_ListItem):
