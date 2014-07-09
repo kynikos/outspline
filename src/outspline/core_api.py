@@ -319,6 +319,10 @@ def bind_to_open_database(handler, bind=True):
     return databases.open_database_event.bind(handler, bind)
 
 
+def bind_to_closing_database(handler, bind=True):
+    return databases.closing_database_event.bind(handler, bind)
+
+
 def bind_to_close_database(handler, bind=True):
     return databases.close_database_event.bind(handler, bind)
 

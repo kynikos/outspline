@@ -35,6 +35,7 @@ memory = None
 create_database_event = Event()
 open_database_dirty_event = Event()
 open_database_event = Event()
+closing_database_event = Event()
 close_database_event = Event()
 save_database_event = Event()
 save_database_copy_event = Event()
@@ -327,6 +328,8 @@ class Database(object):
                                         destination=destination)
 
     def close(self):
+        closing_database_event.signal(filename=self.filename)
+
         self._remove()
 
         qconn = self.connection.get()
