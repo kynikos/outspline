@@ -323,9 +323,9 @@ class RefreshEngine(object):
                     config.get_int('maximum_year') + 1, 1, 1).timetuple())) - 1
         )
 
-        self.timer = wx.CallLater(0, self._restart)
         # Initialize self.timerdelay with a dummy function (int)
         self.timerdelay = wx.CallLater(self.DELAY, int)
+        self.timer = wx.CallLater(0, self._restart)
 
     def enable(self):
         core_api.bind_to_update_item(self._delay_restart_on_text_update)
@@ -406,15 +406,10 @@ class RefreshEngine(object):
                 # 24h
                 # This has also the advantage of limiting the drift of the
                 # timer
-                try:
-                    self.timer.Restart(delay * 1000)
-                except OverflowError:
-                    delay = min(86400000, sys.maxint)
-                    self.timer.Restart(delay)
-
-                # Log after the try-except block because the delay can still be
-                # modified there
-                log.debug('Next tasklist refresh in {} seconds'.format(delay))
+                delay = min(86400000, delay * 1000)
+                self.timer = wx.CallLater(delay, self._restart)
+                log.debug('Next tasklist refresh in {} seconds'.format(
+                                                                delay // 1000))
 
     def _refresh(self):
         log.debug('Refresh tasklist')
