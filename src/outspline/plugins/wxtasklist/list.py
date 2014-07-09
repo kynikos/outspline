@@ -23,6 +23,7 @@ import time as _time
 import datetime as _datetime
 import os
 import string as string_
+import threading
 
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import log
@@ -325,7 +326,8 @@ class RefreshEngine(object):
 
         # Initialize self.timerdelay with a dummy function (int)
         self.timerdelay = wx.CallLater(self.DELAY, int)
-        self.timer = wx.CallLater(0, self._refresh)
+        self.timer = threading.Timer(0, self._refresh)
+        self.timer.start()
 
     def enable(self):
         core_api.bind_to_update_item(self._delay_restart_on_text_update)
@@ -392,21 +394,21 @@ class RefreshEngine(object):
         self.timerdelay = wx.CallLater(self.DELAY, self._restart)
 
     def _restart(self, delay=0):
-        self.timer.Stop()
+        self.timer.cancel()
 
         if delay is not None:
             # delay may become too big (long instead of int), limit it to 24h
             # This has also the advantage of limiting the drift of the timer
-            delay = min(86400000, delay * 1000)
-            self.timer = wx.CallLater(delay, self._refresh)
-            log.debug('Next tasklist refresh in {} seconds'.format(
-                                                                delay // 1000))
+            delay = min(86400, delay)
+            self.timer = threading.Timer(delay, self._refresh)
+            self.timer.start()
+            log.debug('Next tasklist refresh in {} seconds'.format(delay))
 
     def _refresh(self):
-        # This method is called with CallLater, so this may cause race bugs;
-        # for example it's possible that, when closing the application, this
-        # method is called when closing the last database, but when it's
-        # actually executed the tasklist has already been destroyed
+        # This method is called with Timer, so this may cause race bugs; for
+        # example it's possible that, when closing the application, this method
+        # is called when closing the last database, but when it's actually
+        # executed the tasklist has already been destroyed
         if self.listview:
             log.debug('Refresh tasklist')
 
