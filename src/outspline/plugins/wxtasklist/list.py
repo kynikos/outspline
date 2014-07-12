@@ -142,12 +142,8 @@ class OccurrencesView(object):
 
     def _init_autoscroll(self):
         self.autoscroll = Autoscroll(self.listview, self.refengine,
-                self.config.get_int('autoscroll_padding'), self.STATE_COLUMN)
-
-        if self.config.get_bool('autoscroll'):
-            # Autoscroll is instantiated as disabled, so there's no need for an
-            # else clause
-            self.autoscroll.enable()
+                self.config.get_int('autoscroll_padding'), self.STATE_COLUMN,
+                self.config.get_bool('autoscroll'))
 
     def _init_filters(self):
         try:
@@ -811,12 +807,16 @@ class Formatter(object):
 
 
 class Autoscroll(object):
-    def __init__(self, listview, refengine, padding, state_column):
+    def __init__(self, listview, refengine, padding, state_column, enable):
         self.listview = listview
         self.refengine = refengine
         self.padding = padding
         self.state_column = state_column
-        self.enabled = False
+
+        if enable:
+            self.enable()
+        else:
+            self.disable()
 
         core_api.bind_to_open_database_dirty(self._pre_execute)
         wxgui_api.bind_to_close_database(self._pre_execute)
