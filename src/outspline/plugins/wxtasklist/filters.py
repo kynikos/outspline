@@ -1133,7 +1133,12 @@ class FilterRelativeDays(object):
         except ValueError:
             raise OutOfRangeError()
         else:
-            anow = now // 86400 * 86400 + self.nowoffset
+            # It's necessary to first subtract self.nowoffset to get the
+            # correct date, otherwise for positive UTC values the next day will
+            # be shown too early, and for negative UTC values it will be shown
+            # too late; eventually self.nowoffset must be re-added to get the
+            # correct local time
+            anow = (now - self.nowoffset) // 86400 * 86400 + self.nowoffset
             mint = anow + self.low
             # Subtract 1 second because if setting 'to/for 1' it's expected to
             # only show the current day, and not occurrences starting at the
@@ -1144,7 +1149,9 @@ class FilterRelativeDays(object):
     def compute_delay(self, occsobj, now, mint, maxt):
         # Note that the delay can still be further limited in
         # RefreshEngine._restart
-        return 86400 - now % 86400 + self.nowoffset
+        # Subtract self.nowoffset *before* modding by 86400 or negative values
+        # may be returned
+        return 86400 - (now - self.nowoffset) % 86400
 
 
 class FilterRelativeWeeks(object):
