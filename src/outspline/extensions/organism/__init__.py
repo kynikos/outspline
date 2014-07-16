@@ -134,8 +134,22 @@ class Main(object):
 
     def _handle_copy_item(self, kwargs):
         filename = kwargs['filename']
-        self.databases[filename].copy_item_rules(kwargs['id_'],
-                                                    filename in self.databases)
+        id_ = kwargs['id_']
+        record = [id_, ]
+
+        try:
+            db = self.databases[filename]
+        except KeyError:
+            # Even if the database doesn't support rules, create a correct
+            # table that can be safely used when pasting
+            record.append(items.Database.rules_to_string([]))
+        else:
+            record.extend(db.copy_item_rules(id_))
+
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+        curm.execute(queries.copyrules_insert, record)
+        core_api.give_memory_connection(mem)
 
     def _handle_paste_item(self, kwargs):
         try:
@@ -145,9 +159,15 @@ class Main(object):
             pass
 
     def _handle_safe_paste_check(self, kwargs):
-        filename = kwargs['filename']
-        self.databases[filename].can_paste_safely(kwargs['exception'],
-                                                    filename in self.databases)
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+        curm.execute(queries.copyrules_select,
+                                        (items.Database.rules_to_string([]), ))
+        core_api.give_memory_connection(mem)
+
+        # Warn if CopyRules table has rules but filename doesn't support them
+        if curm.fetchone() and kwargs['filename'] not in self.databases:
+            raise kwargs['exception']()
 
 
 def main():

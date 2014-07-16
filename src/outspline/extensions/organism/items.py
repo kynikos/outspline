@@ -117,34 +117,13 @@ class Database(object):
         core_api.insert_history(self.filename, group, id_, 'rules_update',
                                                 description, rules, unrules)
 
-    def copy_item_rules(self, id_, rules_supported):
-        record = [id_, ]
+    def copy_item_rules(self, id_):
+        conn = core_api.get_connection(self.filename)
+        cur = conn.cursor()
+        cur.execute(queries.rules_select_id, (id_, ))
+        core_api.give_connection(self.filename, conn)
 
-        if rules_supported:
-            conn = core_api.get_connection(self.filename)
-            cur = conn.cursor()
-            cur.execute(queries.rules_select_id, (id_, ))
-            record.extend(cur.fetchone())
-            core_api.give_connection(self.filename, conn)
-        else:
-            # Even if the database doesn't support rules, create a correct
-            # table that can be safely used when pasting
-            record.append(self.rules_to_string([]))
-
-        mem = core_api.get_memory_connection()
-        curm = mem.cursor()
-        curm.execute(queries.copyrules_insert, record)
-        core_api.give_memory_connection(mem)
-
-    def can_paste_safely(self, exception, rules_supported):
-        mem = core_api.get_memory_connection()
-        curm = mem.cursor()
-        curm.execute(queries.copyrules_select, (self.rules_to_string([]), ))
-        core_api.give_memory_connection(mem)
-
-        # Warn if CopyRules table has rules but filename doesn't support them
-        if curm.fetchone() and not rules_supported:
-            raise exception()
+        return cur.fetchone()
 
     def paste_item_rules(self, id_, oldid, group, description):
         mem = core_api.get_memory_connection()
