@@ -1034,6 +1034,7 @@ class FilterRelative(object):
 
 class FilterRelativeMinutes(object):
     def __init__(self, low, high):
+        self.CORRECTION = 1
         self.low = low * 60
         self.high = high * 60
 
@@ -1043,10 +1044,10 @@ class FilterRelativeMinutes(object):
         # non-exact minutes anyway
         anow = now // 60 * 60
         mint = anow + self.low
-        # Subtract 1 second because if setting 'to 0'/'for 1' it's expected to
-        # only show the current minute, and not occurrences starting at the
-        # next minute
-        maxt = anow + self.high - 1
+        # Subtract self.CORRECTION seconds because if setting 'to 0'/'for 1'
+        # it's expected to only show the current minute, and not occurrences
+        # starting at the next minute
+        maxt = anow + self.high - self.CORRECTION
         return (mint, maxt)
 
     def compute_delay(self, occsobj, now, mint, maxt):
@@ -1072,16 +1073,7 @@ class FilterRelativeMinutes(object):
         delays = []
 
         try:
-            # Add 60 so that the tasklist will be refreshed only when the
-            # completion minute ends; also this way the difference will never
-            # be 0, which would make the tasklist refresh continuously until
-            # the end of the completion minute
-            # Note that this by itself would for example prevent the state
-            # of an occurrence to be updated from future to ongoing
-            # immediately (but it would happen with 60 seconds of delay),
-            # however in that case the change of state is triggered by the
-            # search_next_occurrences event at the correct time
-            d1 = next_completion - mint + 60
+            d1 = next_completion - mint
         except TypeError:
             # next_completion could be None
             pass
@@ -1089,9 +1081,10 @@ class FilterRelativeMinutes(object):
             delays.append(d1)
 
         try:
-            # Note that, unlike above, next_occurrence is always greater than
-            # maxt, so this difference will never be 0
-            d2 = next_occurrence - maxt
+            # Subtract self.CORRECTION because when the actual delay is
+            # calculated later (`min(delays) ...`) all the values are assumed
+            # being exact minutes
+            d2 = next_occurrence - maxt - self.CORRECTION
         except TypeError:
             # next_occurrence could be None
             pass
@@ -1101,9 +1094,18 @@ class FilterRelativeMinutes(object):
         try:
             # Note that the delay can still be further limited in
             # RefreshEngine._restart
-            # Subtract `now % 60` so that the refresh will occur at an exact
-            # minute
-            return min(delays) - now % 60
+            # Add `60 - now % 60` so that:
+            # * the refresh will occur at an exact minute
+            # * in case of completion times, the refresh will correctly happen
+            #   when the completion minute ends
+            # * the delay will never be 0, which would make the tasklist
+            #   refresh continuously until the end of the current minute
+            # Note that this by itself would for example prevent the state
+            # of an occurrence to be updated from future to ongoing
+            # immediately (but it would happen with 60 seconds of delay),
+            # however in that case the change of state is triggered by the
+            # search_next_occurrences event at the correct time
+            return min(delays) + 60 - now % 60
         except ValueError:
             # delays could be empty
             return None
