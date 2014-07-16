@@ -359,12 +359,12 @@ class FilterConfigurationRelative(object):
             # thing as for 'high' should be done, otherwise also units like
             # years would take a low of -5, which would be bad
             'low': 0,
-            'high': {0: 1440,
-                     1: 24,
-                     2: 1,
-                     3: 1,
-                     4: 1,
-                     5: 1},
+            'high': {0: 1439,
+                     1: 23,
+                     2: 0,
+                     3: 0,
+                     4: 0,
+                     5: 0},
             'type': 'to',
             'unit': 'minutes',
             'uniti': 0,
@@ -1011,7 +1011,10 @@ class FilterRelative(object):
         if config['type'] == 'for':
             high = low + config['high'][config['uniti']]
         else:
-            high = config['high'][config['uniti']]
+            # Add 1 because e.g. 'from 0 to 0' must show the current period,
+            # just like 'from 0 for 1', and unlike 'from 0 to 1', which should
+            # show also the next period
+            high = config['high'][config['uniti']] + 1
 
         self.filter = {
             'minutes': FilterRelativeMinutes,
@@ -1040,9 +1043,9 @@ class FilterRelativeMinutes(object):
         # non-exact minutes anyway
         anow = now // 60 * 60
         mint = anow + self.low
-        # Subtract 1 second because if setting 'to/for 1' it's expected to only
-        # show the current minute, and not occurrences starting at the next
-        # minute
+        # Subtract 1 second because if setting 'to 0'/'for 1' it's expected to
+        # only show the current minute, and not occurrences starting at the
+        # next minute
         maxt = anow + self.high - 1
         return (mint, maxt)
 
@@ -1114,8 +1117,9 @@ class FilterRelativeHours(object):
     def compute_limits(self, now):
         anow = now // 3600 * 3600
         mint = anow + self.low
-        # Subtract 1 second because if setting 'to/for 1' it's expected to only
-        # show the current hour, and not occurrences starting at the next hour
+        # Subtract 1 second because if setting 'to 0'/'for 1' it's expected to
+        # only show the current hour, and not occurrences starting at the next
+        # hour
         maxt = anow + self.high - 1
         return (mint, maxt)
 
@@ -1146,9 +1150,9 @@ class FilterRelativeDays(object):
             # correct local time
             anow = (now - self.nowoffset) // 86400 * 86400 + self.nowoffset
             mint = anow + self.low
-            # Subtract 1 second because if setting 'to/for 1' it's expected to
-            # only show the current day, and not occurrences starting at the
-            # next day
+            # Subtract 1 second because if setting 'to 0'/'for 1' it's expected
+            # to only show the current day, and not occurrences starting at
+            # the next day
             maxt = anow + self.high - 1
             return (mint, maxt)
 
@@ -1180,9 +1184,9 @@ class FilterRelativeWeeks(object):
             raise OutOfRangeError()
         else:
             mint = self.weekstart + self.low
-            # Subtract 1 second because if setting 'to/for 1' it's expected to
-            # only show the current week, and not occurrences starting at the
-            # next week
+            # Subtract 1 second because if setting 'to 0'/'for 1' it's expected
+            # to only show the current week, and not occurrences starting at
+            # the next week
             maxt = self.weekstart + self.high - 1
             return (mint, maxt)
 
@@ -1210,9 +1214,9 @@ class FilterRelativeMonths(object):
             dmax = _datetime.date(year=self.dnow.year + rmaxyears,
                                                     month=maxmonth + 1, day=1)
             mint = int(_time.mktime(dmin.timetuple()))
-            # Subtract 1 second because if setting 'to/for 1' it's expected to
-            # only show the current month, and not occurrences starting at the
-            # next month
+            # Subtract 1 second because if setting 'to 0'/'for 1' it's expected
+            # to only show the current month, and not occurrences starting at
+            # the next month
             maxt = int(_time.mktime(dmax.timetuple())) - 1
         except ValueError:
             raise OutOfRangeError()
@@ -1247,9 +1251,9 @@ class FilterRelativeYears(object):
                                                                         day=1)
 
             mint = int(_time.mktime(dmin.timetuple()))
-            # Subtract 1 second because if setting 'to/for 1' it's expected to
-            # only show the current year, and not occurrences starting at the
-            # next year
+            # Subtract 1 second because if setting 'to 0'/'for 1' it's expected
+            # to only show the current year, and not occurrences starting at
+            # the next year
             maxt = int(_time.mktime(dmax.timetuple())) - 1
         except ValueError:
             raise OutOfRangeError()
@@ -1269,8 +1273,8 @@ class FilterDate(object):
         self.low = int(_time.mktime(config['lowdate'].timetuple()))
         # Add 86400 because the stored date is included in the range, but I
         # need the midnight of the following day
-        # Subtract 1 second because if setting 'to/for 1' it's expected to not
-        # see the occurrences starting at the end of the interval
+        # Subtract 1 second because if setting 'for 1' it's expected to not see
+        # the occurrences starting at the end of the interval
         self.high = int(_time.mktime(config['highdate'].timetuple())) + 86399
 
     def compute_limits(self, now):
@@ -1297,8 +1301,8 @@ class FilterMonth(object):
         nextdate = _datetime.date(highdate.year + rnyear, nextmonth + 1, 1)
 
         self.low = int(_time.mktime(lowdate.timetuple()))
-        # Subtract 1 second because if setting 'to/for 1' it's expected to not
-        # see the occurrences starting at the end of the interval
+        # Subtract 1 second because if setting 'for 1' it's expected to not see
+        # the occurrences starting at the end of the interval
         self.high = int(_time.mktime(nextdate.timetuple())) - 1
 
     def compute_limits(self, now):
