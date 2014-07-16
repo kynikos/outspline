@@ -476,7 +476,8 @@ class RefreshEngine(object):
 
     def _refresh_continue(self):
         self.search = organism_api.get_occurrences_range(mint=self.min_time,
-                maxt=self.max_time, filenames=core_api.get_open_databases())
+                        maxt=self.max_time,
+                        filenames=organism_api.get_supported_open_databases())
         self.search.start()
 
         if self.cancel_request:
