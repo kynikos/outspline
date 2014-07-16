@@ -98,16 +98,16 @@ def set_logger(cliargs):
             },
             'verbose': {
                 'format': '%(asctime)s %(relativeCreated)d | %(levelname)s: '
-                                       '%(message)s [%(pathname)s %(lineno)d]',
+                        '%(message)s [%(pathname)s %(lineno)d %(threadName)s]',
                 'datefmt': '%Y-%m-%d %H:%M'
             },
             'verbose_info': {
                 'format': '%(relativeCreated)d | :: %(message)s [%(module)s '
-                                                                  '%(lineno)d]'
+                                                '%(lineno)d %(threadName)s]'
             },
             'verbose_default': {
                 'format': '%(relativeCreated)d | %(levelname)s: %(message)s '
-                                                      '[%(module)s %(lineno)d]'
+                                    '[%(module)s %(lineno)d %(threadName)s]'
             }
         },
         'filters': {
