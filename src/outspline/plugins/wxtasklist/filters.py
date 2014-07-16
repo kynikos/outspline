@@ -354,7 +354,11 @@ class FilterConfigurationRelative(object):
         self.units = ('minutes', 'hours', 'days', 'weeks', 'months', 'years')
         self.default = {
             'mode': 'relative',
-            'low': -5,
+            # The default value in the .config file is -5, but setting the same
+            # here would feel weird when changing filters, and also a similar
+            # thing as for 'high' should be done, otherwise also units like
+            # years would take a low of -5, which would be bad
+            'low': 0,
             'high': {0: 1440,
                      1: 24,
                      2: 1,
