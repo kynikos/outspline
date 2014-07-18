@@ -46,10 +46,12 @@ class Main(object):
 
     def _handle_load_options(self, kwargs):
         filename = kwargs['filename']
-        alimit = organism_alarms_api.get_alarms_log_limit(filename)
-        prop = wxpg.IntProperty("Alarms log soft limit",
+
+        if filename in organism_alarms_api.get_supported_open_databases():
+            alimit = organism_alarms_api.get_alarms_log_limit(filename)
+            prop = wxpg.IntProperty("Alarms log soft limit",
                             "options.extension.organism_alarms.alimit", alimit)
-        wxgui_api.add_property_option(filename, prop,
+            wxgui_api.add_property_option(filename, prop,
                                         self.alarmlogs[filename].set_log_limit)
 
     def _handle_close_database(self, kwargs):
