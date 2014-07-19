@@ -62,11 +62,13 @@ def bind_to_search_next_occurrences(handler, bind=True):
 
 
 def bind_to_activate_occurrences_range(handler, bind=True):
+    # Warning, this function is executed on a separate thread!!!
+    # (Check for race conditions)
     return timer.activate_occurrences_range_event.bind(handler, bind)
 
 
 def bind_to_activate_old_occurrences(handler, bind=True):
-    # Warning, this function is executed on a separate thread!!!
+    # Warning, this function may be executed on a separate thread!!!
     # (Check for race conditions)
     return timer.activate_old_occurrences_event.bind(handler, bind)
 
