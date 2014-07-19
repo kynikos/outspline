@@ -313,11 +313,12 @@ class OldOccurrencesSearch(object):
 
         self.search = organism_api.get_occurrences_range(mint=self.last_search,
                             maxt=self.whileago, filenames=(self.filename, ))
-        self.search.start()
 
-        # Bind only here, in fact the search may not even be started if
-        # self.whileago <= self.last_search
-        core_api.bind_to_close_database(self._handle_close_database)
+        # Make sure to bind *after* self.search is instantiated, but *before*
+        # it's started
+        core_api.bind_to_closing_database(self._handle_closing_database)
+
+        self.search.start()
 
         occs = self.search.get_results()
         occsd = occs.get_dict()
@@ -344,11 +345,12 @@ class OldOccurrencesSearch(object):
         if kwargs['filename'] == self.filename:
             raise OngoingOldSearchWarning()
 
-    def _handle_close_database(self, kwargs):
+    def _handle_closing_database(self, kwargs):
         if kwargs['filename'] == self.filename:
             self.search.stop()
 
-            core_api.bind_to_close_database(self._handle_close_database, False)
+            core_api.bind_to_closing_database(self._handle_closing_database,
+                                                                        False)
 
 
 class NextOccurrencesEngine(object):
