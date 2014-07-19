@@ -85,8 +85,9 @@ def handle_save_database_copy(kwargs):
 
         cur.execute(queries.links_select)
         for row in cur:
-            do_insert_link(kwargs['destination'], curd, row['L_id'],
-                                                            row['L_target'])
+            # Don't use links.do_insert_link here, as the destination database
+            # is not really open
+            curd.execute(queries.links_insert, tuple(row))
 
         core_api.give_connection(kwargs['origin'], qconn)
 
