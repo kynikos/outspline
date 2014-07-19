@@ -228,16 +228,23 @@ class SearchView():
 
             heading = text.partition('\n')[0]
 
-            if self.filters.option2.GetValue():
-                text = heading
-
-            results = self._find_match_lines(regexp, id_, heading, text,
+            try:
+                if self.filters.option2.GetValue():
+                    text = heading
+            except wx.PyDeadObjectError:
+                # If the application is closed while the search is ongoing,
+                #  this is where it would crash
+                # If there were more problems, consider running this thread as
+                #  a daemon
+                pass
+            else:
+                results = self._find_match_lines(regexp, id_, heading, text,
                                                                     results)
 
-            # Use a recursion instead of a simple for loop, so that it will be
-            # easy to stop the search from the main thread if needed
-            self.search_threaded_action(regexp, filename, iterator, results,
-                                                                search_start)
+                # Use a recursion instead of a simple for loop, so that it will
+                # be easy to stop the search from the main thread if needed
+                self.search_threaded_action(regexp, filename, iterator,
+                                                        results, search_start)
 
     def _search_threaded_stop(self, regexp, filename, iterator, results,
                                                                 search_start):
