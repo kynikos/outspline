@@ -350,6 +350,8 @@ class OldOccurrencesSearch(object):
         # Executing occs.get_active_dict here wouldn't make sense; let
         # NextOccurrencesEngine deal with snoozed and active alarms
 
+        search_old_occurrences_end_event.signal(filename=self.filename)
+
         try:
             occsdf = occsd[self.filename]
         except KeyError:
@@ -358,10 +360,11 @@ class OldOccurrencesSearch(object):
             # Note that occsdf still includes occurrence times equal to
             # self.last_search: these must be excluded because self.last_search
             # is the time that was last already activated
+            # Also note that as long as the handler of this event remains on
+            # this thread, it's under the protection of
+            # self._handle_save_permission_check
             activate_occurrences_range_event.signal(filename=self.filename,
                     mint=self.last_search, maxt=self.whileago, occsd=occsdf)
-
-        search_old_occurrences_end_event.signal(filename=self.filename)
 
         core_api.bind_to_save_permission_check(
                                     self._handle_save_permission_check, False)
