@@ -223,6 +223,12 @@ class Rules(object):
             raise ConflictingRuleHandlerError()
 
 
+class NextOccurrencesSearchStop(UserWarning):
+    # This class is used as an exception, but used internally, so there's no
+    # need to store it in the exceptions module
+    pass
+
+
 class NextOccurrencesSearch(object):
     def __init__(self, filenames, rule_handlers, base_time=None,
                                                             base_times=None):
@@ -230,6 +236,7 @@ class NextOccurrencesSearch(object):
         self.rule_handlers = rule_handlers
         self.base_time = base_time
         self.base_times = base_times
+        self._search_item = self._search_item_continue
 
     def start(self):
         # Note that this function must be kept separate from
@@ -237,22 +244,25 @@ class NextOccurrencesSearch(object):
         # by wxtasklist); note also that both functions generate their own
         # events
         self.occs = NextOccurrences()
-        utcoffset = timeaux.UTCOffset()
+        self.utcoffset = timeaux.UTCOffset()
         search_start = (time_.time(), time_.clock())
 
         for filename in self.filenames:
             if not self.base_time:
                 self.base_time = self.base_times[filename]
 
-            utcbase = self.base_time - utcoffset.compute(self.base_time)
+            # Don't even think of moving this to the constructor, as
+            # self.base_time could be defined just above
+            utcbase = self.base_time - self.utcoffset.compute(self.base_time)
 
             for row in organism_api.get_all_valid_item_rules(filename):
                 id_ = row['R_id']
                 rules = organism_api.convert_string_to_rules(row['R_rules'])
 
-                for rule in rules:
-                    self.rule_handlers[rule['rule']](self.base_time, utcbase,
-                                    utcoffset, filename, id_, rule, self.occs)
+                try:
+                    self._search_item(filename, id_, rules, utcbase)
+                except NextOccurrencesSearchStop:
+                    break
 
             get_next_occurrences_event.signal(base_time=self.base_time,
                                             filename=filename, occs=self.occs)
@@ -261,8 +271,23 @@ class NextOccurrencesSearch(object):
                                               time_.time() - search_start[0],
                                               time_.clock() - search_start[1]))
 
+    def stop(self):
+        self._search_item = self._search_item_stop
+
     def get_results(self):
         return self.occs
+
+    def _search_item(self, filename, id_, rules):
+        # This method is defined dynamically
+        pass
+
+    def _search_item_continue(self, filename, id_, rules, utcbase):
+        for rule in rules:
+            self.rule_handlers[rule['rule']](self.base_time, utcbase,
+                            self.utcoffset, filename, id_, rule, self.occs)
+
+    def _search_item_stop(self, filename, id_, rules, utcbase):
+        raise NextOccurrencesSearchStop()
 
 
 class OldOccurrencesSearch(object):
