@@ -120,7 +120,7 @@ class SearchView():
     def finish_search(self):
         self.threads -= 1
 
-        # Perform the action only when the last threads terminates
+        # Perform the action only when the last thread terminates
         if self.threads == 0:
             self.finish_search_action()
 
