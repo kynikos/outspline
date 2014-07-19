@@ -212,11 +212,11 @@ class OccurrencesRange(object):
     def __init__(self, mint, maxt):
         self.mint = mint
         self.maxt = maxt
-        self.d = {}
+        self.dict_ = {}
         self.actd = {}
 
     def update(self, occ, origalarm):
-        return self._update(self.d, self.add_safe, self._replace, occ,
+        return self._update(self.dict_, self.add_safe, self._replace, occ,
                                                                      origalarm)
 
     def move_active(self, occ, origalarm):
@@ -238,7 +238,7 @@ class OccurrencesRange(object):
         if self.mint <= occ['start'] <= self.maxt or \
                    (occ['end'] and occ['start'] <= self.mint < occ['end']) or \
                      (occ['alarm'] and self.mint <= occ['alarm'] <= self.maxt):
-            self._add(self.d, occ)
+            self._add(self.dict_, occ)
             return True
         else:
             return False
@@ -303,15 +303,15 @@ class OccurrencesRange(object):
 
     def except_safe(self, filename, id_, start, end, inclusive):
         # If an except rule is put at the start of the rules list for an item,
-        # self.d[filename][id_] wouldn't exist yet; note that if the item is
-        # the first one being processed in the database, even self.d[filename]
-        # wouldn't exist
+        # self.dict_[filename][id_] wouldn't exist yet; note that if the item
+        # is the first one being processed in the database, even
+        # self.dict_[filename] wouldn't exist
         # This way the except rule is of course completely useless, however if
         # the user has to be warned at all, it must be done in the interface
         # when he saves the rules list, not here, where the exception has to be
         # just silenced
         try:
-            dc = self.d[filename][id_][:]
+            dc = self.dict_[filename][id_][:]
         except KeyError:
             pass
         else:
@@ -320,23 +320,23 @@ class OccurrencesRange(object):
                 # they're not considered part of the end minute
                 if start <= o['start'] <= end or \
                                 (inclusive and o['start'] <= start < o['end']):
-                    self.d[filename][id_].remove(o)
-                    if not self.d[filename][id_]:
-                        del self.d[filename][id_]
-                        if not self.d[filename]:
-                            del self.d[filename]
+                    self.dict_[filename][id_].remove(o)
+                    if not self.dict_[filename][id_]:
+                        del self.dict_[filename][id_]
+                        if not self.dict_[filename]:
+                            del self.dict_[filename]
 
     def get_dict(self):
-        return self.d
+        return self.dict_
 
     def get_active_dict(self):
         return self.actd
 
     def get_list(self):
         occsl = []
-        for f in self.d:
-            for i in self.d[f]:
-                for o in self.d[f][i]:
+        for f in self.dict_:
+            for i in self.dict_[f]:
+                for o in self.dict_[f][i]:
                     occsl.append(o)
         return occsl
 
@@ -351,9 +351,9 @@ class OccurrencesRange(object):
     def get_next_completion_time(self):
         # Note that this method ignores self.actd _deliberately_
         ctime = None
-        for f in self.d:
-            for i in self.d[f]:
-                for o in self.d[f][i]:
+        for f in self.dict_:
+            for i in self.dict_[f]:
+                for o in self.dict_[f][i]:
                     t = max((o['end'], o['start'], o['alarm']))
                     if t and (not ctime or t < ctime):
                         ctime = t
@@ -362,7 +362,7 @@ class OccurrencesRange(object):
     def get_item_time_span(self, filename, id_):
         # Note that this method ignores self.actd _deliberately_
         try:
-            occs = self.d[filename][id_]
+            occs = self.dict_[filename][id_]
         except KeyError:
             return False
         else:
