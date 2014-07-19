@@ -327,6 +327,10 @@ def bind_to_close_database(handler, bind=True):
     return databases.close_database_event.bind(handler, bind)
 
 
+def bind_to_save_permission_check(handler, bind=True):
+    return databases.save_permission_check_event.bind(handler, bind)
+
+
 def bind_to_save_database(handler, bind=True):
     return databases.save_database_event.bind(handler, bind)
 

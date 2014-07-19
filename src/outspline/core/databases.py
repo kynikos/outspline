@@ -37,6 +37,7 @@ open_database_dirty_event = Event()
 open_database_event = Event()
 closing_database_event = Event()
 close_database_event = Event()
+save_permission_check_event = Event()
 save_database_event = Event()
 save_database_copy_event = Event()
 delete_items_event = Event()
@@ -278,6 +279,9 @@ class Database(object):
         return False
 
     def save(self):
+        # Some addons may use this event to generate an exception
+        save_permission_check_event.signal(filename=self.filename)
+
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.history_update_status_new)
@@ -290,6 +294,10 @@ class Database(object):
         save_database_event.signal(filename=self.filename)
 
     def save_copy(self, destination):
+        # Some addons may use this event to generate an exception
+        # For consistency, signal 'self.filename' and not 'destination'
+        save_permission_check_event.signal(filename=self.filename)
+
         # Of course the original file cannot be simply copied, in fact in that
         # case it should be saved first, and that's not what is expected
 
