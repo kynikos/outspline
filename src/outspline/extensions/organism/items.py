@@ -406,7 +406,15 @@ class OccurrencesRangeSearch(object):
         # Note that Main.databases could also change size during the search, so
         #  it should be copied to iterate in it
         for filename in self.filenames:
-            for row in self.databases[filename].get_all_valid_item_rules():
+            # Don'd iterate directly over the returned cursor, but use a
+            # fetchall, otherwise if the application is closed while the search
+            # is on (e.g. while searching the old alarms) an exception will be
+            # raised, because the database will be closed while the loop is
+            # still reading it
+            rows = self.databases[filename].get_all_valid_item_rules(
+                                                                ).fetchall()
+
+            for row in rows:
                 id_ = row['R_id']
                 rules = Database.string_to_rules(row['R_rules'])
 
