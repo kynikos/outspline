@@ -401,31 +401,35 @@ class OccurrencesRangeSearch(object):
     def start(self):
         search_start = (time_.time(), time_.clock())
 
-        # Don't use Main.databases because the searched filenames must be
-        #  coherent with the other operations that this class is used in
-        # Note that Main.databases could also change size during the search, so
-        #  it should be copied to iterate in it
-        for filename in self.filenames:
-            # Don'd iterate directly over the returned cursor, but use a
-            # fetchall, otherwise if the application is closed while the search
-            # is on (e.g. while searching the old alarms) an exception will be
-            # raised, because the database will be closed while the loop is
-            # still reading it
-            rows = self.databases[filename].get_all_valid_item_rules(
+        try:
+            # Don't use Main.databases because the searched filenames must be
+            #  coherent with the other operations that this class is used in
+            # Note that Main.databases could also change size during the
+            #  search, so it should be copied to iterate in it
+            for filename in self.filenames:
+                # Don'd iterate directly over the returned cursor, but use a
+                # fetchall, otherwise if the application is closed while the
+                # search is on (e.g. while searching the old alarms) an
+                # exception will be raised, because the database will be closed
+                # while the loop is still reading it
+                rows = self.databases[filename].get_all_valid_item_rules(
                                                                 ).fetchall()
 
-            for row in rows:
-                id_ = row['R_id']
-                rules = Database.string_to_rules(row['R_rules'])
+                for row in rows:
+                    id_ = row['R_id']
+                    rules = Database.string_to_rules(row['R_rules'])
 
-                try:
-                    self._search_item(filename, id_, rules)
-                except OccurrencesRangeSearchStop:
-                    break
+                    for rule in rules:
+                        self._search_item(filename, id_, rule)
 
-            # Get active alarms *after* all occurrences, to avoid except rules
-            get_alarms_event.signal(mint=self.mint, maxt=self.maxt,
+                # Get active alarms *after* all occurrences, to avoid except
+                # rules
+                get_alarms_event.signal(mint=self.mint, maxt=self.maxt,
                                             filename=filename, occs=self.occs)
+
+        # All loops must be broken
+        except OccurrencesRangeSearchStop:
+            pass
 
         log.debug('Occurrences range found in {} (time) / {} (clock) s'.format(
                                             time_.time() - search_start[0],
@@ -439,14 +443,13 @@ class OccurrencesRangeSearch(object):
         # duty of the interface
         return self.occs
 
-    def _search_item(self, filename, id_, rules):
+    def _search_item(self, filename, id_, rule):
         # This method is defined dynamically
         pass
 
-    def _search_item_continue(self, filename, id_, rules):
-        for rule in rules:
-            self.rule_handlers[rule['rule']](self.mint, self.utcmint,
-                    self.maxt, self.utcoffset, filename,  id_, rule, self.occs)
+    def _search_item_continue(self, filename, id_, rule):
+        self.rule_handlers[rule['rule']](self.mint, self.utcmint, self.maxt,
+                            self.utcoffset, filename,  id_, rule, self.occs)
 
-    def _search_item_stop(self, filename, id_, rules):
+    def _search_item_stop(self, filename, id_, rule):
         raise OccurrencesRangeSearchStop()
