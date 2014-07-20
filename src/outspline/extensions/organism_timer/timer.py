@@ -257,25 +257,30 @@ class NextOccurrencesSearch(object):
         self.utcoffset = timeaux.UTCOffset()
         search_start = (time_.time(), time_.clock())
 
-        for filename in self.filenames:
-            if not self.base_time:
-                self.base_time = self.base_times[filename]
+        try:
+            for filename in self.filenames:
+                if not self.base_time:
+                    self.base_time = self.base_times[filename]
 
-            # Don't even think of moving this to the constructor, as
-            # self.base_time could be defined just above
-            utcbase = self.base_time - self.utcoffset.compute(self.base_time)
+                # Don't even think of moving this to the constructor, as
+                # self.base_time could be defined just above
+                utcbase = self.base_time - self.utcoffset.compute(
+                                                                self.base_time)
 
-            for row in organism_api.get_all_valid_item_rules(filename):
-                id_ = row['R_id']
-                rules = organism_api.convert_string_to_rules(row['R_rules'])
+                for row in organism_api.get_all_valid_item_rules(filename):
+                    id_ = row['R_id']
+                    rules = organism_api.convert_string_to_rules(
+                                                                row['R_rules'])
 
-                try:
-                    self._search_item(filename, id_, rules, utcbase)
-                except NextOccurrencesSearchStop:
-                    break
+                    for rule in rules:
+                        self._search_item(filename, id_, rule, utcbase)
 
-            get_next_occurrences_event.signal(base_time=self.base_time,
+                get_next_occurrences_event.signal(base_time=self.base_time,
                                             filename=filename, occs=self.occs)
+
+        # All loops must be broken
+        except NextOccurrencesSearchStop:
+            pass
 
         log.debug('Next occurrences found in {} (time) / {} (clock) s'.format(
                                               time_.time() - search_start[0],
@@ -287,16 +292,15 @@ class NextOccurrencesSearch(object):
     def get_results(self):
         return self.occs
 
-    def _search_item(self, filename, id_, rules):
+    def _search_item(self, filename, id_, rule, utcbase):
         # This method is defined dynamically
         pass
 
-    def _search_item_continue(self, filename, id_, rules, utcbase):
-        for rule in rules:
-            self.rule_handlers[rule['rule']](self.base_time, utcbase,
+    def _search_item_continue(self, filename, id_, rule, utcbase):
+        self.rule_handlers[rule['rule']](self.base_time, utcbase,
                             self.utcoffset, filename, id_, rule, self.occs)
 
-    def _search_item_stop(self, filename, id_, rules, utcbase):
+    def _search_item_stop(self, filename, id_, rule, utcbase):
         raise NextOccurrencesSearchStop()
 
 
