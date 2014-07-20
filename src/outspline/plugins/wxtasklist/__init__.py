@@ -134,6 +134,9 @@ class TaskList(object):
     def show_message(self, message, icon):
         self.infobar.ShowMessage(message, icon)
 
+    def dismiss_message(self):
+        self.infobar.Dismiss()
+
 
 def main():
     TaskList(wxgui_api.get_right_nb())

@@ -301,6 +301,9 @@ class OccurrencesView(object):
         self.tasklist.show_message("Search results limit exceeded",
                                                             wx.ICON_WARNING)
 
+    def reset_warnings(self):
+        self.tasklist.dismiss_message()
+
     def save_configuration(self):
         config = coreaux_api.get_plugin_configuration('wxtasklist')
 
@@ -496,6 +499,7 @@ class RefreshEngine(object):
                                     self.max_time > self.filterlimits[1]:
                 wx.CallAfter(msgboxes.warn_out_of_range().ShowModal)
             else:
+                wx.CallAfter(self.occview.reset_warnings)
                 try:
                     delay = self._refresh_continue()
                 except RefreshEngineStop:
