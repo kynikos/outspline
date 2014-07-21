@@ -28,6 +28,7 @@ from outspline.static.wxclasses.timectrls import DateHourCtrl, TimeSpanCtrl
 from outspline.static.wxclasses.misc import NarrowSpinCtrl
 
 import outspline.coreaux_api as coreaux_api
+import outspline.extensions.organism_api as organism_api
 import outspline.extensions.organism_timer_api as organism_timer_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
@@ -1043,7 +1044,8 @@ class FilterRelativeMinutes(object):
 
     def compute_delay(self, occsobj, now, mint, maxt):
         next_completion = occsobj.get_next_completion_time()
-        filenames = occsobj.get_found_filenames()
+
+        filenames = organism_api.get_supported_open_databases()
 
         # Note that this does *not* use
         # organism_timer_api.search_next_occurrences which would signal
