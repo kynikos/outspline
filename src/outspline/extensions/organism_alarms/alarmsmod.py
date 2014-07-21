@@ -88,22 +88,22 @@ class Database(object):
             else:
                 occs.add_old(alarmd)
 
-
-def activate_alarms_range(filename, mint, maxt, occsd):
-    # Due to race conditions, filename could have been closed meanwhile
-    # (e.g. if the modal dialog for closing the database was open in the
-    # interface)
-    if core_api.is_database_open(filename):
-        for id_ in occsd:
-            # Due to race conditions, id_ could have been deleted meanwhile
-            # (e.g. if the modal dialog for deleting the item was open in
-            # the interface)
-            if core_api.is_item(filename, id_):
-                for occ in occsd[id_]:
-                    # occ may have alarm == mint, or start or end in the
-                    # interval, but none of those occurrences must be activated
-                    if mint < occ['alarm'] <= maxt:
-                        activate_alarm(occ)
+    def activate_alarms_range(self, mint, maxt, occsd):
+        # Due to race conditions, filename could have been closed meanwhile
+        # (e.g. if the modal dialog for closing the database was open in the
+        # interface)
+        if core_api.is_database_open(self.filename):
+            for id_ in occsd:
+                # Due to race conditions, id_ could have been deleted meanwhile
+                # (e.g. if the modal dialog for deleting the item was open in
+                # the interface)
+                if core_api.is_item(self.filename, id_):
+                    for occ in occsd[id_]:
+                        # occ may have alarm == mint, or start or end in the
+                        # interval, but none of those occurrences must be
+                        # activated
+                        if mint < occ['alarm'] <= maxt:
+                            activate_alarm(occ)
 
 
 def activate_old_alarms(occsd):

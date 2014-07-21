@@ -226,10 +226,9 @@ class Main(object):
             self.databases[filename].get_snoozed_alarms(kwargs['base_time'],
                                                                 kwargs['occs'])
 
-
     def _handle_activate_occurrences_range(self, kwargs):
-        alarmsmod.activate_alarms_range(kwargs['filename'], kwargs['mint'],
-                                            kwargs['maxt'], kwargs['occsd'])
+        self.databases[kwargs['filename']].activate_alarms_range(
+                            kwargs['mint'], kwargs['maxt'], kwargs['occsd'])
 
     def _handle_activate_old_occurrences(self, kwargs):
         alarmsmod.activate_old_alarms(kwargs['oldoccsd'])
