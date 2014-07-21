@@ -79,8 +79,11 @@ class Main(object):
     def _handle_open_database(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in self.databases:
-            timer.OldOccurrencesSearch(self.databases, filename).start()
+        try:
+            self.databases[filename].start_old_occurrences_search()
+        except KeyError:
+            pass
+        else:
             self.nextoccsengine.restart()
 
     def _handle_save_database_copy(self, kwargs):

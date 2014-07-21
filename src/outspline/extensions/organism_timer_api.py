@@ -39,6 +39,14 @@ def get_old_occurrences_search_exception():
     return exceptions.OngoingOldSearchWarning
 
 
+def restart_old_occurrences_search(filename, mint):
+    return extension.databases[filename].restart_old_occurrences_search(mint)
+
+
+def abort_old_occurrences_search(filename):
+    return extension.databases[filename].abort_old_occurrences_search()
+
+
 def bind_to_get_next_occurrences(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
     # (Check for race conditions)

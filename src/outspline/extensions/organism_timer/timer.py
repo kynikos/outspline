@@ -77,6 +77,16 @@ class Database(object):
 
         core_api.give_connection(self.filename, conn)
 
+    def start_old_occurrences_search(self):
+        self.oldoccssearch = OldOccurrencesSearch(self, self.filename)
+        self.oldoccssearch.start()
+
+    def restart_old_occurrences_search(self, mint):
+        self.oldoccssearch.restart(mint)
+
+    def abort_old_occurrences_search(self):
+        self.oldoccssearch.abort()
+
 
 class NextOccurrences(object):
     def __init__(self):
@@ -291,8 +301,8 @@ class NextOccurrencesSearch(object):
 
 
 class OldOccurrencesSearch(object):
-    def __init__(self, databases, filename):
-        self.databases = databases
+    def __init__(self, database, filename):
+        self.database = database
         self.filename = filename
 
     def start(self):
@@ -307,9 +317,9 @@ class OldOccurrencesSearch(object):
         # Search until 2 minutes ago and let NextOccurrencesEngine handle the
         # rest, so as to make sure not to interfere with its functionality
         self.whileago = int(time_.time()) - 120
-        self.last_search = self.databases[self.filename].get_last_search()
+        last_search = self.database.get_last_search()
 
-        if self.whileago > self.last_search:
+        if self.whileago > last_search:
             log.debug('Search old occurrences')
 
             # Set the last search in this (main) thread, otherwise
@@ -322,7 +332,13 @@ class OldOccurrencesSearch(object):
             # prevented while the search is ongoing
             core_api.bind_to_save_permission_check(
                                             self._handle_save_permission_check)
-            self.databases[self.filename].set_last_search(self.whileago)
+            self.database.set_last_search(self.whileago)
+
+            # The "excl" in the name reminds that this time is exclusive, i.e. only
+            # the occurrences strictly greater than the value will then be
+            # activated, even though the search actually finds also those with time
+            # equal to this value
+            self.exclmint = last_search
 
             # Use a thread to let the GUI be responsive and possibly abort the
             # search
@@ -334,17 +350,28 @@ class OldOccurrencesSearch(object):
 
     def _continue(self):
         search_old_occurrences_event.signal(filename=self.filename,
-                                                last_search=self.last_search)
+                                                    last_search=self.exclmint)
 
-        self.search = organism_api.get_occurrences_range(mint=self.last_search,
-                            maxt=self.whileago, filenames=(self.filename, ))
+        self.state = 0
 
-        # Make sure to bind *after* self.search is instantiated, but *before*
-        # it's started
-        core_api.bind_to_closing_database(self._handle_closing_database)
+        while self.state < 1:
+            self.search = organism_api.get_occurrences_range(
+                                        mint=self.exclmint, maxt=self.whileago,
+                                        filenames=(self.filename, ))
 
-        self.search.start()
+            # Make sure to bind *after* self.search is instantiated, but
+            # *before* it's started
+            core_api.bind_to_closing_database(self._handle_closing_database)
 
+            self.state = 2
+            self.search.start()
+
+        if self.state == 1:
+            self._abort()
+        else:
+            self._process_results()
+
+    def _process_results(self):
         occs = self.search.get_results()
         occsd = occs.get_dict()
         # Executing occs.get_active_dict here wouldn't make sense; let
@@ -358,16 +385,30 @@ class OldOccurrencesSearch(object):
             pass
         else:
             # Note that occsdf still includes occurrence times equal to
-            # self.last_search: these must be excluded because self.last_search
+            # self.exclmint: these must be excluded because self.exclmint
             # is the time that was last already activated
             # Also note that as long as the handler of this event remains on
             # this thread, it's under the protection of
             # self._handle_save_permission_check
             activate_occurrences_range_event.signal(filename=self.filename,
-                    mint=self.last_search, maxt=self.whileago, occsd=occsdf)
+                        mint=self.exclmint, maxt=self.whileago, occsd=occsdf)
 
         core_api.bind_to_save_permission_check(
                                     self._handle_save_permission_check, False)
+
+    def _abort(self):
+        search_old_occurrences_end_event.signal(filename=self.filename)
+        core_api.bind_to_save_permission_check(
+                                    self._handle_save_permission_check, False)
+
+    def restart(self, mint):
+        self.exclmint = mint
+        self.state = 0
+        self.search.stop()
+
+    def abort(self):
+        self.state = 1
+        self.search.stop()
 
     def _handle_save_permission_check(self, kwargs):
         if kwargs['filename'] == self.filename:
@@ -375,8 +416,7 @@ class OldOccurrencesSearch(object):
 
     def _handle_closing_database(self, kwargs):
         if kwargs['filename'] == self.filename:
-            self.search.stop()
-
+            self.abort()
             core_api.bind_to_closing_database(self._handle_closing_database,
                                                                         False)
 
