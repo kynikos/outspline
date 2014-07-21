@@ -231,7 +231,10 @@ class Main(object):
                             kwargs['mint'], kwargs['maxt'], kwargs['occsd'])
 
     def _handle_activate_old_occurrences(self, kwargs):
-        alarmsmod.activate_old_alarms(kwargs['oldoccsd'])
+        occsd = kwargs['oldoccsd']
+
+        for filename in occsd:
+            self.databases[filename].activate_old_alarms(occsd[filename])
 
     def _handle_activate_occurrences(self, kwargs):
         alarmsmod.activate_alarms(kwargs['time'], kwargs['occsd'])
