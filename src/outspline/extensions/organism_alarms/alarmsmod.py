@@ -210,8 +210,7 @@ class Database(object):
                 cursor.execute(queries.alarms_update_id, (newalarm, alarmid))
                 core_api.give_connection(self.filename, qconn)
 
-                insert_alarm_log(self.filename, id_, 0,
-                                                    text.partition('\n')[0])
+                self._insert_alarm_log(id_, 0, text.partition('\n')[0])
 
                 # Signal the event after updating the database, so, for
                 # example, the tasklist can be correctly updated
@@ -228,7 +227,7 @@ class Database(object):
                 cursor.execute(queries.alarms_delete_id, (alarmid, ))
                 core_api.give_connection(self.filename, qconn)
 
-                insert_alarm_log(filename, id_, 1, text.partition('\n')[0])
+                self._insert_alarm_log(id_, 1, text.partition('\n')[0])
 
                 # It's necessary to change the dismiss status, otherwise it's
                 # possible that a database is loaded and some of its alarms are
@@ -301,7 +300,7 @@ class Database(object):
         if cursor.rowcount > 0:
             core_api.give_connection(self.filename, qconn)
 
-            insert_alarm_log(self.filename, id_, 2, text.partition('\n')[0])
+            self._insert_alarm_log(id_, 2, text.partition('\n')[0])
 
             # Signal the event after updating the database, so, for example,
             # the tasklist can be correctly updated
@@ -309,15 +308,15 @@ class Database(object):
         else:
             core_api.give_connection(self.filename, qconn)
 
-
-def insert_alarm_log(filename, id_, reason, text):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    # Also store the text, otherwise it won't be possible to retrieve it if the
-    # item has been deleted meanwhile
-    cursor.execute(queries.alarmsofflog_insert, (id_, reason, text))
-    cursor.execute(queries.alarmsofflog_delete_clean, log_limits[filename])
-    core_api.give_connection(filename, qconn)
+    def _insert_alarm_log(self, id_, reason, text):
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+        # Also store the text, otherwise it won't be possible to retrieve it if
+        # the item has been deleted meanwhile
+        cursor.execute(queries.alarmsofflog_insert, (id_, reason, text))
+        cursor.execute(queries.alarmsofflog_delete_clean,
+                                                    log_limits[self.filename])
+        core_api.give_connection(self.filename, qconn)
 
 
 def update_alarm_log_soft_limit(filename, limit):
