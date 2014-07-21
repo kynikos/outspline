@@ -85,15 +85,20 @@ def get_snoozed_alarms(last_search, filename, occs):
 
 
 def activate_alarms_range(filename, mint, maxt, occsd):
-    # Unlike activate_old_alarms and activate_alarms, this function shouldn't
-    # be subject to race conditions, as it's run in the main thread, so
-    # existence checks should be superfluous
-    for id_ in occsd:
-        for occ in occsd[id_]:
-            # occ may have alarm == mint, or start or end in the interval, but
-            # none of those occurrences must be activated
-            if mint < occ['alarm'] <= maxt:
-                activate_alarm(occ)
+    # Due to race conditions, filename could have been closed meanwhile
+    # (e.g. if the modal dialog for closing the database was open in the
+    # interface)
+    if core_api.is_database_open(filename):
+        for id_ in occsd:
+            # Due to race conditions, id_ could have been deleted meanwhile
+            # (e.g. if the modal dialog for deleting the item was open in
+            # the interface)
+            if core_api.is_item(filename, id_):
+                for occ in occsd[id_]:
+                    # occ may have alarm == mint, or start or end in the
+                    # interval, but none of those occurrences must be activated
+                    if mint < occ['alarm'] <= maxt:
+                        activate_alarm(occ)
 
 
 def activate_old_alarms(occsd):

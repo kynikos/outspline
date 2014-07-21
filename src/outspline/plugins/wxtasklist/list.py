@@ -242,6 +242,11 @@ class OccurrencesView(object):
 
     def enable_refresh(self):
         core_api.bind_to_update_item(self._delay_restart_on_text_update)
+        # The old occurrences are searched on a separate thread, so they may be
+        # found *after* the next occurrences, so _delay_restart must be bound
+        # to this one too
+        organism_timer_api.bind_to_activate_occurrences_range(
+                                                        self._delay_restart)
         # Note that self.delay_restart is *not* bound to
         # organism_timer_api.bind_to_get_next_occurrences which is signalled by
         # self._refresh signal because of the call to
@@ -255,6 +260,8 @@ class OccurrencesView(object):
         # not selected, because then it should always be refreshed when
         # selecting it, which would make everything more sluggish
         core_api.bind_to_update_item(self._delay_restart_on_text_update, False)
+        organism_timer_api.bind_to_activate_occurrences_range(
+                                                    self._delay_restart, False)
         organism_timer_api.bind_to_search_next_occurrences(self._delay_restart,
                                                                         False)
         organism_alarms_api.bind_to_alarm_off(self._delay_restart, False)

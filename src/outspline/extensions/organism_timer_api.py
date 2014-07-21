@@ -42,6 +42,18 @@ def bind_to_get_next_occurrences(handler, bind=True):
     return timer.get_next_occurrences_event.bind(handler, bind)
 
 
+def bind_to_search_old_alarms(handler, bind=True):
+    # Warning, this function is executed on a separate thread!!!
+    # (Check for race conditions)
+    return timer.search_old_occurrences_event.bind(handler, bind)
+
+
+def bind_to_search_old_alarms_end(handler, bind=True):
+    # Warning, this function is executed on a separate thread!!!
+    # (Check for race conditions)
+    return timer.search_old_occurrences_end_event.bind(handler, bind)
+
+
 def bind_to_search_next_occurrences(handler, bind=True):
     # Warning, this function is executed on a separate thread!!!
     # (Check for race conditions)

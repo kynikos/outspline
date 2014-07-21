@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-from threading import Timer
+from threading import Thread, Timer
 import time as time_
 
 from outspline.static.pyaux import timeaux
@@ -29,6 +29,8 @@ from exceptions import (BadOccurrenceError, BadExceptRuleError,
                                                    ConflictingRuleHandlerError)
 
 get_next_occurrences_event = Event()
+search_old_occurrences_event = Event()
+search_old_occurrences_end_event = Event()
 search_next_occurrences_event = Event()
 activate_occurrences_range_event = Event()
 activate_old_occurrences_event = Event()
@@ -287,29 +289,60 @@ class OldOccurrencesSearch(object):
 
         # Search until 2 minutes ago and let NextOccurrencesEngine handle the
         # rest, so as to make sure not to interfere with its functionality
-        whileago = int(time_.time()) - 120
-        last_search = self.databases.get_last_search(self.filename)
+        self.whileago = int(time_.time()) - 120
+        self.last_search = self.databases.get_last_search(self.filename)
 
-        if whileago > last_search:
+        if self.whileago > self.last_search:
             log.debug('Search old occurrences')
 
-            search = organism_api.get_occurrences_range(mint=last_search,
-                                                                maxt=whileago)
-            search.start()
-            occs = search.get_results()
-            occsd = occs.get_dict()
-            # Executing occs.get_active_dict here wouldn't make sense; let
-            # NextOccurrencesEngine deal with snoozed and active alarms
+            # Set the last search in this (main) thread, otherwise
+            # NextOccurrencesEngine would race with this function, and possibly
+            # do the same search, in fact still seeing the old last search
+            # timestamp
+            # Note that saving and closing the database after this point, but
+            # before the search is finished and the old alarms are activated,
+            # would lose all the old alarms
+            self.databases.set_last_search(self.filename, self.whileago)
 
-            self.databases.set_last_search(self.filename, whileago)
+            # Use a thread to let the GUI be responsive and possibly abort the
+            # search
+            thread = Thread(target=self._continue)
+            # Do not set the thread as a daemon, it's better to properly handle
+            # closing the database
+            thread.start()
 
-            if self.filename in occsd:
-                # Note that occsd still includes occurrence times equal to
-                # last_search: these must be excluded because last_search is
-                # the time that was last already activated
-                activate_occurrences_range_event.signal(filename=self.filename,
-                                            mint=last_search, maxt=whileago,
-                                            occsd=occsd[self.filename])
+    def _continue(self):
+        search_old_occurrences_event.signal(filename=self.filename,
+                                                last_search=self.last_search)
+
+        self.search = organism_api.get_occurrences_range(mint=self.last_search,
+                                                            maxt=self.whileago)
+        self.search.start()
+
+        # Bind only here, in fact the search may not even be started if
+        # self.whileago <= self.last_search
+        core_api.bind_to_close_database(self._handle_close_database)
+
+        occs = self.search.get_results()
+        occsd = occs.get_dict()
+        # Executing occs.get_active_dict here wouldn't make sense; let
+        # NextOccurrencesEngine deal with snoozed and active alarms
+
+        if self.filename in occsd:
+            # Note that occsd still includes occurrence times equal to
+            # self.last_search: these must be excluded because self.last_search
+            # is the time that was last already activated
+            activate_occurrences_range_event.signal(filename=self.filename,
+                                    mint=self.last_search, maxt=self.whileago,
+                                    occsd=occsd[self.filename])
+
+        search_old_occurrences_end_event.signal(filename=self.filename)
+
+    def _handle_close_database(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            self.search.stop()
+
+            core_api.bind_to_close_database(self._handle_close_database, False)
 
 
 class NextOccurrencesEngine(object):
