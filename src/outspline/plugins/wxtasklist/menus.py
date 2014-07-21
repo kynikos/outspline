@@ -182,12 +182,12 @@ class MainMenu(wx.Menu):
                     canbreak = 0
 
                     # Check item is not a gap or an overlapping
-                    if item.filename is not None:
+                    if item.get_filename() is not None:
                         self.find.Enable()
                         self.edit.Enable()
                         canbreak += 1
 
-                    if item.alarm is False:
+                    if item.get_alarm() is False:
                         self.snooze.Enable()
                         self.dismiss.Enable()
                         canbreak += 1
@@ -272,8 +272,8 @@ class MainMenu(wx.Menu):
                     item = self.occview.occs[self.occview.listview.GetItemData(
                                                                         sel)]
 
-                    if item.filename is not None:
-                        wxgui_api.select_database_tab(item.filename)
+                    if item.get_filename() is not None:
+                        wxgui_api.select_database_tab(item.get_filename())
                         # The item is selected in the loop below
                         break
                     else:
@@ -285,9 +285,9 @@ class MainMenu(wx.Menu):
                     item = self.occview.occs[self.occview.listview.GetItemData(
                                                                         sel)]
 
-                    if item.filename is not None:
-                        wxgui_api.add_item_to_selection(item.filename,
-                                                                    item.id_)
+                    if item.get_filename() is not None:
+                        wxgui_api.add_item_to_selection(item.get_filename(),
+                                                                item.get_id())
 
                     sel = self.occview.listview.GetNextSelected(sel)
 
@@ -301,8 +301,8 @@ class MainMenu(wx.Menu):
                 item = self.occview.occs[self.occview.listview.GetItemData(
                                                                         sel)]
 
-                if item.filename is not None:
-                    wxgui_api.open_editor(item.filename, item.id_)
+                if item.get_filename() is not None:
+                    wxgui_api.open_editor(item.get_filename(), item.get_id())
 
                 sel = self.occview.listview.GetNextSelected(sel)
 
@@ -687,12 +687,12 @@ class ListContextMenu(wx.Menu):
             canbreak = 0
 
             # Check item is not a gap or an overlapping
-            if item.filename is not None:
+            if item.get_filename() is not None:
                 self.find.Enable()
                 self.edit.Enable()
                 canbreak += 1
 
-            if item.alarm is False:
+            if item.get_alarm() is False:
                 self.snooze.Enable()
                 self.dismiss.Enable()
                 canbreak += 1
