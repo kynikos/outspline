@@ -299,6 +299,7 @@ class OldOccurrencesSearch(object):
             # Use a thread to let the GUI be responsive and possibly abort the
             # search
             thread = Thread(target=self._continue)
+            thread.name = "organism_old_occurrences_{}".format(self.filename)
             # Do not set the thread as a daemon, it's better to properly handle
             # closing the database
             thread.start()
@@ -393,6 +394,7 @@ class NextOccurrencesEngine(object):
 
                 self.timer = Timer(next_loop, self._activate_occurrences_block,
                                                     (next_occurrence, occsd))
+                self.timer.name = "organism_engine"
                 self.timer.start()
 
                 log.debug('Next occurrence in {} seconds'.format(next_loop))
