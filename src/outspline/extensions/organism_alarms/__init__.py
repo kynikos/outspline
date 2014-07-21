@@ -227,7 +227,11 @@ class Main(object):
                                                                 kwargs['text'])
 
     def _handle_history_clean(self, kwargs):
-        alarmsmod.clean_alarms_log(kwargs['filename'])
+        filename = kwargs['filename']
+
+        if filename in alarmsmod.tempcdbs:
+            self.databases[filename].clean_alarms_log()
+            alarmsmod.tempcdbs.discard(filename)
 
     def _handle_get_alarms(self, kwargs):
         filename = kwargs['filename']

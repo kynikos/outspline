@@ -338,19 +338,13 @@ class Database(object):
 
         return cursor
 
-
-def clean_alarms_log(filename):
-    # filename has already been deleted from cdbs, use tempcdbs instead
-    if filename in tempcdbs:
-        qconn = sqlite3.connect(filename)
+    def clean_alarms_log(self):
+        qconn = sqlite3.connect(self.filename)
         cursor = qconn.cursor()
 
-        # filename has already been deleted from log_limits, use
-        # temp_log_limit instead
         global temp_log_limit
         cursor.execute(queries.alarmsofflog_delete_clean_close,
-                                                (temp_log_limit[filename], ))
+                                            (temp_log_limit[self.filename], ))
         qconn.commit()
         qconn.close()
-        tempcdbs.discard(filename)
-        del temp_log_limit[filename]
+        del temp_log_limit[self.filename]
