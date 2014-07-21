@@ -73,7 +73,6 @@ class OccurrencesView(object):
         self.navigator = navigator
 
         self.occs = []
-        self.pastN = 0
         self.activealarms = {}
 
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
@@ -139,7 +138,7 @@ class OccurrencesView(object):
         self.listview.Bind(wx.EVT_CONTEXT_MENU, self._popup_context_menu)
 
     def _init_autoscroll(self):
-        self.autoscroll = Autoscroll(self, self.listview,
+        self.autoscroll = Autoscroll(self.listview, self.refengine,
                 self.config.get_int('autoscroll_padding'), self.STATE_COLUMN)
 
         if self.config.get_bool('autoscroll'):
@@ -192,12 +191,6 @@ class OccurrencesView(object):
         return self.active_alarms_modes[self.active_alarms_mode](min_time, now,
                                                                     max_time)
 
-    def reset_past_count(self):
-        self.pastN = 0
-
-    def get_past_count(self):
-        return self.pastN
-
     def get_gaps_and_overlappings_setting(self):
         return (self.show_gaps, self.show_overlappings)
 
@@ -205,8 +198,6 @@ class OccurrencesView(object):
         self.activealarms.clear()
 
     def insert_item(self, i, item):
-        self.pastN += item.get_past_count()
-
         # Initialize the first column with an empty string
         index = self.listview.InsertStringItem(sys.maxint, '')
         self.listview.SetStringItem(index, self.DATABASE_COLUMN,
@@ -307,6 +298,7 @@ class RefreshEngine(object):
         self.occs = occs
         self.datamap = datamap
         self.DELAY = config.get_int('refresh_delay')
+        self.pastN = 0
 
         self.formatter = Formatter(config, self.listview)
 
@@ -355,6 +347,9 @@ class RefreshEngine(object):
 
     def set_filter(self, config):
         self.filter_ = self.filterclasses[config['mode']](config)
+
+    def get_past_count(self):
+        return self.pastN
 
     def _delay_restart_on_text_update(self, kwargs):
         if kwargs['text'] is not None:
@@ -431,7 +426,7 @@ class RefreshEngine(object):
         # be updated anymore (they'll still refer to the old object)
         self.occs[:] = []
         self.datamap.clear()
-        self.occview.reset_past_count()
+        self.pastN = 0
         self.occview.reset_active_alarms()
 
         self.timealloc = TimeAllocation(self.min_time, self.max_time,
@@ -491,6 +486,8 @@ class RefreshEngine(object):
         # Both the key and the values of self.datamap must comply with the
         # requirements of ColumnSorterMixin
         self.datamap[i] = item.get_comparison_values()
+
+        self.pastN += item.get_past_count()
 
         self.occview.insert_item(i, item)
 
@@ -747,9 +744,9 @@ class Formatter(object):
 
 
 class Autoscroll(object):
-    def __init__(self, occview, listview, padding, state_column):
-        self.occview = occview
+    def __init__(self, listview, refengine, padding, state_column):
         self.listview = listview
+        self.refengine = refengine
         self.padding = padding
         self.state_column = state_column
         self.enabled = False
@@ -789,7 +786,7 @@ class Autoscroll(object):
     def _execute_auto(self, yscroll):
         # This method must get the same arguments as the other execute_*
         # methods
-        pastn = self.occview.get_past_count()
+        pastn = self.refengine.get_past_count()
 
         if self.listview.GetItemCount() > 0:
             # Note that the autoscroll relies on the items to be initially
