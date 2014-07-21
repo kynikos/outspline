@@ -236,7 +236,7 @@ class OccurrencesView(object):
         self.colors['gap'] = colgap
         self.colors['overlapping'] = coloverlap
 
-    def _delay_restart_on_text_update(self, kwargs=None):
+    def _delay_restart_on_text_update(self, kwargs):
         if kwargs['text'] is not None:
             self.delay_restart()
 
@@ -278,7 +278,7 @@ class OccurrencesView(object):
         self.timerdelay.Stop()
         self.timerdelay = wx.CallLater(self.DELAY, self._restart)
 
-    def _restart(self, kwargs=None):
+    def _restart(self):
         self.timer.Stop()
 
         # This method is called with CallLater, so this may cause race bugs;
