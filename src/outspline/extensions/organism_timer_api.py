@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-from organism_timer import extension, timer
+from organism_timer import extension, timer, exceptions
 
 
 def install_rule_handler(rulename, handler):
@@ -33,6 +33,10 @@ def get_next_occurrences(base_time=None, base_times=None, filenames=()):
 
 def search_next_occurrences():
     return extension.nextoccsengine.restart()
+
+
+def get_old_occurrences_search_exception():
+    return exceptions.OngoingOldSearchWarning
 
 
 def bind_to_get_next_occurrences(handler, bind=True):
