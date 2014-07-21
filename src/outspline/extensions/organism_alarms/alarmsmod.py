@@ -95,51 +95,42 @@ class Database(object):
                 occs.add_old(alarmd)
 
     def activate_alarms_range(self, mint, maxt, occsd):
-        # Due to race conditions, filename could have been closed meanwhile
-        # (e.g. if the modal dialog for closing the database was open in the
-        # interface)
-        if core_api.is_database_open(self.filename):
-            for id_ in occsd:
-                # Due to race conditions, id_ could have been deleted meanwhile
-                # (e.g. if the modal dialog for deleting the item was open in
-                # the interface)
-                if core_api.is_item(self.filename, id_):
-                    for occ in occsd[id_]:
-                        # occ may have alarm == mint, or start or end in the
-                        # interval, but none of those occurrences must be
-                        # activated
-                        if mint < occ['alarm'] <= maxt:
-                            self._activate_alarm(occ)
-
-    def activate_old_alarms(self, occsd):
-        # Due to race conditions, filename could have been closed meanwhile
-        # (e.g. if the modal dialog for closing the database was open in the
-        # interface)
-        if core_api.is_database_open(self.filename):
-            for id_ in occsd:
-                # Due to race conditions, id_ could have been deleted meanwhile
-                # (e.g. if the modal dialog for deleting the item was open in
-                # the interface)
-                if core_api.is_item(self.filename, id_):
-                    for occ in occsd[id_]:
+        for id_ in occsd:
+            # Due to race conditions, id_ could have been deleted meanwhile
+            # (e.g. if the modal dialog for deleting the item was open in the
+            # interface)
+            if core_api.is_item(self.filename, id_):
+                for occ in occsd[id_]:
+                    # occ may have alarm == mint, or start or end in the
+                    # interval, but none of those occurrences must be activated
+                    if mint < occ['alarm'] <= maxt:
                         self._activate_alarm(occ)
 
+    def activate_old_alarms(self, occsd):
+        for id_ in occsd:
+            # Due to race conditions, id_ could have been deleted meanwhile
+            # (e.g. if the modal dialog for deleting the item was open in the
+            # interface)
+            if core_api.is_item(self.filename, id_):
+                for occ in occsd[id_]:
+                    self._activate_alarm(occ)
+
     def activate_alarms(self, time, occsd):
-        # Due to race conditions, filename could have been closed meanwhile
-        # (e.g. if the modal dialog for closing the database was open in the
-        # interface)
-        if core_api.is_database_open(self.filename):
-            for id_ in occsd:
-                # Due to race conditions, id_ could have been deleted meanwhile
-                # (e.g. if the modal dialog for deleting the item was open in
-                # the interface)
-                if core_api.is_item(self.filename, id_):
-                    for occ in occsd[id_]:
-                        # occ may have start or end == time
-                        if occ['alarm'] == time:
-                            self._activate_alarm(occ)
+        for id_ in occsd:
+            # Due to race conditions, id_ could have been deleted meanwhile
+            # (e.g. if the modal dialog for deleting the item was open in the
+            # interface)
+            if core_api.is_item(self.filename, id_):
+                for occ in occsd[id_]:
+                    # occ may have start or end == time
+                    if occ['alarm'] == time:
+                        self._activate_alarm(occ)
 
     def _activate_alarm(self, alarm):
+        # If one of the loops that call this method lasts long enough (and
+        # the're not run on the main thread), the database may be closed
+        # meanwhile; however this function seems to terminate safely without
+        # the need of further tests here
         if 'alarmid' not in alarm:
             alarmid = self._insert_alarm(id_=alarm['id_'],
                                    start=alarm['start'],

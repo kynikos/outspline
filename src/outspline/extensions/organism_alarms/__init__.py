@@ -198,21 +198,39 @@ class Main(object):
             pass
 
     def _handle_activate_occurrences_range(self, kwargs):
-        self.databases[kwargs['filename']].activate_alarms_range(
+        try:
+            self.databases[kwargs['filename']].activate_alarms_range(
                             kwargs['mint'], kwargs['maxt'], kwargs['occsd'])
+        except KeyError:
+            # Due to race conditions, filename could have been closed meanwhile
+            # (e.g. if the modal dialog for closing the database was open in
+            # the interface)
+            pass
 
     def _handle_activate_old_occurrences(self, kwargs):
         occsd = kwargs['oldoccsd']
 
         for filename in occsd:
-            self.databases[filename].activate_old_alarms(occsd[filename])
+            try:
+                self.databases[filename].activate_old_alarms(occsd[filename])
+            except KeyError:
+                # Due to race conditions, filename could have been closed
+                # meanwhile (e.g. if the modal dialog for closing the database
+                # was open in the interface)
+                pass
 
     def _handle_activate_occurrences(self, kwargs):
         occsd = kwargs['occsd']
 
         for filename in occsd:
-            self.databases[filename].activate_alarms(kwargs['time'],
+            try:
+                self.databases[filename].activate_alarms(kwargs['time'],
                                                             occsd[filename])
+            except KeyError:
+                # Due to race conditions, filename could have been closed
+                # meanwhile (e.g. if the modal dialog for closing the database
+                # was open in the interface)
+                pass
 
     def get_number_of_active_alarms(self):
         count = 0
