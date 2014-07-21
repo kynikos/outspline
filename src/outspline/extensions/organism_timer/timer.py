@@ -399,6 +399,10 @@ class NextOccurrencesEngine(object):
 
         base_times = {filename: self.databases[filename].get_last_search() for
                                                         filename in filenames}
+        # For the moment there seems to be no need to stop the search if a
+        # database is closed, in fact the search is run on the main thread and
+        # it seems to terminate cleanly, and anyway it should take a reasonable
+        # time to complete
         search = NextOccurrencesSearch(filenames, self.rule_handlers,
                                                         base_times=base_times)
         search.start()
