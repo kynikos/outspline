@@ -73,7 +73,6 @@ class OccurrencesView(object):
         self.navigator = navigator
 
         self.occs = []
-        self.activealarms = {}
 
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
@@ -194,9 +193,6 @@ class OccurrencesView(object):
     def get_gaps_and_overlappings_setting(self):
         return (self.show_gaps, self.show_overlappings)
 
-    def reset_active_alarms(self):
-        self.activealarms.clear()
-
     def insert_item(self, i, item):
         # Initialize the first column with an empty string
         index = self.listview.InsertStringItem(sys.maxint, '')
@@ -225,21 +221,8 @@ class OccurrencesView(object):
         self.cmenu.update()
         self.listview.PopupMenu(self.cmenu)
 
-    def add_active_alarm(self, filename, id_, alarmid):
-        try:
-            self.activealarms[filename]
-        except KeyError:
-            self.activealarms[filename] = {id_: []}
-        else:
-            try:
-                self.activealarms[filename][id_]
-            except KeyError:
-                self.activealarms[filename][id_] = []
-
-        self.activealarms[filename][id_].append(alarmid)
-
     def get_active_alarms(self):
-        return self.activealarms
+        return self.refengine.get_active_alarms()
 
     def get_selected_active_alarms(self):
         sel = self.listview.GetFirstSelected()
@@ -300,6 +283,7 @@ class RefreshEngine(object):
         self.listview = listview
         self.occs = occs
         self.datamap = datamap
+        self.activealarms = {}
         self.DELAY = config.get_int('refresh_delay')
         self.pastN = 0
 
@@ -353,6 +337,22 @@ class RefreshEngine(object):
 
     def get_past_count(self):
         return self.pastN
+
+    def get_active_alarms(self):
+        return self.activealarms
+
+    def add_active_alarm(self, filename, id_, alarmid):
+        try:
+            self.activealarms[filename]
+        except KeyError:
+            self.activealarms[filename] = {id_: []}
+        else:
+            try:
+                self.activealarms[filename][id_]
+            except KeyError:
+                self.activealarms[filename][id_] = []
+
+        self.activealarms[filename][id_].append(alarmid)
 
     def _delay_restart_on_text_update(self, kwargs):
         if kwargs['text'] is not None:
@@ -429,8 +429,8 @@ class RefreshEngine(object):
         # be updated anymore (they'll still refer to the old object)
         self.occs[:] = []
         self.datamap.clear()
+        self.activealarms.clear()
         self.pastN = 0
-        self.occview.reset_active_alarms()
 
         self.timealloc = TimeAllocation(self.min_time, self.max_time,
                                                             self.occview, self)
@@ -468,8 +468,8 @@ class RefreshEngine(object):
                                                                 self.max_time)
 
     def _insert_occurrence(self, occurrence):
-        item = ListRegularItem(occurrence, self.occview, self.now,
-                                                self.formatter, self.timealloc)
+        item = ListRegularItem(occurrence, self, self.now, self.formatter,
+                                                                self.timealloc)
         self._insert_item(item)
 
     def insert_gap(self, start, end, minstart, maxend):
@@ -869,7 +869,7 @@ class _ListItem(object):
 
 
 class ListRegularItem(_ListItem):
-    def __init__(self, occ, occview, now, formatter, timealloc):
+    def __init__(self, occ, refengine, now, formatter, timealloc):
         self.filename = occ['filename']
         self.id_ = occ['id_']
         self.start = occ['start']
@@ -927,7 +927,7 @@ class ListRegularItem(_ListItem):
         elif self.alarm is False:
             self.alarmdate = 'active'
             self.alarmid = occ['alarmid']
-            occview.add_active_alarm(self.filename, self.id_, self.alarmid)
+            refengine.add_active_alarm(self.filename, self.id_, self.alarmid)
             # Note that the assignment of the active color must come after any
             # previous color assignment, in order to override them
             self.color = formatter.get_color('active')
