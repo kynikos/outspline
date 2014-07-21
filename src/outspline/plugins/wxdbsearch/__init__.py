@@ -198,6 +198,7 @@ class SearchView():
         thread = threading.Thread(
                 target=self._search_threaded_continue,
                 args=(regexp, filename, iterator, [], search_start))
+        thread.name = "wxdbsearch_{}".format(filename)
         thread.start()
         self.threads += 1
 
