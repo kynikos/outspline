@@ -405,6 +405,12 @@ class OccurrencesRange(object):
             return (minstart, maxend)
 
 
+class OccurrencesRangeSearchStop(UserWarning):
+    # This class is used as an exception, but used internally, so there's no
+    # need to store it in the exceptions module
+    pass
+
+
 class OccurrencesRangeSearch(object):
     def __init__(self, mint, maxt, filenames, databases, rule_handlers):
         self.mint = mint
@@ -428,7 +434,11 @@ class OccurrencesRangeSearch(object):
             for row in self.databases[filename].get_all_valid_item_rules():
                 id_ = row['R_id']
                 rules = Database.string_to_rules(row['R_rules'])
-                self._search_item(filename, id_, rules)
+
+                try:
+                    self._search_item(filename, id_, rules)
+                except OccurrencesRangeSearchStop:
+                    break
 
             # Get active alarms *after* all occurrences, to avoid except rules
             get_alarms_event.signal(mint=self.mint, maxt=self.maxt,
@@ -456,4 +466,4 @@ class OccurrencesRangeSearch(object):
                     self.maxt, self.utcoffset, filename,  id_, rule, self.occs)
 
     def _search_item_stop(self, filename, id_, rules):
-        raise Exception()
+        raise OccurrencesRangeSearchStop()
