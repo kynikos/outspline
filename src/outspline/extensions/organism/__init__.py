@@ -108,7 +108,10 @@ class Main(object):
             qconnd.close()
 
     def _handle_close_database(self, kwargs):
-        del self.databases[kwargs['filename']]
+        try:
+            del self.databases[kwargs['filename']]
+        except KeyError:
+            pass
 
     def _handle_insert_item(self, kwargs):
         try:
