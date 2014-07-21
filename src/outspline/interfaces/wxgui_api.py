@@ -33,6 +33,10 @@ def get_open_databases():
     return databases.get_open_databases()
 
 
+def register_aborted_save_warning(exception, message):
+    return databases.register_aborted_save_warning(exception, message)
+
+
 ### EDITOR ###
 
 def open_editor(filename, id_):

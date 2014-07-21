@@ -23,6 +23,9 @@ import plural
 
 import outspline.coreaux_api as coreaux_api
 
+aborted_save_default_warning = ("An unspecified event has prevented the "
+                                                "database from being saved.")
+
 
 def create_db_ask():
     return wx.FileDialog(wx.GetApp().root, "Create database", '', "",
@@ -103,6 +106,11 @@ def close_tab_without_saving():
                             'without saving in order to perform the requested '
                             'operation.', caption="Close editor",
                             style=wx.OK | wx.CANCEL | wx.ICON_EXCLAMATION)
+
+
+def warn_aborted_save(message):
+    return wx.MessageDialog(wx.GetApp().root, message, caption="Aborted save",
+                                            style=wx.OK | wx.ICON_EXCLAMATION)
 
 
 def uncaught_exception(exc_info):

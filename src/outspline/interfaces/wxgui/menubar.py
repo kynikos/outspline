@@ -18,7 +18,7 @@
 
 import wx
 
-from outspline.coreaux_api import Event
+from outspline.coreaux_api import Event, OutsplineError
 import outspline.core_api as core_api
 
 import databases
@@ -223,8 +223,12 @@ class MenuFile(wx.Menu):
             filename = treedb.get_filename()
 
             if core_api.check_pending_changes(filename):
-                core_api.save_database(filename)
-                treedb.dbhistory.refresh()
+                try:
+                    core_api.save_database(filename)
+                except OutsplineError as err:
+                    databases.warn_aborted_save(err)
+                else:
+                    treedb.dbhistory.refresh()
 
         core_api.release_databases()
 
@@ -233,8 +237,12 @@ class MenuFile(wx.Menu):
 
         for filename in tuple(tree.dbs.keys()):
             if core_api.check_pending_changes(filename):
-                core_api.save_database(filename)
-                tree.dbs[filename].dbhistory.refresh()
+                try:
+                    core_api.save_database(filename)
+                except OutsplineError as err:
+                    databases.warn_aborted_save(err)
+                else:
+                    tree.dbs[filename].dbhistory.refresh()
 
         core_api.release_databases()
 

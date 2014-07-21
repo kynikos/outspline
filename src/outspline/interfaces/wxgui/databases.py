@@ -21,7 +21,7 @@ import os.path
 import wx
 
 import outspline.coreaux_api as coreaux_api
-from outspline.coreaux_api import Event
+from outspline.coreaux_api import Event, OutsplineError
 import outspline.core_api as core_api
 
 import editor
@@ -33,6 +33,7 @@ open_database_event = Event()
 close_database_event = Event()
 
 dbpropmanager = dbprops.DatabasePropertyManager()
+aborted_save_warnings = {}
 
 
 def create_database(deffname=None, filename=None):
@@ -104,10 +105,15 @@ def save_database_as(origin):
         currname = os.path.basename(origin).rpartition('.')
         deffname = ''.join((currname[0], '_copy', currname[1], currname[2]))
         destination = create_database(deffname)
+
         if destination:
-            core_api.save_database_copy(origin, destination)
-            close_database(origin, no_confirm=True)
-            open_database(destination)
+            try:
+                core_api.save_database_copy(origin, destination)
+            except OutsplineError as err:
+                warn_aborted_save(err)
+            else:
+                close_database(origin, no_confirm=True)
+                open_database(destination)
 
 
 def save_database_backup(origin):
@@ -116,8 +122,12 @@ def save_database_backup(origin):
                                                           currname[1],
                                                           currname[2]))
     destination = create_database(deffname)
+
     if destination:
-        core_api.save_database_copy(origin, destination)
+        try:
+            core_api.save_database_copy(origin, destination)
+        except OutsplineError as err:
+            warn_aborted_save(err)
 
 
 def close_database(filename, no_confirm=False, exit_=False):
@@ -133,7 +143,10 @@ def close_database(filename, no_confirm=False, exit_=False):
     if not no_confirm and core_api.check_pending_changes(filename):
         save = msgboxes.close_db_ask(filename).ShowModal()
         if save == wx.ID_YES:
-            core_api.save_database(filename)
+            try:
+                core_api.save_database(filename)
+            except OutsplineError as err:
+                warn_aborted_save(err)
         elif save == wx.ID_CANCEL:
             return False
 
@@ -151,3 +164,17 @@ def close_database(filename, no_confirm=False, exit_=False):
 def get_open_databases():
     nbl = wx.GetApp().nb_left
     return {nbl.GetPageIndex(tree.dbs[db]): db for db in tree.dbs}
+
+
+def register_aborted_save_warning(exception, message):
+    global aborted_save_warnings
+    aborted_save_warnings[exception] = message
+
+
+def warn_aborted_save(error):
+    try:
+        msgboxes.warn_aborted_save(aborted_save_warnings[error.__class__]
+                                                                ).ShowModal()
+    except KeyError:
+        msgboxes.warn_aborted_save(msgboxes.aborted_save_default_warning
+                                                                ).ShowModal()
