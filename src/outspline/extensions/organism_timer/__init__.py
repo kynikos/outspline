@@ -108,8 +108,12 @@ class Main(object):
          self.nextoccsengine.cancel()
 
     def _handle_close_database(self, kwargs):
-        del self.databases[kwargs['filename']]
-        self.nextoccsengine.restart()
+        try:
+            del self.databases[kwargs['filename']]
+        except KeyError:
+            pass
+        else:
+            self.nextoccsengine.restart()
 
 
 def main():
