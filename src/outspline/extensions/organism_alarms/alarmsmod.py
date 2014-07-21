@@ -28,15 +28,23 @@ import queries
 alarm_event = Event()
 alarm_off_event = Event()
 
-log_limits = {}
-temp_log_limit = {}
-
 
 class Database(object):
     def __init__(self, filename):
         self.filename = filename
         self.changes = None
         self.modified_state = False
+
+        conf = coreaux_api.get_extension_configuration('organism_alarms')
+
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.alarmsproperties_select_history)
+        core_api.give_connection(self.filename, qconn)
+
+        self.log_limits = [cursor.fetchone()[0],
+                                            conf.get_int('log_time_limit'),
+                                            conf.get_int('log_hard_limit')]
 
     def get_snoozed_alarms(self, last_search, occs):
         conn = core_api.get_connection(self.filename)
@@ -311,8 +319,7 @@ class Database(object):
         # Also store the text, otherwise it won't be possible to retrieve it if
         # the item has been deleted meanwhile
         cursor.execute(queries.alarmsofflog_insert, (id_, reason, text))
-        cursor.execute(queries.alarmsofflog_delete_clean,
-                                                    log_limits[self.filename])
+        cursor.execute(queries.alarmsofflog_delete_clean, self.log_limits)
         core_api.give_connection(self.filename, qconn)
 
     def update_alarm_log_soft_limit(self, limit):
@@ -323,8 +330,7 @@ class Database(object):
 
         self.modified_state = True
 
-        global log_limits
-        log_limits[self.filename][0] = limit
+        self.log_limits[0] = limit
 
     def select_alarms_log(self):
         qconn = core_api.get_connection(self.filename)
@@ -335,15 +341,14 @@ class Database(object):
         return cursor
 
     def clean_alarms_log(self):
+        # The normal database connection has already been closed here
         qconn = sqlite3.connect(self.filename)
         cursor = qconn.cursor()
 
-        global temp_log_limit
         cursor.execute(queries.alarmsofflog_delete_clean_close,
-                                            (temp_log_limit[self.filename], ))
+                                                        (self.log_limits[0], ))
         qconn.commit()
         qconn.close()
-        del temp_log_limit[self.filename]
 
     def check_pending_changes(self):
         conn = core_api.get_connection(self.filename)

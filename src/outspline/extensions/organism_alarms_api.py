@@ -40,7 +40,7 @@ def get_alarms_log(filename):
 
 
 def get_alarms_log_limit(filename):
-    return alarmsmod.log_limits[filename][0]
+    return extension.databases[filename].log_limits[0]
 
 
 def update_alarms_log_limit(filename, limit):

@@ -110,17 +110,6 @@ class Main(object):
         if filename in self.cdbs:
             self.databases[filename] = alarmsmod.Database(filename)
 
-            conf = coreaux_api.get_extension_configuration('organism_alarms')
-
-            qconn = core_api.get_connection(filename)
-            cursor = qconn.cursor()
-            cursor.execute(queries.alarmsproperties_select_history)
-            core_api.give_connection(filename, qconn)
-
-            alarmsmod.log_limits[filename] = [cursor.fetchone()[0],
-                                                conf.get_int('log_time_limit'),
-                                                conf.get_int('log_hard_limit')]
-
     def _handle_close_database(self, kwargs):
         filename = kwargs['filename']
 
