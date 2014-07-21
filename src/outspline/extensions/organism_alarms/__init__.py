@@ -269,6 +269,10 @@ class Main(object):
         # activated alarms in the interface
         organism_timer_api.search_next_occurrences()
 
+    def dismiss_alarms(self, alarmsd):
+        for filename in alarmsd:
+            self.databases[filename].dismiss_alarms(alarmsd[filename])
+
 
 def main():
     global extension

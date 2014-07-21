@@ -219,17 +219,15 @@ class Database(object):
                 alarm_off_event.signal(filename=self.filename, id_=id_,
                                                             alarmid=alarmid)
 
+    def dismiss_alarms(self, alarmsd):
+        for id_ in alarmsd:
+            for alarmid in alarmsd[id_]:
+                text = core_api.get_item_text(self.filename, id_)
 
-def dismiss_alarms(alarmsd):
-    for filename in alarmsd:
-        for id_ in alarmsd[filename]:
-            for alarmid in alarmsd[filename][id_]:
-                text = core_api.get_item_text(filename, id_)
-
-                qconn = core_api.get_connection(filename)
+                qconn = core_api.get_connection(self.filename)
                 cursor = qconn.cursor()
                 cursor.execute(queries.alarms_delete_id, (alarmid, ))
-                core_api.give_connection(filename, qconn)
+                core_api.give_connection(self.filename, qconn)
 
                 insert_alarm_log(filename, id_, 1, text.partition('\n')[0])
 
@@ -239,11 +237,11 @@ def dismiss_alarms(alarmsd):
                 # then the user tries to close the database, the database will
                 # seem unmodified, and won't ask to be saved
                 global modified_state
-                modified_state[filename] = True
+                modified_state[self.filename] = True
 
                 # Signal the event after updating the database, so, for
                 # example, the tasklist can be correctly updated
-                alarm_off_event.signal(filename=filename, id_=id_,
+                alarm_off_event.signal(filename=self.filename, id_=id_,
                                                             alarmid=alarmid)
 
 

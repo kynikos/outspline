@@ -32,7 +32,7 @@ def snooze_alarms(alarmsd, stime):
 
 
 def dismiss_alarms(alarmsd):
-    return alarmsmod.dismiss_alarms(alarmsd)
+    return extension.dismiss_alarms(alarmsd)
 
 
 def get_alarms_log(filename):
