@@ -28,7 +28,6 @@ import queries
 alarm_event = Event()
 alarm_off_event = Event()
 
-changes = {}
 modified_state = {}
 log_limits = {}
 temp_log_limit = {}
@@ -37,6 +36,7 @@ temp_log_limit = {}
 class Database(object):
     def __init__(self, filename):
         self.filename = filename
+        self.changes = None
 
     def get_snoozed_alarms(self, last_search, occs):
         conn = core_api.get_connection(self.filename)
@@ -346,3 +346,22 @@ class Database(object):
         qconn.commit()
         qconn.close()
         del temp_log_limit[self.filename]
+
+    def check_pending_changes(self):
+        conn = core_api.get_connection(self.filename)
+        cur = conn.cursor()
+        change_state = self.changes != [row for row in
+                                            cur.execute(queries.alarms_select)]
+        core_api.give_connection(self.filename, conn)
+
+        if change_state or modified_state[self.filename]:
+            core_api.set_modified(self.filename)
+
+    def reset_modified_state(self):
+        conn = core_api.get_connection(self.filename)
+        cur = conn.cursor()
+        self.changes = [row for row in cur.execute(queries.alarms_select)]
+        core_api.give_connection(self.filename, conn)
+
+        global modified_state
+        modified_state[self.filename] = False

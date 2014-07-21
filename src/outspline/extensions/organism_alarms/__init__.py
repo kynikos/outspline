@@ -125,7 +125,6 @@ class Main(object):
         filename = kwargs['filename']
 
         try:
-            del alarmsmod.changes[filename]
             del alarmsmod.modified_state[filename]
             del self.databases[filename]
         except KeyError:
@@ -141,26 +140,13 @@ class Main(object):
         filename = kwargs['filename']
 
         if filename in self.cdbs:
-            conn = core_api.get_connection(filename)
-            cur = conn.cursor()
-            change_state = alarmsmod.changes[filename] != [row for row in
-                                            cur.execute(queries.alarms_select)]
-            core_api.give_connection(filename, conn)
-
-            if change_state or alarmsmod.modified_state[filename]:
-                core_api.set_modified(filename)
+            self.databases[filename].check_pending_changes()
 
     def _handle_reset_modified_state(self, kwargs):
         filename = kwargs['filename']
 
         if filename in self.cdbs:
-            conn = core_api.get_connection(filename)
-            cur = conn.cursor()
-            alarmsmod.changes[filename] = [row for row in cur.execute(
-                                                        queries.alarms_select)]
-            core_api.give_connection(filename, conn)
-
-            alarmsmod.modified_state[filename] = False
+            self.databases[filename].reset_modified_state()
 
     def _handle_save_database_copy(self, kwargs):
         origin = kwargs['origin']
