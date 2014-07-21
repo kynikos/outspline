@@ -35,7 +35,6 @@ class Main(object):
     def __init__(self):
         self._ADDON_NAME = ('Extensions', 'organism_alarms')
 
-        self.cdbs = set()
         self.databases = {}
 
         self._create_copy_table()
@@ -102,72 +101,73 @@ class Main(object):
                                     )['database_dependency_group_1'].split(' ')
 
         if not set(dependencies) - set(kwargs['dependencies']):
-            self.cdbs.add(kwargs['filename'])
-
-    def _handle_open_database(self, kwargs):
-        filename = kwargs['filename']
-
-        if filename in self.cdbs:
+            filename = kwargs['filename']
             self.databases[filename] = alarmsmod.Database(filename)
 
-    def _handle_check_pending_changes(self, kwargs):
-        filename = kwargs['filename']
+    def _handle_open_database(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].post_init()
+        except KeyError:
+            pass
 
-        if filename in self.cdbs:
-            self.databases[filename].check_pending_changes()
+    def _handle_check_pending_changes(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].check_pending_changes()
+        except KeyError:
+            pass
 
     def _handle_reset_modified_state(self, kwargs):
-        filename = kwargs['filename']
-
-        if filename in self.cdbs:
-            self.databases[filename].reset_modified_state()
+        try:
+            self.databases[kwargs['filename']].reset_modified_state()
+        except KeyError:
+            pass
 
     def _handle_save_database_copy(self, kwargs):
-        origin = kwargs['origin']
-
-        if origin in self.cdbs:
-            self.databases[origin].save_copy(kwargs['destination'])
+        try:
+            self.databases[kwargs['origin']].save_copy(kwargs['destination'])
+        except KeyError:
+            pass
 
     def _handle_copy_items(self, kwargs):
-        # Do not check if kwargs['filename'] is in cdbs, always clear the table
-        # as the other functions rely on the table to be clear
+        # Do not check if kwargs['filename'] is in self.databases, always clear
+        # the table as the other functions rely on the table to be clear
         mem = core_api.get_memory_connection()
         cur = mem.cursor()
         cur.execute(queries.copyalarms_delete)
         core_api.give_memory_connection(mem)
 
     def _handle_copy_item(self, kwargs):
-        filename = kwargs['filename']
-
-        if filename in self.cdbs:
-            self.databases[filename].copy_alarms(kwargs['id_'])
+        try:
+            self.databases[kwargs['filename']].copy_alarms(kwargs['id_'])
+        except KeyError:
+            pass
 
     def _handle_paste_item(self, kwargs):
-        filename = kwargs['filename']
-
-        if filename in self.cdbs:
-            self.databases[filename].paste_alarms(kwargs['id_'],
+        try:
+            self.databases[kwargs['filename']].paste_alarms(kwargs['id_'],
                                                             kwargs['oldid'])
+        except KeyError:
+            pass
 
     def _handle_safe_paste_check(self, kwargs):
         filename = kwargs['filename']
 
         self.databases[filename].can_paste_safely(kwargs['exception'],
-                                                            filename in cdbs)
+                                                        filename in databases)
 
     def _handle_delete_item_rules(self, kwargs):
-        filename = kwargs['filename']
-
-        if filename in self.cdbs:
-            self.databases[filename].delete_alarms(kwargs['id_'],
+        try:
+            self.databases[kwargs['filename']].delete_alarms(kwargs['id_'],
                                                                 kwargs['text'])
+        except KeyError:
+            pass
 
     def _handle_history_remove(self, kwargs):
-        filename = kwargs['filename']
-
-        if filename in self.cdbs:
-            self.databases[filename].delete_alarms(kwargs['id_'],
+        try:
+            self.databases[kwargs['filename']].delete_alarms(kwargs['id_'],
                                                                 kwargs['text'])
+        except KeyError:
+            pass
 
     def _handle_history_clean(self, kwargs):
         filename = kwargs['filename']
@@ -177,22 +177,21 @@ class Main(object):
         except KeyError:
             pass
         else:
-            self.cdbs.discard(filename)
             del self.databases[filename]
 
     def _handle_get_alarms(self, kwargs):
-        filename = kwargs['filename']
-
-        if filename in self.cdbs:
-            self.databases[filename].get_alarms(kwargs['mint'], kwargs['maxt'],
-                                                                kwargs['occs'])
+        try:
+            self.databases[kwargs['filename']].get_alarms(kwargs['mint'],
+                                                kwargs['maxt'], kwargs['occs'])
+        except KeyError:
+            pass
 
     def _handle_get_next_occurrences(self, kwargs):
-        filename = kwargs['filename']
-
-        if self.filename in self.cdbs:
-            self.databases[filename].get_snoozed_alarms(kwargs['base_time'],
-                                                                kwargs['occs'])
+        try:
+            self.databases[kwargs['filename']].get_snoozed_alarms(
+                                        kwargs['base_time'], kwargs['occs'])
+        except KeyError:
+            pass
 
     def _handle_activate_occurrences_range(self, kwargs):
         self.databases[kwargs['filename']].activate_alarms_range(
@@ -214,9 +213,9 @@ class Main(object):
     def get_number_of_active_alarms(self):
         count = 0
 
-        # cdbs may change size during the loop because of races with other
-        # threads
-        for filename in self.cdbs.copy():
+        # self.databases may change size during the loop because of races with
+        # other threads
+        for filename in self.databases.keys():
             count += self.databases[filename].get_number_of_active_alarms()
 
         return count

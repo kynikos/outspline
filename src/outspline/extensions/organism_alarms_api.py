@@ -20,7 +20,7 @@ from organism_alarms import extension, alarmsmod
 
 
 def get_supported_open_databases():
-    return extension.cdbs
+    return extension.databases.keys()
 
 
 def get_number_of_active_alarms():

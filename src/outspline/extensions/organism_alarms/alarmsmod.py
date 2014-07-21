@@ -35,6 +35,7 @@ class Database(object):
         self.changes = None
         self.modified_state = False
 
+    def post_init(self):
         conf = coreaux_api.get_extension_configuration('organism_alarms')
 
         qconn = core_api.get_connection(self.filename)
