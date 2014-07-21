@@ -26,7 +26,7 @@ import outspline.extensions.organism_api as organism_api
 
 import queries
 from exceptions import (BadOccurrenceError, BadExceptRuleError,
-                                                   ConflictingRuleHandlerError)
+                        ConflictingRuleHandlerError, OngoingOldSearchWarning)
 
 get_next_occurrences_event = Event()
 search_old_occurrences_event = Event()
@@ -293,7 +293,10 @@ class OldOccurrencesSearch(object):
             # timestamp
             # Note that saving and closing the database after this point, but
             # before the search is finished and the old alarms are activated,
-            # would lose all the old alarms
+            # would lose all the old alarms; that's why saving must be
+            # prevented while the search is ongoing
+            core_api.bind_to_save_permission_check(
+                                            self._handle_save_permission_check)
             self.databases[self.filename].set_last_search(self.whileago)
 
             # Use a thread to let the GUI be responsive and possibly abort the
@@ -333,6 +336,13 @@ class OldOccurrencesSearch(object):
                     mint=self.last_search, maxt=self.whileago, occsd=occsdf)
 
         search_old_occurrences_end_event.signal(filename=self.filename)
+
+        core_api.bind_to_save_permission_check(
+                                    self._handle_save_permission_check, False)
+
+    def _handle_save_permission_check(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            raise OngoingOldSearchWarning()
 
     def _handle_close_database(self, kwargs):
         if kwargs['filename'] == self.filename:
