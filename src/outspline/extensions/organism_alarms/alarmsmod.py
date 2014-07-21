@@ -278,16 +278,6 @@ class Database(object):
 
         core_api.give_memory_connection(mem)
 
-    def can_paste_safely(self, exception, alarms_supported):
-        mem = core_api.get_memory_connection()
-        curm = mem.cursor()
-        curm.execute(queries.copyalarms_select)
-        core_api.give_memory_connection(mem)
-
-        # Warn if CopyAlarms table has alarms but filename doesn't support them
-        if curm.fetchone() and not alarms_supported:
-            raise exception()
-
     def paste_alarms(self, id_, oldid):
         mem = core_api.get_memory_connection()
         curm = mem.cursor()

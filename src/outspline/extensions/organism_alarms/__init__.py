@@ -150,10 +150,14 @@ class Main(object):
             pass
 
     def _handle_safe_paste_check(self, kwargs):
-        filename = kwargs['filename']
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+        curm.execute(queries.copyalarms_select)
+        core_api.give_memory_connection(mem)
 
-        self.databases[filename].can_paste_safely(kwargs['exception'],
-                                                        filename in databases)
+        # Warn if CopyAlarms table has alarms but filename doesn't support them
+        if curm.fetchone() and kwargs['filename'] not in self.databases:
+            raise kwargs['exception']()
 
     def _handle_delete_item_rules(self, kwargs):
         try:
