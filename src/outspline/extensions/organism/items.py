@@ -369,10 +369,6 @@ class OccurrencesRange(object):
                     occsl.append(o)
         return occsl
 
-    def get_found_filenames(self):
-        # Note that this method ignores self.actd _deliberately_
-        return self.d.keys()
-
     def get_next_completion_time(self):
         # Note that this method ignores self.actd _deliberately_
         ctime = None
