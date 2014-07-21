@@ -434,6 +434,16 @@ class RefreshEngine(object):
                                                                 self.max_time):
             occurrences.extend(occsobj.get_active_list())
 
+        # Don't re-assign = [] or the other live references to the object won't
+        # be updated anymore (they'll still refer to the old object)
+        self.occs[:] = []
+        self.datamap.clear()
+        self.occview.reset_past_count()
+        self.occview.reset_active_alarms()
+
+        self.timealloc = TimeAllocation(self.min_time, self.max_time,
+                                                            self.occview, self)
+
         if self.listview.GetItemCount() > 0:
             # Save the scroll y for restoring it after inserting the items
             # I could instead save
@@ -447,16 +457,6 @@ class RefreshEngine(object):
             self.listview.DeleteAllItems()
         else:
             yscroll = 0
-
-        # Don't re-assign = [] or the other live references to the object won't
-        # be updated anymore (they'll still refer to the old object)
-        self.occs[:] = []
-        self.datamap.clear()
-        self.occview.reset_past_count()
-        self.occview.reset_active_alarms()
-
-        self.timealloc = TimeAllocation(self.min_time, self.max_time,
-                                                            self.occview, self)
 
         for occurrence in occurrences:
             self._insert_occurrence(occurrence)
