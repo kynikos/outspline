@@ -391,6 +391,8 @@ class OldOccurrencesSearch(object):
             # Note that occsdf still includes occurrence times equal to
             # self.exclmint: these must be excluded because self.exclmint
             # is the time that was last already activated
+            # The organism_alarms extension will check if the database is still
+            # open while activating the alarms
             # Also note that as long as the handler of this event remains on
             # this thread, it's under the protection of
             # self._handle_save_permission_check
