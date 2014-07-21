@@ -79,6 +79,7 @@ class TextArea():
         self.tmrunning = True
         self.mtimer = Timer(config.get_int('min_text_upd_time'),
                             self.reset_timer)
+        self.mtimer.name = "wxtextarea"
         self.mtimer.start()
 
         event.Skip()
