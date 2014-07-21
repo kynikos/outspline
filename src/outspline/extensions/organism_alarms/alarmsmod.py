@@ -141,6 +141,9 @@ class Database(object):
         self.old_alarms_unique = unique
         self.old_alarms_lock.release()
 
+    def activate_old_alarms(self, occsd):
+        self._activate_alarms_all(occsd)
+
     def _activate_alarms_all(self, occsd):
         for id_ in occsd:
             # Due to race conditions, id_ could have been deleted meanwhile
@@ -163,15 +166,6 @@ class Database(object):
                     # self.activate_alarms_range
                     pass
                 else:
-                    self._activate_alarm(occ)
-
-    def activate_old_alarms(self, occsd):
-        for id_ in occsd:
-            # Due to race conditions, id_ could have been deleted meanwhile
-            # (e.g. if the modal dialog for deleting the item was open in the
-            # interface)
-            if core_api.is_item(self.filename, id_):
-                for occ in occsd[id_]:
                     self._activate_alarm(occ)
 
     def activate_alarms(self, time, occsd):
