@@ -36,7 +36,6 @@ class Main(object):
         self._ADDON_NAME = ('Extensions', 'organism_alarms')
 
         self.cdbs = set()
-        self.tempcdbs = set()
         self.databases = {}
 
         self._create_copy_table()
@@ -48,7 +47,8 @@ class Main(object):
                                             self._handle_check_pending_changes)
         core_api.bind_to_reset_modified_state(
                                             self._handle_reset_modified_state)
-        core_api.bind_to_close_database(self._handle_close_database)
+        # No need to bind to close_database, as specific filenames will be
+        # deleted from self.databases in self._handle_history_clean
         core_api.bind_to_save_database_copy(self._handle_save_database_copy)
         core_api.bind_to_history_remove(self._handle_history_remove)
         core_api.bind_to_history_clean(self._handle_history_clean)
@@ -109,20 +109,6 @@ class Main(object):
 
         if filename in self.cdbs:
             self.databases[filename] = alarmsmod.Database(filename)
-
-    def _handle_close_database(self, kwargs):
-        filename = kwargs['filename']
-
-        try:
-            del self.databases[filename]
-        except KeyError:
-            pass
-        else:
-            self.cdbs.discard(filename)
-            self.tempcdbs.add(filename)
-            alarmsmod.temp_log_limit[filename] = alarmsmod.log_limits[
-                                                                filename][0]
-            del alarmsmod.log_limits[filename]
 
     def _handle_check_pending_changes(self, kwargs):
         filename = kwargs['filename']
@@ -207,9 +193,13 @@ class Main(object):
     def _handle_history_clean(self, kwargs):
         filename = kwargs['filename']
 
-        if filename in self.tempcdbs:
+        try:
             self.databases[filename].clean_alarms_log()
-            self.tempcdbs.discard(filename)
+        except KeyError:
+            pass
+        else:
+            self.cdbs.discard(filename)
+            del self.databases[filename]
 
     def _handle_get_alarms(self, kwargs):
         filename = kwargs['filename']
