@@ -79,8 +79,9 @@ class OccurrencesView(object):
 
         self._init_list()
 
-        self.refengine = RefreshEngine(self.config, self, self.listview,
-                                                    self.occs, self.datamap)
+        formatter = Formatter(self.config, self.listview)
+        self.refengine = RefreshEngine(self.config, self, formatter, self.occs,
+                                                                self.datamap)
 
         self._init_autoscroll()
         self._init_filters()
@@ -302,16 +303,14 @@ class OccurrencesView(object):
 
 
 class RefreshEngine(object):
-    def __init__(self, config, occview, listview, occs, datamap):
+    def __init__(self, config, occview, formatter, occs, datamap):
         self.occview = occview
-        self.listview = listview
+        self.formatter = formatter
         self.occs = occs
         self.datamap = datamap
         self.activealarms = {}
         self.DELAY = config.get_int('refresh_delay')
         self.pastN = 0
-
-        self.formatter = Formatter(config, self.listview)
 
         self.filterclasses = {
             'relative': filters.FilterRelative,
