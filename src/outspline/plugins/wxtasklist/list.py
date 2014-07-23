@@ -195,6 +195,9 @@ class OccurrencesView(object):
         return (self.show_gaps, self.show_overlappings)
 
     def insert_items(self):
+        # This method is always executed in the main thread, so there can't be
+        # races, except for self.occs that may be re-created meanwhile, but
+        # it's enough to iterate over a copy
         if self.listview.GetItemCount() > 0:
             # Save the scroll y for restoring it after inserting the items
             # I could instead save
@@ -209,7 +212,9 @@ class OccurrencesView(object):
         else:
             yscroll = 0
 
-        for i, item in enumerate(self.occs):
+        # Iterate over a copy of self.occs because it may be changed meanwhile
+        # by RefreshEngine
+        for i, item in enumerate(self.occs[:]):
             # Splitting this part and calling with CallAfter directly from the
             #  engine thread every time an occurrence is added to self.occs
             #  doesn't make the interface responsive anyway, so just do
@@ -477,6 +482,9 @@ class RefreshEngine(object):
                 except RefreshEngineStop:
                     pass
                 else:
+                    # Since self._refresh_end (and so
+                    # self.occview.insert_items) is always run in the main
+                    # thread, there can't be races
                     wx.CallAfter(self._refresh_end, delay)
 
     def _refresh_continue(self):
