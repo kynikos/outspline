@@ -194,6 +194,12 @@ class OccurrencesView(object):
         # This method is always executed in the main thread, so there can't be
         # races, except for self.occs that may be re-created meanwhile, but
         # it's enough to iterate over a copy
+
+        # Explicitly preserve the scrolled attribute of Autoscroll, because
+        # DeleteAllItems generates EVT_SCROLLWIN that would always set it to
+        # True
+        scrolled = self.autoscroll.is_scrolled()
+
         if self.listview.GetItemCount() > 0:
             # Save the scroll y for restoring it after inserting the items
             # I could instead save
@@ -246,6 +252,7 @@ class OccurrencesView(object):
 
         # The list must be autoscrolled *after* sorting the items, so that the
         # correct y values will be got
+        self.autoscroll.set_scrolled(scrolled)
         self.autoscroll.execute(yscroll)
 
     def _popup_context_menu(self, event):
