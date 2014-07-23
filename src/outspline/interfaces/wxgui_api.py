@@ -342,14 +342,20 @@ def get_open_editors_tab_indexes():
     return wx.GetApp().nb_right.get_open_editors()
 
 
-def add_plugin_to_right_nb(window, caption, select=True):
+def add_right_nb_image(image):
+    return wx.GetApp().nb_right.add_image(image)
+
+
+# wx.NO_IMAGE, which is used in the docs, seems not to exist...
+def add_plugin_to_right_nb(window, caption, select=True, imageId=wx.NOT_FOUND):
     return wx.GetApp().nb_right.add_plugin(window, caption=caption,
-                                                                select=select)
+                                                select=select, imageId=imageId)
 
 
-def add_page_to_right_nb(window, caption, select=True):
+# wx.NO_IMAGE, which is used in the docs, seems not to exist...
+def add_page_to_right_nb(window, caption, select=True, imageId=wx.NOT_FOUND):
     return wx.GetApp().nb_right.add_page(window, caption=caption,
-                                                                select=select)
+                                                select=select, imageId=imageId)
 
 
 def hide_right_nb_page(window):
@@ -366,6 +372,10 @@ def close_right_nb_page(window):
 
 def set_right_nb_page_title(window, title):
     return wx.GetApp().nb_right.set_page_title(window, title)
+
+
+def set_right_nb_page_image(page, index):
+    return wx.GetApp().nb_right.set_page_image(page, index)
 
 
 def bind_to_plugin_close_event(handler, bind=True):

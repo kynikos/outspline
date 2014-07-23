@@ -142,6 +142,11 @@ class RightNotebook(Notebook):
     def __init__(self, parent):
         Notebook.__init__(self, parent)
 
+        self.imagelist = wx.ImageList(16, 16)
+        self.AssignImageList(self.imagelist)
+
+        self.editors = editor.Editors(self)
+
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
                                                     self._handle_page_closing)
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSED,
@@ -178,13 +183,22 @@ class RightNotebook(Notebook):
         if self.GetPageCount() == 0:
             self.parent.unsplit_window()
 
-    def add_page(self, window, caption, select=True):
-        self.AddPage(window, text=caption, select=select)
+    # wx.NO_IMAGE, which is used in the docs, seems not to exist...
+    def add_page(self, window, caption, select=True, imageId=wx.NOT_FOUND):
+        self.AddPage(window, text=caption, select=select, imageId=imageId)
         self._split()
 
-    def add_plugin(self, window, caption, select=True):
-        self.InsertPage(0, window, text=caption, select=select)
+    # wx.NO_IMAGE, which is used in the docs, seems not to exist...
+    def add_plugin(self, window, caption, select=True, imageId=wx.NOT_FOUND):
+        self.InsertPage(0, window, text=caption, select=select,
+                                                            imageId=imageId)
         self._split()
+
+    def add_image(self, image):
+        return self.imagelist.Add(image)
+
+    def set_page_image(self, page, index):
+        return self.SetPageImage(self.GetPageIndex(page), index)
 
     def set_editor_title(self, item, title):
         self.SetPageText(self.GetPageIndex(editor.tabs[item].panel),
