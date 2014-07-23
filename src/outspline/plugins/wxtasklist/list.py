@@ -61,7 +61,7 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
         self.imagemap['small']['sortdown'] = self.imagelistsmall.Add(
                wx.ArtProvider.GetBitmap('@sortdown', wx.ART_TOOLBAR, (16, 16)))
 
-        self.SetImageList(self.imagelistsmall, wx.IMAGE_LIST_SMALL)
+        self.AssignImageList(self.imagelistsmall, wx.IMAGE_LIST_SMALL)
 
     def GetSortImages(self):
         return (self.imagemap['small']['sortup'],
