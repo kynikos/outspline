@@ -86,7 +86,9 @@ class OccurrencesView(object):
         self._init_filters()
         self._init_show_options()
 
-        self.refengine.enable()
+        # RefreshEngine needs the filter and show options to be set before
+        # being started
+        self.refengine.start()
 
     def _init_list(self):
         self.DATABASE_COLUMN = 0
@@ -324,10 +326,16 @@ class RefreshEngine(object):
                     config.get_int('maximum_year') + 1, 1, 1).timetuple())) - 1
         )
 
+    def start(self):
         # Initialize self.timerdelay with a dummy function (int)
         self.timerdelay = wx.CallLater(self.DELAY, int)
+
+        # self._restart cancels the timer, so it must be initialized here,
+        # instead of calling self._refresh directly
         self.timer = threading.Timer(0, self._refresh)
         self.timer.start()
+
+        self.enable()
 
     def enable(self):
         core_api.bind_to_update_item(self._delay_restart_on_text_update)
@@ -452,7 +460,6 @@ class RefreshEngine(object):
         for occurrence in occurrences:
             self._insert_occurrence(occurrence)
 
-        # Do this *after* inserting the items but *before* sorting
         self.timealloc.insert_gaps_and_overlappings()
 
         delay = self.filter_.compute_delay(occsobj, self.now, self.min_time,
