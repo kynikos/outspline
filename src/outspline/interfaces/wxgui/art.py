@@ -83,6 +83,7 @@ class ArtProvider(wx.ArtProvider):
                     '@preferences': ('package_settings', 'gtk-preferences'),
                     '@previous': ('go-previous', ),
                     '@properties': ('document-properties', ),
+                    '@refresh': ('view-refresh', ),
                     '@remove-filter': ('list-remove', ),
                     '@save': ('document-save', 'gtk-save', 'filesave',
                                 'stock_save'),

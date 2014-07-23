@@ -36,6 +36,7 @@ import msgboxes
 mainmenu = None
 searches = []
 nb_icon_index = None
+nb_icon_refresh_index = None
 
 
 class SearchViewPanel(wx.Panel):
@@ -109,6 +110,12 @@ class SearchView():
 
         wxgui_api.set_right_nb_page_title(self.panel, title)
 
+    def set_tab_icon_stopped(self):
+        wxgui_api.set_right_nb_page_image(self.panel, nb_icon_index)
+
+    def set_tab_icon_ongoing(self):
+        wxgui_api.set_right_nb_page_image(self.panel, nb_icon_refresh_index)
+
     def search(self):
         self.finish_search_action = self._finish_search_restart
         self.stop_search()
@@ -124,6 +131,9 @@ class SearchView():
 
         # Perform the action only when the last thread terminates
         if self.threads == 0:
+            # Reset the icon *before* calling finish_search_action, which
+            # could be set to restart, thus setting the icon ongoing again
+            self.set_tab_icon_stopped()
             self.finish_search_action()
 
     def _finish_search_dummy(self):
@@ -145,6 +155,8 @@ class SearchView():
         self.finish_search_action = self._finish_search_dummy
 
     def _finish_search_restart(self):
+        self.set_tab_icon_ongoing()
+
         string = self.filters.text.GetValue()
         self.set_title(string)
 
@@ -740,4 +752,8 @@ def main():
     global nb_icon_index
     nb_icon_index = wxgui_api.add_right_nb_image(
                                     wx.ArtProvider.GetBitmap('@find',
+                                    wx.ART_TOOLBAR, (16, 16)))
+    global nb_icon_refresh_index
+    nb_icon_refresh_index = wxgui_api.add_right_nb_image(
+                                    wx.ArtProvider.GetBitmap('@refresh',
                                     wx.ART_TOOLBAR, (16, 16)))
