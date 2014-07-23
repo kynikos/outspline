@@ -17,6 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import sqlite3
+import threading
 
 from outspline.coreaux_api import Event
 import outspline.coreaux_api as coreaux_api
@@ -27,13 +28,19 @@ import queries
 
 alarm_event = Event()
 alarm_off_event = Event()
+activate_alarms_range_event = Event()
+activate_alarms_range_end_event = Event()
 
 
 class Database(object):
-    def __init__(self, filename):
+    def __init__(self, filename, choose_unique_old_alarms):
         self.filename = filename
+        self.choose_unique_old_alarms = choose_unique_old_alarms
         self.changes = None
         self.modified_state = False
+        self.old_alarms_lock = threading.Lock()
+        # A first call to acquire is needed to set the state to unlocked
+        self.old_alarms_lock.acquire()
 
     def post_init(self):
         conf = coreaux_api.get_extension_configuration('organism_alarms')
@@ -94,17 +101,69 @@ class Database(object):
             else:
                 occs.add_old(alarmd)
 
-    def activate_alarms_range(self, mint, maxt, occsd):
+    def activate_alarms_range(self, mint, maxt, occsd, threshold):
+        # Note that as long as this function remains on the same thread as
+        # organism_timer's OldOccurrencesSearch search thread, it's under the
+        # protection of its _handle_save_permission_check method
+        activate_alarms_range_event.signal(filename=self.filename)
+
+        count = 0
+
+        for id_ in occsd:
+            for j, occ in enumerate(occsd[id_]):
+                # occ may have alarm == mint, or start or end in the
+                #  interval, but none of those occurrences must be activated
+                # In particular, the alarm == mint case should have already
+                #  been activated the previous time Outspline was run
+                if mint < occ['alarm'] <= maxt:
+                    count += 1
+                else:
+                    del occsd[id_][j]
+
+        if count > threshold and \
+                        self.choose_unique_old_alarms is not None:
+            self.choose_unique_old_alarms(self.filename, count)
+            self.old_alarms_lock.acquire()
+
+            if self.old_alarms_unique is True:
+                self._activate_alarms_unique(occsd)
+            elif self.old_alarms_unique is False:
+                self._activate_alarms_all(occsd)
+            # self.old_alarms_unique could be None, and in that case it means
+            # that the alarms must not be activated
+        else:
+            self._activate_alarms_all(occsd)
+
+        activate_alarms_range_end_event.signal(filename=self.filename)
+
+    def activate_alarms_range_continue(self, unique):
+        # This method is run on the main thread
+        self.old_alarms_unique = unique
+        self.old_alarms_lock.release()
+
+    def _activate_alarms_all(self, occsd):
         for id_ in occsd:
             # Due to race conditions, id_ could have been deleted meanwhile
             # (e.g. if the modal dialog for deleting the item was open in the
             # interface)
             if core_api.is_item(self.filename, id_):
                 for occ in occsd[id_]:
-                    # occ may have alarm == mint, or start or end in the
-                    # interval, but none of those occurrences must be activated
-                    if mint < occ['alarm'] <= maxt:
-                        self._activate_alarm(occ)
+                    self._activate_alarm(occ)
+
+    def _activate_alarms_unique(self, occsd):
+        for id_ in occsd:
+            # Due to race conditions, id_ could have been deleted meanwhile
+            # (e.g. if the modal dialog for deleting the item was open in the
+            # interface)
+            if core_api.is_item(self.filename, id_):
+                try:
+                    occ = max(occsd[id_], key=lambda occ: occ['alarm'])
+                except ValueError:
+                    # occsd[id_] may be have been emptied in
+                    # self.activate_alarms_range
+                    pass
+                else:
+                    self._activate_alarm(occ)
 
     def activate_old_alarms(self, occsd):
         for id_ in occsd:

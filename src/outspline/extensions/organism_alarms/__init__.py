@@ -34,6 +34,9 @@ extension = None
 class Main(object):
     def __init__(self):
         self._ADDON_NAME = ('Extensions', 'organism_alarms')
+        self.choose_unique_old_alarms = None
+        self.OLD_THRESHOLD = coreaux_api.get_extension_configuration(
+                            'organism_alarms').get_int('old_alarms_threshold')
 
         self.databases = {}
 
@@ -102,7 +105,8 @@ class Main(object):
 
         if not set(dependencies) - set(kwargs['dependencies']):
             filename = kwargs['filename']
-            self.databases[filename] = alarmsmod.Database(filename)
+            self.databases[filename] = alarmsmod.Database(filename,
+                                                self.choose_unique_old_alarms)
 
     def _handle_open_database(self, kwargs):
         try:
@@ -200,7 +204,8 @@ class Main(object):
     def _handle_activate_occurrences_range(self, kwargs):
         try:
             self.databases[kwargs['filename']].activate_alarms_range(
-                            kwargs['mint'], kwargs['maxt'], kwargs['occsd'])
+                                        kwargs['mint'], kwargs['maxt'],
+                                        kwargs['occsd'], self.OLD_THRESHOLD)
         except KeyError:
             # Due to race conditions, filename could have been closed meanwhile
             # (e.g. if the modal dialog for closing the database was open in
@@ -231,6 +236,9 @@ class Main(object):
                 # meanwhile (e.g. if the modal dialog for closing the database
                 # was open in the interface)
                 pass
+
+    def install_unique_old_alarms_interface(self, interface):
+        self.choose_unique_old_alarms = interface
 
     def get_number_of_active_alarms(self):
         count = 0

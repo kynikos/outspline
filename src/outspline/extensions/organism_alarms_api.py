@@ -23,8 +23,16 @@ def get_supported_open_databases():
     return extension.databases.keys()
 
 
+def install_unique_old_alarms_interface(interface):
+    return extension.install_unique_old_alarms_interface(interface)
+
+
 def get_number_of_active_alarms():
     return extension.get_number_of_active_alarms()
+
+
+def activate_old_alarms(filename, unique):
+    return extension.databases[filename].activate_alarms_range_continue(unique)
 
 
 def snooze_alarms(alarmsd, stime):
@@ -55,3 +63,15 @@ def bind_to_alarm(handler, bind=True):
 
 def bind_to_alarm_off(handler, bind=True):
     return alarmsmod.alarm_off_event.bind(handler, bind)
+
+
+def bind_to_activate_alarms_range(handler, bind=True):
+    # Warning, this function is executed on a separate thread!!!
+    # (Check for race conditions)
+    return alarmsmod.activate_alarms_range_event.bind(handler, bind)
+
+
+def bind_to_activate_alarms_range_end(handler, bind=True):
+    # Warning, this function is executed on a separate thread!!!
+    # (Check for race conditions)
+    return alarmsmod.activate_alarms_range_end_event.bind(handler, bind)
