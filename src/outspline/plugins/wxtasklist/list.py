@@ -823,9 +823,13 @@ class Autoscroll(object):
 
     def enable(self):
         self.enabled = True
+        self.execute = self._execute_auto
+        self.set_scrolled(True)
 
     def disable(self):
         self.enabled = False
+        self.execute = self._execute_maintain
+        self.set_scrolled(True)
 
     def is_enabled(self):
         return self.enabled
@@ -834,54 +838,90 @@ class Autoscroll(object):
         self.pre_execute()
 
     def pre_execute(self):
+        # The original behavior was to autoscroll only once and then set
+        # self.execute = self._execute_maintain, however after implementing the
+        # threaded refresh this started suffering of race bugs, in fact it
+        # could be possible that more self.pre_execute are called before a real
+        # refresh is even done, which would then set
+        # self.execute = self._execute_maintain and the following refreshes,
+        # despite having called self.pre_execute, wouldn't autoscroll the list
+        # (this for example happens when launching Outspline with a database
+        # to be opened when restoring the session)
         if self.enabled:
-            column, ascending = self.listview.GetSortState()
-
-            if column == self.state_column and ascending == 1:
-                self.execute = self._execute_auto
-            else:
-                self.execute = self._execute_maintain
+            self.set_scrolled(False)
         else:
-            # When changing filter or opening/closing a database, do not
-            # restore the y scroll from the previous filter
             self.execute = self._execute_dummy
+
+    def _handle_scroll(self, event):
+        self.set_scrolled(True)
+
+        # Skip the event, otherwise the list won't be updated when scrolling
+        event.Skip()
+
+    def is_scrolled(self):
+        return self.scrolled
+
+    def set_scrolled(self, scrolled):
+        if scrolled:
+            # Use CallAfter, or a segmentation fault will happen
+            wx.CallAfter(self.listview.Unbind, wx.EVT_SCROLLWIN,
+                                                handler=self._handle_scroll)
+        else:
+            self.listview.Bind(wx.EVT_SCROLLWIN, self._handle_scroll)
+
+        self.scrolled = scrolled
 
     def execute(self, yscroll):
         # This function is defined dynamically
         pass
 
     def _execute_auto(self, yscroll):
-        # This method must get the same arguments as the other execute_*
+        # This method must get the same arguments as the other _execute_*
         # methods
-        pastn = self.refengine.get_past_count()
 
-        if self.listview.GetItemCount() > 0:
-            # Note that the autoscroll relies on the items to be initially
-            # sorted by State ascending
-            top = self.listview.GetTopItem()
-            height = self.listview.GetItemRect(top).GetHeight()
+        if not self.scrolled:
+            # Don't even think of checking the sort state in self.pre_execute,
+            # since this method is indirectly launched from a thread that in
+            # turn is launched after self.pre_execute, so races may happen and
+            # there would be no way to determine which self.pre_execute was
+            # associated with this particular call
+            column, ascending = self.listview.GetSortState()
 
-            # If given a negative dy, ScrollList doesn't work if abs(dy) is
-            # less than the current y position (cannot scroll "over the top",
-            # or to negative item indices).
-            scroll = max(pastn - self.padding, 0)
-            yscrollauto = (scroll - top) * height
-            self.listview.ScrollList(0, yscrollauto)
+            if column == self.state_column and ascending == 1:
+                pastn = self.refengine.get_past_count()
 
-        self.execute = self._execute_maintain
+                if self.listview.GetItemCount() > 0:
+                    # Note that the autoscroll relies on the items to be
+                    # initially sorted by State ascending
+                    top = self.listview.GetTopItem()
+                    height = self.listview.GetItemRect(top).GetHeight()
+
+                    # If given a negative dy, ScrollList doesn't work if
+                    # abs(dy) is less than the current y position (cannot
+                    # scroll "over the top", or to negative item indices)
+                    scroll = max(pastn - self.padding, 0)
+                    yscrollauto = (scroll - top) * height
+                    self.listview.ScrollList(0, yscrollauto)
+            else:
+                self._execute_maintain(yscroll)
+        else:
+            self._execute_maintain(yscroll)
 
     def _execute_dummy(self, yscroll):
-        # This method must get the same arguments as the other execute_*
+        # This method must get the same arguments as the other _execute_*
         # methods
+
+        # When changing filter or opening/closing a database, do not restore
+        # the y scroll from the previous filter
         self.execute = self._execute_maintain
 
     def _execute_maintain(self, yscroll):
-        # This method must get the same arguments as the other execute_*
+        # This method must get the same arguments as the other _execute_*
         # methods
-        # For some reason it doesn't work without CallAfter...
-        wx.CallAfter(self.listview.ScrollList, 0, yscroll)
+        self.listview.ScrollList(0, yscroll)
 
     def execute_force(self):
+        self.set_scrolled(False)
         self.listview.SortListItems(self.state_column, 1)
         self._execute_auto(None)
 
