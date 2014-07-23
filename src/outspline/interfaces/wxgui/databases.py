@@ -110,6 +110,7 @@ def save_database_as(origin):
             try:
                 core_api.save_database_copy(origin, destination)
             except OutsplineError as err:
+                # This will leave the new created file empty, see bug #322
                 warn_aborted_save(err)
             else:
                 close_database(origin, no_confirm=True)
@@ -127,6 +128,7 @@ def save_database_backup(origin):
         try:
             core_api.save_database_copy(origin, destination)
         except OutsplineError as err:
+            # This will leave the new created file empty, see bug #322
             warn_aborted_save(err)
 
 
