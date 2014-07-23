@@ -1061,6 +1061,9 @@ class FilterRelativeMinutes(object):
         # infinitely
         search = organism_timer_api.get_next_occurrences(base_time=maxt,
                                                         filenames=filenames)
+        # For the moment there seems to be no need to stop the search if a
+        # database is closed, in fact the search seems to terminate cleanly
+        # and it should take a reasonable time to complete
         search.start()
         nextoccs = search.get_results()
 
