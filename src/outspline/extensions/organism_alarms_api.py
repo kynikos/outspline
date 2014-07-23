@@ -28,7 +28,7 @@ def get_number_of_active_alarms():
 
 
 def snooze_alarms(alarmsd, stime):
-    return alarmsmod.snooze_alarms(alarmsd, stime)
+    return extension.snooze_alarms(alarmsd, stime)
 
 
 def dismiss_alarms(alarmsd):

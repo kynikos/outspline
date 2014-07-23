@@ -17,6 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import sqlite3
+import time as time_
 
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
@@ -255,6 +256,18 @@ class Main(object):
             count += self.databases[filename].get_number_of_active_alarms()
 
         return count
+
+    def snooze_alarms(self, alarmsd, stime):
+        newalarm = ((int(time_.time()) + stime) // 60 + 1) * 60
+
+        for filename in alarmsd:
+            self.databases[filename].snooze_alarms(alarmsd[filename], stime,
+                                                                    newalarm)
+
+        # Do not search occurrences (thus restarting the timer) inside the for
+        # loop, otherwise it messes up with the wx.CallAfter() that manages the
+        # activated alarms in the interface
+        organism_timer_api.search_next_occurrences()
 
 
 def main():

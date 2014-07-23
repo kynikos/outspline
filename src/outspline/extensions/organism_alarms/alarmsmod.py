@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import time as _time
 import sqlite3
 
 from outspline.coreaux_api import Event
@@ -202,31 +201,23 @@ class Database(object):
         row = cur.fetchone()
         return row['A_active_alarms']
 
+    def snooze_alarms(self, alarmsd, stime, newalarm):
+        for id_ in alarmsd:
+            for alarmid in alarmsd[id_]:
+                text = core_api.get_item_text(self.filename, id_)
 
-def snooze_alarms(alarmsd, stime):
-    newalarm = ((int(_time.time()) + stime) // 60 + 1) * 60
-
-    for filename in alarmsd:
-        for id_ in alarmsd[filename]:
-            for alarmid in alarmsd[filename][id_]:
-                text = core_api.get_item_text(filename, id_)
-
-                qconn = core_api.get_connection(filename)
+                qconn = core_api.get_connection(self.filename)
                 cursor = qconn.cursor()
                 cursor.execute(queries.alarms_update_id, (newalarm, alarmid))
-                core_api.give_connection(filename, qconn)
+                core_api.give_connection(self.filename, qconn)
 
-                insert_alarm_log(filename, id_, 0, text.partition('\n')[0])
+                insert_alarm_log(self.filename, id_, 0,
+                                                    text.partition('\n')[0])
 
                 # Signal the event after updating the database, so, for
                 # example, the tasklist can be correctly updated
-                alarm_off_event.signal(filename=filename, id_=id_,
+                alarm_off_event.signal(filename=self.filename, id_=id_,
                                                             alarmid=alarmid)
-
-    # Do not search occurrences (thus restarting the timer) inside the for
-    # loop, otherwise it messes up with the wx.CallAfter() that manages the
-    # activated alarms in the interface
-    organism_timer_api.search_next_occurrences()
 
 
 def dismiss_alarms(alarmsd):
