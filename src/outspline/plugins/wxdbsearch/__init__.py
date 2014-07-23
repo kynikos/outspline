@@ -35,6 +35,7 @@ import msgboxes
 
 mainmenu = None
 searches = []
+nb_icon_index = None
 
 
 class SearchViewPanel(wx.Panel):
@@ -87,7 +88,8 @@ class SearchView():
         global searches
         searches.append(searchview)
 
-        wxgui_api.add_page_to_right_nb(searchview.panel, 'Search')
+        wxgui_api.add_page_to_right_nb(searchview.panel, 'Search',
+                                                        imageId=nb_icon_index)
 
     def close_(self):
         self.finish_search_action = self._finish_search_close
@@ -734,3 +736,8 @@ class TabContextMenu(wx.Menu):
 def main():
     global mainmenu
     mainmenu = MainMenu()
+
+    global nb_icon_index
+    nb_icon_index = wxgui_api.add_right_nb_image(
+                                    wx.ArtProvider.GetBitmap('system-search',
+                                    wx.ART_TOOLBAR, (16, 16)))
