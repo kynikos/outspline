@@ -918,7 +918,13 @@ class Autoscroll(object):
     def _execute_maintain(self, yscroll):
         # This method must get the same arguments as the other _execute_*
         # methods
-        self.listview.ScrollList(0, yscroll)
+        # For some reason it doesn't work without first calling GetItemPosition
+        #  (?!?)
+        #  Checking is then necessary because calling GetItemPosition on an
+        #  empty list raises an exception
+        if self.listview.GetItemCount() > 0:
+            self.listview.GetItemPosition(0)
+            self.listview.ScrollList(0, yscroll)
 
     def execute_force(self):
         self.set_scrolled(False)
