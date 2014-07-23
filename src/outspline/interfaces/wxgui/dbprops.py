@@ -45,6 +45,11 @@ class DatabasePropertyManager(object):
 
         databases.close_database_event.bind(self._handle_close_database)
 
+    def post_init(self):
+        self.nb_icon_index = wx.GetApp().nb_right.add_image(
+                                wx.ArtProvider.GetBitmap('document-properties',
+                                wx.ART_TOOLBAR, (16, 16)))
+
     def open(self, filename):
         if filename not in self.open_panels:
             self.open_panels[filename] = DatabaseProperties(self, filename)
@@ -87,6 +92,9 @@ class DatabasePropertyManager(object):
     def get_manager(self, filename):
         return self.open_panels[filename]
 
+    def get_notebook_icon_index(self):
+        return self.nb_icon_index
+
 
 class DatabasePropertiesPanel(wx.Panel):
     def __init__(self, parent, manager, filename):
@@ -112,7 +120,8 @@ class DatabaseProperties(object):
 
         sizer.Add(self.propgrid, 1, flag=wx.EXPAND)
 
-        nb.add_page(self.panel, os.path.basename(self.filename))
+        nb.add_page(self.panel, os.path.basename(self.filename),
+                                imageId=self.manager.get_notebook_icon_index())
 
         self.onchange_actions = {}
 

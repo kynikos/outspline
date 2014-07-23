@@ -25,6 +25,7 @@ import outspline.core_api as core_api
 import art
 import menubar
 import notebooks
+import databases
 import msgboxes
 import logs
 import sessions
@@ -140,6 +141,8 @@ class MainFrame(wx.Frame):
 
     def _handle_creation(self, event):
         self.Unbind(wx.EVT_WINDOW_CREATE, handler=self._handle_creation)
+
+        databases.dbpropmanager.post_init()
 
         if self.config.get_bool('remember_session'):
             self.sessionmanager = sessions.SessionManager()
