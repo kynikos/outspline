@@ -42,7 +42,7 @@ tabs = {}
 class Editors(object):
     def __init__(self, nb):
         self.icon_index = nb.add_image(wx.ArtProvider.GetBitmap(
-                                'text-x-generic', wx.ART_TOOLBAR, (16, 16)))
+                                    '@editortab', wx.ART_TOOLBAR, (16, 16)))
 
 
 class EditorPanel(wx.Panel):

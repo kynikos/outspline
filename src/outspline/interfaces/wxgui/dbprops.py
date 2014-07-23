@@ -47,8 +47,8 @@ class DatabasePropertyManager(object):
 
     def post_init(self):
         self.nb_icon_index = wx.GetApp().nb_right.add_image(
-                                wx.ArtProvider.GetBitmap('document-properties',
-                                wx.ART_TOOLBAR, (16, 16)))
+                                        wx.ArtProvider.GetBitmap('@properties',
+                                        wx.ART_TOOLBAR, (16, 16)))
 
     def open(self, filename):
         if filename not in self.open_panels:

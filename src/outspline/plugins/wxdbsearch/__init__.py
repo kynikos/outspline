@@ -739,5 +739,5 @@ def main():
 
     global nb_icon_index
     nb_icon_index = wxgui_api.add_right_nb_image(
-                                    wx.ArtProvider.GetBitmap('system-search',
+                                    wx.ArtProvider.GetBitmap('@find',
                                     wx.ART_TOOLBAR, (16, 16)))

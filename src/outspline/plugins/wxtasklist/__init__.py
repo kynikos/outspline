@@ -53,8 +53,8 @@ class TaskList(object):
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
         self.nb_icon_index = wxgui_api.add_right_nb_image(
-                                wx.ArtProvider.GetBitmap('x-office-calendar',
-                                wx.ART_TOOLBAR, (16, 16)))
+                                        wx.ArtProvider.GetBitmap('@tasklist',
+                                        wx.ART_TOOLBAR, (16, 16)))
 
         # filters.Navigator must be instantiated *before*
         # list_.OccurrencesView, because the former sets the filter for the

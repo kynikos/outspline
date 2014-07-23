@@ -38,7 +38,7 @@ class AboutWindow(wx.Frame):
         self.SetSizer(sizer1)
 
         logo = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
-                                             'text-editor', wx.ART_CMN_DIALOG))
+                                             '@outspline', wx.ART_CMN_DIALOG))
 
         name = wx.StaticText(self, label='Outspline')
         name.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC,

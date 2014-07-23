@@ -56,12 +56,13 @@ class ArtProvider(wx.ArtProvider):
                                 'stock_delete'),
                     '@edit': ('text-editor', 'accessories-text-editor'),
                     '@edit-filter': ('document-properties', ),
+                    '@editortab': ('text-x-generic', ),
                     '@exporttxt': ('document-export', 'gnome-stock-export',
                                    'document-save-as', 'gtk-save-as',
                                    'filesaveas', 'stock_save-as'),
                     '@filters': ('document-open', ),
-                    '@find': ('search', 'find' 'edit-find', 'gtk-find',
-                              'filefind', 'stock_search'),
+                    '@find': ('system-search', 'search', 'find' 'edit-find',
+                                    'gtk-find', 'filefind', 'stock_search'),
                     '@logs': ('window-close', ),
                     '@languages': ('locale', 'preferences-desktop-locale',
                                    'config-language'),
@@ -76,6 +77,7 @@ class ArtProvider(wx.ArtProvider):
                                  'stock_new-text'),
                     '@newsubitem': ('document-new', 'gtk-new', 'filenew',
                                     'stock_new-text'),
+                    '@outspline': ('text-editor', ),
                     '@paste': ('edit-paste', 'editpaste', 'gtk-paste',
                                'stock_paste'),
                     '@preferences': ('package_settings', 'gtk-preferences'),
@@ -97,6 +99,7 @@ class ArtProvider(wx.ArtProvider):
                                 'stock_redo'),
                     '@saveas': ('document-save-as', 'gtk-save-as',
                                 'filesaveas', 'stock_save-as'),
+                    '@tasklist': ('x-office-calendar', ),
                     '@textsearch': ('edit-find-replace',
                                     'gtk-find-and-replace',
                                     'stock_search-and-replace'),
@@ -107,7 +110,8 @@ class ArtProvider(wx.ArtProvider):
                     '@undo': ('undo', 'edit-undo', 'gtk-undo-ltr',
                                 'stock_undo'),
                     '@undodb': ('undo', 'edit-undo', 'gtk-undo-ltr',
-                                'stock_undo')}
+                                'stock_undo'),
+                    '@warning': ('dialog-warning', )}
 
         # Bundled images (currently empty)
         self.bundled = {}

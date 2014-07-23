@@ -113,7 +113,7 @@ class AlarmsWindow(object):
 
     def _init_hidden_panel(self):
         icon = wx.StaticBitmap(self.window, bitmap=wx.ArtProvider.GetBitmap(
-                                            'dialog-warning', wx.ART_BUTTON))
+                                                    '@warning', wx.ART_BUTTON))
         self.hidden_panel.Add(icon, flag=wx.ALIGN_CENTER_VERTICAL |
                                                             wx.RIGHT, border=4)
 

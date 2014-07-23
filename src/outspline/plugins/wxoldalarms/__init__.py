@@ -153,7 +153,7 @@ class DialogSearch(object):
         vsizer.Add(hsizer1, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         icon = wx.StaticBitmap(self.dialog, bitmap=wx.ArtProvider.GetBitmap(
-                                        'appointment-soon', wx.ART_CMN_DIALOG))
+                                                '@alarms', wx.ART_CMN_DIALOG))
         hsizer1.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         self.labeltext = ("{} was last saved {} days ago: searching the "
@@ -258,7 +258,7 @@ class DialogActivate(object):
         self.vsizer.Add(hsizer, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         icon = wx.StaticBitmap(self.dialog, bitmap=wx.ArtProvider.GetBitmap(
-                                        'appointment-soon', wx.ART_CMN_DIALOG))
+                                                '@alarms', wx.ART_CMN_DIALOG))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         self.label = wx.StaticText(self.dialog, label="Filtering the old "

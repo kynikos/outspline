@@ -44,21 +44,21 @@ class GUI(wx.App):
         wx.ArtProvider.Push(art.ArtProvider())
 
         self.MAIN_ICON_BUNDLE = wx.IconBundle()
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                              wx.ART_TOOLBAR))
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                              wx.ART_MENU))
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                              wx.ART_BUTTON))
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                             wx.ART_FRAME_ICON))
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                             wx.ART_CMN_DIALOG))
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                           wx.ART_HELP_BROWSER))
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                            wx.ART_MESSAGE_BOX))
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                              wx.ART_OTHER))
 
         self.root = MainFrame()

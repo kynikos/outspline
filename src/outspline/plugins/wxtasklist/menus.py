@@ -779,7 +779,7 @@ class SnoozeDialog(wx.Dialog):
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
 
         icon = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
-                                        'appointment-soon', wx.ART_CMN_DIALOG))
+                                                '@alarms', wx.ART_CMN_DIALOG))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         ssizer = wx.BoxSizer(wx.HORIZONTAL)
