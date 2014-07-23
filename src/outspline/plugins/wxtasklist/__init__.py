@@ -58,12 +58,14 @@ class TaskList(object):
         # usually favorable race condition (the list is refreshed after an
         # asynchronous delay), but of course that shouldn't be relied on
         self.navigator = filters.Navigator(self)
+        self.infobar = wx.InfoBar(self.panel)
         self.list_ = list_.OccurrencesView(self, self.navigator)
 
         self.mainmenu = menus.MainMenu(self)
         self.panel.init_tab_menu(self)
         self.list_._init_context_menu(self.mainmenu)
 
+        self.pbox.Add(self.infobar, flag=wx.EXPAND)
         self.pbox.Add(self.list_.listview, 1, flag=wx.EXPAND)
 
         wxgui_api.bind_to_plugin_close_event(self._handle_tab_hide)
@@ -128,6 +130,9 @@ class TaskList(object):
         self.list_.save_configuration()
         self.navigator.save_configuration()
         self.config.export_upgrade(configfile)
+
+    def show_message(self, message, icon):
+        self.infobar.ShowMessage(message, icon)
 
 
 def main():

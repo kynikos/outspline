@@ -200,6 +200,7 @@ class OccurrencesView(object):
         # True
         scrolled = self.autoscroll.is_scrolled()
 
+        # The number of items should have been limited by RefreshEngine
         if self.listview.GetItemCount() > 0:
             # Save the scroll y for restoring it after inserting the items
             # I could instead save
@@ -295,6 +296,11 @@ class OccurrencesView(object):
     def cancel_refresh(self):
         self.refengine.cancel()
 
+    def warn_limit_exceeded(self):
+        self.listview.DeleteAllItems()
+        self.tasklist.show_message("Search results limit exceeded",
+                                                            wx.ICON_WARNING)
+
     def save_configuration(self):
         config = coreaux_api.get_plugin_configuration('wxtasklist')
 
@@ -324,6 +330,12 @@ class RefreshEngineStop(UserWarning):
     pass
 
 
+class RefreshEngineLimit(UserWarning):
+    # This class is used as an exception, but used internally, so there's no
+    # need to store it in the exceptions module
+    pass
+
+
 class RefreshEngine(object):
     def __init__(self, config, occview, formatter, occs, datamap):
         self.occview = occview
@@ -333,6 +345,7 @@ class RefreshEngine(object):
         self.activealarms = {}
         self.TIMER_NAME = "wxtasklist_engine"
         self.DELAY = config.get_int('refresh_delay')
+        self.LIMIT = config.get_int('maximum_items')
         self.pastN = 0
 
         self.filterclasses = {
@@ -487,6 +500,8 @@ class RefreshEngine(object):
                     delay = self._refresh_continue()
                 except RefreshEngineStop:
                     pass
+                except RefreshEngineLimit:
+                    wx.CallAfter(self.occview.warn_limit_exceeded)
                 else:
                     # Since self._refresh_end (and so
                     # self.occview.insert_items) is always run in the main
@@ -504,6 +519,9 @@ class RefreshEngine(object):
 
         occsobj = self.search.get_results()
         occurrences = occsobj.get_list()
+
+        if len(occurrences) > self.LIMIT:
+            raise RefreshEngineLimit()
 
         # Always add active (but not snoozed) alarms if time interval includes
         # current time
