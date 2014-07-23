@@ -352,23 +352,6 @@ class RefreshEngine(object):
 
         self.enable()
 
-    def enable(self):
-        core_api.bind_to_update_item(self._delay_restart_on_text_update)
-        # The old occurrences are searched on a separate thread, so they may be
-        # found *after* the next occurrences, so _delay_restart must be bound
-        # to this one too
-        organism_timer_api.bind_to_activate_occurrences_range(
-                                                        self._delay_restart)
-        # Note that self.delay_restart is *not* bound to
-        # organism_timer_api.bind_to_get_next_occurrences which is signalled by
-        # self._refresh signal because of the call to
-        # organism_timer_api.get_next_occurrences, otherwise this would make
-        # self._refresh recur infinitely
-        organism_timer_api.bind_to_search_next_occurrences(self._delay_restart)
-        organism_alarms_api.bind_to_alarm_off(self._delay_restart)
-
-        core_api.bind_to_closing_database(self._handle_closing_database)
-
     def _handle_closing_database(self, kwargs):
         self.cancel()
 
@@ -388,6 +371,23 @@ class RefreshEngine(object):
         self.timer.join()
 
         self.cancel_request = False
+
+    def enable(self):
+        core_api.bind_to_update_item(self._delay_restart_on_text_update)
+        # The old occurrences are searched on a separate thread, so they may be
+        # found *after* the next occurrences, so _delay_restart must be bound
+        # to this one too
+        organism_timer_api.bind_to_activate_occurrences_range(
+                                                        self._delay_restart)
+        # Note that self.delay_restart is *not* bound to
+        # organism_timer_api.bind_to_get_next_occurrences which is signalled by
+        # self._refresh signal because of the call to
+        # organism_timer_api.get_next_occurrences, otherwise this would make
+        # self._refresh recur infinitely
+        organism_timer_api.bind_to_search_next_occurrences(self._delay_restart)
+        organism_alarms_api.bind_to_alarm_off(self._delay_restart)
+
+        core_api.bind_to_closing_database(self._handle_closing_database)
 
     def disable(self):
         self.cancel()
