@@ -310,6 +310,12 @@ class OccurrencesView(object):
         config['autoscroll'] = 'on' if self.autoscroll.is_enabled() else 'off'
 
 
+class RefreshEngineStop(UserWarning):
+    # This class is used as an exception, but used internally, so there's no
+    # need to store it in the exceptions module
+    pass
+
+
 class RefreshEngine(object):
     def __init__(self, config, occview, formatter, occs, datamap):
         self.occview = occview
@@ -337,6 +343,8 @@ class RefreshEngine(object):
         # Initialize self.timerdelay with a dummy function (int)
         self.timerdelay = wx.CallLater(self.DELAY, int)
 
+        self.cancel_request = False
+
         # self._restart cancels the timer, so it must be initialized here,
         # instead of calling self._refresh directly
         self.timer = threading.Timer(0, self._refresh)
@@ -359,8 +367,27 @@ class RefreshEngine(object):
         organism_timer_api.bind_to_search_next_occurrences(self._delay_restart)
         organism_alarms_api.bind_to_alarm_off(self._delay_restart)
 
+        core_api.bind_to_closing_database(self._handle_closing_database)
+
+    def _handle_closing_database(self, kwargs):
+        self.cancel()
+
     def cancel(self):
         self.timer.cancel()
+
+        # The timer delay may have already expired, but the called function may
+        # be still executing, so we have to stop it first
+        self.cancel_request = True
+
+        try:
+            self.search.stop()
+        except AttributeError:
+            # The search may not have been initialized yet
+            pass
+
+        self.timer.join()
+
+        self.cancel_request = False
 
     def disable(self):
         self.cancel()
@@ -374,6 +401,7 @@ class RefreshEngine(object):
         organism_timer_api.bind_to_search_next_occurrences(self._delay_restart,
                                                                         False)
         organism_alarms_api.bind_to_alarm_off(self._delay_restart, False)
+        core_api.bind_to_closing_database(self._handle_closing_database, False)
 
     def set_filter(self, config):
         self.filter_ = self.filterclasses[config['mode']](config)
@@ -439,13 +467,22 @@ class RefreshEngine(object):
                                     self.max_time > self.filterlimits[1]:
                 wx.CallAfter(msgboxes.warn_out_of_range().ShowModal)
             else:
-                self._refresh_continue()
+                try:
+                    delay = self._refresh_continue()
+                except RefreshEngineStop:
+                    pass
+                else:
+                    wx.CallAfter(self._refresh_end, delay)
 
     def _refresh_continue(self):
-        search = organism_api.get_occurrences_range(mint=self.min_time,
+        self.search = organism_api.get_occurrences_range(mint=self.min_time,
                 maxt=self.max_time, filenames=core_api.get_open_databases())
-        search.start()
-        occsobj = search.get_results()
+        self.search.start()
+
+        if self.cancel_request:
+            raise RefreshEngineStop()
+
+        occsobj = self.search.get_results()
         occurrences = occsobj.get_list()
 
         # Always add active (but not snoozed) alarms if time interval includes
@@ -471,7 +508,8 @@ class RefreshEngine(object):
 
         delay = self.filter_.compute_delay(occsobj, self.now, self.min_time,
                                                                 self.max_time)
-        wx.CallAfter(self._refresh_end, delay)
+
+        return delay
 
     def _refresh_end(self, delay):
         self.occview.insert_items()
