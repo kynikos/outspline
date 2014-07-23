@@ -1161,7 +1161,8 @@ class FilterRelativeWeeks(object):
             dnow = _datetime.date.fromtimestamp(now)
             weekday = dnow.weekday()
             relweekdaystart = (7 - self.firstweekday + weekday) % 7 * 86400
-            self.weekstart = _time.mktime(dnow.timetuple()) - relweekdaystart
+            self.weekstart = int(_time.mktime(dnow.timetuple())
+                                                            ) - relweekdaystart
         except ValueError:
             raise OutOfRangeError()
         else:
@@ -1195,11 +1196,11 @@ class FilterRelativeMonths(object):
             rmaxyears, maxmonth = divmod(self.dnow.month - 1 + self.high, 12)
             dmax = _datetime.date(year=self.dnow.year + rmaxyears,
                                                     month=maxmonth + 1, day=1)
-            mint = _time.mktime(dmin.timetuple())
+            mint = int(_time.mktime(dmin.timetuple()))
             # Subtract 1 second because if setting 'to/for 1' it's expected to
             # only show the current month, and not occurrences starting at the
             # next month
-            maxt = _time.mktime(dmax.timetuple()) - 1
+            maxt = int(_time.mktime(dmax.timetuple())) - 1
         except ValueError:
             raise OutOfRangeError()
         else:
@@ -1213,7 +1214,7 @@ class FilterRelativeMonths(object):
                                                                         day=1)
         # Note that the delay can still be further limited in
         # RefreshEngine._restart
-        return _time.mktime(ndate.timetuple()) - now
+        return int(_time.mktime(ndate.timetuple())) - now
 
 
 class FilterRelativeYears(object):
@@ -1232,11 +1233,11 @@ class FilterRelativeYears(object):
             dmax = _datetime.date(year=self.dnow.year + self.high, month=1,
                                                                         day=1)
 
-            mint = _time.mktime(dmin.timetuple())
+            mint = int(_time.mktime(dmin.timetuple()))
             # Subtract 1 second because if setting 'to/for 1' it's expected to
             # only show the current year, and not occurrences starting at the
             # next year
-            maxt = _time.mktime(dmax.timetuple()) - 1
+            maxt = int(_time.mktime(dmax.timetuple())) - 1
         except ValueError:
             raise OutOfRangeError()
         else:
@@ -1246,7 +1247,7 @@ class FilterRelativeYears(object):
         ndate = _datetime.date(year=self.dnow.year + 1, month=1, day=1)
         # Note that the delay can still be further limited in
         # RefreshEngine._restart
-        return _time.mktime(ndate.timetuple()) - now
+        return int(_time.mktime(ndate.timetuple())) - now
 
 
 class FilterDate(object):
