@@ -325,7 +325,7 @@ class RefreshEngine(object):
 
         # Initialize self.timerdelay with a dummy function (int)
         self.timerdelay = wx.CallLater(self.DELAY, int)
-        self.timer = wx.CallLater(0, self._restart)
+        self.timer = wx.CallLater(0, self._refresh)
 
     def enable(self):
         core_api.bind_to_update_item(self._delay_restart_on_text_update)
@@ -391,42 +391,38 @@ class RefreshEngine(object):
         self.timerdelay.Stop()
         self.timerdelay = wx.CallLater(self.DELAY, self._restart)
 
-    def _restart(self):
+    def _restart(self, delay=0):
         self.timer.Stop()
 
+        if delay is not None:
+            # delay may become too big (long instead of int), limit it to 24h
+            # This has also the advantage of limiting the drift of the timer
+            delay = min(86400000, delay * 1000)
+            self.timer = wx.CallLater(delay, self._refresh)
+            log.debug('Next tasklist refresh in {} seconds'.format(
+                                                                delay // 1000))
+
+    def _refresh(self):
         # This method is called with CallLater, so this may cause race bugs;
         # for example it's possible that, when closing the application, this
         # method is called when closing the last database, but when it's
         # actually executed the tasklist has already been destroyed
         if self.listview:
-            delay = self._refresh()
+            log.debug('Refresh tasklist')
 
-            if delay is not None:
-                # delay may become too big (long instead of int), limit it to
-                # 24h
-                # This has also the advantage of limiting the drift of the
-                # timer
-                delay = min(86400000, delay * 1000)
-                self.timer = wx.CallLater(delay, self._restart)
-                log.debug('Next tasklist refresh in {} seconds'.format(
-                                                                delay // 1000))
+            self.now = int(_time.time())
 
-    def _refresh(self):
-        log.debug('Refresh tasklist')
-
-        self.now = int(_time.time())
-
-        try:
-            self.min_time, self.max_time = self.filter_.compute_limits(
+            try:
+                self.min_time, self.max_time = self.filter_.compute_limits(
                                                                     self.now)
-        except OutOfRangeError:
-            msgboxes.warn_out_of_range().ShowModal()
-        else:
-            if self.min_time < self.filterlimits[0] or \
-                                        self.max_time > self.filterlimits[1]:
-                msgboxes.warn_out_of_range().ShowModal()
+            except OutOfRangeError:
+                wx.CallAfter(msgboxes.warn_out_of_range().ShowModal)
             else:
-                return self._refresh_continue()
+                if self.min_time < self.filterlimits[0] or \
+                                        self.max_time > self.filterlimits[1]:
+                    wx.CallAfter(msgboxes.warn_out_of_range().ShowModal)
+                else:
+                    self._refresh_continue()
 
     def _refresh_continue(self):
         search = organism_api.get_occurrences_range(mint=self.min_time,
@@ -457,10 +453,13 @@ class RefreshEngine(object):
         # Do this *after* inserting the items but *before* sorting
         self.timealloc.insert_gaps_and_overlappings()
 
-        self.occview.insert_items()
-
-        return self.filter_.compute_delay(occsobj, self.now, self.min_time,
+        delay = self.filter_.compute_delay(occsobj, self.now, self.min_time,
                                                                 self.max_time)
+        wx.CallAfter(self._refresh_end, delay)
+
+    def _refresh_end(self, delay):
+        self.occview.insert_items()
+        self._restart(delay)
 
     def _insert_occurrence(self, occurrence):
         item = ListRegularItem(occurrence, self, self.now, self.formatter)
