@@ -52,6 +52,10 @@ class TaskList(object):
 
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
+        self.nb_icon_index = wxgui_api.add_right_nb_image(
+                                wx.ArtProvider.GetBitmap('x-office-calendar',
+                                wx.ART_TOOLBAR, (16, 16)))
+
         # filters.Navigator must be instantiated *before*
         # list_.OccurrencesView, because the former sets the filter for the
         # latter; note that inverting the order would work anyway because of a
@@ -91,7 +95,8 @@ class TaskList(object):
         # bugs will happen, like the keyboard menu shortcuts not working until
         # a database is opened. Add the plugin only when the first database is
         # opened.
-        wxgui_api.add_plugin_to_right_nb(self.panel, self.TAB_TITLE)
+        wxgui_api.add_plugin_to_right_nb(self.panel, self.TAB_TITLE,
+                                                    imageId=self.nb_icon_index)
         wxgui_api.bind_to_open_database(self._handle_open_database, False)
 
     def is_shown(self):
@@ -104,7 +109,8 @@ class TaskList(object):
             self._show()
 
     def _show(self):
-        wxgui_api.add_plugin_to_right_nb(self.panel, self.TAB_TITLE)
+        wxgui_api.add_plugin_to_right_nb(self.panel, self.TAB_TITLE,
+                                                    imageId=self.nb_icon_index)
         self._enable()
 
     def _hide(self):
