@@ -284,6 +284,9 @@ class OccurrencesView(object):
 
         return alarmsd
 
+    def cancel_refresh(self):
+        self.refengine.cancel()
+
     def save_configuration(self):
         config = coreaux_api.get_plugin_configuration('wxtasklist')
 
@@ -356,7 +359,12 @@ class RefreshEngine(object):
         organism_timer_api.bind_to_search_next_occurrences(self._delay_restart)
         organism_alarms_api.bind_to_alarm_off(self._delay_restart)
 
+    def cancel(self):
+        self.timer.cancel()
+
     def disable(self):
+        self.cancel()
+
         # Do not even think of disabling refreshing when the notebook tab is
         # not selected, because then it should always be refreshed when
         # selecting it, which would make everything more sluggish
@@ -406,7 +414,7 @@ class RefreshEngine(object):
         self.timerdelay = wx.CallLater(self.DELAY, self._restart)
 
     def _restart(self, delay=0):
-        self.timer.cancel()
+        self.cancel()
 
         if delay is not None:
             # delay may become too big (long instead of int), limit it to 24h
@@ -417,26 +425,21 @@ class RefreshEngine(object):
             log.debug('Next tasklist refresh in {} seconds'.format(delay))
 
     def _refresh(self):
-        # This method is called with Timer, so this may cause race bugs; for
-        # example it's possible that, when closing the application, this method
-        # is called when closing the last database, but when it's actually
-        # executed the tasklist has already been destroyed
-        if self.listview:
-            log.debug('Refresh tasklist')
+        log.debug('Refresh tasklist')
 
-            self.now = int(_time.time())
+        self.now = int(_time.time())
 
-            try:
-                self.min_time, self.max_time = self.filter_.compute_limits(
-                                                                    self.now)
-            except OutOfRangeError:
+        try:
+            self.min_time, self.max_time = self.filter_.compute_limits(
+                                                                self.now)
+        except OutOfRangeError:
+            wx.CallAfter(msgboxes.warn_out_of_range().ShowModal)
+        else:
+            if self.min_time < self.filterlimits[0] or \
+                                    self.max_time > self.filterlimits[1]:
                 wx.CallAfter(msgboxes.warn_out_of_range().ShowModal)
             else:
-                if self.min_time < self.filterlimits[0] or \
-                                        self.max_time > self.filterlimits[1]:
-                    wx.CallAfter(msgboxes.warn_out_of_range().ShowModal)
-                else:
-                    self._refresh_continue()
+                self._refresh_continue()
 
     def _refresh_continue(self):
         search = organism_api.get_occurrences_range(mint=self.min_time,

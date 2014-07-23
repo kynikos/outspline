@@ -122,6 +122,8 @@ class TaskList(object):
         self.list_.disable_refresh()
 
     def _handle_exit_application(self, kwargs):
+        self.list_.cancel_refresh()
+
         configfile = coreaux_api.get_user_config_file()
         self.list_.save_configuration()
         self.navigator.save_configuration()
