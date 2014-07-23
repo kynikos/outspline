@@ -331,6 +331,7 @@ class RefreshEngine(object):
         self.occs = occs
         self.datamap = datamap
         self.activealarms = {}
+        self.TIMER_NAME = "wxtasklist_engine"
         self.DELAY = config.get_int('refresh_delay')
         self.pastN = 0
 
@@ -356,6 +357,7 @@ class RefreshEngine(object):
         # self._restart cancels the timer, so it must be initialized here,
         # instead of calling self._refresh directly
         self.timer = threading.Timer(0, self._refresh)
+        self.timer.name = self.TIMER_NAME
         self.timer.start()
 
         self.enable()
@@ -462,6 +464,7 @@ class RefreshEngine(object):
             # This has also the advantage of limiting the drift of the timer
             delay = min(86400, delay)
             self.timer = threading.Timer(delay, self._refresh)
+            self.timer.name = self.TIMER_NAME
             self.timer.start()
             log.debug('Next tasklist refresh in {} seconds'.format(delay))
 
