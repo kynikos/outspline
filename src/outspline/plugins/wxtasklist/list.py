@@ -210,6 +210,11 @@ class OccurrencesView(object):
             yscroll = 0
 
         for i, item in enumerate(self.occs):
+            # Splitting this part and calling with CallAfter directly from the
+            #  engine thread every time an occurrence is added to self.occs
+            #  doesn't make the interface responsive anyway, so just do
+            #  everything here
+
             # Initialize the first column with an empty string
             index = self.listview.InsertStringItem(sys.maxint, '')
             self.listview.SetStringItem(index, self.DATABASE_COLUMN,
@@ -494,6 +499,9 @@ class RefreshEngine(object):
         self.datamap[i] = item.get_comparison_values()
 
         self.pastN += item.get_past_count()
+
+        # No point in inserting the item in the tasklist here with CallAfter,
+        #  as it wouldn't make the interface responsive anyway
 
 
 class TimeAllocation(object):
