@@ -353,6 +353,11 @@ class RefreshEngine(object):
         self.enable()
 
     def _handle_closing_database(self, kwargs):
+        # There's no need to check if there are any more open compatible
+        # databases, and possibly completely disable the tasklist, in fact the
+        # next refresh would be very quick anyway, not finding any occurrences
+        # Anyway, in case it was implemented in the future, remember to
+        # re-enable the tasklist when opening another database
         self.cancel()
 
     def cancel(self):
