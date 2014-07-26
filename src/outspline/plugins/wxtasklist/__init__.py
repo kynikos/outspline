@@ -20,6 +20,7 @@ import wx
 
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
+import outspline.extensions.organism_alarms_api as organism_alarms_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
 import list as list_
@@ -41,7 +42,6 @@ class TaskListPanel(wx.Panel):
 
 class TaskList(object):
     def __init__(self, parent):
-        self.TAB_TITLE = "Events"
         # Note that the remaining border is due to the SplitterWindow, whose
         # border cannot be removed because it's used to highlight the sash
         # See also http://trac.wxwidgets.org/ticket/12413
@@ -98,8 +98,7 @@ class TaskList(object):
         # bugs will happen, like the keyboard menu shortcuts not working until
         # a database is opened. Add the plugin only when the first database is
         # opened.
-        wxgui_api.add_plugin_to_right_nb(self.panel, self.TAB_TITLE,
-                                                    imageId=self.nb_icon_index)
+        self._show()
         wxgui_api.bind_to_open_database(self._handle_open_database, False)
 
     def is_shown(self):
@@ -112,7 +111,7 @@ class TaskList(object):
             self._show()
 
     def _show(self):
-        wxgui_api.add_plugin_to_right_nb(self.panel, self.TAB_TITLE,
+        wxgui_api.add_plugin_to_right_nb(self.panel, "",
                                                     imageId=self.nb_icon_index)
         self._enable()
 
@@ -128,9 +127,18 @@ class TaskList(object):
     def _enable(self):
         self.list_.enable_refresh()
         self.list_.refresh()
+        self._update_tab_label()
+
+        organism_alarms_api.bind_to_alarm(self._update_tab_label)
+        organism_alarms_api.bind_to_alarm_off(self._update_tab_label)
+        wxgui_api.bind_to_close_database(self._update_tab_label)
 
     def _disable(self):
         self.list_.disable_refresh()
+
+        organism_alarms_api.bind_to_alarm(self._update_tab_label, False)
+        organism_alarms_api.bind_to_alarm_off(self._update_tab_label, False)
+        wxgui_api.bind_to_close_database(self._update_tab_label, False)
 
     def _handle_exit_application(self, kwargs):
         self.list_.cancel_refresh()
@@ -152,6 +160,11 @@ class TaskList(object):
 
     def dismiss_warning(self):
         self.warningsbar.hide()
+
+    def _update_tab_label(self, kwargs=None):
+        nalarms = organism_alarms_api.get_number_of_active_alarms()
+        wxgui_api.set_right_nb_page_title(self.panel,
+                                                "Events ({})".format(nalarms))
 
 
 class WarningsBar(object):

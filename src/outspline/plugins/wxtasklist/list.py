@@ -88,7 +88,7 @@ class OccurrencesView(object):
 
         # RefreshEngine needs the filter and show options to be set before
         # being started
-        self.refengine.start()
+        self.refengine.pre_enable()
 
     def _init_list(self):
         self.DATABASE_COLUMN = 0
@@ -373,7 +373,7 @@ class RefreshEngine(object):
                     config.get_int('maximum_year') + 1, 1, 1).timetuple())) - 1
         )
 
-    def start(self):
+    def pre_enable(self):
         # Initialize self.timerdelay with a dummy function (int)
         self.timerdelay = wx.CallLater(self.DELAY, int)
 
@@ -384,8 +384,6 @@ class RefreshEngine(object):
         self.timer = threading.Timer(0, self._refresh)
         self.timer.name = self.TIMER_NAME
         self.timer.start()
-
-        self.enable()
 
     def _handle_closing_database(self, kwargs):
         # There's no need to check if there are any more open compatible
