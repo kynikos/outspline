@@ -65,14 +65,14 @@ class TaskList(object):
         # usually favorable race condition (the list is refreshed after an
         # asynchronous delay), but of course that shouldn't be relied on
         self.navigator = filters.Navigator(self)
-        self.infobar = wx.InfoBar(self.panel)
+        self.warningsbar = WarningsBar(self.panel)
         self.list_ = list_.OccurrencesView(self, self.navigator)
 
         self.mainmenu = menus.MainMenu(self)
         self.panel.init_tab_menu(self)
         self.list_._init_context_menu(self.mainmenu)
 
-        self.pbox.Add(self.infobar, flag=wx.EXPAND)
+        self.pbox.Add(self.warningsbar.get_panel(), flag=wx.EXPAND)
         self.pbox.Add(self.list_.listview, 1, flag=wx.EXPAND)
 
         wxgui_api.bind_to_plugin_close_event(self._handle_tab_hide)
@@ -147,11 +147,43 @@ class TaskList(object):
         wxgui_api.set_right_nb_page_image(self.panel,
                                                     self.nb_icon_refresh_index)
 
-    def show_message(self, message, icon):
-        self.infobar.ShowMessage(message, icon)
+    def show_warning(self, message):
+        self.warningsbar.show(message)
 
-    def dismiss_message(self):
-        self.infobar.Dismiss()
+    def dismiss_warning(self):
+        self.warningsbar.hide()
+
+
+class WarningsBar(object):
+    def __init__(self, parent):
+        self.parent = parent
+        COLOR = wx.Colour(255, 126, 0)
+
+        self.panel = wx.Panel(parent)
+        self.panel.SetBackgroundColour(COLOR)
+        box = wx.BoxSizer(wx.HORIZONTAL)
+        self.panel.SetSizer(box)
+
+        icon = wx.StaticBitmap(self.panel, bitmap=wx.ArtProvider.GetBitmap(
+                                                    '@warning', wx.ART_BUTTON))
+        box.Add(icon, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=4)
+
+        self.message = wx.StaticText(self.panel, label="")
+        box.Add(self.message, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=4)
+
+        self.panel.Show(False)
+
+    def get_panel(self):
+        return self.panel
+
+    def show(self, message):
+        self.message.SetLabelText(message)
+        self.panel.Show()
+        self.parent.Layout()
+
+    def hide(self):
+        self.panel.Show(False)
+        self.parent.Layout()
 
 
 def main():

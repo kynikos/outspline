@@ -32,7 +32,6 @@ import outspline.extensions.organism_api as organism_api
 import outspline.extensions.organism_timer_api as organism_timer_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
-import msgboxes
 from exceptions import OutOfRangeError
 
 
@@ -168,7 +167,7 @@ class Navigator(object):
         try:
             self.tasklist.list_.set_filter(config)
         except OutOfRangeError:
-            msgboxes.warn_out_of_range().ShowModal()
+            self.tasklist.list_.warn_out_of_range()
         else:
             self.tasklist.list_.refresh()
 
@@ -182,7 +181,7 @@ class Navigator(object):
             nconfig = self.configuration.compute_previous_configuration(
                                                                     cconfig)
         except OutOfRangeError:
-            msgboxes.warn_out_of_range().ShowModal()
+            self.tasklist.list_.warn_out_of_range()
         else:
             self._reset_filter(nconfig)
             self._show_filter(self.choice.GetSelection(), nconfig)
@@ -197,7 +196,7 @@ class Navigator(object):
         try:
             nconfig = self.configuration.compute_next_configuration(cconfig)
         except OutOfRangeError:
-            msgboxes.warn_out_of_range().ShowModal()
+            self.tasklist.list_.warn_out_of_range()
         else:
             self._reset_filter(nconfig)
             self._show_filter(self.choice.GetSelection(), nconfig)
@@ -222,7 +221,7 @@ class Navigator(object):
         try:
             config = self.configuration.set_current_from_interface(intvalues)
         except OutOfRangeError:
-            msgboxes.warn_out_of_range().ShowModal()
+            self.tasklist.list_.warn_out_of_range()
         else:
             self._apply_filter(config)
 
@@ -239,7 +238,7 @@ class Navigator(object):
         try:
             config = self.configuration.set_current_from_interface(intvalues)
         except OutOfRangeError:
-            msgboxes.warn_out_of_range().ShowModal()
+            self.tasklist.list_.warn_out_of_range()
         else:
             self._apply_filter(config)
 

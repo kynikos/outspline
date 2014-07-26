@@ -35,7 +35,6 @@ import outspline.interfaces.wxgui_api as wxgui_api
 
 import filters
 import menus
-import msgboxes
 from exceptions import OutOfRangeError
 
 
@@ -303,13 +302,16 @@ class OccurrencesView(object):
 
     def warn_limit_exceeded(self):
         self.listview.DeleteAllItems()
-        self.tasklist.show_message("Search results limit exceeded",
-                                                            wx.ICON_WARNING)
+        self.tasklist.show_warning("Search results limit exceeded")
         self.tasklist.set_tab_icon_stopped()
+
+    def warn_out_of_range(self):
+        self.tasklist.show_warning("The search parameters are out of the "
+                                                            "supported range")
 
     def reset_warnings(self):
         self.tasklist.set_tab_icon_ongoing()
-        self.tasklist.dismiss_message()
+        self.tasklist.dismiss_warning()
 
     def save_configuration(self):
         config = coreaux_api.get_plugin_configuration('wxtasklist')
@@ -500,11 +502,11 @@ class RefreshEngine(object):
             self.min_time, self.max_time = self.filter_.compute_limits(
                                                                 self.now)
         except OutOfRangeError:
-            wx.CallAfter(msgboxes.warn_out_of_range().ShowModal)
+            wx.CallAfter(self.occview.warn_out_of_range)
         else:
             if self.min_time < self.filterlimits[0] or \
                                     self.max_time > self.filterlimits[1]:
-                wx.CallAfter(msgboxes.warn_out_of_range().ShowModal)
+                wx.CallAfter(self.occview.warn_out_of_range)
             else:
                 wx.CallAfter(self.occview.reset_warnings)
                 try:
