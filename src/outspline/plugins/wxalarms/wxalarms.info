@@ -1,6 +1,6 @@
 author = Dario Giovannetti <dev@dariogiovannetti.net>
 version = 0.5
-description = Shows an alarm window whenever an item occurrence happens, and gives the possibility to snooze or dismiss it.
+description = Shows an alarm window whenever an item event/task happens, and gives the possibility to snooze or dismiss it.
 website = https://github.com/kynikos/outspline/
 affects_database = no
 provides_tables =

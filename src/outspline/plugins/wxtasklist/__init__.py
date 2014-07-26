@@ -41,7 +41,7 @@ class TaskListPanel(wx.Panel):
 
 class TaskList(object):
     def __init__(self, parent):
-        self.TAB_TITLE = "Occurrences"
+        self.TAB_TITLE = "Events"
         # Note that the remaining border is due to the SplitterWindow, whose
         # border cannot be removed because it's used to highlight the sash
         # See also http://trac.wxwidgets.org/ticket/12413

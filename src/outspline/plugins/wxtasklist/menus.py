@@ -56,7 +56,7 @@ class MainMenu(wx.Menu):
 
         self.show = wx.MenuItem(self, self.ID_SHOW,
                                                 "Show &panel\tCTRL+SHIFT+F5",
-                                                "Show the occurrences panel",
+                                                "Show the events panel",
                                                 kind=wx.ITEM_CHECK)
         self.navigator = wx.MenuItem(self, self.ID_NAVIGATOR, 'Na&vigator',
                         'Navigator actions', subMenu=self.navigator_submenu)
@@ -68,22 +68,22 @@ class MainMenu(wx.Menu):
                             kind=wx.ITEM_CHECK)
         self.overlaps = wx.MenuItem(self, self.ID_OVERLAPS,
                         "Show &overlappings\tCTRL+=",
-                        "Show time intervals used by more than one occurrence",
+                        "Show time intervals used by more than one event",
                         kind=wx.ITEM_CHECK)
         self.scroll = wx.MenuItem(self, self.ID_SCROLL,
                                         "Scro&ll to ongoing\tF5",
                                         "Order the list by State and scroll "
-                                        "to the first ongoing occurrence")
+                                        "to the first ongoing event")
         self.autoscroll = wx.MenuItem(self, self.ID_AUTOSCROLL,
                                             "Enable a&uto-scroll",
                                             "Auto-scroll to the first ongoing "
-                                            "occurrence at pre-defined events",
+                                            "event when refreshing",
                                             kind=wx.ITEM_CHECK)
         self.find = wx.MenuItem(self, self.ID_FIND, "&Find in database\tF6",
-            "Select the database items associated to the selected occurrences")
+            "Select the database items associated to the selected events")
         self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit selected\tCTRL+F6",
                             "Open in the editor the database items associated "
-                            "to the selected occurrences")
+                            "to the selected events")
 
         self.snooze = wx.MenuItem(self, self.ID_SNOOZE, "&Snooze selected",
                             "Snooze the selected alarms",
@@ -143,7 +143,7 @@ class MainMenu(wx.Menu):
         wxgui_api.bind_to_update_menu_items(self._update_items)
         wxgui_api.bind_to_reset_menu_items(self._reset_items)
 
-        wxgui_api.insert_menu_main_item('&Occurrences',
+        wxgui_api.insert_menu_main_item('E&vents',
                                     wxgui_api.get_menu_logs_position(), self)
 
     def _update_items(self, kwargs):
@@ -354,9 +354,9 @@ class NavigatorMenu(wx.Menu):
                         kind=wx.ITEM_CHECK)
         self.previous = wx.MenuItem(self, self.ID_PREVIOUS,
                                     "&Previous page\tCTRL+[",
-                                    "View the previous page of occurrences")
+                                    "View the previous page of events")
         self.next = wx.MenuItem(self, self.ID_NEXT, "&Next page\tCTRL+]",
-                                        "View the next page of occurrences")
+                                        "View the next page of events")
         self.apply = wx.MenuItem(self, self.ID_APPLY, "&Apply filters\tCTRL+,",
                                                 "Apply the configured filters")
         self.set = wx.MenuItem(self, self.ID_SET, "Se&t filters\tCTRL+.",

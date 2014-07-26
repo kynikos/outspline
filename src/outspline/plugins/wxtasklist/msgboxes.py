@@ -24,5 +24,5 @@ import outspline.interfaces.wxgui_api as wxgui_api
 def warn_out_of_range():
     return wx.MessageDialog(wxgui_api.get_main_frame(), "The search "
                                 "parameters are out of the supported range.",
-                                caption="Search occurrences",
+                                caption="Search events",
                                 style=wx.OK | wx.ICON_EXCLAMATION)
