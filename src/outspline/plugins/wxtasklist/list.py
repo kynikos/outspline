@@ -256,6 +256,8 @@ class OccurrencesView(object):
         self.autoscroll.set_scrolled(scrolled)
         self.autoscroll.execute(yscroll)
 
+        self.tasklist.set_tab_icon_stopped()
+
     def _popup_context_menu(self, event):
         self.cmenu.update()
         self.listview.PopupMenu(self.cmenu)
@@ -296,12 +298,17 @@ class OccurrencesView(object):
     def cancel_refresh(self):
         self.refengine.cancel()
 
+    def set_tab_icon_stopped(self):
+        self.tasklist.set_tab_icon_stopped()
+
     def warn_limit_exceeded(self):
         self.listview.DeleteAllItems()
         self.tasklist.show_message("Search results limit exceeded",
                                                             wx.ICON_WARNING)
+        self.tasklist.set_tab_icon_stopped()
 
     def reset_warnings(self):
+        self.tasklist.set_tab_icon_ongoing()
         self.tasklist.dismiss_message()
 
     def save_configuration(self):
@@ -503,7 +510,7 @@ class RefreshEngine(object):
                 try:
                     delay = self._refresh_continue()
                 except RefreshEngineStop:
-                    pass
+                    wx.CallAfter(self.occview.set_tab_icon_stopped)
                 except RefreshEngineLimit:
                     wx.CallAfter(self.occview.warn_limit_exceeded)
                 else:

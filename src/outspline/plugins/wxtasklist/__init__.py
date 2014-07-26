@@ -55,6 +55,9 @@ class TaskList(object):
         self.nb_icon_index = wxgui_api.add_right_nb_image(
                                         wx.ArtProvider.GetBitmap('@tasklist',
                                         wx.ART_TOOLBAR, (16, 16)))
+        self.nb_icon_refresh_index = wxgui_api.add_right_nb_image(
+                                        wx.ArtProvider.GetBitmap('@refresh',
+                                        wx.ART_TOOLBAR, (16, 16)))
 
         # filters.Navigator must be instantiated *before*
         # list_.OccurrencesView, because the former sets the filter for the
@@ -136,6 +139,13 @@ class TaskList(object):
         self.list_.save_configuration()
         self.navigator.save_configuration()
         self.config.export_upgrade(configfile)
+
+    def set_tab_icon_stopped(self):
+        wxgui_api.set_right_nb_page_image(self.panel, self.nb_icon_index)
+
+    def set_tab_icon_ongoing(self):
+        wxgui_api.set_right_nb_page_image(self.panel,
+                                                    self.nb_icon_refresh_index)
 
     def show_message(self, message, icon):
         self.infobar.ShowMessage(message, icon)
