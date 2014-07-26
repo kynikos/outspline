@@ -109,8 +109,8 @@ class Database(object):
 
         count = 0
 
-        for id_ in occsd:
-            for j, occ in enumerate(occsd[id_]):
+        for id_ in occsd.keys():
+            for occ in occsd[id_][:]:
                 # occ may have alarm == mint, or start or end in the
                 #  interval, but none of those occurrences must be activated
                 # In particular, the alarm == mint case should have already
@@ -118,7 +118,10 @@ class Database(object):
                 if mint < occ['alarm'] <= maxt:
                     count += 1
                 else:
-                    del occsd[id_][j]
+                    # Do not use 'del' with an index taken by enumerating on
+                    # occsd[id_][:], because after deleting one item all the
+                    # indices wouldn't correspond anymore
+                    occsd[id_].remove(occ)
 
         if count > threshold and \
                         self.choose_unique_old_alarms is not None:
