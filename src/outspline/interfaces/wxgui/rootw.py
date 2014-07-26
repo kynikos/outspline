@@ -127,8 +127,6 @@ class MainFrame(wx.Frame):
 
         self.mainpanes = MainPanes(self)
 
-        self.CreateStatusBar()
-
         self.close_handler = False
 
         self.Bind(wx.EVT_WINDOW_CREATE, self._handle_creation)
