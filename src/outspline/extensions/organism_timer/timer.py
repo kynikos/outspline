@@ -338,10 +338,10 @@ class OldOccurrencesSearch(object):
                                             self._handle_save_permission_check)
             self.database.set_last_search(self.whileago)
 
-            # The "excl" in the name reminds that this time is exclusive, i.e. only
-            # the occurrences strictly greater than the value will then be
-            # activated, even though the search actually finds also those with time
-            # equal to this value
+            # The "excl" in the name reminds that this time is exclusive, i.e.
+            # only the occurrences strictly greater than the value will then be
+            # activated, even though the search actually finds also those with
+            # time equal to this value
             self.exclmint = last_search
 
             # Use a thread to let the GUI be responsive and possibly abort the
