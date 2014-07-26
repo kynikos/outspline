@@ -408,7 +408,7 @@ class FilterConfigurationRelative(object):
         if cconfig['type'] == 'for':
             nconfig['low'] = cconfig['low'] + cconfig['high'][uniti] * mode
         else:
-            span = cconfig['high'][uniti] - cconfig['low']
+            span = cconfig['high'][uniti] - cconfig['low'] + 1
             nconfig['low'] = cconfig['low'] + span * mode
             nconfig['high'][uniti] = cconfig['high'][uniti] + span * mode
 
