@@ -362,27 +362,28 @@ class SearchFilters():
         self.ogrid = wx.GridSizer(3, 2, 4, 4)
         self.box.Add(self.ogrid, flag=wx.EXPAND)
 
-        # The order of creation affects the placement in the GridSizer
-        self.option1 = self.make_option('Only in selected database')
-        self.option4 = self.make_option('Regular expression')
-        self.option2 = self.make_option('Only in headings')
-        self.option5 = self.make_option('Case sensitive')
-        self.option3 = self.make_option('Only one result per item')
+        self.option1 = wx.CheckBox(self.mainview.panel,
+                                            label='Only in selected database')
+        self.option2 = wx.CheckBox(self.mainview.panel,
+                                            label='Only in headings')
+        self.option3 = wx.CheckBox(self.mainview.panel,
+                                            label='Only one result per item')
+        self.option4 = wx.CheckBox(self.mainview.panel,
+                                            label='Regular expression')
+        self.option5 = wx.CheckBox(self.mainview.panel,
+                                            label='Case sensitive')
+
+        # The order of addition affects the placement in the GridSizer
+        self.ogrid.Add(self.option1)
+        self.ogrid.Add(self.option4)
+        self.ogrid.Add(self.option2)
+        self.ogrid.Add(self.option5)
+        self.ogrid.Add(self.option3)
 
         mainview.panel.Bind(wx.EVT_BUTTON, self._search, self.search)
 
     def _search(self, event):
         self.mainview.search()
-
-    def make_option(self, label):
-        obox = wx.BoxSizer(wx.HORIZONTAL)
-        check = wx.CheckBox(self.mainview.panel)
-        obox.Add(check, flag=wx.ALIGN_CENTER_VERTICAL)
-        label = wx.StaticText(self.mainview.panel, label=label)
-        obox.Add(label, flag=wx.ALIGN_CENTER_VERTICAL)
-        self.ogrid.Add(obox)
-
-        return check
 
 
 class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):

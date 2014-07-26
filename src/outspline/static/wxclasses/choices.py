@@ -95,12 +95,8 @@ class MultipleChoiceCtrl(object):
         self.cbctrls = []
 
         for i, c in enumerate(choices):
-            self.cbctrls.append(wx.CheckBox(self.panel))
-            box.Add(self.cbctrls[i], flag=wx.ALIGN_CENTER_VERTICAL)
-
-            label = wx.StaticText(self.panel, label=c)
-            box.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT |
-                                                            wx.RIGHT, border=8)
+            self.cbctrls.append(wx.CheckBox(self.panel, label=c))
+            box.Add(self.cbctrls[i], flag=wx.RIGHT, border=8)
 
     def get_main_panel(self):
         return self.panel
