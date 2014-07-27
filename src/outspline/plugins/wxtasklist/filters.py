@@ -357,13 +357,27 @@ class FilterConfigurationRelative(object):
             # here would feel weird when changing filters, and also a similar
             # thing as for 'high' should be done, otherwise also units like
             # years would take a low of -5, which would be bad
-            'low': 0,
-            'high': {0: 1439,
-                     1: 23,
-                     2: 0,
-                     3: 0,
-                     4: 0,
-                     5: 0},
+            'low': {0: 0,
+                    1: 0,
+                    2: 0,
+                    3: 0,
+                    4: 0,
+                    5: 0},
+            'high': {'to':
+                        {0: 1439,
+                         1: 23,
+                         2: 0,
+                         3: 0,
+                         4: 0,
+                         5: 0},
+                     'for':
+                        {0: 1440,
+                         1: 24,
+                         2: 1,
+                         3: 1,
+                         4: 1,
+                         5: 1},
+                    },
             'type': 'to',
             'unit': 'minutes',
             'uniti': 0,
@@ -379,13 +393,13 @@ class FilterConfigurationRelative(object):
         uniti = self.units.index(unit)
 
         config.update({
-            'low': low,
             'type': type_,
             'unit': unit,
             'uniti': uniti,
         })
 
-        config['high'][uniti] = high
+        config['low'][uniti] = low
+        config['high'][config['type']][uniti] = high
 
         return config
 
@@ -405,11 +419,14 @@ class FilterConfigurationRelative(object):
         uniti = cconfig['uniti']
 
         if cconfig['type'] == 'for':
-            nconfig['low'] = cconfig['low'] + cconfig['high'][uniti] * mode
+            nconfig['low'][uniti] = cconfig['low'][uniti] + \
+                                cconfig['high'][cconfig['type']][uniti] * mode
         else:
-            span = cconfig['high'][uniti] - cconfig['low'] + 1
-            nconfig['low'] = cconfig['low'] + span * mode
-            nconfig['high'][uniti] = cconfig['high'][uniti] + span * mode
+            span = cconfig['high'][cconfig['type']][uniti] - \
+                                                    cconfig['low'][uniti] + 1
+            nconfig['low'][uniti] = cconfig['low'][uniti] + span * mode
+            nconfig['high'][cconfig['type']][uniti] = \
+                        cconfig['high'][cconfig['type']][uniti] + span * mode
 
         return nconfig
 
@@ -419,8 +436,8 @@ class FilterConfigurationRelative(object):
         # configuration file
         return OrderedDict((
             ('mode', config['mode']),
-            ('low', str(config['low'])),
-            ('high', str(config['high'][config['uniti']])),
+            ('low', str(config['low'][config['uniti']])),
+            ('high', str(config['high'][config['type']][config['uniti']])),
             ('type', config['type']),
             ('unit', config['unit']),
         ))
@@ -748,7 +765,7 @@ class FilterInterfaceRelative(object):
 
         self.lowlimit = NarrowSpinCtrl(self.panel, min=-9999, max=9999,
                                                         style=wx.SP_ARROW_KEYS)
-        self.lowlimit.SetValue(self.config['low'])
+        self.lowlimit.SetValue(self.config['low'][self.config['uniti']])
         self.fbox.Add(self.lowlimit, flag=wx.ALIGN_CENTER_VERTICAL |
                                                             wx.RIGHT, border=4)
 
@@ -775,12 +792,14 @@ class FilterInterfaceRelative(object):
         self.fbox.Add(self.unitchoice, flag=wx.ALIGN_CENTER_VERTICAL)
 
     def _handle_choice(self, event):
-        self.highlimit.SetValue(self.config['high'][event.GetInt()])
+        self.lowlimit.SetValue(self.config['low'][event.GetInt()])
+        self.highlimit.SetValue(
+                self.config['high'][self._get_high_choice()][event.GetInt()])
 
     def _create_to_widget(self):
         self.highlimit = NarrowSpinCtrl(self.highchoice.get_main_panel(),
                                 min=-9999, max=9999, style=wx.SP_ARROW_KEYS)
-        self.highlimit.SetValue(self.config['high'][
+        self.highlimit.SetValue(self.config['high'][self._get_high_choice()][
                                             self.unitchoice.GetSelection()])
 
         return self.highlimit
@@ -788,15 +807,18 @@ class FilterInterfaceRelative(object):
     def _create_for_widget(self):
         self.highlimit = NarrowSpinCtrl(self.highchoice.get_main_panel(),
                                     min=1, max=9999, style=wx.SP_ARROW_KEYS)
-        self.highlimit.SetValue(self.config['high'][
+        self.highlimit.SetValue(self.config['high'][self._get_high_choice()][
                                             self.unitchoice.GetSelection()])
 
         return self.highlimit
 
+    def _get_high_choice(self):
+        return ('to', 'for')[self.highchoice.get_selection()]
+
     def get_values(self):
         values = {
             'mode': 'relative',
-            'type': ('to', 'for')[self.highchoice.get_selection()],
+            'type': self._get_high_choice(),
             'uniti': self.unitchoice.GetSelection(),
             'low': self.lowlimit.GetValue(),
             'high': self.highlimit.GetValue(),
@@ -1005,15 +1027,15 @@ class FilterInterfaceMonth(object):
 
 class FilterRelative(object):
     def __init__(self, config):
-        low = config['low']
+        low = config['low'][config['uniti']]
 
         if config['type'] == 'for':
-            high = low + config['high'][config['uniti']]
+            high = low + config['high'][config['type']][config['uniti']]
         else:
             # Add 1 because e.g. 'from 0 to 0' must show the current period,
             # just like 'from 0 for 1', and unlike 'from 0 to 1', which should
             # show also the next period
-            high = config['high'][config['uniti']] + 1
+            high = config['high'][config['type']][config['uniti']] + 1
 
         self.filter = {
             'minutes': FilterRelativeMinutes,
