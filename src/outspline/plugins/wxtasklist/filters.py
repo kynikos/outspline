@@ -48,7 +48,7 @@ class Navigator(object):
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
         self.limits = (self.config.get_int('minimum_year'),
-                                            self.config.get_int('maximum_year'))
+                                        self.config.get_int('maximum_year'))
 
         self.configuration = FilterConfiguration(self.limits)
 
