@@ -122,7 +122,9 @@ class MainFrame(wx.Frame):
 
         self.SetIcons(wx.GetApp().get_main_icon_bundle())
 
-        self.menu = menubar.RootMenu()
+        self.uisim = wx.UIActionSimulator()
+
+        self.menu = menubar.RootMenu(self)
         self.SetMenuBar(self.menu)
 
         self.mainpanes = MainPanes(self)
@@ -130,8 +132,6 @@ class MainFrame(wx.Frame):
         self.close_handler = False
 
         self.Bind(wx.EVT_WINDOW_CREATE, self._handle_creation)
-        self.Bind(wx.EVT_MENU_OPEN, self.menu.update_menus)
-        self.Bind(wx.EVT_MENU_CLOSE, self.menu.reset_menus)
         self.bind_to_close_event(wx.GetApp().exit_app)
 
         self.Centre()
@@ -139,6 +139,9 @@ class MainFrame(wx.Frame):
 
     def _handle_creation(self, event):
         self.Unbind(wx.EVT_WINDOW_CREATE, handler=self._handle_creation)
+
+        if self.config.get_bool('autohide_menubar'):
+            self.menu.enable_autohide(self.uisim, self.config)
 
         databases.dbpropmanager.post_init()
 

@@ -42,7 +42,8 @@ delete_items_event = Event()
 
 
 class RootMenu(wx.MenuBar):
-    def __init__(self):
+    def __init__(self, frame):
+
         # Note that the menu can be accessed through F10, which is an
         # accelerator that doesn't seem to be overridable neither through
         # menu shortcuts nor through accelerators
@@ -60,7 +61,75 @@ class RootMenu(wx.MenuBar):
         self.Append(self.logs, "&Logs")
         self.Append(self.help, "&Help")
 
+        # self.hide_timer must be initialized even if autohide is not set
+        self.hide_timer = wx.CallLater(0, int)
+
+        frame.Bind(wx.EVT_MENU_OPEN, self.update_menus)
+        frame.Bind(wx.EVT_MENU_CLOSE, self.reset_menus)
+
+    def enable_autohide(self, uisim, config):
+        self.uisim = uisim
+        self.HIDE_DELAY = 10
+        frame = self.GetFrame()
+
+        # This both hides the menu the first time and initializes the timer so
+        # that it can then be just called with Restart
+        self.hide_timer = wx.CallLater(self.HIDE_DELAY, self.Show, False)
+
+        id_ = wx.NewId()
+        accels = [(wx.ACCEL_NORMAL, wx.WXK_F10, id_), ]
+        frame.Bind(wx.EVT_MENU, self._handle_F10, id=id_)
+
+        # This preserves the native Alt+char behaviour
+        if config.get_bool('preserve_alt_menu_shortcuts'):
+            for menu, label in self.GetMenus():
+                try:
+                    amp = label.index('&')
+                except ValueError:
+                    pass
+                else:
+                    char = label[amp + 1]
+                    id_ = wx.NewId()
+                    accels.append((wx.ACCEL_ALT, ord(char), id_))
+                    frame.Bind(wx.EVT_MENU,
+                                self._handle_accelerator_loop(char), id=id_)
+
+        acctable = wx.AcceleratorTable(accels)
+        frame.SetAcceleratorTable(acctable)
+
+        frame.Bind(wx.EVT_ENTER_WINDOW, self._handle_enter_frame)
+        frame.Bind(wx.EVT_LEAVE_WINDOW, self._handle_leave_frame)
+
+    def _handle_F10(self, event):
+        self.Show()
+        event.Skip()
+
+    def _handle_accelerator_loop(self, char):
+        return lambda event: self._handle_accelerator(event, char)
+
+    def _handle_accelerator(self, event, char):
+        # Do *not* call self.Show(), as it will be called after simulating F10
+        # The menu must be given focus by simulating F10, otherwise it's
+        #  pointless to just show it
+        # This method is not called if the menu is already shown, so do not
+        #  even attempt to close the menu or similar
+        self.uisim.Char(wx.WXK_F10)
+        self.uisim.Char(ord(char))
+        event.Skip()
+
+    def _handle_enter_frame(self, event):
+        self.Show(False)
+        event.Skip()
+
+    def _handle_leave_frame(self, event):
+        if event.GetY() <= 0:
+            self.Show()
+
+        event.Skip()
+
     def update_menus(self, event):
+        self.hide_timer.Stop()
+
         menu = event.GetMenu()
 
         if menu is self.file:
@@ -79,6 +148,8 @@ class RootMenu(wx.MenuBar):
         # EVT_MENU_CLOSE is signalled also for sub-menus, but in those cases
         # the menus must not be reset
         if event.GetMenu().GetParent() is None:
+            self.hide_timer.Restart()
+
             # Re-enable all the actions so they are available for their
             # accelerators
             # EVT_MENU_CLOSE is signalled only for the last-closed menu, but
