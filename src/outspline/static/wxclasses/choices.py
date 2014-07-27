@@ -61,7 +61,7 @@ class WidgetChoiceCtrl(object):
 
         window = self.panel
 
-        for i in range(self.layout_ancestors):
+        for i in xrange(self.layout_ancestors):
             window = window.GetParent()
 
         window.Layout()

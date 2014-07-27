@@ -319,7 +319,7 @@ class AlarmsWindow(object):
         self.window.Layout()
 
     def _show_hidden_alarms(self, number):
-        for i in range(number):
+        for i in xrange(number):
             try:
                 alarmid = self.hiddenalarms.pop()
             except KeyError:

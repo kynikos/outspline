@@ -410,7 +410,7 @@ class RuleEditor():
         self.choice.Append(description, clientData=rule)
 
     def select_rule(self, interface_name):
-        for i in range(self.choice.GetCount()):
+        for i in xrange(self.choice.GetCount()):
             if self.choice.GetClientData(i) == interface_name:
                 self.choice.SetSelection(i)
                 break

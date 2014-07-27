@@ -223,7 +223,7 @@ class MenuDev(wx.Menu):
         words = ('the quick brown fox jumps over the lazy dog ' * 6).split()
         seps = ' ' * 6 + '\n'
 
-        for x in range(random.randint(10, 100)):
+        for x in xrange(random.randint(10, 100)):
             words.append(str(random.randint(0, 100)))
             text = ''.join((text, random.choice(words), random.choice(seps)))
 
@@ -241,7 +241,7 @@ class MenuDev(wx.Menu):
     def _populate_tree_rules(self, filename, id_, group, description):
         rules = []
 
-        for n in range(random.randint(0, 8)):
+        for n in xrange(random.randint(0, 8)):
             r = random.randint(0, 16)
 
             if r == 0:

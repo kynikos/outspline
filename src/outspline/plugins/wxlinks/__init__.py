@@ -166,7 +166,7 @@ class TreeItemIcons(object):
         char = config['icon_link']
 
         if char != '':
-            bits_to_colour = {b: wx.Colour() for b in range(1, 6)}
+            bits_to_colour = {b: wx.Colour() for b in xrange(1, 6)}
             bits_to_colour[1].SetFromString(config[
                                         'icon_link_valid_color'])
             bits_to_colour[2].SetFromString(config[
