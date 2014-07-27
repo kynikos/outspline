@@ -169,6 +169,11 @@ class Navigator(object):
         except OutOfRangeError:
             self.tasklist.list_.warn_out_of_range()
         else:
+            # Update the configuration stored in the interface, otherwise when
+            # changing some parameters and then coming back to the current ones
+            # without applying, the previous ones would be set (the values the
+            # interface was instantiated with)
+            self.sfilter.update_config(config)
             self.tasklist.list_.refresh()
 
     def _show_previous_page(self, event):
@@ -826,6 +831,9 @@ class FilterInterfaceRelative(object):
 
         return values
 
+    def update_config(self, config):
+        self.config = config
+
 
 class FilterInterfaceDate(object):
     def __init__(self, parent, limits, config):
@@ -921,6 +929,9 @@ class FilterInterfaceDate(object):
             })
 
         return values
+
+    def update_config(self, config):
+        self.config = config
 
 
 class FilterInterfaceMonth(object):
@@ -1023,6 +1034,9 @@ class FilterInterfaceMonth(object):
             })
 
         return values
+
+    def update_config(self, config):
+        self.config = config
 
 
 class FilterRelative(object):
