@@ -81,9 +81,9 @@ class RootMenu(wx.MenuBar):
         if event.GetMenu().GetParent() is None:
             # Re-enable all the actions so they are available for their
             # accelerators
-            # EVT_MENU_CLOSE is signalled only for the last-closed menu, but since
-            # all the others opened have been updated, all the menus have to be
-            # reset (don't check event.GetMenu() is menu)
+            # EVT_MENU_CLOSE is signalled only for the last-closed menu, but
+            # since all the others opened have been updated, all the menus have
+            # to be reset (don't check event.GetMenu() is menu)
             self.file.reset_items()
             self.database.reset_items()
             self.edit.reset_items()
