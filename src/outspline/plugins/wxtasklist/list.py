@@ -1014,7 +1014,8 @@ class _ListItem(object):
         return self.alarmdate
 
     def get_comparison_values(self):
-        return self.compvalues
+        return (self.fname, self.title, self.start, self.duration, self.end,
+                                                    self.stateid, self.alarm)
 
     def get_color(self):
         return self.color
@@ -1093,9 +1094,6 @@ class ListRegularItem(_ListItem):
                                                 _time.localtime(self.alarm))
             self.alarmid = None
 
-        self.compvalues = (self.fname, self.title, self.start, self.duration,
-                                            self.end, self.stateid, self.alarm)
-
 
 class ListAuxiliaryItem(_ListItem):
     def __init__(self, title, start, end, minstart, maxend, type_, now,
@@ -1156,6 +1154,3 @@ class ListAuxiliaryItem(_ListItem):
                                                     _time.localtime(self.end))
 
         self.alarmdate = ''
-
-        self.compvalues = (self.fname, self.title, self.start, self.duration,
-                                            self.end, self.stateid, self.alarm)
