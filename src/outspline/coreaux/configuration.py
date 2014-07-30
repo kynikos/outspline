@@ -38,7 +38,7 @@ _ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
 _CORE_INFO = os.path.join(_ROOT_DIR, 'coreaux', 'core.info')
 _CONFIG_FILE = os.path.join(_ROOT_DIR, 'outspline.conf')
 _USER_CONFIG_FILE = os.path.join(os.path.expanduser('~'), '.config',
-                                 'outspline', 'outspline.conf')
+                                                'outspline', 'outspline.conf')
 _USER_FOLDER_PERMISSIONS = 0750
 _DESCRIPTION_LONG = 'Outspline is a highly modular outliner whose '\
                     'functionality can be widely extended through the '\
@@ -161,12 +161,6 @@ def load_user_config(cliargs):
     if cliargs.configfile != None:
         global user_config_file
         user_config_file = os.path.expanduser(cliargs.configfile)
-        config.upgrade(user_config_file)
-    else:
-        try:
-            config.upgrade(user_config_file)
-        except configfile.InvalidFileError:
-            pass
 
     # Try to make the directory separately from the logger, because they could
     # be set to different paths
@@ -176,6 +170,16 @@ def load_user_config(cliargs):
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
+
+    try:
+        config.upgrade(user_config_file)
+    except configfile.NonExistentFileError:
+        # If the file just doesn't exist, create it (happens later)
+        pass
+    except configfile.InvalidFileError:
+        # If the file is unreadable but exists, better be safe and crash here
+        # instead of overwriting it
+        raise
 
 
 def export_configuration():
