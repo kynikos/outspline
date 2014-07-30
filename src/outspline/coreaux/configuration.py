@@ -164,7 +164,7 @@ def load_user_config(cliargs):
         config.upgrade(user_config_file)
     else:
         try:
-            config.upgrade(_USER_CONFIG_FILE)
+            config.upgrade(user_config_file)
         except configfile.InvalidFileError:
             pass
 
