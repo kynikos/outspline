@@ -59,11 +59,15 @@ def set_logger(cliargs):
     else:
         logfile = os.path.expanduser(config('Log')['log_file'])
 
-    try:
-        os.makedirs(os.path.dirname(logfile), mode=_USER_FOLDER_PERMISSIONS)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
+    if level['file'] > 0:
+        # Try to make the directory separately from the configuration, because
+        # they could be set to different paths
+        try:
+            os.makedirs(os.path.dirname(logfile),
+                                                mode=_USER_FOLDER_PERMISSIONS)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
 
     console_level = ('CRITICAL', 'ERROR', 'INFO', 'DEBUG')[level['console']]
     file_level = ('CRITICAL', 'WARNING', 'INFO', 'DEBUG')[level['file']]
