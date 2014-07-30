@@ -388,7 +388,11 @@ class RefreshEngine(object):
 
         # self._restart cancels the timer, so it must be initialized here,
         # instead of calling self._refresh directly
-        self.timer = threading.Timer(0, self._refresh)
+        # Call a dummy function (int) instead of self._refresh because if the
+        # session manager is disabled or there aren't any databases to open,
+        # the tasklist will be disabled (and hidden) and self._refresh will
+        # fail
+        self.timer = threading.Timer(0, int)
         self.timer.name = self.TIMER_NAME
         self.timer.start()
 
