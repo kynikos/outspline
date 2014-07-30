@@ -28,6 +28,7 @@ import outspline.extensions.organism_alarms_api as organism_alarms_api
 
 import list as list_
 import filters as filters_
+import export
 
 
 class MainMenu(wx.Menu):
@@ -50,9 +51,11 @@ class MainMenu(wx.Menu):
         self.ID_SNOOZE_ALL = wx.NewId()
         self.ID_DISMISS = wx.NewId()
         self.ID_DISMISS_ALL = wx.NewId()
+        self.ID_EXPORT = wx.NewId()
 
         self.navigator_submenu = NavigatorMenu(tasklist)
         self.alarms_submenu = AlarmsMenu(tasklist)
+        self.export_submenu = ExportMenu(tasklist)
 
         self.show = wx.MenuItem(self, self.ID_SHOW,
                                                 "Show &panel\tCTRL+SHIFT+F5",
@@ -96,6 +99,9 @@ class MainMenu(wx.Menu):
                         "&Dismiss selected\tF8", "Dismiss the selected alarms")
         self.dismiss_all = wx.MenuItem(self, self.ID_DISMISS_ALL,
                     "Dis&miss all\tCTRL+F8", "Dismiss all the active alarms")
+        self.export = wx.MenuItem(self, self.ID_EXPORT, 'E&xport view',
+                                        'Export the current view to a file',
+                                        subMenu=self.export_submenu)
 
         self.navigator.SetBitmap(wx.ArtProvider.GetBitmap('@navigator',
                                                                 wx.ART_MENU))
@@ -111,6 +117,7 @@ class MainMenu(wx.Menu):
                                                                   wx.ART_MENU))
         self.dismiss_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
                                                                   wx.ART_MENU))
+        self.export.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
 
         self.AppendItem(self.show)
         self.AppendSeparator()
@@ -129,6 +136,8 @@ class MainMenu(wx.Menu):
         self.AppendItem(self.snooze_all)
         self.AppendItem(self.dismiss)
         self.AppendItem(self.dismiss_all)
+        self.AppendSeparator()
+        self.AppendItem(self.export)
 
         wxgui_api.bind_to_menu(self.tasklist.toggle_shown, self.show)
         wxgui_api.bind_to_menu(self._show_gaps, self.gaps)
@@ -164,6 +173,7 @@ class MainMenu(wx.Menu):
             self.snooze_all.Enable(False)
             self.dismiss.Enable(False)
             self.dismiss_all.Enable(False)
+            self.export.Enable(False)
 
             self.navigator_submenu.update_items()
             self.alarms_submenu.update_items()
@@ -213,6 +223,7 @@ class MainMenu(wx.Menu):
                 self.gaps.Enable()
                 self.overlaps.Enable()
                 self.autoscroll.Enable()
+                self.export.Enable()
 
                 self.navigator_submenu.update_items_shown()
 
@@ -232,6 +243,7 @@ class MainMenu(wx.Menu):
         self.snooze_all.Enable()
         self.dismiss.Enable()
         self.dismiss_all.Enable()
+        self.export.Enable()
 
         self.navigator_submenu.reset_items()
 
@@ -505,6 +517,52 @@ class AlarmsMenu(wx.Menu):
             self.occview.refresh()
 
 
+class ExportMenu(wx.Menu):
+    def __init__(self, tasklist):
+        wx.Menu.__init__(self)
+        self.tasklist = tasklist
+
+        self.exporter = export.Exporter(tasklist.list_)
+
+        self.ID_JSON = wx.NewId()
+        self.ID_TSV = wx.NewId()
+        self.ID_XML = wx.NewId()
+
+        self.json = wx.MenuItem(self, self.ID_JSON,
+                            "&JSON...", "Export to JSON format")
+        self.tsv = wx.MenuItem(self, self.ID_TSV,
+                            "&TSV...", "Export to tab-separated values format")
+        self.xml = wx.MenuItem(self, self.ID_XML,
+                            "&XML...", "Export to XML format")
+
+        self.json.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
+                                                                wx.ART_MENU))
+        self.tsv.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
+                                                                wx.ART_MENU))
+        self.xml.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
+                                                                wx.ART_MENU))
+
+        self.AppendItem(self.json)
+        self.AppendItem(self.tsv)
+        self.AppendItem(self.xml)
+
+        wxgui_api.bind_to_menu(self._export_to_json, self.json)
+        wxgui_api.bind_to_menu(self._export_to_tsv, self.tsv)
+        wxgui_api.bind_to_menu(self._export_to_xml, self.xml)
+
+    def _export_to_json(self, event):
+        if self.tasklist.is_shown():
+            self.exporter.export_to_json()
+
+    def _export_to_tsv(self, event):
+        if self.tasklist.is_shown():
+            self.exporter.export_to_tsv()
+
+    def _export_to_xml(self, event):
+        if self.tasklist.is_shown():
+            self.exporter.export_to_xml()
+
+
 class TabContextMenu(wx.Menu):
     def __init__(self, tasklist):
         wx.Menu.__init__(self)
@@ -512,6 +570,7 @@ class TabContextMenu(wx.Menu):
 
         self.navigator_submenu = TabContextNavigatorMenu(tasklist)
         self.alarms_submenu = TabContextAlarmsMenu(tasklist)
+        self.export_submenu = TabContextExportMenu(tasklist)
 
         self.navigator = wx.MenuItem(self, self.tasklist.mainmenu.ID_NAVIGATOR,
                                 'Na&vigator', subMenu=self.navigator_submenu)
@@ -533,6 +592,8 @@ class TabContextMenu(wx.Menu):
                         subMenu=SnoozeAllConfigMenu(self.tasklist))
         self.dismiss_all = wx.MenuItem(self,
                         self.tasklist.mainmenu.ID_DISMISS_ALL, "Dis&miss all")
+        self.export = wx.MenuItem(self, self.tasklist.mainmenu.ID_EXPORT,
+                                'E&xport view', subMenu=self.export_submenu)
 
         self.navigator.SetBitmap(wx.ArtProvider.GetBitmap('@navigator',
                                                                 wx.ART_MENU))
@@ -543,6 +604,7 @@ class TabContextMenu(wx.Menu):
                                                                   wx.ART_MENU))
         self.dismiss_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
                                                                   wx.ART_MENU))
+        self.export.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
 
         self.AppendItem(self.navigator)
         self.AppendItem(self.alarms)
@@ -554,6 +616,8 @@ class TabContextMenu(wx.Menu):
         self.AppendSeparator()
         self.AppendItem(self.snooze_all)
         self.AppendItem(self.dismiss_all)
+        self.AppendSeparator()
+        self.AppendItem(self.export)
 
     def update(self):
         if len(self.tasklist.list_.get_active_alarms()) > 0:
@@ -642,6 +706,29 @@ class TabContextAlarmsMenu(wx.Menu):
 
     def update_items(self):
         self.modes_to_items[self.occview.active_alarms_mode].Check()
+
+
+class TabContextExportMenu(wx.Menu):
+    def __init__(self, tasklist):
+        wx.Menu.__init__(self)
+
+        self.json = wx.MenuItem(self, tasklist.mainmenu.export_submenu.ID_JSON,
+                                                                    "&JSON...")
+        self.tsv = wx.MenuItem(self, tasklist.mainmenu.export_submenu.ID_TSV,
+                                                                    "&TSV...")
+        self.xml = wx.MenuItem(self, tasklist.mainmenu.export_submenu.ID_XML,
+                                                                    "&XML...")
+
+        self.json.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
+                                                                wx.ART_MENU))
+        self.tsv.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
+                                                                wx.ART_MENU))
+        self.xml.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
+                                                                wx.ART_MENU))
+
+        self.AppendItem(self.json)
+        self.AppendItem(self.tsv)
+        self.AppendItem(self.xml)
 
 
 class ListContextMenu(wx.Menu):

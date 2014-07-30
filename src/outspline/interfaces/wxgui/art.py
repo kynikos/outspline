@@ -60,6 +60,7 @@ class ArtProvider(wx.ArtProvider):
                     '@exporttxt': ('document-export', 'gnome-stock-export',
                                    'document-save-as', 'gtk-save-as',
                                    'filesaveas', 'stock_save-as'),
+                    '@exporttype': ('text-x-generic', ),
                     '@filters': ('document-open', ),
                     '@find': ('system-search', 'search', 'find' 'edit-find',
                                     'gtk-find', 'filefind', 'stock_search'),

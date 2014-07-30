@@ -261,6 +261,13 @@ class OccurrencesView(object):
         self.cmenu.update()
         self.listview.PopupMenu(self.cmenu)
 
+    def get_shown_items_count(self):
+        return self.listview.GetItemCount()
+
+    def get_item_values_by_position(self, pos):
+        return self.occs[self.listview.GetItem(pos).GetData()
+                                                        ].get_export_values()
+
     def get_active_alarms(self):
         return self.refengine.get_active_alarms()
 
@@ -1016,6 +1023,15 @@ class _ListItem(object):
     def get_comparison_values(self):
         return (self.fname, self.title, self.start, self.duration, self.end,
                                                     self.stateid, self.alarm)
+
+    def get_export_values(self):
+        return {
+            "filename": self.filename,
+            "heading": self.title,
+            "start": self.start,
+            "end": self.end,
+            "alarm": self.alarm,
+        }
 
     def get_color(self):
         return self.color
