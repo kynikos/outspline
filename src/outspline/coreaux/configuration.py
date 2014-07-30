@@ -168,9 +168,11 @@ def load_user_config(cliargs):
         except configfile.InvalidFileError:
             pass
 
+    # Try to make the directory separately from the logger, because they could
+    # be set to different paths
     try:
         os.makedirs(os.path.dirname(user_config_file),
-                    mode=_USER_FOLDER_PERMISSIONS)
+                                                mode=_USER_FOLDER_PERMISSIONS)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
