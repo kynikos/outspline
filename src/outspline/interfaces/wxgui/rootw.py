@@ -157,19 +157,31 @@ class MainFrame(wx.Frame):
         self.close_handler = handler
         self.Bind(wx.EVT_CLOSE, handler)
 
-    def hide(self):
-        self.Show(False)
-        hide_main_window_event.signal()
-
     def show(self):
+        # Don't execute self._show if it's already shown, otherwise all the
+        # handlers of show_main_window_event will be executed for no reason
+        if not self.IsShown():
+            self._show()
+
+    def hide(self):
+        # Don't execute self._hide if it's already hidden, otherwise all the
+        # handlers of hide_main_window_event will be executed for no reason
+        if self.IsShown():
+            self._hide()
+
+    def _show(self):
         show_main_window_event.signal()
         self.Show(True)
 
+    def _hide(self):
+        self.Show(False)
+        hide_main_window_event.signal()
+
     def toggle_shown(self):
         if self.IsShown():
-            self.hide()
+            self._hide()
         else:
-            self.show()
+            self._show()
 
     def save_geometry(self):
         if self.IsMaximized():
