@@ -133,6 +133,7 @@ class MainFrame(wx.Frame):
 
         self.Bind(wx.EVT_WINDOW_CREATE, self._handle_creation)
         self.bind_to_close_event(wx.GetApp().exit_app)
+        coreaux_api.bind_to_external_nudge(self._handle_external_nudge)
 
         self.Centre()
         self.Show(True)
@@ -149,6 +150,9 @@ class MainFrame(wx.Frame):
             self.sessionmanager = sessions.SessionManager()
 
         application_loaded_event.signal()
+
+    def _handle_external_nudge(self, kwargs):
+        self.show()
 
     def bind_to_close_event(self, handler):
         if self.close_handler:

@@ -140,5 +140,9 @@ def import_optional_plugin_api(plugin):
                                                                     '_api')))
 
 
+def bind_to_external_nudge(handler, bind=True):
+    return coreaux.events.external_nudge_event.bind(handler, bind)
+
+
 def bind_to_uncaught_exception(handler, bind=True):
     return coreaux.events.uncaught_exception_event.bind(handler, bind)

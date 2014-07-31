@@ -157,11 +157,15 @@ def load_addon_info_and_default_config():
                 raise exceptions.AddonNotFoundError()
 
 
-def load_user_config(cliargs):
+def set_configuration_file(cliargs):
     if cliargs.configfile != None:
         global user_config_file
         user_config_file = os.path.expanduser(cliargs.configfile)
 
+    return user_config_file
+
+
+def load_configuration():
     # Try to make the directory separately from the logger, because they could
     # be set to different paths
     try:

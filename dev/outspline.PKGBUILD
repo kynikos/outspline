@@ -12,7 +12,9 @@ depends=('wxpython<3.1'
          'python2-texthistory'
          'python2-plural')
 optdepends=('outspline-organism: adds personal organizer capabilities'
-            'outspline-development: development tools for beta testers')
+            'outspline-development: development tools for beta testers'
+            'python2-dbus: prevent opening multiple instances with the same configuration file'
+            'dbus-glib: prevent opening multiple instances with the same configuration file')
 conflicts=('organism')
 replaces=('organism')
 source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
