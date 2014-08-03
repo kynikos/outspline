@@ -189,8 +189,7 @@ class Database(object):
 
                 for t in ('Extensions', 'Interfaces', 'Plugins'):
                     for a in info(t).get_sections():
-                        if info(t)(a).get('affects_database', fallback=None
-                                                                    ) != 'no':
+                        if info(t)(a).get_bool('affects_database'):
                             # Only store major versions, as they are supposed
                             # to keep backward compatibility
                             cursor.execute(queries.compatibility_insert, (t, a,
