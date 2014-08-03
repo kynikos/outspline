@@ -136,7 +136,7 @@ class Database(object):
             # instance of Outspline), a SELECT query is not enough
             cursor.execute(queries.properties_insert_dummy)
         except _sql.OperationalError:
-            raise exceptions.DatabaseLocked()
+            raise exceptions.DatabaseLockedError()
         else:
             cursor.execute(queries.properties_delete_dummy)
 
