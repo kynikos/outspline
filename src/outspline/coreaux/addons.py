@@ -45,7 +45,7 @@ def load_addon(faddon, reqversion, tablenames):
         # Get only the major version number
         instversion = int(configuration.info('Core').get_float('version'))
 
-        if instversion != reqversion:
+        if reqversion is not False and instversion != reqversion:
             raise exceptions.AddonVersionError(instversion)
     else:
         section, logname = {
@@ -77,7 +77,7 @@ def load_addon(faddon, reqversion, tablenames):
         # second one no exception would be raised
         instversion = int(info.get_float('version'))
 
-        if instversion != reqversion:
+        if reqversion is not False and instversion != reqversion:
             raise exceptions.AddonVersionError(instversion)
 
         # This check must be done after the version one, see the comment there
