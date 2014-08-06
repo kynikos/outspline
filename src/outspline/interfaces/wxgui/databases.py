@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import time
 import os.path
+import time
 import wx
 
 import outspline.coreaux_api as coreaux_api
@@ -36,13 +36,16 @@ dbpropmanager = dbprops.DatabasePropertyManager()
 aborted_save_warnings = {}
 
 
-def create_database(deffname=None, filename=None):
+def create_database(defpath=None, filename=None):
     if not filename:
+        if not defpath:
+            defpath = os.path.join(os.path.expanduser('~'),
+                                    '.'.join(('new_database',
+                                    coreaux_api.get_standard_extension())))
+
         dlg = msgboxes.create_db_ask()
-        if not deffname:
-            deffname = '.'.join(('new_database',
-                                         coreaux_api.get_standard_extension()))
-        dlg.SetFilename(deffname)
+        dlg.SetPath(defpath)
+
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
         else:
@@ -65,7 +68,8 @@ def create_database(deffname=None, filename=None):
 
 def open_database(filename=None, startup=False):
     if not filename:
-        dlg = msgboxes.open_db_ask()
+        dlg = msgboxes.open_db_ask(os.path.expanduser('~'))
+
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
         else:
@@ -102,9 +106,9 @@ def save_database_as(origin):
                                                   not editor.tabs[tab].close():
             break
     else:
-        currname = os.path.basename(origin).rpartition('.')
-        deffname = ''.join((currname[0], '_copy', currname[1], currname[2]))
-        destination = create_database(deffname)
+        currpath = origin.rpartition('.')
+        defpath = "".join((currpath[0], '_copy', currpath[1], currpath[2]))
+        destination = create_database(defpath=defpath)
 
         if destination:
             try:
@@ -118,11 +122,10 @@ def save_database_as(origin):
 
 
 def save_database_backup(origin):
-    currname = os.path.basename(origin).rpartition('.')
-    deffname = time.strftime('{}_%Y%m%d%H%M%S{}{}'.format(currname[0],
-                                                          currname[1],
-                                                          currname[2]))
-    destination = create_database(deffname)
+    currpath = origin.rpartition('.')
+    defpath = time.strftime('{}_%Y%m%d%H%M%S{}{}'.format(currpath[0],
+                                                    currpath[1], currpath[2]))
+    destination = create_database(defpath=defpath)
 
     if destination:
         try:

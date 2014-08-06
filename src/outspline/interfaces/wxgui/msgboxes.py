@@ -28,20 +28,21 @@ aborted_save_default_warning = ("An unspecified event has prevented the "
 
 
 def create_db_ask():
-    return wx.FileDialog(wx.GetApp().root, "Create database", '', "",
-                        'Outspline database (*.{})'.format(
-                                        coreaux_api.get_standard_extension()) +
-                        '|*.' + coreaux_api.get_standard_extension() +
-                        "|All files (*)|*",
+    return wx.FileDialog(wx.GetApp().root, message="Create database",
+                        wildcard="|".join(("Outspline database (*.{})|*.{}"
+                                "".format(coreaux_api.get_standard_extension(),
+                                coreaux_api.get_standard_extension()),
+                                "All files (*)|*")),
                         style=wx.SAVE | wx.FD_OVERWRITE_PROMPT)
 
 
-def open_db_ask():
-    return wx.FileDialog(wx.GetApp().root, "Open database", '', "",
-                        'Outspline database (*.{})'.format(
-                                        coreaux_api.get_standard_extension()) +
-                        '|*.' + coreaux_api.get_standard_extension() +
-                        "|All files (*)|*",
+def open_db_ask(defdir):
+    return wx.FileDialog(wx.GetApp().root, message="Open database",
+                        defaultDir=defdir,
+                        wildcard="|".join(("Outspline database (*.{})|*.{}"
+                                "".format(coreaux_api.get_standard_extension(),
+                                coreaux_api.get_standard_extension()),
+                                "All files (*)|*")),
                         style=wx.OPEN | wx.FD_FILE_MUST_EXIST)
 
 
