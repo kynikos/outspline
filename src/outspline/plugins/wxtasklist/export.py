@@ -37,19 +37,25 @@ class Exporter(object):
         obj = [self.occview.get_item_values_by_position(i) \
                         for i in xrange(self.occview.get_shown_items_count())]
 
-        with self._open_file(msgboxes.save_to_json(), 'w') as file_:
-            json.dump(obj, file_, indent=4)
+        file_ = self._open_file(msgboxes.save_to_json(), 'w')
+
+        if file_:
+            with file_:
+                json.dump(obj, file_, indent=4)
 
     def export_to_tsv(self):
-        with self._open_file(msgboxes.save_to_tsv(), 'wb') as file_:
-            writer = csv.DictWriter(file_, ("filename", "heading", "start",
-                                        "end", "alarm"), dialect='excel-tab')
-            writer.writeheader()
+        file_ = self._open_file(msgboxes.save_to_tsv(), 'wb')
 
-            # Preserve the current sort order
-            for i in xrange(self.occview.get_shown_items_count()):
-                obj = self.occview.get_item_values_by_position(i)
-                writer.writerow(obj)
+        if file_:
+            with file_:
+                writer = csv.DictWriter(file_, ("filename", "heading", "start",
+                                        "end", "alarm"), dialect='excel-tab')
+                writer.writeheader()
+
+                # Preserve the current sort order
+                for i in xrange(self.occview.get_shown_items_count()):
+                    obj = self.occview.get_item_values_by_position(i)
+                    writer.writerow(obj)
 
     def export_to_xml(self):
         impl = dom.getDOMImplementation()
@@ -69,8 +75,11 @@ class Exporter(object):
 
             root.appendChild(event)
 
-        with self._open_file(msgboxes.save_to_xml(), 'w') as file_:
-            doc.writexml(file_, addindent="    ", newl="\n")
+        file_ = self._open_file(msgboxes.save_to_xml(), 'w')
+
+        if file_:
+            with file_:
+                doc.writexml(file_, addindent="    ", newl="\n")
 
     def _open_file(self, dialog, mode):
         if dialog.ShowModal() == wx.ID_OK:
