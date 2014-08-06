@@ -16,30 +16,37 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+import os.path
 import wx
 
 import outspline.interfaces.wxgui_api as wxgui_api
 
 
 def save_to_json():
-    return wx.FileDialog(wxgui_api.get_main_frame(), "Export tasklist view",
-                                    "", 'outspline_events.json',
-                                    'JSON (*.json)|*.json|All files (*)|*',
-                                    style=wx.SAVE | wx.FD_OVERWRITE_PROMPT)
+    return wx.FileDialog(wxgui_api.get_main_frame(),
+                            message="Export tasklist view",
+                            defaultDir=os.path.expanduser('~'),
+                            defaultFile="outspline_events.json",
+                            wildcard="JSON (*.json)|*.json|All files (*)|*",
+                            style=wx.SAVE | wx.FD_OVERWRITE_PROMPT)
 
 
 def save_to_tsv():
-    return wx.FileDialog(wxgui_api.get_main_frame(), "Export tasklist view",
-                                    "", 'outspline_events.tsv',
-                                    'TSV (*.tsv)|*.tsv|All files (*)|*',
-                                    style=wx.SAVE | wx.FD_OVERWRITE_PROMPT)
+    return wx.FileDialog(wxgui_api.get_main_frame(),
+                            message="Export tasklist view",
+                            defaultDir=os.path.expanduser('~'),
+                            defaultFile="outspline_events.tsv",
+                            wildcard="TSV (*.tsv)|*.tsv|All files (*)|*",
+                            style=wx.SAVE | wx.FD_OVERWRITE_PROMPT)
 
 
 def save_to_xml():
-    return wx.FileDialog(wxgui_api.get_main_frame(), "Export tasklist view",
-                                    "", 'outspline_events.xml',
-                                    'XML (*.xml)|*.xml|All files (*)|*',
-                                    style=wx.SAVE | wx.FD_OVERWRITE_PROMPT)
+    return wx.FileDialog(wxgui_api.get_main_frame(),
+                            message="Export tasklist view",
+                            defaultDir=os.path.expanduser('~'),
+                            defaultFile="outspline_events.xml",
+                            wildcard="XML (*.xml)|*.xml|All files (*)|*",
+                            style=wx.SAVE | wx.FD_OVERWRITE_PROMPT)
 
 
 def warn_user_rights(filename):
