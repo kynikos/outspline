@@ -106,8 +106,7 @@ def save_database_as(origin):
                                                   not editor.tabs[tab].close():
             break
     else:
-        currpath = origin.rpartition('.')
-        defpath = "".join((currpath[0], '_copy', currpath[1], currpath[2]))
+        defpath = '{}_copy{}'.format(*os.path.splitext(origin))
         destination = create_database(defpath=defpath)
 
         if destination:
@@ -122,9 +121,8 @@ def save_database_as(origin):
 
 
 def save_database_backup(origin):
-    currpath = origin.rpartition('.')
-    defpath = time.strftime('{}_%Y%m%d%H%M%S{}{}'.format(currpath[0],
-                                                    currpath[1], currpath[2]))
+    defpath = time.strftime('{}_%Y%m%d%H%M%S{}'.format(
+                                                    *os.path.splitext(origin)))
     destination = create_database(defpath=defpath)
 
     if destination:
