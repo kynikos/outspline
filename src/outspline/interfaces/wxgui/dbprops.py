@@ -203,8 +203,7 @@ class DatabaseProperties(object):
 
         self.onchange_actions["options.core.hlimit"] = self._set_history_limit
 
-        # SpinCtrl looks too ugly...
-        #prop.SetEditor("SpinCtrl")
+        prop.SetEditor("SpinCtrl")
         prop.SetAttribute("Min", 0)
         prop.SetAttribute("Max", 999)
         self.propgrid.Append(prop)

@@ -51,6 +51,7 @@ class Main(object):
             alimit = organism_alarms_api.get_alarms_log_limit(filename)
             prop = wxpg.IntProperty("Alarms log soft limit",
                             "options.extension.organism_alarms.alimit", alimit)
+            prop.SetEditor("SpinCtrl")
             wxgui_api.add_property_option(filename, prop,
                                         self.alarmlogs[filename].set_log_limit)
 
