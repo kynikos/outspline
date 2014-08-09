@@ -137,7 +137,7 @@ class AlarmsLog(object):
         text = row['AOL_text']
         return (tstamp, reason, text)
 
-    def set_log_limit(self, value):
+    def set_log_limit(self, data, value):
         organism_alarms_api.update_alarms_log_limit(self.filename, value)
 
 

@@ -131,7 +131,8 @@ class DatabaseProperties(object):
 
     def _handle_property_changed(self, event):
         property_ = event.GetProperty()
-        self.onchange_actions[property_.GetName()](property_.GetValue())
+        self.onchange_actions[property_.GetName()](property_.GetClientData(),
+                                                        property_.GetValue())
 
     def _handle_close_tab(self, kwargs):
         if kwargs['page'] is self.panel:
@@ -214,7 +215,7 @@ class DatabaseProperties(object):
         self.propgrid.Append(prop)
         self.onchange_actions[prop.GetName()] = action
 
-    def _set_history_limit(self, value):
+    def _set_history_limit(self, data, value):
         core_api.update_database_history_soft_limit(self.filename, value)
 
     def refresh_file_properties(self):
