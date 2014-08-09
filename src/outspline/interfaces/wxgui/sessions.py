@@ -31,19 +31,20 @@ class SessionManager(object):
 
         for o in self.savedession:
             filename = self.savedession[o]
-            databases.open_database(filename, startup=True)
+            databases.open_database(filename)
 
         try:
             wx.GetApp().nb_left.select_page(0)
         except IndexError:
             pass
 
+        # Bind *after* opening the databases in the session, because the
+        # session must be refreshed only when databases are opened manually
         databases.open_database_event.bind(self._handle_open_database)
         databases.close_database_event.bind(self._handle_close_database)
 
     def _handle_open_database(self, kwargs):
-        if not kwargs['startup']:
-            self.refresh_session()
+        self.refresh_session()
 
     def _handle_close_database(self, kwargs):
         if not kwargs['exit_']:

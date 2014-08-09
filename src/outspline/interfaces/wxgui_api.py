@@ -25,10 +25,6 @@ from wxgui import rootw, notebooks, editor, menubar, tree, databases, dbprops
 
 ### DATABASE ###
 
-def open_database(filename, startup=False):
-    return databases.open_database(filename, startup=startup)
-
-
 def get_open_databases():
     return databases.get_open_databases()
 

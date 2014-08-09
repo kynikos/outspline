@@ -66,7 +66,7 @@ def create_database(defpath=None, filename=None):
         return False
 
 
-def open_database(filename=None, startup=False):
+def open_database(filename=None):
     if not filename:
         dlg = msgboxes.open_db_ask(os.path.expanduser('~'))
 
@@ -94,7 +94,7 @@ def open_database(filename=None, startup=False):
             tree.Database.open(filename)
             # Note that this event is also bound directly by the sessions
             # module
-            open_database_event.signal(filename=filename, startup=startup)
+            open_database_event.signal(filename=filename)
             return True
     else:
         return False
