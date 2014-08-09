@@ -2,6 +2,4 @@ author = Dario Giovannetti <dev@dariogiovannetti.net>
 version = 0.7
 description = A wxPython user interface for Outspline.
 website = https://github.com/kynikos/outspline/
-affects_database = no
-provides_tables =
 dependency_1 = core 0

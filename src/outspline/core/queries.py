@@ -45,17 +45,16 @@ properties_delete_dummy = 'DELETE FROM Properties WHERE P_max_history IS NULL'
 
 compatibility_create = ('CREATE TABLE CoMpatibility ('
                                                   'CM_id INTEGER PRIMARY KEY, '
-                                                  'CM_type TEXT, '
-                                                  'CM_addon TEXT, '
+                                                  'CM_extension TEXT, '
                                                   'CM_version INTEGER)')
 
 compatibility_select = 'SELECT * FROM CoMpatibility'
 
-compatibility_insert = ('INSERT INTO CoMpatibility (CM_id, CM_type, CM_addon, '
-                        'CM_version) VALUES (NULL, ?, ?, ?)')
+compatibility_insert = ('INSERT INTO CoMpatibility (CM_id, CM_extension, '
+                        'CM_version) VALUES (NULL, ?, ?)')
 
-compatibility_insert_copy = ('INSERT INTO CoMpatibility (CM_id, CM_type, '
-                             'CM_addon, CM_version) VALUES (?, ?, ?, ?)')
+compatibility_insert_copy = ('INSERT INTO CoMpatibility (CM_id, '
+                             'CM_extension, CM_version) VALUES (?, ?, ?)')
 
 compatibility_delete = 'DELETE FROM CoMpatibility'
 

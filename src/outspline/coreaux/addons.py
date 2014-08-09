@@ -83,16 +83,17 @@ def load_addon(faddon, reqversion, tablenames):
         # This check must be done after the version one, see the comment there
         # for the reason
         if mfaddon not in sys.modules:
-            ptables = {t: faddon for t in info['provides_tables'].split(' ')
-                                                                        if t}
-            test = [t for t in set(tablenames) & set(ptables)
-                                                if tablenames[t] != ptables[t]]
+            if section == 'Extensions':
+                ptables = {table: faddon for table in info['provides_tables'
+                                                        ].split(' ') if table}
+                test = [table for table in set(tablenames) & set(ptables)
+                                        if tablenames[table] != ptables[table]]
 
-            if test:
-                raise exceptions.AddonProvidedTablesError(test,
-                                                [tablenames[t] for t in test])
+                if test:
+                    raise exceptions.ExtensionProvidedTablesError(test,
+                                        [tablenames[table] for table in test])
 
-            tablenames.update(ptables)
+                tablenames.update(ptables)
 
             deps = []
             opts = []
@@ -145,11 +146,11 @@ def load_addon(faddon, reqversion, tablenames):
                     # Raise a different exception, otherwise it may be caught
                     # by start_addons()
                     raise exceptions.AddonDependencyError()
-                except exceptions.AddonProvidedTablesError as err:
+                except exceptions.ExtensionProvidedTablesError as err:
                     log.error(faddon + ' depends on ' + d[0] + ' which '
                                 'provides tables ' + ', '.join(err.tables) +
                                 ' that are already provided by ' +
-                                ', '.join(err.addons))
+                                ', '.join(err.extensions))
                     # Raise a different exception, otherwise it will be caught
                     # by start_addons()
                     raise exceptions.AddonDependencyError()
@@ -174,12 +175,12 @@ def load_addon(faddon, reqversion, tablenames):
                     # Raise a different exception, otherwise it will be caught
                     # by start_addons()
                     raise exceptions.AddonDependencyError()
-                except exceptions.AddonProvidedTablesError as err:
+                except exceptions.ExtensionProvidedTablesError as err:
                     log.error(faddon + ' optionally depends on ' + o[0] +
                                             ' which provides tables ' +
                                             ', '.join(err.tables) +
                                             ' that are already provided by ' +
-                                            ', '.join(err.addons))
+                                            ', '.join(err.extensions))
                     # Just crash the application, in fact it's not easy to
                     # handle this case, as the same addon may be required by
                     # another addon with the correct version, but still this
@@ -200,7 +201,8 @@ def load_addon(faddon, reqversion, tablenames):
 def start_addons():
     info = configuration.info('Core')
 
-    tablenames = {t: 'core' for t in info['provides_tables'].split(' ') if t}
+    tablenames = {table: 'core' for table in info['provides_tables'].split(' ')
+                                                                    if table}
 
     # Use a tuple because a simple dictionary doesn't keep sequence order
     for section, folder in (('Extensions', 'extensions'),
@@ -218,11 +220,11 @@ def start_addons():
                 load_addon(faddon, False, tablenames)
             except exceptions.AddonDisabledError:
                 log.debug(faddon + ' is disabled')
-            except exceptions.AddonProvidedTablesError as err:
+            except exceptions.ExtensionProvidedTablesError as err:
                 log.error(faddon +  ' provides tables ' +
                                             ', '.join(err.tables) +
                                             ' which are already provided by ' +
-                                            ', '.join(err.addons))
+                                            ', '.join(err.extensions))
                 raise
             # If wanting to catch other exceptions here that come only from
             # base addons (not propagated from dependencies), remember to raise

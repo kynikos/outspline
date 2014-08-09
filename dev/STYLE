@@ -65,14 +65,14 @@ Info files:
     Set to a different value than 'no' if the extension can write the user
     database or if it affects the standards with which other extensions read or
     write the user database
-    In general, this option determines which addons are added to the
+    In general, this option determines which extensions are added to the
     CoMpatibility table and hence used for compatibility checks when opening a
     user database
-    Required
+    Required only for core and extensions
 - provides_tables:
     Names of the database tables managed by the extension
     If another extension provides some of those tables, Outspline won't load
-    Required but can have an empty value
+    Required only for core and extensions, and can have an empty value
 - dependency_N:
     N-th dependency for the addon
     If not all dependencies are satisfied, the addon is not loaded

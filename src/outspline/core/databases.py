@@ -182,18 +182,20 @@ class Database(object):
                 cursor.execute(queries.compatibility_create)
                 # Only store major versions, as they are supposed to keep
                 # backward compatibility
-                cursor.execute(queries.compatibility_insert, ('Core', 'core',
+                # None must be used for core, because it must be safe in case
+                # an extension is called 'core' for some reason
+                cursor.execute(queries.compatibility_insert, (None,
                                 int(float(coreaux_api.get_core_version())), ))
 
                 info = coreaux_api.get_addons_info(disabled=False)
+                extensions = info('Extensions')
 
-                for t in ('Extensions', 'Interfaces', 'Plugins'):
-                    for a in info(t).get_sections():
-                        if info(t)(a).get_bool('affects_database'):
-                            # Only store major versions, as they are supposed
-                            # to keep backward compatibility
-                            cursor.execute(queries.compatibility_insert, (t, a,
-                                        int(info(t)(a).get_float('version'))))
+                for ext in extensions.get_sections():
+                    if extensions(ext).get_bool('affects_database'):
+                        # Only store major versions, as they are supposed to
+                        # keep backward compatibility
+                        cursor.execute(queries.compatibility_insert, (ext,
+                                    int(extensions(ext).get_float('version'))))
 
                 cursor.execute(queries.items_create)
 
