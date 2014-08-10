@@ -24,6 +24,8 @@
 * Update files:
   - *.component
   - *.info
+    Remember that the major versions of add-ons must be increased for both
+    database *and* API changes
   - interfaces.wxgui.about
   - *.setup.py
   - Copyright dates
