@@ -150,6 +150,7 @@ def close_database(filename, no_confirm=False, exit_=False):
                 core_api.save_database(filename)
             except OutsplineError as err:
                 warn_aborted_save(err)
+                return False
         elif save == wx.ID_CANCEL:
             return False
 
