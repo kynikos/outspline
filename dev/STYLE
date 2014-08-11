@@ -49,8 +49,11 @@ Development:
 - Add all possible user actions to the simulator
 
 Info files:
-- author:
-    Author name and contacts
+- authors:
+    JSON list of author names and contacts
+    Required but can have an empty value
+- contributors:
+    JSON list of contributor names and contacts
     Required but can have an empty value
 - version:
     Full addon version number
@@ -73,12 +76,12 @@ Info files:
     Names of the database tables managed by the extension
     If another extension provides some of those tables, Outspline won't load
     Required only for core and extensions, and can have an empty value
-- dependency_N:
-    N-th dependency for the addon
+- dependencies:
+    Space-separated required dependencies for the addon
     If not all dependencies are satisfied, the addon is not loaded
     Optional
-- optional_dependency_N:
-    N-th optional dependency for the addon
+- optional_dependencies:
+    Space-separated optional dependencies for the addon
     If not all optional dependencies are satisfied, the addon is loaded anyway,
     and only some of its functionalities will be disabled
     Optional

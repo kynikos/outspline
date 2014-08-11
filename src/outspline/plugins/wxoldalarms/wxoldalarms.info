@@ -1,8 +1,5 @@
-author = Dario Giovannetti <dev@dariogiovannetti.net>
+authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
 version = 0.1
 description = Allows controlling the search for old alarms when opening a database.
 website = https://github.com/kynikos/outspline/
-dependency_1 = core 0
-dependency_2 = extensions.organism_timer 0
-dependency_3 = extensions.organism_alarms 0
-dependency_4 = interfaces.wxgui 0
+dependencies = core.0 extensions.organism_timer.0 extensions.organism_alarms.0 interfaces.wxgui.0

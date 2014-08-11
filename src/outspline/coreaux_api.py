@@ -19,6 +19,7 @@
 import sys
 import importlib
 import copy
+import json
 
 from coreaux.configuration import components, info, config
 import coreaux.configuration
@@ -50,8 +51,7 @@ def get_website():
 
 
 def get_core_contributors():
-    return [info('Core')[o] for o in info.get_options() if o[:11] ==
-                                                                'contributor']
+    return json.loads(info('Core').get('contibutors', fallback="[]"))
 
 
 def get_standard_extension():

@@ -1,5 +1,5 @@
-author = Dario Giovannetti <dev@dariogiovannetti.net>
+authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
 version = 0.7
 description = A wxPython user interface for Outspline.
 website = https://github.com/kynikos/outspline/
-dependency_1 = core 0
+dependencies = core.0

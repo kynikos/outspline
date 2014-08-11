@@ -1,6 +1,5 @@
-author = Dario Giovannetti <dev@dariogiovannetti.net>
+authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
 version = 0.4
 description = Lets search for some item content in the databases.
 website = https://github.com/kynikos/outspline/
-dependency_1 = core 0
-dependency_2 = interfaces.wxgui 0
+dependencies = core.0 interfaces.wxgui.0

@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import wx
 from datetime import datetime
 
@@ -224,24 +225,14 @@ class InfoBox(wx.SplitterWindow):
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
         self.textw.AppendText(info['website'])
 
-        authors = []
-        contributors = []
-        dependencies = []
-        optionaldependencies = []
-        for o in info.get_options():
-            if o[:6] == 'author':
-                authors.append(info[o])
-            elif o[:11] == 'contributor':
-                contributors.append(info[o])
-            elif o[:10] == 'dependency':
-                dependencies.append(info[o])
-            elif o[:19] == 'optional_dependency':
-                optionaldependencies.append(info[o])
-
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
+
+        authors = json.loads(info['authors'])
+
         if len(authors) > 1:
             self.textw.AppendText('\nAuthors:')
             self.textw.SetDefaultStyle(self.STYLE_NORMAL)
+
             for a in authors:
                 self.textw.AppendText('\n\t{}'.format(a))
         else:
@@ -252,7 +243,8 @@ class InfoBox(wx.SplitterWindow):
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nContributors:')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        for c in contributors:
+
+        for c in json.loads(info.get('contributors', fallback="[]")):
             self.textw.AppendText('\n\t{}'.format(c))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
@@ -267,14 +259,26 @@ class InfoBox(wx.SplitterWindow):
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nDependencies:')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        for d in dependencies:
-            self.textw.AppendText('\n\t{}.x'.format(d))
+
+        try:
+            deps = info['dependencies'].split(" ")
+        except KeyError:
+            pass
+        else:
+            for d in deps:
+                self.textw.AppendText('\n\t{} {}.x'.format(*d.rsplit(".", 1)))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nOptional dependencies:')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        for o in optionaldependencies:
-            self.textw.AppendText('\n\t{}.x'.format(o))
+
+        try:
+            opts = info['optional_dependencies'].split(" ")
+        except KeyError:
+            pass
+        else:
+            for o in opts:
+                self.textw.AppendText('\n\t{} {}.x'.format(*o.rsplit(".", 1)))
 
     def compose_list(self, type_):
         # Do not use the configuration because it could have entries about

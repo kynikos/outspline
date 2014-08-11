@@ -95,99 +95,103 @@ def load_addon(faddon, reqversion, tablenames):
 
                 tablenames.update(ptables)
 
-            deps = []
-            opts = []
+            try:
+                sdeps = info['dependencies']
+            except KeyError:
+                pass
+            else:
+                for sdep in sdeps.split(' '):
+                    dep, ver = sdep.rsplit(".", 1)
 
-            for o in info.get_options():
-                osplit = info[o].split(' ')
-
-                if o[:10] == 'dependency':
-                    deps.append((osplit[0], int(osplit[-1])))
-                elif o[:19] == 'optional_dependency':
-                    opts.append((osplit[0], int(osplit[-1])))
-
-            for d in deps:
-                try:
-                    load_addon(*d, tablenames=tablenames)
-                # If I wanted to silently disable an addon in case one of its
-                # dependencies is not satisfied (not found, disabled...) I
-                # should disable the addon in the configuration to prevent the
-                # following bug: an enabled addon is activated since all its
-                # dependencies are enabled; that addon also has an optional
-                # dependency which is also enabled and activated; this optional
-                # dependency, though, has a dependency which is not enabled, so
-                # it is not imported by this load_addon() function; however,
-                # since in the configuration it is enabled, it's imported by
-                # the main addon anyway with
-                # coreaux_api.import_optional_extension_api(), thus breaking
-                # the application, since the dependency for the optional
-                # dependency is still missing
-                # Note that this change won't be written in the configuration
-                # file, since it's updated with config.export_add()
-                #except ...:
-                #    configuration.config(section)(addon)['enabled'] = 'off'
-                except exceptions.AddonNotFoundError:
-                    log.error(faddon + ' depends on ' + d[0] +
+                    try:
+                        load_addon(dep, int(ver), tablenames=tablenames)
+                    # If I wanted to silently disable an addon in case one of
+                    # its dependencies is not satisfied (not found,
+                    # disabled...) I should disable the addon in the
+                    # configuration to prevent the following bug: an enabled
+                    # addon is activated since all its dependencies are
+                    # enabled; that addon also has an optional dependency which
+                    # is also enabled and activated; this optional dependency,
+                    # though, has a dependency which is not enabled, so it is
+                    # not imported by this load_addon() function; however,
+                    # since in the configuration it is enabled, it's imported
+                    # by the main addon anyway with
+                    # coreaux_api.import_optional_extension_api(), thus
+                    # breaking the application, since the dependency for the
+                    # optional dependency is still missing
+                    # Note that this change won't be written in the
+                    # configuration file, since it's updated with
+                    # config.export_add()
+                    #except ...:
+                    #    configuration.config(section)(addon)['enabled'] = 'off'
+                    except exceptions.AddonNotFoundError:
+                        log.error(faddon + ' depends on ' + dep +
                                             ' which however cannot be found')
-                    # Raise a different exception, otherwise it may be caught
-                    # by start_addons()
-                    raise exceptions.AddonDependencyError()
-                except exceptions.AddonDisabledError:
-                    log.error(faddon + ' depends on ' + d[0] +
+                        # Raise a different exception, otherwise it may be
+                        # caught by start_addons()
+                        raise exceptions.AddonDependencyError()
+                    except exceptions.AddonDisabledError:
+                        log.error(faddon + ' depends on ' + dep +
                                                 ' which however is disabled')
-                    # Raise a different exception, otherwise it will be caught
-                    # by start_addons()
-                    raise exceptions.AddonDependencyError()
-                except exceptions.AddonVersionError as err:
-                    log.error(faddon + ' depends on ' + d[0] + ' ' +
-                                str(d[1]) +
+                        # Raise a different exception, otherwise it will be
+                        # caught by start_addons()
+                        raise exceptions.AddonDependencyError()
+                    except exceptions.AddonVersionError as err:
+                        log.error(faddon + ' depends on ' + dep + ' ' + ver +
                                 ' which however is installed with version ' +
                                 str(err.version))
-                    # Raise a different exception, otherwise it may be caught
-                    # by start_addons()
-                    raise exceptions.AddonDependencyError()
-                except exceptions.ExtensionProvidedTablesError as err:
-                    log.error(faddon + ' depends on ' + d[0] + ' which '
+                        # Raise a different exception, otherwise it may be
+                        # caught by start_addons()
+                        raise exceptions.AddonDependencyError()
+                    except exceptions.ExtensionProvidedTablesError as err:
+                        log.error(faddon + ' depends on ' + dep + ' which '
                                 'provides tables ' + ', '.join(err.tables) +
                                 ' that are already provided by ' +
                                 ', '.join(err.extensions))
-                    # Raise a different exception, otherwise it will be caught
-                    # by start_addons()
-                    raise exceptions.AddonDependencyError()
+                        # Raise a different exception, otherwise it will be
+                        # caught by start_addons()
+                        raise exceptions.AddonDependencyError()
 
-            for o in opts:
-                try:
-                    load_addon(*o, tablenames=tablenames)
-                except exceptions.AddonNotFoundError:
-                    log.debug(faddon + ' optionally depends on ' + o[0] +
+            try:
+                sopts = info['optional_dependencies']
+            except KeyError:
+                pass
+            else:
+                for sopt in sopts.split(' '):
+                    opt, ver = sopt.rsplit(".", 1)
+
+                    try:
+                        load_addon(opt, int(ver), tablenames=tablenames)
+                    except exceptions.AddonNotFoundError:
+                        log.debug(faddon + ' optionally depends on ' + opt +
                                             ' which however cannot be found')
-                except exceptions.AddonDisabledError:
-                    log.debug(faddon + ' optionally depends on ' + o[0] +
+                    except exceptions.AddonDisabledError:
+                        log.debug(faddon + ' optionally depends on ' + opt +
                                                 ' which however is disabled')
-                except exceptions.AddonVersionError as err:
-                    log.error(faddon + ' optionally depends on ' + o[0] +
-                                ' ' + str(o[1]) + ' which however is '
+                    except exceptions.AddonVersionError as err:
+                        log.error(faddon + ' optionally depends on ' + opt +
+                                ' ' + ver + ' which however is '
                                 'installed with version ' + str(err.version))
-                    # Just crash the application, in fact it's not easy to
-                    # handle this case, as the same addon may be required by
-                    # another addon with the correct version, but still this
-                    # addon should *not* use this dependency
-                    # Raise a different exception, otherwise it will be caught
-                    # by start_addons()
-                    raise exceptions.AddonDependencyError()
-                except exceptions.ExtensionProvidedTablesError as err:
-                    log.error(faddon + ' optionally depends on ' + o[0] +
+                        # Just crash the application, in fact it's not easy to
+                        # handle this case, as the same addon may be required
+                        # by another addon with the correct version, but still
+                        # this addon should *not* use this dependency
+                        # Raise a different exception, otherwise it will be
+                        # caught by start_addons()
+                        raise exceptions.AddonDependencyError()
+                    except exceptions.ExtensionProvidedTablesError as err:
+                        log.error(faddon + ' optionally depends on ' + opt +
                                             ' which provides tables ' +
                                             ', '.join(err.tables) +
                                             ' that are already provided by ' +
                                             ', '.join(err.extensions))
-                    # Just crash the application, in fact it's not easy to
-                    # handle this case, as the same addon may be required by
-                    # another addon with the correct version, but still this
-                    # addon should *not* use this dependency
-                    # Raise a different exception, otherwise it will be caught
-                    # by start_addons()
-                    raise exceptions.AddonDependencyError()
+                        # Just crash the application, in fact it's not easy to
+                        # handle this case, as the same addon may be required
+                        # by another addon with the correct version, but still
+                        # this addon should *not* use this dependency
+                        # Raise a different exception, otherwise it will be
+                        # caught by start_addons()
+                        raise exceptions.AddonDependencyError()
 
             mod = importlib.import_module(mfaddon)
 
