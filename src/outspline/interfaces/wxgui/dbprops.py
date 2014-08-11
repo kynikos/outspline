@@ -89,7 +89,7 @@ class DatabasePropertyManager(object):
         nb.close_page(nb.GetPageIndex(panel))
         del self.open_panels[filename]
 
-    def get_manager(self, filename):
+    def get_open_tab(self, filename):
         return self.open_panels[filename]
 
     def get_notebook_icon_index(self):

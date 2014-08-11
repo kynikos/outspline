@@ -553,7 +553,7 @@ def simulate_remove_items_from_selection(filename, ids):
 ### PROPERTIES ###
 
 def add_property_option(filename, property_, action):
-    manager = databases.dbpropmanager.get_manager(filename)
+    manager = databases.dbpropmanager.get_open_tab(filename)
     return manager.add_option(property_, action)
 
 
