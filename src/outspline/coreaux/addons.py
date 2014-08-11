@@ -71,10 +71,10 @@ def load_addon(faddon, reqversion, tablenames):
 
         # Get only the major version number
         # This version check must be done before the 'mfaddon not in
-        # sys.modules' one, otherwise it's not always performed; for example two
-        # different addons may require the same addon with different versions,
-        # and if the first one required the correct version, when checking the
-        # second one no exception would be raised
+        # sys.modules' one, otherwise it's not always performed; for example
+        # two different addons may require the same addon with different
+        # versions, and if the first one required the correct version, when
+        # checking the second one no exception would be raised
         instversion = int(info.get_float('version'))
 
         if reqversion is not False and instversion != reqversion:

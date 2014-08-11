@@ -49,7 +49,7 @@ class AboutWindow(wx.Frame):
                                 coreaux_api.get_main_component_release_date()))
 
         self.copyright = wx.StaticText(self, label=coreaux_api.get_copyright(
-                                                                      alt=True))
+                                                                    alt=True))
         self.copyright.SetFont(wx.Font(8, wx.FONTFAMILY_DEFAULT,
                                        wx.FONTSTYLE_NORMAL,
                                        wx.FONTWEIGHT_NORMAL))
@@ -153,17 +153,19 @@ class InfoBox(wx.SplitterWindow):
         info = coreaux_api.get_addons_info()
 
         for type_ in ('Extensions', 'Interfaces', 'Plugins'):
-            typeitem = self.tree.AppendItem(self.tree.GetRootItem(), text=type_,
-                           data=wx.TreeItemData({'req': 'lst', 'type_': type_}))
+            typeitem = self.tree.AppendItem(self.tree.GetRootItem(),
+                        text=type_,
+                        data=wx.TreeItemData({'req': 'lst', 'type_': type_}))
             for addon in info(type_).get_sections():
-                self.tree.AppendItem(typeitem, text=addon, data=wx.TreeItemData(
-                                {'req': 'inf', 'type_': type_, 'addon': addon}))
+                self.tree.AppendItem(typeitem, text=addon,
+                            data=wx.TreeItemData(
+                            {'req': 'inf', 'type_': type_, 'addon': addon}))
 
     def compose_license(self):
         self.textw.AppendText('{}\n{}\n\n{}'.format(
-                                                  coreaux_api.get_description(),
-                                                  coreaux_api.get_copyright(),
-                                                  coreaux_api.get_disclaimer()))
+                                              coreaux_api.get_description(),
+                                              coreaux_api.get_copyright(),
+                                              coreaux_api.get_disclaimer()))
 
     def compose_main_info(self):
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
@@ -193,8 +195,8 @@ class InfoBox(wx.SplitterWindow):
         cinfo = coreaux_api.get_components_info()
         for c in cinfo('Components').get_sections():
             self.textw.AppendText('\n\t{} {} ({})'.format(c,
-                                              cinfo('Components')(c)['version'],
-                                        cinfo('Components')(c)['release_date']))
+                                    cinfo('Components')(c)['version'],
+                                    cinfo('Components')(c)['release_date']))
 
     def compose_addon_info(self, type_, addon):
         info = coreaux_api.get_addons_info()(type_)(addon)
@@ -259,8 +261,8 @@ class InfoBox(wx.SplitterWindow):
         cinfo = coreaux_api.get_components_info()
         component = cinfo(type_)(addon)[info['version']]
         self.textw.AppendText('{} {} ({})'.format(component,
-                                      cinfo('Components')(component)['version'],
-                                cinfo('Components')(component)['release_date']))
+                            cinfo('Components')(component)['version'],
+                            cinfo('Components')(component)['release_date']))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nDependencies:')
