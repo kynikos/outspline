@@ -203,6 +203,8 @@ class MenuDev(wx.Menu):
                 self._populate_tree_gui(mode, filename, itemid, id_, text)
 
                 # Rules must be created *after* self._populate_tree_gui
+                # It should also be checked if the database supports
+                #  organism_basicrules (bug #330)
                 if organism_api and wxscheduler_basicrules_api and \
                         filename in \
                         organism_api.get_supported_open_databases():

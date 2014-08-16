@@ -228,6 +228,7 @@ class Rules(object):
         self.handlers = {}
 
     def install_rule_handler(self, rulename, handler):
+        # The rules should be installed separately for each database (bug #330)
         if rulename not in self.handlers:
             self.handlers[rulename] = handler
         else:

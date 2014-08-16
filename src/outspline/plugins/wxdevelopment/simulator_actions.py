@@ -374,6 +374,8 @@ def edit_editor_rules():
                                                             _select_editor():
         filename, id_ = wxgui_api.get_selected_editor_identification()
 
+        # It should also be checked if the database supports
+        #  organism_basicrules (bug #330)
         if filename in organism_api.get_supported_open_databases():
             wxscheduler_api.simulate_expand_rules_panel(filename, id_)
             wxscheduler_api.simulate_remove_all_rules(filename, id_)
