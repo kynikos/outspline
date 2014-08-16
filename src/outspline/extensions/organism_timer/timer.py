@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-from threading import Thread, Timer
+import threading
 import time as time_
 
 from outspline.static.pyaux import timeaux
+import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import log, Event
 import outspline.core_api as core_api
 import outspline.extensions.organism_api as organism_api
@@ -308,6 +309,8 @@ class OldOccurrencesSearch(object):
     def __init__(self, database, filename):
         self.database = database
         self.filename = filename
+        self.DELAY = coreaux_api.get_extension_configuration('organism_timer'
+                                        ).get_float('old_alarms_delay') / 1000
 
     def start(self):
         # Do not use directly NextOccurrencesEngine to search for old
@@ -346,7 +349,15 @@ class OldOccurrencesSearch(object):
 
             # Use a thread to let the GUI be responsive and possibly abort the
             # search
-            thread = Thread(target=self._continue)
+            # Start the thread with a timer to give some time for the
+            # *interface* to finish opening the database, otherwise the
+            # old alarms dialog will appear with a lot of delay and it will be
+            # very hard to restrict the search range or skip the search
+            # altogether
+            # Note that DELAY shouldn't be too long, in fact self.restart and
+            # self.abort are not protected, and if they're called during this
+            # time, they crash because self.search hasn't been assigned yet
+            thread = threading.Timer(self.DELAY, self._continue)
             thread.name = "organism_old_occurrences_{}".format(self.filename)
             # Do not set the thread as a daemon, it's better to properly handle
             # closing the database
@@ -355,19 +366,18 @@ class OldOccurrencesSearch(object):
     def _continue(self):
         search_old_occurrences_event.signal(filename=self.filename,
                                                     last_search=self.exclmint)
-
         self.state = 0
 
         while self.state < 1:
             self.search = organism_api.get_occurrences_range(
                                         mint=self.exclmint, maxt=self.whileago,
                                         filenames=(self.filename, ))
+            self.state = 2
 
-            # Make sure to bind *after* self.search is instantiated, but
-            # *before* it's started
+            # Make sure to bind *after* self.search is instantiated and
+            # self.state is set to 2, but *before* it's started
             core_api.bind_to_closing_database(self._handle_closing_database)
 
-            self.state = 2
             self.search.start()
 
         if self.state == 1:
@@ -410,10 +420,14 @@ class OldOccurrencesSearch(object):
     def restart(self, mint):
         self.exclmint = mint
         self.state = 0
+        # This method crashes if called before self.search is defined, although
+        # that should happen very quickly
         self.search.stop()
 
     def abort(self):
         self.state = 1
+        # This method crashes if called before self.search is defined, although
+        # that should happen very quickly
         self.search.stop()
 
     def _handle_save_permission_check(self, kwargs):
@@ -482,8 +496,9 @@ class NextOccurrencesEngine(object):
 
                 next_loop = next_occurrence - now
 
-                self.timer = Timer(next_loop, self._activate_occurrences_block,
-                                                    (next_occurrence, occsd))
+                self.timer = threading.Timer(next_loop,
+                                            self._activate_occurrences_block,
+                                            (next_occurrence, occsd))
                 self.timer.name = "organism_engine"
                 self.timer.start()
 
