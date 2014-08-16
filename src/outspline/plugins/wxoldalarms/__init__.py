@@ -29,7 +29,7 @@ import outspline.interfaces.wxgui_api as wxgui_api
 
 class Dialogs(object):
     def __init__(self):
-        self.DELAY = 1
+        self.DELAY = 1000
         self.search_dialogs = {}
         self.activate_dialogs = {}
 
