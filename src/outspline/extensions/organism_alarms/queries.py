@@ -35,6 +35,8 @@ alarmsproperties_update = 'UPDATE AlarmsProperties SET AP_log_limit=?'
 
 alarmsproperties_delete = 'DELETE FROM AlarmsProperties'
 
+alarmsproperties_drop = 'DROP TABLE AlarmsProperties'
+
 alarms_create = ("CREATE TABLE Alarms (A_id INTEGER PRIMARY KEY, "
                                       "A_item INTEGER, "
                                       "A_start INTEGER, "
@@ -61,6 +63,8 @@ alarms_update_id = 'UPDATE Alarms SET A_snooze=? WHERE A_id=?'
 alarms_delete_id = 'DELETE FROM Alarms WHERE A_id=?'
 
 alarms_delete_item = 'DELETE FROM Alarms WHERE A_item=?'
+
+alarms_drop = 'DROP TABLE Alarms'
 
 copyalarms_create = ("CREATE TABLE CopyAlarms (CA_id INTEGER, "
                                               "CA_item INTEGER, "
@@ -120,3 +124,5 @@ DELETE FROM AlarmsOffLog WHERE AOL_id NOT IN (
         ORDER BY AOL_tstamp DESC LIMIT ?
     )
 )''')
+
+alarmsofflog_drop = 'DROP TABLE AlarmsOffLog'

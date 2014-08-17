@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import sqlite3
 import time as time_
 
 import outspline.coreaux_api as coreaux_api
@@ -42,7 +41,6 @@ class Main(object):
 
         self._create_copy_table()
 
-        core_api.bind_to_create_database(self._handle_create_database)
         core_api.bind_to_open_database_dirty(self._handle_open_database_dirty)
         core_api.bind_to_open_database(self._handle_open_database)
         core_api.bind_to_check_pending_changes(
@@ -82,21 +80,6 @@ class Main(object):
         cur = mem.cursor()
         cur.execute(queries.copyalarms_create)
         core_api.give_memory_connection(mem)
-
-    def _handle_create_database(self, kwargs):
-        # Cannot use core_api.get_connection() here because the database isn't
-        # open yet
-        LIMIT = coreaux_api.get_extension_configuration('organism_alarms'
-                                            ).get_int('default_log_soft_limit')
-
-        conn = sqlite3.connect(kwargs['filename'])
-        cur = conn.cursor()
-        cur.execute(queries.alarmsproperties_create)
-        cur.execute(queries.alarmsproperties_insert_init, (LIMIT, ))
-        cur.execute(queries.alarms_create)
-        cur.execute(queries.alarmsofflog_create)
-        conn.commit()
-        conn.close()
 
     def _handle_open_database_dirty(self, kwargs):
         info = coreaux_api.get_addons_info()
