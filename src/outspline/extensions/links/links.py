@@ -85,7 +85,8 @@ def upsert_link(filename, id_, target, group, description='Insert link',
                                                     description=description)
 
                 # Drop any rules
-                if organism_api:
+                if organism_api and filename in \
+                                organism_api.get_supported_open_databases():
                     organism_api.update_item_rules(filename, id_, [],
                                         group=group, description=description)
             else:
@@ -93,7 +94,8 @@ def upsert_link(filename, id_, target, group, description='Insert link',
                                         group=group, description=description)
 
                 # Drop any rules
-                if organism_api:
+                if organism_api and filename in \
+                                organism_api.get_supported_open_databases():
                     organism_api.update_item_rules_no_event(filename, id_, [],
                                         group=group, description=description)
     else:
@@ -101,7 +103,8 @@ def upsert_link(filename, id_, target, group, description='Insert link',
         target = None
 
         # Drop any rules
-        if organism_api:
+        if organism_api and filename in \
+                                organism_api.get_supported_open_databases():
             if event:
                 organism_api.update_item_rules(filename, id_, [], group=group,
                                                        description=description)
