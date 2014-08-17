@@ -40,7 +40,6 @@ class Main(object):
 
         self._create_copy_table()
 
-        core_api.bind_to_create_database(self._handle_create_database)
         core_api.bind_to_open_database_dirty(self._handle_open_database_dirty)
         core_api.bind_to_open_database(self._handle_open_database)
         core_api.bind_to_save_database_copy(self._handle_save_database_copy)
@@ -60,15 +59,6 @@ class Main(object):
         cur = mem.cursor()
         cur.execute(queries.copyrules_create)
         core_api.give_memory_connection(mem)
-
-    def _handle_create_database(self, kwargs):
-        # Cannot use core_api.get_connection() here because the database isn't
-        # open yet
-        conn = sqlite3.connect(kwargs['filename'])
-        cur = conn.cursor()
-        cur.execute(queries.rules_create)
-        conn.commit()
-        conn.close()
 
     def _handle_open_database_dirty(self, kwargs):
         info = coreaux_api.get_addons_info()
