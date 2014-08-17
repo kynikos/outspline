@@ -287,8 +287,8 @@ def select_table(filename, table):
     return cur
 
 
-def block_databases(block=True):
-    return databases.protection.block(block)
+def block_databases(block=False, quiet=False):
+    return databases.protection.block(block=block, quiet=quiet)
 
 
 def release_databases():
@@ -309,6 +309,10 @@ def get_databases_count():
 
 def bind_to_create_database(handler, bind=True):
     return databases.create_database_event.bind(handler, bind)
+
+
+def bind_to_blocked_databases(handler, bind=True):
+    return databases.blocked_databases_event.bind(handler, bind)
 
 
 def bind_to_open_database_dirty(handler, bind=True):

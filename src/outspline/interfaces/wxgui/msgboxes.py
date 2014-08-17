@@ -114,6 +114,13 @@ def warn_aborted_save(message):
                                             style=wx.OK | wx.ICON_EXCLAMATION)
 
 
+def blocked_databases():
+    return wx.MessageDialog(wx.GetApp().root, "The databases are blocked by "
+                "another ongoing operation, try again after its completion.",
+                caption="Blocked databases",
+                style=wx.OK | wx.ICON_EXCLAMATION)
+
+
 def uncaught_exception(exc_info):
     return wx.MessageDialog(wx.GetApp().root,
                             ''.join(traceback.format_exception(*exc_info)),

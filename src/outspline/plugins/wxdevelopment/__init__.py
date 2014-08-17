@@ -133,14 +133,14 @@ class MenuDev(wx.Menu):
                                    self.memory['tables'][table[0]])
 
     def print_all_databases(self, event):
-        core_api.block_databases()
-        development_api.print_all_databases()
-        core_api.release_databases()
+        if core_api.block_databases():
+            development_api.print_all_databases()
+            core_api.release_databases()
 
     def print_all_memory_tables(self, event):
-        core_api.block_databases()
-        development_api.print_all_memory_tables()
-        core_api.release_databases()
+        if core_api.block_databases():
+            development_api.print_all_memory_tables()
+            core_api.release_databases()
 
     def print_memory_table_loop(self, table):
         return lambda event: self.print_memory_table(table)
@@ -152,73 +152,74 @@ class MenuDev(wx.Menu):
         return lambda event: self.print_all_tables(filename)
 
     def print_memory_table(self, table):
-        core_api.block_databases()
-        development_api.print_memory_table(table)
-        core_api.release_databases()
+        if core_api.block_databases():
+            development_api.print_memory_table(table)
+            core_api.release_databases()
 
     def print_table(self, filename, table):
-        core_api.block_databases()
-        development_api.print_table(filename, table)
-        core_api.release_databases()
+        if core_api.block_databases():
+            development_api.print_table(filename, table)
+            core_api.release_databases()
 
     def print_all_tables(self, filename):
-        core_api.block_databases()
-        development_api.print_all_tables(filename)
-        core_api.release_databases()
+        if core_api.block_databases():
+            development_api.print_all_tables(filename)
+            core_api.release_databases()
 
     def show_inspection_tool(self, event):
         wx.lib.inspection.InspectionTool().Show()
 
     def populate_tree(self, event):
-        core_api.block_databases()
-        filename = wxgui_api.get_selected_database_filename()
+        if core_api.block_databases():
+            filename = wxgui_api.get_selected_database_filename()
 
-        # This method may be launched even if no database is open
-        if filename:
-            group = core_api.get_next_history_group(filename)
-            description = 'Populate tree'
+            # This method may be launched even if no database is open
+            if filename:
+                group = core_api.get_next_history_group(filename)
+                description = 'Populate tree'
 
-            i = 0
-            while i < 10:
-                dbitems = core_api.get_items_ids(filename)
+                i = 0
+                while i < 10:
+                    dbitems = core_api.get_items_ids(filename)
 
-                try:
-                    itemid = random.choice(dbitems)
-                except IndexError:
-                    # No items in the database yet
-                    itemid = 0
+                    try:
+                        itemid = random.choice(dbitems)
+                    except IndexError:
+                        # No items in the database yet
+                        itemid = 0
 
-                mode = random.choice(('child', 'sibling'))
+                    mode = random.choice(('child', 'sibling'))
 
-                if mode == 'sibling' and itemid == 0:
-                    continue
+                    if mode == 'sibling' and itemid == 0:
+                        continue
 
-                i += 1
+                    i += 1
 
-                text = self._populate_tree_text()
+                    text = self._populate_tree_text()
 
-                id_ = self._populate_tree_item(mode, filename, itemid,
-                                                group, text, description)
+                    id_ = self._populate_tree_item(mode, filename, itemid,
+                                                    group, text, description)
 
-                self._populate_tree_gui(mode, filename, itemid, id_, text)
+                    self._populate_tree_gui(mode, filename, itemid, id_, text)
 
-                # Rules must be created *after* self._populate_tree_gui
-                # It should also be checked if the database supports
-                #  organism_basicrules (bug #330)
-                if organism_api and wxscheduler_basicrules_api and \
-                        filename in \
-                        organism_api.get_supported_open_databases():
-                    self._populate_tree_rules(filename, id_, group,
-                                                        description)
+                    # Rules must be created *after* self._populate_tree_gui
+                    # It should also be checked if the database supports
+                    #  organism_basicrules (bug #330)
+                    if organism_api and wxscheduler_basicrules_api and \
+                            filename in \
+                            organism_api.get_supported_open_databases():
+                        self._populate_tree_rules(filename, id_, group,
+                                                            description)
 
-                # Links must be created *after* self._populate_tree_gui
-                if links_api and wxlinks_api and len(dbitems) > 0 and \
-                        filename in links_api.get_supported_open_databases():
-                    self._populate_tree_link(filename, id_, dbitems, group,
+                    # Links must be created *after* self._populate_tree_gui
+                    if links_api and wxlinks_api and len(dbitems) > 0 and \
+                                    filename in \
+                                    links_api.get_supported_open_databases():
+                        self._populate_tree_link(filename, id_, dbitems, group,
                                                                 description)
 
-            wxgui_api.refresh_history(filename)
-        core_api.release_databases()
+                wxgui_api.refresh_history(filename)
+            core_api.release_databases()
 
     def _populate_tree_text(self):
         text = ''

@@ -216,7 +216,9 @@ class DatabaseProperties(object):
         self.onchange_actions[prop.GetName()] = action
 
     def _set_history_limit(self, data, value):
-        core_api.update_database_history_soft_limit(self.filename, value)
+        if core_api.block_databases():
+            core_api.update_database_history_soft_limit(self.filename, value)
+            core_api.release_databases()
 
     def refresh_file_properties(self):
         self.propgrid.SetPropertyValue("file.location", self.filename)

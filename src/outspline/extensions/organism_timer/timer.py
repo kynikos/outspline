@@ -365,7 +365,10 @@ class OldOccurrencesSearch(object):
             thread.start()
 
     def _continue(self):
-        core_api.block_databases()
+        # It's important that the databases are blocked on this thread, and not
+        # on the main thread, otherwise the program would hang if some
+        # occurrences are activated while the user is performing an action
+        core_api.block_databases(block=True)
         search_old_occurrences_event.signal(filename=self.filename,
                                                     last_search=self.exclmint)
         self.state = 0
@@ -528,7 +531,7 @@ class NextOccurrencesEngine(object):
         # It's important that the databases are blocked on this thread, and not
         # on the main thread, otherwise the program would hang if some
         # occurrences are activated while the user is performing an action
-        core_api.block_databases()
+        core_api.block_databases(block=True)
         self._activate_occurrences(time, occsd)
         core_api.release_databases()
 

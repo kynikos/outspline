@@ -33,6 +33,7 @@ protection = None
 memory = None
 
 create_database_event = Event()
+blocked_databases_event = Event()
 open_database_dirty_event = Event()
 open_database_event = Event()
 closing_database_event = Event()
@@ -73,10 +74,18 @@ class Protection(object):
         self.q = queue.Queue()
         self.q.put(baton)
 
-    def block(self, block=True):
+    def block(self, block=False, quiet=False):
         log.debug('Block databases')
 
-        self.s = self.q.get(block)
+        try:
+            self.s = self.q.get(block)
+        except queue.Empty:
+            if not quiet:
+                blocked_databases_event.signal()
+
+            return False
+        else:
+            return True
 
     def release(self):
         log.debug('Release databases')

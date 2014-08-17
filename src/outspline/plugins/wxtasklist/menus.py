@@ -319,34 +319,32 @@ class MainMenu(wx.Menu):
                 sel = self.occview.listview.GetNextSelected(sel)
 
     def _dismiss_selected_alarms(self, event):
-        core_api.block_databases()
+        if core_api.block_databases():
+            tab = wxgui_api.get_selected_right_nb_tab()
 
-        tab = wxgui_api.get_selected_right_nb_tab()
+            if tab is self.tasklist.panel:
+                alarmsd = self.occview.get_selected_active_alarms()
 
-        if tab is self.tasklist.panel:
-            alarmsd = self.occview.get_selected_active_alarms()
+                if len(alarmsd) > 0:
+                    organism_alarms_api.dismiss_alarms(alarmsd)
+                    # Let the alarm off event update the tasklist
 
-            if len(alarmsd) > 0:
-                organism_alarms_api.dismiss_alarms(alarmsd)
-                # Let the alarm off event update the tasklist
-
-        core_api.release_databases()
+            core_api.release_databases()
 
     def _dismiss_all_alarms(self, event):
         # Note that "all" means all the visible active alarms; some may be
         # hidden in the current view
-        core_api.block_databases()
+        if core_api.block_databases():
+            tab = wxgui_api.get_selected_right_nb_tab()
 
-        tab = wxgui_api.get_selected_right_nb_tab()
+            if tab is self.tasklist.panel:
+                alarmsd = self.occview.get_active_alarms()
 
-        if tab is self.tasklist.panel:
-            alarmsd = self.occview.get_active_alarms()
+                if len(alarmsd) > 0:
+                    organism_alarms_api.dismiss_alarms(alarmsd)
+                    # Let the alarm off event update the tasklist
 
-            if len(alarmsd) > 0:
-                organism_alarms_api.dismiss_alarms(alarmsd)
-                # Let the alarm off event update the tasklist
-
-        core_api.release_databases()
+            core_api.release_databases()
 
 
 class NavigatorMenu(wx.Menu):
@@ -820,39 +818,38 @@ class _SnoozeConfigMenu(wx.Menu):
         return lambda event: self._snooze_for(time)
 
     def _snooze_for(self, time):
-        core_api.block_databases()
+        if core_api.block_databases():
+            tab = wxgui_api.get_selected_right_nb_tab()
 
-        tab = wxgui_api.get_selected_right_nb_tab()
+            if tab is self.tasklist.panel:
+                alarmsd = self.get_alarms()
 
-        if tab is self.tasklist.panel:
-            alarmsd = self.get_alarms()
-
-            if len(alarmsd) > 0:
-                organism_alarms_api.snooze_alarms(alarmsd, time)
-                # Let the alarm off event update the tasklist
-
-        core_api.release_databases()
-
-    def _snooze_for_custom(self, event):
-        core_api.block_databases()
-
-        tab = wxgui_api.get_selected_right_nb_tab()
-
-        if tab is self.tasklist.panel:
-            alarmsd = self.get_alarms()
-
-            if len(alarmsd) > 0:
-                dlg = SnoozeDialog()
-
-                if dlg.ShowModal() == wx.ID_OK:
-                    organism_alarms_api.snooze_alarms(alarmsd, dlg.get_time())
+                if len(alarmsd) > 0:
+                    organism_alarms_api.snooze_alarms(alarmsd, time)
                     # Let the alarm off event update the tasklist
 
-                # Unlike MessageDialog, a Dialog needs to be destroyed
-                # explicitly
-                dlg.Destroy()
+            core_api.release_databases()
 
-        core_api.release_databases()
+    def _snooze_for_custom(self, event):
+        if core_api.block_databases():
+            tab = wxgui_api.get_selected_right_nb_tab()
+
+            if tab is self.tasklist.panel:
+                alarmsd = self.get_alarms()
+
+                if len(alarmsd) > 0:
+                    dlg = SnoozeDialog()
+
+                    if dlg.ShowModal() == wx.ID_OK:
+                        organism_alarms_api.snooze_alarms(alarmsd,
+                                                                dlg.get_time())
+                        # Let the alarm off event update the tasklist
+
+                    # Unlike MessageDialog, a Dialog needs to be destroyed
+                    # explicitly
+                    dlg.Destroy()
+
+            core_api.release_databases()
 
 
 class SnoozeDialog(wx.Dialog):

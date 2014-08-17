@@ -111,12 +111,13 @@ class LeftNotebook(Notebook):
                                                     self._handle_page_closed)
 
     def _handle_page_closing(self, event):
-        core_api.block_databases()
         # Veto the event, page deletion is managed explicitly later
         event.Veto()
-        page = self.GetCurrentPage()
-        databases.close_database(page.get_filename())
-        core_api.release_databases()
+
+        if core_api.block_databases():
+            page = self.GetCurrentPage()
+            databases.close_database(page.get_filename())
+            core_api.release_databases()
 
     def _handle_page_closed(self, event):
         if self.GetPageCount() == 0:
@@ -153,24 +154,23 @@ class RightNotebook(Notebook):
                                                     self._handle_page_closed)
 
     def _handle_page_closing(self, event):
-        core_api.block_databases()
-
         # Veto the event, page deletion is managed explicitly later
         event.Veto()
 
-        page = self.GetCurrentPage()
+        if core_api.block_databases():
+            page = self.GetCurrentPage()
 
-        # This also prevents closing a plugin window
-        for item in tuple(editor.tabs.keys()):
-            if editor.tabs[item].panel is page:
-                editor.tabs[item].close()
-                break
-        else:
-            # Note that this event is also bound directly by the dbprops
-            # module
-            plugin_close_event.signal(page=page)
+            # This also prevents closing a plugin window
+            for item in tuple(editor.tabs.keys()):
+                if editor.tabs[item].panel is page:
+                    editor.tabs[item].close()
+                    break
+            else:
+                # Note that this event is also bound directly by the dbprops
+                # module
+                plugin_close_event.signal(page=page)
 
-        core_api.release_databases()
+            core_api.release_databases()
 
     def _handle_page_closed(self, event):
         self._unsplit()

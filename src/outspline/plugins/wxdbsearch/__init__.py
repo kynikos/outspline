@@ -130,7 +130,9 @@ class SearchView():
         self.threads -= 1
 
         # Perform the action only when the last thread terminates
-        if self.threads == 0:
+        # self.threads could be < 0 if for example the bad regexp dialog is
+        # shown
+        if self.threads < 1:
             # Reset the icon *before* calling finish_search_action, which
             # could be set to restart, thus setting the icon ongoing again
             self.set_tab_icon_stopped()
@@ -176,25 +178,27 @@ class SearchView():
             regexp = re.compile(string, flags)
         except re.error:
             msgboxes.bad_regular_expression().ShowModal()
+            self.finish_search()
         else:
             # Note that the databases are released *before* the threads are
             # terminated: this is safe as no more calls to the databases are
             # made after core_api.get_all_items_text in
             # self._finish_search_restart_database
-            core_api.block_databases()
-
-            if self.filters.option1.GetValue():
-                filename = wxgui_api.get_selected_database_filename()
-                self._finish_search_restart_database(filename, regexp)
-            else:
-                for filename in core_api.get_open_databases():
+            if core_api.block_databases():
+                if self.filters.option1.GetValue():
+                    filename = wxgui_api.get_selected_database_filename()
                     self._finish_search_restart_database(filename, regexp)
+                else:
+                    for filename in core_api.get_open_databases():
+                        self._finish_search_restart_database(filename, regexp)
 
-            # Note that the databases are released *before* the threads are
-            # terminated: this is safe as no more calls to the databases are
-            # made after core_api.get_all_items_text in
-            # self._finish_search_restart_database
-            core_api.release_databases()
+                # Note that the databases are released *before* the threads are
+                # terminated: this is safe as no more calls to the databases
+                # are made after core_api.get_all_items_text in
+                # self._finish_search_restart_database
+                core_api.release_databases()
+            else:
+                self.finish_search()
 
     def _finish_search_restart_database(self, filename, regexp):
         # It's not easy to benchmark the search for all the databases

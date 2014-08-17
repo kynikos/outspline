@@ -68,6 +68,7 @@ class GUI(wx.App):
         self.nb_left = self.root.mainpanes.nb_left
         self.nb_right = self.root.mainpanes.nb_right
 
+        core_api.bind_to_blocked_databases(self._handle_blocked_databases)
         coreaux_api.bind_to_uncaught_exception(self._handle_uncaught_exception)
 
     def get_main_icon_bundle(self):
@@ -97,6 +98,9 @@ class GUI(wx.App):
             self.root.save_geometry()
 
         self.config.export_upgrade(coreaux_api.get_user_config_file())
+
+    def _handle_blocked_databases(self, kwargs):
+        msgboxes.blocked_databases().ShowModal()
 
     def _handle_uncaught_exception(self, kwargs):
         coreaux_api.bind_to_uncaught_exception(self._handle_uncaught_exception,

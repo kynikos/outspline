@@ -138,7 +138,9 @@ class AlarmsLog(object):
         return (tstamp, reason, text)
 
     def set_log_limit(self, data, value):
-        organism_alarms_api.update_alarms_log_limit(self.filename, value)
+        if core_api.block_databases():
+            organism_alarms_api.update_alarms_log_limit(self.filename, value)
+            core_api.release_databases()
 
 
 class LogsMenu(object):

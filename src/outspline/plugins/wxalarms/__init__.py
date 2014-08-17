@@ -230,21 +230,21 @@ class AlarmsWindow(object):
         self.box.Hide(self.hidden_panel)
 
     def dismiss_all(self, event):
-        core_api.block_databases()
+        if core_api.block_databases():
+            organism_alarms_api.dismiss_alarms(
+                                        self._get_shown_alarms_dictionary())
+            # Let the alarm off event close the alarms
 
-        organism_alarms_api.dismiss_alarms(self._get_shown_alarms_dictionary())
-        # Let the alarm off event close the alarms
-
-        core_api.release_databases()
+            core_api.release_databases()
 
     def snooze_all(self, event):
-        core_api.block_databases()
+        if core_api.block_databases():
+            organism_alarms_api.snooze_alarms(
+                                        self._get_shown_alarms_dictionary(),
+                                        stime=self.get_snooze_time())
+            # Let the alarm off event close the alarms
 
-        organism_alarms_api.snooze_alarms(self._get_shown_alarms_dictionary(),
-                                                  stime=self.get_snooze_time())
-        # Let the alarm off event close the alarms
-
-        core_api.release_databases()
+            core_api.release_databases()
 
     def _close_alarms(self, filename=None, id_=None, alarmid=None):
         for a in self.alarms.keys():
@@ -500,22 +500,20 @@ class Alarm(object):
         self.panel.GetParent().SendSizeEvent()
 
     def snooze(self, event):
-        core_api.block_databases()
-
-        organism_alarms_api.snooze_alarms({self.filename: {self.id_:
+        if core_api.block_databases():
+            organism_alarms_api.snooze_alarms({self.filename: {self.id_:
                     [self.alarmid, ]}}, stime=self.awindow.get_snooze_time())
-        # Let the alarm off event close the alarm
+            # Let the alarm off event close the alarm
 
-        core_api.release_databases()
+            core_api.release_databases()
 
     def dismiss(self, event):
-        core_api.block_databases()
-
-        organism_alarms_api.dismiss_alarms({self.filename: {self.id_:
+        if core_api.block_databases():
+            organism_alarms_api.dismiss_alarms({self.filename: {self.id_:
                                                             [self.alarmid, ]}})
-        # Let the alarm off event close the alarm
+            # Let the alarm off event close the alarm
 
-        core_api.release_databases()
+            core_api.release_databases()
 
     def _open(self, event):
         wxgui_api.show_main_window()
