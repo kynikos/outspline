@@ -14,6 +14,11 @@
   - Also test Eastern (Asia/Shanghai) and Western time zones (Pacific/Honolulu)
   If backward compatibility has to be kept, also test with databases created
     with the previous release
+  Manually test the features that are not simulated, for example:
+  - opening old alarms (using faketime)
+  - database upgrade mechanism
+  - database properties
+  - database search
   Test interfaces with various GTK themes
 * Check code with the pep8 tool
 * Update and release any library that is maintained in external repos
