@@ -187,6 +187,7 @@ class TreeItemIcons(object):
             links_api.bind_to_break_link(self._handle_break_links)
 
             wxgui_api.bind_to_open_database(self._handle_open_database)
+            wxgui_api.bind_to_close_database(self._handle_close_database)
             wxgui_api.bind_to_undo_tree(self._handle_history)
             wxgui_api.bind_to_redo_tree(self._handle_history)
 
@@ -219,6 +220,21 @@ class TreeItemIcons(object):
                                 (5, broken_links & targets)):
                 for id_ in set_:
                     self._update_item(id_, rbits)
+
+    def _handle_close_database(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            links_api.bind_to_upsert_link(self._handle_upsert_link, False)
+            links_api.bind_to_delete_link(self._handle_delete_link, False)
+            links_api.bind_to_break_link(self._handle_break_links, False)
+
+            wxgui_api.bind_to_open_database(self._handle_open_database, False)
+            wxgui_api.bind_to_close_database(self._handle_close_database,
+                                                                        False)
+            wxgui_api.bind_to_undo_tree(self._handle_history, False)
+            wxgui_api.bind_to_redo_tree(self._handle_history, False)
+
+            if wxcopypaste_api:
+                wxcopypaste_api.bind_to_items_pasted(self._handle_paste, False)
 
     def _handle_upsert_link(self, kwargs):
         if kwargs['filename'] == self.filename:

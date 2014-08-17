@@ -470,6 +470,7 @@ class TreeItemIcons(object):
                                                     self._handle_update_rules)
 
             wxgui_api.bind_to_open_database(self._handle_open_database)
+            wxgui_api.bind_to_close_database(self._handle_close_database)
             wxgui_api.bind_to_undo_tree(self._handle_history)
             wxgui_api.bind_to_redo_tree(self._handle_history)
 
@@ -479,6 +480,20 @@ class TreeItemIcons(object):
     def _handle_open_database(self, kwargs):
         if kwargs['filename'] == self.filename:
             self._update_all_items()
+
+    def _handle_close_database(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            organism_api.bind_to_update_item_rules_conditional(
+                                            self._handle_update_rules, False)
+
+            wxgui_api.bind_to_open_database(self._handle_open_database, False)
+            wxgui_api.bind_to_close_database(self._handle_close_database,
+                                                                        False)
+            wxgui_api.bind_to_undo_tree(self._handle_history, False)
+            wxgui_api.bind_to_redo_tree(self._handle_history, False)
+
+            if wxcopypaste_api:
+                wxcopypaste_api.bind_to_items_pasted(self._handle_paste, False)
 
     def _handle_update_rules(self, kwargs):
         if kwargs['filename'] == self.filename:
