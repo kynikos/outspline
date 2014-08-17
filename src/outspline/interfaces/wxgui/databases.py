@@ -23,6 +23,7 @@ import wx
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import Event, OutsplineError
 import outspline.core_api as core_api
+import outspline.dbdeps as dbdeps
 
 import editor
 import msgboxes
@@ -66,7 +67,8 @@ def create_database(defpath=None, filename=None):
         return False
 
 
-def open_database(filename=None):
+def open_database(filename=None, check_new_extensions=True,
+                                                        open_properties=False):
     if not filename:
         dlg = msgboxes.open_db_ask(os.path.expanduser('~'))
 
@@ -77,15 +79,25 @@ def open_database(filename=None):
 
     if filename:
         try:
-            core_api.open_database(filename)
+            core_api.open_database(filename,
+                                    check_new_extensions=check_new_extensions)
         except core_api.DatabaseAlreadyOpenError:
             msgboxes.open_db_open(filename).ShowModal()
             return False
         except core_api.DatabaseNotAccessibleError:
             msgboxes.open_db_access(filename).ShowModal()
             return False
-        except core_api.DatabaseNotValidError:
-            msgboxes.open_db_incompatible(filename).ShowModal()
+        except dbdeps.DatabaseNotValidError:
+            msgboxes.open_db_invalid(filename).ShowModal()
+            return False
+        except dbdeps.DatabaseIncompatibleAddError as err:
+            msgboxes.DatabaseUpdaterAdd(err.updater, open_properties)
+            return False
+        except dbdeps.DatabaseIncompatibleUpdateError as err:
+            msgboxes.DatabaseUpdaterUpdate(err.updater, open_properties)
+            return False
+        except dbdeps.DatabaseIncompatibleAbortError as err:
+            msgboxes.DatabaseUpdaterAbort(err.updater)
             return False
         except core_api.DatabaseLockedError:
             msgboxes.open_db_locked(filename).ShowModal()
@@ -95,6 +107,10 @@ def open_database(filename=None):
             # Note that this event is also bound directly by the sessions
             # module
             open_database_event.signal(filename=filename)
+
+            if open_properties:
+                dbpropmanager.open(filename)
+
             return True
     else:
         return False

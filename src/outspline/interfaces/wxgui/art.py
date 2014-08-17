@@ -84,6 +84,7 @@ class ArtProvider(wx.ArtProvider):
                     '@preferences': ('package_settings', 'gtk-preferences'),
                     '@previous': ('go-previous', ),
                     '@properties': ('document-properties', ),
+                    '@question': ('dialog-question', ),
                     '@redo': ('redo', 'edit-redo', 'gtk-redo-ltr',
                                 'stock_redo'),
                     '@redodb': ('redo', 'edit-redo', 'gtk-redo-ltr',

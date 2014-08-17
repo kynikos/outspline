@@ -17,15 +17,19 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import os.path
+import shutil
 import time as time_
 import wx
 import wx.propgrid as wxpg
 
+import outspline.dbdeps as dbdeps
+import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import Event
 import outspline.core_api as core_api
 
 import notebooks
 import databases
+import msgboxes
 
 load_options_event = Event()
 
@@ -77,16 +81,12 @@ class DatabasePropertyManager(object):
     def _handle_close_database(self, kwargs):
         filename = kwargs['filename']
 
-        try:
-            panel = self.open_panels[filename].panel
-        except KeyError:
-            pass
-        else:
-            self.close(panel, filename)
+        if filename in self.open_panels:
+            self.close(filename)
 
-    def close(self, panel, filename):
+    def close(self, filename):
         nb = wx.GetApp().nb_right
-        nb.close_page(nb.GetPageIndex(panel))
+        nb.close_page(nb.GetPageIndex(self.open_panels[filename].panel))
         del self.open_panels[filename]
 
     def get_open_tab(self, filename):
@@ -99,7 +99,7 @@ class DatabasePropertyManager(object):
 class DatabasePropertiesPanel(wx.Panel):
     def __init__(self, parent, manager, filename):
         wx.Panel.__init__(self, parent)
-        self.ctabmenu = TabContextMenu(manager, self, filename)
+        self.ctabmenu = TabContextMenu(manager, filename)
 
     def get_tab_context_menu(self):
         return self.ctabmenu
@@ -136,7 +136,7 @@ class DatabaseProperties(object):
 
     def _handle_close_tab(self, kwargs):
         if kwargs['page'] is self.panel:
-            self.manager.close(self.panel, self.filename)
+            self.manager.close(self.filename)
 
     def configure(self):
         self._init_file_props()
@@ -177,21 +177,23 @@ class DatabaseProperties(object):
         self.refresh_database_statistics()
 
     def _init_dependencies(self):
-        self.propgrid.Append(wxpg.PropertyCategory("Extension dependencies",
+        self.propgrid.Append(wxpg.PropertyCategory("Extensions support",
                                                             "dependencies"))
 
-        cursor = core_api.get_database_dependencies(self.filename)
+        extensions = coreaux_api.get_addons_info(disabled=False)('Extensions')
+        self.dependencies = core_api.get_database_dependencies(self.filename,
+                                                                ignored=True)
+        del self.dependencies[None]
 
-        for i, row in enumerate(cursor):
-            addon = row['CM_addon']
-
-            # No need to display core
-            if addon != 'core':
-                prop = wxpg.BoolProperty(addon,
-                                        "dependencies.{}".format(str(i)), True)
+        for ext in extensions.get_sections():
+            if extensions(ext).get_bool('affects_database'):
+                propname = "dependencies.{}".format(ext)
+                prop = wxpg.EnumProperty(ext, propname, ('Enabled',
+                                    'Disabled (remind)', 'Disabled (ignore)'))
+                prop.SetClientData(ext)
+                self.onchange_actions[propname] = self._change_dependencies
                 self.propgrid.Append(prop)
-                prop.SetAttribute("UseCheckbox", True)
-                prop.Enable(False)
+                self.refresh_dependency(ext)
 
     def _init_options(self):
         self.propgrid.Append(wxpg.PropertyCategory("Miscellaneous options",
@@ -214,6 +216,102 @@ class DatabaseProperties(object):
     def add_option(self, prop, action):
         self.propgrid.Append(prop)
         self.onchange_actions[prop.GetName()] = action
+
+    def _change_dependencies(self, data, value):
+        if core_api.block_databases():
+            ext = data
+            newchoice = value
+
+            try:
+                ver = self.dependencies[ext]
+            except KeyError:
+                currchoice = 1
+            else:
+                if ver is None:
+                    currchoice = 2
+                else:
+                    currchoice = 0
+
+            extsinfo = coreaux_api.get_addons_info()('Extensions')
+
+            # This method shouldn't be triggered if the value is not changed,
+            # so there's no need to check that newchoice != currchoice
+            if currchoice == 0:
+                reverse_deps = []
+
+                for udep in self.dependencies:
+                    dep = str(udep)
+                    # Core (None) has been removed from self.dependencies
+                    if self.dependencies[dep] is not None:
+                        try:
+                            ddeps = extsinfo(dep)['dependencies'].split(" ")
+                        except KeyError:
+                            ddeps = []
+
+                        for ddep in ddeps:
+                            sddep = ddep.split(".")
+
+                            if ".".join(sddep[0:2]) == 'extensions.{}'.format(
+                                                                        ext):
+                                reverse_deps.append(dep)
+
+                if reverse_deps:
+                    self.refresh_dependency(ext)
+                    msgboxes.warn_disable_dependency(reverse_deps).ShowModal()
+                else:
+                    # The dialog should be completely independent from this
+                    # object, because if the operation is confirmed, it needs
+                    # to close the database, including the properties tab (so
+                    # use CallAfter)
+                    wx.CallAfter(DependencyDialogDisable, self.filename, ext,
+                                                    newchoice, self.manager)
+            else:
+                if newchoice == 0 :
+                    try:
+                        deps = extsinfo(ext)['dependencies'].split(" ")
+                    except KeyError:
+                        deps = []
+
+                    missing_deps = []
+
+                    for dep in deps:
+                        sdep = dep.split(".")
+
+                        if sdep[0] == 'extensions':
+                            try:
+                                ver = self.dependencies[sdep[1]]
+                            except KeyError:
+                                if extsinfo(sdep[1]).get_bool(
+                                                        'affects_database'):
+                                    missing_deps.append(sdep[1])
+                            else:
+                                if ver is None:
+                                    missing_deps.append(sdep[1])
+
+                    if missing_deps:
+                        self.refresh_dependency(ext)
+                        msgboxes.warn_enable_dependency(missing_deps
+                                                                ).ShowModal()
+                    else:
+                        # The dialog should be completely independent from this
+                        # object, because if the operation is confirmed, it
+                        # needs to close the database, including the properties
+                        # tab (so use CallAfter)
+                        wx.CallAfter(DependencyDialogEnable, self.filename,
+                                                ext, newchoice, self.manager)
+                else:
+                    if newchoice == 1:
+                        core_api.remove_database_ignored_dependency(
+                                                            self.filename, ext)
+                        del self.dependencies[ext]
+                    else:
+                        core_api.add_database_ignored_dependency(self.filename,
+                                                                        ext)
+                        self.dependencies[ext] = None
+
+                    self.refresh_dependency(ext)
+
+            core_api.release_databases()
 
     def _set_history_limit(self, data, value):
         if core_api.block_databases():
@@ -239,13 +337,160 @@ class DatabaseProperties(object):
         self.propgrid.SetPropertyValue("db.items",
                                     core_api.get_items_count(self.filename))
 
+    def refresh_dependency(self, ext):
+        if ext in self.dependencies:
+            if self.dependencies[ext] is not None:
+                choice = 0
+            else:
+                choice = 2
+        else:
+            choice = 1
+
+        self.propgrid.SetPropertyValue("dependencies.{}".format(ext), choice)
+
+
+class _DependencyDialog(object):
+    def __init__(self, filename, ext, value, propmanager):
+        self.filename = filename
+        self.ext = ext
+        self.value = value
+        self.propmanager = propmanager
+
+        self.dialog = wx.Dialog(parent=wx.GetApp().root, title=self.title)
+
+        outsizer = wx.BoxSizer(wx.VERTICAL)
+        self.dialog.SetSizer(outsizer)
+
+        vsizer = wx.BoxSizer(wx.VERTICAL)
+
+        # Add vsizer right here because then I use Fit in order to make
+        # vsizer.GetSize().GetWidth() work
+        outsizer.Add(vsizer, flag=wx.EXPAND | wx.ALL, border=12)
+
+        hsizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        icon = wx.StaticBitmap(self.dialog, bitmap=wx.ArtProvider.GetBitmap(
+                                                "@warning", wx.ART_CMN_DIALOG))
+        hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
+
+        label = wx.StaticText(self.dialog, label=self.warning)
+        label.Wrap(320)
+        hsizer.Add(label, flag=wx.ALIGN_TOP)
+
+        vsizer.Add(hsizer, flag=wx.ALIGN_CENTER | wx.BOTTOM, border=12)
+
+        label = wx.StaticText(self.dialog, label="The database needs to be "
+                        "closed and re-opened in order to apply the changes.")
+        # Fit in order to make vsizer.GetSize().GetWidth() work
+        self.dialog.Fit()
+        label.Wrap(vsizer.GetSize().GetWidth())
+        vsizer.Add(label, flag=wx.BOTTOM, border=12)
+
+        hsizer2 = wx.BoxSizer(wx.HORIZONTAL)
+
+        label = wx.StaticText(self.dialog, label="A backup will be saved in:")
+        hsizer2.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
+
+        defpath = time_.strftime('{}_%Y%m%d%H%M%S{}'.format(
+                                            *os.path.splitext(self.filename)))
+        self.backup = wx. FilePickerCtrl(self.dialog, message="Save backup",
+            wildcard="|".join(('Outspline database (*.{})|*.{}'.format(
+                                coreaux_api.get_standard_extension(),
+                                coreaux_api.get_standard_extension()),
+                    "All files (*)|*")),
+            style=wx.FLP_SAVE | wx.FLP_OVERWRITE_PROMPT | wx.FLP_USE_TEXTCTRL)
+        # Instantiating FilePickerCtrl with 'path' doesn't seem to work well
+        self.backup.SetPath(defpath)
+        hsizer2.Add(self.backup, 1, flag=wx.ALIGN_CENTER_VERTICAL)
+
+        vsizer.Add(hsizer2, flag=wx.EXPAND | wx.BOTTOM, border=12)
+
+        hsizer3 = wx.BoxSizer(wx.HORIZONTAL)
+
+        ok = wx.Button(self.dialog, label="OK")
+        hsizer3.Add(ok, flag=wx.RIGHT, border=8)
+
+        cancel = wx.Button(self.dialog, label="Cancel")
+        hsizer3.Add(cancel)
+
+        vsizer.Add(hsizer3, flag=wx.ALIGN_RIGHT)
+
+        self.dialog.Bind(wx.EVT_BUTTON, self._proceed, ok)
+        self.dialog.Bind(wx.EVT_BUTTON, self._abort, cancel)
+        self.dialog.Bind(wx.EVT_CLOSE, self._handle_close)
+
+        self.dialog.Fit()
+        self.dialog.ShowModal()
+
+    def _proceed(self, event):
+        # Close the properties tab explicitly, otherwise if the closing is
+        # aborted, the choice controls should be reset to the current
+        # configuration, if the tab is still open, which is not necessarily
+        # true because the closing of the properties tab would race e.g. with
+        # the dialogs to save the database
+        self.propmanager.close(self.filename)
+
+        if databases.close_database(self.filename):
+            shutil.copy2(self.filename, self.backup.GetPath())
+
+            if self.value == 0:
+                dbdeps.Database(self.filename).add((self.ext, ))
+            elif self.value == 1:
+                dbdeps.Database(self.filename).remove((self.ext, ))
+            else:
+                dbdeps.Database(self.filename).remove((self.ext, ),
+                                                                ignored=True)
+
+            # Use CallAfter or segfaults may happen
+            wx.CallAfter(databases.open_database, self.filename,
+                                                        open_properties=True)
+            # Note that no other operation should be done on the database
+            #  directly here, because opening the database may fail e.g.
+            #  because of the compatibility checks
+        else:
+            self.propmanager.open(self.filename)
+
+        # Always close the dialog because the property settings have been
+        # reset by closing and reopening the property tab
+        self._close()
+
+    def _abort(self, event):
+        self.propmanager.get_open_tab(self.filename).refresh_dependency(
+                                                                    self.ext)
+        self._close()
+
+    def _handle_close(self, event):
+        # Also handle closing with X or Alt+F4
+        self._close()
+
+    def _close(self):
+        self.dialog.Destroy()
+
+
+class DependencyDialogEnable(_DependencyDialog):
+    def __init__(self, filename, ext, value, propmanager):
+        self.title = "Enable dependency"
+        self.warning = ("Warning: enabling a dependency will clear all the "
+                        "history of the database.")
+        super(DependencyDialogEnable, self).__init__(filename, ext, value,
+                                                                propmanager)
+
+
+class DependencyDialogDisable(_DependencyDialog):
+    def __init__(self, filename, ext, value, propmanager):
+        self.title = "Disable dependency"
+        self.warning = ("Warning: disabling a dependency will remove any data "
+                        "associated with it; it will also clear all the "
+                        "history of the database.")
+        super(DependencyDialogDisable, self).__init__(filename, ext, value,
+                                                                propmanager)
+
 
 class TabContextMenu(wx.Menu):
-    def __init__(self, manager, panel, filename):
+    def __init__(self, manager, filename):
         # Without implementing this menu, the menu of the previously selected
         # tab is shown when righ-clicking the tab
         self.manager = manager
-        self.panel = panel
         self.filename = filename
 
         wx.Menu.__init__(self)
@@ -261,4 +506,4 @@ class TabContextMenu(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self._close_tab, self.close)
 
     def _close_tab(self, event):
-        self.manager.close(self.panel, self.filename)
+        self.manager.close(self.filename)
