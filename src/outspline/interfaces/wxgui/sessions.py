@@ -28,7 +28,11 @@ class SessionManager(object):
     def __init__(self):
         self.savedession = coreaux_api.get_interface_configuration('wxgui')(
                                                                 'SessionFiles')
+        # Use CallAfter in order to let the interface be completely drawn,
+        # before e.g. showing the database upgrade dialog
+        wx.CallAfter(self._post_init)
 
+    def _post_init(self):
         for o in self.savedession:
             filename = self.savedession[o]
             databases.open_database(filename)
