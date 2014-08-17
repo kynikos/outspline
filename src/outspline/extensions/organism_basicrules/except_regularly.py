@@ -183,6 +183,11 @@ def get_occurrences_range_local(mint, utcmint, maxt, utcoffset, filename, id_,
         #  produce occurrences in the search range
         start = occur_regularly.compute_min_time(minstart - utcoffset.compute(
                 minstart), rule['#'][0], interval, rule['#'][2], rule['#'][3])
+
+        # Because of the start time note above, this loop will take a long time
+        # to complete for example when retrieving the old alarms, and such a
+        # search couldn't be aborted, since the aborting happens there, not in
+        # this loop (bug #329)
         while True:
             # Every timestamp can have a different UTC offset, depending
             # whether it's in a DST period or not
@@ -217,6 +222,11 @@ def get_occurrences_range_UTC(mint, utcmint, maxt, utcoffset, filename, id_,
         # occurrence even if its start and end times are out of the time range
         start = occur_regularly.compute_min_time(minstart, rule['#'][0],
                                         interval, rule['#'][2], rule['#'][3])
+
+        # Because of the start time note above, this loop will take a long time
+        # to complete for example when retrieving the old alarms, and such a
+        # search couldn't be aborted, since the aborting happens there, not in
+        # this loop (bug #329)
         while True:
             end = start + rend
 
@@ -252,6 +262,8 @@ def get_next_item_occurrences_local(base_time, utcbase, utcoffset, filename,
         start = occur_regularly.compute_min_time(minstart - utcoffset.compute(
                 minstart), rule['#'][0], interval, rule['#'][2], rule['#'][3])
 
+        # Because of the start time note above, this loop will take a long time
+        # to complete for wide search ranges and short intervals (bug #329)
         while True:
             # Every timestamp can have a different UTC offset, depending
             # whether it's in a DST period or not
@@ -292,6 +304,8 @@ def get_next_item_occurrences_UTC(base_time, utcbase, utcoffset, filename,
         start = occur_regularly.compute_min_time(minstart, rule['#'][0],
                                         interval, rule['#'][2], rule['#'][3])
 
+        # Because of the start time note above, this loop will take a long time
+        # to complete for wide search ranges and short intervals (bug #329)
         while True:
             end = start + rend
 
