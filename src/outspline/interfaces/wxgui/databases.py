@@ -164,6 +164,8 @@ def close_database(filename, no_confirm=False, exit_=False):
     # modules
     close_database_event.signal(filename=filename, exit_=exit_)
 
+    return True
+
 
 def get_open_databases():
     nbl = wx.GetApp().nb_left
