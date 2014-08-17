@@ -524,6 +524,8 @@ class RefreshEngine(object):
                     wx.CallAfter(self.occview.set_tab_icon_stopped)
                 except RefreshEngineLimit:
                     wx.CallAfter(self.occview.warn_limit_exceeded)
+                except core_api.NoLongerExistingItem:
+                    self._delay_restart(kwargs=None)
                 else:
                     # Since self._refresh_end (and so
                     # self.occview.insert_items) is always run in the main

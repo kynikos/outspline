@@ -43,5 +43,9 @@ class CannotMoveItemError(OutsplineError):
     pass
 
 
+class NoLongerExistingItem(OutsplineError):
+    pass
+
+
 class ConflictingActionHandlersError(OutsplineError):
     pass
