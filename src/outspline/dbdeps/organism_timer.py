@@ -16,21 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-timerproperties_create = ('CREATE TABLE TimerProperties '
-                          '(TP_id INTEGER PRIMARY KEY, '
-                           'TP_last_search INTEGER)')
+import time
 
-timerproperties_select = 'SELECT * FROM TimerProperties'
+from outspline.extensions.organism_timer import queries
 
-timerproperties_select_search = ('SELECT TP_last_search '
-                                 'FROM TimerProperties LIMIT 1')
 
-timerproperties_insert = ('INSERT INTO TimerProperties (TP_id, '
-                          'TP_last_search) VALUES (NULL, ?)')
+def add(cursor):
+    cursor.execute(queries.timerproperties_create)
+    cursor.execute(queries.timerproperties_insert, (int(time.time()), ))
 
-timerproperties_update = 'UPDATE TimerProperties SET TP_last_search=?'
+def remove(cursor):
+    cursor.execute(queries.timerproperties_drop)
 
-timerproperties_update_copy = ('UPDATE TimerProperties SET TP_id=?, '
-                               'TP_last_search=?')
-
-timerproperties_drop = 'DROP TABLE TimerProperties'
+def upgrade_0_to_1(cursor):
+    # Placeholder/example
+    # These queries must stay here because they must not be updated with the
+    # normal queries
+    pass

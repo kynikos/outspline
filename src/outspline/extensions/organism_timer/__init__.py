@@ -17,7 +17,6 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import sqlite3
-import time as _time
 
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
@@ -39,7 +38,6 @@ class Main(object):
         self.nextoccsengine = timer.NextOccurrencesEngine(self.databases,
                                                         self.rules.handlers)
 
-        core_api.bind_to_create_database(self._handle_create_database)
         core_api.bind_to_open_database_dirty(self._handle_open_database_dirty)
         core_api.bind_to_close_database(self._handle_close_database)
         core_api.bind_to_save_database_copy(self._handle_save_database_copy)
@@ -56,16 +54,6 @@ class Main(object):
         if copypaste_api:
             copypaste_api.bind_to_items_pasted(
                                 self._handle_search_next_occurrences_request)
-
-    def _handle_create_database(self, kwargs):
-        # Cannot use core_api.get_connection() here because the database isn't
-        # open yet
-        conn = sqlite3.connect(kwargs['filename'])
-        cur = conn.cursor()
-        cur.execute(queries.timerproperties_create)
-        cur.execute(queries.timerproperties_insert, (int(_time.time()), ))
-        conn.commit()
-        conn.close()
 
     def _handle_open_database_dirty(self, kwargs):
         info = coreaux_api.get_addons_info()
