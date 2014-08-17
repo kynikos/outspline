@@ -16,6 +16,7 @@ ROOT_DIR = '..'
 DEST_DIR = '.'
 SRC_DIR = os.path.join(ROOT_DIR, 'src')
 BASE_DIR = os.path.join(SRC_DIR, 'outspline')
+DEPS_DIR = os.path.join(BASE_DIR, 'dbdeps')
 PACKAGES = {
     'main': 'outspline',
     'development': 'outspline-development',
@@ -47,6 +48,7 @@ def make_component_package(cfile, cname):
     pkgdirname = pkgname + '-' + pkgver
     pkgdir = os.path.join(DEST_DIR, pkgdirname)
     maindir = os.path.join(pkgdir, 'outspline')
+    depsdir = os.path.join(maindir, 'dbdeps')
 
     os.makedirs(maindir)
     shutil.copy2(os.path.join(ROOT_DIR, 'LICENSE'), pkgdir)
@@ -54,6 +56,9 @@ def make_component_package(cfile, cname):
                                             os.path.join(pkgdir, 'setup.py'))
     shutil.copy2(os.path.join(BASE_DIR, cfile), maindir)
     shutil.copy2(os.path.join(BASE_DIR, '__init__.py'), maindir)
+
+    os.makedirs(depsdir)
+    shutil.copy2(os.path.join(DEPS_DIR, '__init__.py'), depsdir)
 
     if component.get_bool('provides_core', fallback='false'):
         for src, dest, sd in ((SRC_DIR, pkgdir, 'files'),
@@ -65,6 +70,8 @@ def make_component_package(cfile, cname):
 
         for file_ in ('core_api.py', 'coreaux_api.py', 'outspline.conf'):
             shutil.copy2(os.path.join(BASE_DIR, file_), maindir)
+
+        shutil.copy2(os.path.join(DEPS_DIR, '_core.py'), depsdir)
 
     addons = find_addons(component)
 
@@ -84,6 +91,13 @@ def make_component_package(cfile, cname):
                                                                     typedir)
             except FileNotFoundError:
                 pass
+
+            if type_ == 'extensions':
+                try:
+                    shutil.copy2(os.path.join(DEPS_DIR, addon + '.py'),
+                                                                    depsdir)
+                except FileNotFoundError:
+                    pass
 
             shutil.copytree(os.path.join(BASE_DIR, type_, addon),
                             os.path.join(typedir, addon),

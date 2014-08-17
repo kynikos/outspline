@@ -18,9 +18,8 @@
 
 from core import databases, items, history, queries
 from core.exceptions import (AccessDeniedError, DatabaseAlreadyOpenError,
-                            DatabaseNotAccessibleError, DatabaseNotValidError,
-                            DatabaseLockedError, CannotMoveItemError,
-                            NoLongerExistingItem)
+                            DatabaseNotAccessibleError, DatabaseLockedError,
+                            CannotMoveItemError, NoLongerExistingItem)
 
 
 def get_memory_connection():
@@ -43,8 +42,9 @@ def create_database(filename):
     return databases.Database.create(filename)
 
 
-def open_database(filename):
-    return databases.Database.open(filename)
+def open_database(filename, check_new_extensions=True):
+    return databases.Database.open(filename,
+                                    check_new_extensions=check_new_extensions)
 
 
 def save_database(filename):
@@ -205,6 +205,14 @@ def update_database_history_soft_limit(filename, limit):
     return databases.dbs[filename].dbhistory.update_soft_limit(limit)
 
 
+def add_database_ignored_dependency(filename, extension):
+    return databases.dbs[filename].add_ignored_dependency(extension)
+
+
+def remove_database_ignored_dependency(filename, extension):
+    return databases.dbs[filename].remove_ignored_dependency(extension)
+
+
 def get_tree_item(filename, parent, previous):
     return items.Item.get_tree_item(filename, parent, previous)
 
@@ -255,12 +263,16 @@ def select_all_memory_table_names():
     return cur
 
 
-def get_database_dependencies(filename):
+def get_database_dependencies(filename, ignored=False):
     qconn = databases.dbs[filename].connection.get()
     cur = qconn.cursor()
     cur.execute(queries.compatibility_select)
+
+    deps = {row['CM_extension']: row['CM_version'] for row in cur
+                                if row['CM_version'] is not None or ignored}
+
     databases.dbs[filename].connection.give(qconn)
-    return cur
+    return deps
 
 
 def get_database_history_soft_limit(filename):
@@ -313,10 +325,6 @@ def is_database_open(filename):
 
 def get_databases_count():
     return len(databases.dbs)
-
-
-def bind_to_create_database(handler, bind=True):
-    return databases.create_database_event.bind(handler, bind)
 
 
 def bind_to_blocked_databases(handler, bind=True):

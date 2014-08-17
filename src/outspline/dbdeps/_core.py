@@ -16,32 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-from outspline.coreaux_api import OutsplineError
+# Core can't be added nor removed
 
-
-class AccessDeniedError(OutsplineError):
-    pass
-
-
-class DatabaseAlreadyOpenError(OutsplineError):
-    pass
-
-
-class DatabaseNotAccessibleError(OutsplineError):
-    pass
-
-
-class DatabaseLockedError(OutsplineError):
-    pass
-
-
-class CannotMoveItemError(OutsplineError):
-    pass
-
-
-class NoLongerExistingItem(OutsplineError):
-    pass
-
-
-class ConflictingActionHandlersError(OutsplineError):
+def upgrade_0_to_1(cursor):
+    # Placeholder/example
+    # These queries must stay here because they must not be updated with the
+    # normal queries
     pass

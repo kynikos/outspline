@@ -71,6 +71,8 @@ Info files:
     In general, this option determines which extensions are added to the
     CoMpatibility table and hence used for compatibility checks when opening a
     user database
+    Each extension that affects databases must have a corresponding module in
+    the dbdeps package with the add, remove and the necessary upgrade functions
     Required only for core and extensions
 - provides_tables:
     Names of the database tables managed by the extension

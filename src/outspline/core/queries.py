@@ -53,10 +53,18 @@ compatibility_select = 'SELECT * FROM CoMpatibility'
 compatibility_insert = ('INSERT INTO CoMpatibility (CM_id, CM_extension, '
                         'CM_version) VALUES (NULL, ?, ?)')
 
+compatibility_insert_ignored = ('INSERT INTO CoMpatibility (CM_id, '
+                            'CM_extension, CM_version) VALUES (NULL, ?, NULL)')
+
 compatibility_insert_copy = ('INSERT INTO CoMpatibility (CM_id, '
                              'CM_extension, CM_version) VALUES (?, ?, ?)')
 
-compatibility_delete = 'DELETE FROM CoMpatibility'
+compatibility_update = ('UPDATE CoMpatibility SET CM_version=? '
+                                                        'WHERE CM_extension=?')
+
+compatibility_delete = 'DELETE FROM CoMpatibility WHERE CM_extension=?'
+
+compatibility_delete_all = 'DELETE FROM CoMpatibility'
 
 items_create = ("CREATE TABLE Items (I_id INTEGER PRIMARY KEY, "
                                     "I_parent INTEGER, "
@@ -189,3 +197,5 @@ DELETE FROM History WHERE H_group < (
         )
     )
 )''')
+
+history_delete_purge = 'DELETE FROM History'

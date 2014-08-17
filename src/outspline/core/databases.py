@@ -23,6 +23,7 @@ import sqlite3 as _sql
 
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import Event, log
+import outspline.dbdeps as dbdeps
 
 import exceptions
 import items
@@ -32,7 +33,6 @@ import history
 protection = None
 memory = None
 
-create_database_event = Event()
 blocked_databases_event = Event()
 open_database_dirty_event = Event()
 open_database_event = Event()
@@ -196,44 +196,36 @@ class Database(object):
                 cursor.execute(queries.compatibility_insert, (None,
                                 int(float(coreaux_api.get_core_version())), ))
 
-                info = coreaux_api.get_addons_info(disabled=False)
-                extensions = info('Extensions')
-
-                for ext in extensions.get_sections():
-                    if extensions(ext).get_bool('affects_database'):
-                        # Only store major versions, as they are supposed to
-                        # keep backward compatibility
-                        cursor.execute(queries.compatibility_insert, (ext,
-                                    int(extensions(ext).get_float('version'))))
-
                 cursor.execute(queries.items_create)
-
                 cursor.execute(queries.history_create)
 
                 conn.commit()
                 conn.close()
 
-                create_database_event.signal(filename=filename)
+                extinfo = coreaux_api.get_addons_info(disabled=False)(
+                                                                'Extensions')
+                dbdeps.Database(filename).add(
+                                [ext for ext in extinfo.get_sections() \
+                                if extinfo(ext).get_bool('affects_database')])
 
                 return filename
 
     @classmethod
-    def open(cls, filename):
+    def open(cls, filename, check_new_extensions=True):
         global dbs
         if filename in dbs:
             raise exceptions.DatabaseAlreadyOpenError()
         elif not os.access(filename, os.W_OK):
             raise exceptions.DatabaseNotAccessibleError()
         else:
-            compat = cls._check_compatibility(filename)
+            can_open, dependencies = dbdeps.Database(filename).is_compatible(
+                                                        check_new_extensions)
 
-            if not compat:
-                raise exceptions.DatabaseNotValidError()
-            else:
+            if can_open:
                 dbs[filename] = cls(filename)
 
                 open_database_dirty_event.signal(filename=filename,
-                                                        dependencies=compat)
+                                                    dependencies=dependencies)
 
                 # Reset modified state after instantiating the class, since
                 # this signals an event whose handlers might require the object
@@ -242,51 +234,6 @@ class Database(object):
 
                 open_database_event.signal(filename=filename)
                 return True
-
-    @staticmethod
-    def _check_compatibility(filename):
-        try:
-            qconn = _sql.connect(filename)
-            cursor = qconn.cursor()
-            cursor.execute(queries.compatibility_select)
-        except _sql.DatabaseError:
-            qconn.close()
-            return False
-
-        info = coreaux_api.get_addons_info(disabled=False)
-        compat = []
-
-        for row in cursor:
-            if row[1] == 'Core':
-                # Only compare major versions, as they are supposed to keep
-                # backward compatibility
-                if row[3] == int(float(coreaux_api.get_core_version())):
-                    compat.append('.'.join(('core', str(row[3]))))
-                else:
-                    break
-            elif row[1] in info.get_sections():
-                if row[2] in info(str(row[1])).get_sections():
-                    # Only compare major versions, as they are supposed to keep
-                    # backward compatibility
-                    if row[3] == int(info(str(row[1]))(str(row[2])
-                                                    ).get_float('version')):
-                        compat.append('.'.join((row[1].lower(), row[2],
-                                                                str(row[3]))))
-                    else:
-                        break
-                else:
-                    break
-            else:
-                break
-        else:
-            # Note that it's possible that there are other addons installed
-            # with the affects_database flag, however all addons are required
-            # to be able to ignore a database that doesn't support them
-            qconn.close()
-            return compat
-
-        qconn.close()
-        return False
 
     def save(self):
         # Some addons may use this event to generate an exception
@@ -321,7 +268,7 @@ class Database(object):
         for row in cursor:
             cursord.execute(queries.properties_insert_copy, tuple(row))
 
-        cursord.execute(queries.compatibility_delete)
+        cursord.execute(queries.compatibility_delete_all)
         cursor.execute(queries.compatibility_select)
         for row in cursor:
             cursord.execute(queries.compatibility_insert_copy, tuple(row))
@@ -389,3 +336,19 @@ class Database(object):
         self.connection.give(qconn)
 
         return cursor.fetchall()
+
+    def add_ignored_dependency(self, extension):
+        qconn = self.connection.get()
+        cur = qconn.cursor()
+        cur.execute(queries.compatibility_insert_ignored, (extension, ))
+        self.connection.give(qconn)
+
+        self.dbhistory.set_modified()
+
+    def remove_ignored_dependency(self, extension):
+        qconn = self.connection.get()
+        cur = qconn.cursor()
+        cur.execute(queries.compatibility_delete, (extension, ))
+        self.connection.give(qconn)
+
+        self.dbhistory.set_modified()
