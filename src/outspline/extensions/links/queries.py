@@ -34,6 +34,8 @@ links_update_id = 'UPDATE Links SET L_target=? WHERE L_id=?'
 
 links_delete_id = 'DELETE FROM Links WHERE L_id=?'
 
+links_drop = 'DROP TABLE Links'
+
 copylinks_create = ("CREATE TABLE CopyLinks (CL_id INTEGER, "
                                             "CL_target INTEGER)")
 
