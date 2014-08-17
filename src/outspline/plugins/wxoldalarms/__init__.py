@@ -317,10 +317,12 @@ class DialogActivate(object):
         self.csizer.Fit(self.dialog)
 
     def _activate_all_alarms(self, event):
+        # The databases are already locked in organism_timer
         self._pre_activate_alarms()
         organism_alarms_api.activate_old_alarms(self.filename, False)
 
     def _activate_unique_alarms(self, event):
+        # The databases are already locked in organism_timer
         self._pre_activate_alarms()
         organism_alarms_api.activate_old_alarms(self.filename, True)
 

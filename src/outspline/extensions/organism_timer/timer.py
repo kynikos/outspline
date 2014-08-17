@@ -365,6 +365,7 @@ class OldOccurrencesSearch(object):
             thread.start()
 
     def _continue(self):
+        core_api.block_databases()
         search_old_occurrences_event.signal(filename=self.filename,
                                                     last_search=self.exclmint)
         self.state = 0
@@ -385,6 +386,8 @@ class OldOccurrencesSearch(object):
             self._abort()
         else:
             self._process_results()
+
+        core_api.release_databases()
 
     def _process_results(self):
         occs = self.search.get_results()
