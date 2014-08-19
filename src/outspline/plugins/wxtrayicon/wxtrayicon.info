@@ -1,5 +1,5 @@
 authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
-version = 0.5
+version = 1.0
 description = Adds an icon in the system tray and lets the user hide and show the main window.
 website = https://github.com/kynikos/outspline/
-dependencies = core.0 interfaces.wxgui.0
+dependencies = core.1 interfaces.wxgui.1

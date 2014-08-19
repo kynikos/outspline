@@ -1,7 +1,7 @@
 authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
-version = 0.3
+version = 1.0
 description = Development tools backend.
 website = https://github.com/kynikos/outspline/
 affects_database = no
 provides_tables =
-dependencies = core.0
+dependencies = core.1

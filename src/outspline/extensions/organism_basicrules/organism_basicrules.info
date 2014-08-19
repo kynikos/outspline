@@ -1,7 +1,7 @@
 authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
-version = 0.4
+version = 1.0
 description = Adds the backend for calculating item events/tasks with basic schedule rules.
 website = https://github.com/kynikos/outspline/
 affects_database = yes
 provides_tables =
-dependencies = core.0 extensions.organism.0 extensions.organism_timer.0
+dependencies = core.1 extensions.organism.1 extensions.organism_timer.1
