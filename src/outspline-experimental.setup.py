@@ -62,7 +62,7 @@ def compose_package_metadata(head):
 
 def compose_metadata():
     meta = {'name': 'outspline-experimental',
-            'version': '0.5.0',
+            'version': '0.6.0',
             'description': 'Experimental component for Outspline.',
             'author': 'Dario Giovannetti',
             'author_email': 'dev@dariogiovannetti.net',
