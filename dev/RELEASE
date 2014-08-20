@@ -39,6 +39,8 @@
   - *.install
   - release.py
 * If database structure has changed, update upgrade mechanism
+* If some configuration options have been added/removed/changed, make sure to
+  update the user's file
 * Check the observance of all STYLE rules
 * Run release.py (inside ./dev)
   Note that it depends on the installed version of python-configfile
