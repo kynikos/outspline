@@ -35,7 +35,12 @@ def remove(cursor):
     cursor.execute(queries.alarmsofflog_drop)
 
 def upgrade_0_to_1(cursor):
-    # Placeholder/example
     # These queries must stay here because they must not be updated with the
     # normal queries
-    pass
+    cursor.execute('CREATE TABLE AlarmsProperties '
+                              '(AP_id INTEGER PRIMARY KEY, '
+                               'AP_log_limit INTEGER)')
+    LIMIT = coreaux_api.get_extension_configuration('organism_alarms'
+                                        ).get_int('default_log_soft_limit')
+    cursor.execute('INSERT INTO AlarmsProperties (AP_id, AP_log_limit) '
+                                                'VALUES (NULL, ?)', (LIMIT, ))

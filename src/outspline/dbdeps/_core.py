@@ -19,7 +19,15 @@
 # Core can't be added nor removed
 
 def upgrade_0_to_1(cursor):
-    # Placeholder/example
     # These queries must stay here because they must not be updated with the
     # normal queries
-    pass
+    cursor.execute('DROP TABLE History')
+    cursor.execute("CREATE TABLE History (H_id INTEGER PRIMARY KEY, "
+                                            "H_group INTEGER, "
+                                            "H_status INTEGER, "
+                                            "H_item INTEGER, "
+                                            "H_type TEXT, "
+                                            "H_tstamp INTEGER, "
+                                            "H_description TEXT, "
+                                            "H_redo TEXT, "
+                                            "H_undo TEXT)")
