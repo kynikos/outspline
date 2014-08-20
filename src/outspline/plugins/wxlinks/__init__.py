@@ -162,21 +162,16 @@ class TreeItemIcons(object):
     def __init__(self, filename):
         self.filename = filename
 
-        config = coreaux_api.get_plugin_configuration('wxlinks')
-        char = config['icon_link']
+        config = coreaux_api.get_plugin_configuration('wxlinks')('TreeIcons')
+        char = config['symbol']
 
         if char != '':
             bits_to_colour = {b: wx.Colour() for b in xrange(1, 6)}
-            bits_to_colour[1].SetFromString(config[
-                                        'icon_link_valid_color'])
-            bits_to_colour[2].SetFromString(config[
-                                        'icon_link_broken_color'])
-            bits_to_colour[3].SetFromString(config[
-                                        'icon_link_target_color'])
-            bits_to_colour[4].SetFromString(config[
-                                        'icon_link_valid_and_target_color'])
-            bits_to_colour[5].SetFromString(config[
-                                        'icon_link_broken_and_target_color'])
+            bits_to_colour[1].SetFromString(config['color_valid'])
+            bits_to_colour[2].SetFromString(config['color_broken'])
+            bits_to_colour[3].SetFromString(config['color_target'])
+            bits_to_colour[4].SetFromString(config['color_valid_and_target'])
+            bits_to_colour[5].SetFromString(config['color_broken_and_target'])
 
             self.property_shift, self.property_mask = \
                                             wxgui_api.add_item_property(

@@ -479,14 +479,14 @@ class Database(wx.SplitterWindow):
 
 class DBProperties(object):
     def __init__(self, properties):
-        config = coreaux_api.get_interface_configuration('wxgui')
-        multichar = config['icon_multiline']
+        config = coreaux_api.get_interface_configuration('wxgui')('TreeIcons')
+        multichar = config['symbol']
 
         if multichar != '':
             bits_to_colour = {
                 1: wx.Colour(),
             }
-            bits_to_colour[1].SetFromString(config['icon_multiline_color'])
+            bits_to_colour[1].SetFromString(config['color'])
 
             self.multiline_shift, self.multiline_mask = properties.add(1,
                                                     multichar, bits_to_colour)

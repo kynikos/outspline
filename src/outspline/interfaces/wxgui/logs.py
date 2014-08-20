@@ -107,7 +107,7 @@ class DatabaseHistory(object):
         self.filename = filename
         self.config = coreaux_api.get_interface_configuration('wxgui')
 
-        statusflags = 0 if self.config.get_bool('debug_history') else \
+        statusflags = 0 if self.config('History').get_bool('debug') else \
                                                 wx.dataview.DATAVIEW_COL_HIDDEN
 
         self.view = wx.dataview.DataViewListCtrl(parent,
@@ -138,9 +138,9 @@ class DatabaseHistory(object):
         self.refresh()
 
     def _make_icons(self, bgcolor):
-        coldone = self.config['history_color_done']
-        colundone = self.config['history_color_undone']
-        colsaved = self.config['history_color_saved']
+        coldone = self.config('History')['color_done']
+        colundone = self.config('History')['color_undone']
+        colsaved = self.config('History')['color_saved']
 
         if coldone == 'none':
             colordone = bgcolor

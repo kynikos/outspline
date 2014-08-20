@@ -455,12 +455,13 @@ class TreeItemIcons(object):
     def __init__(self, filename):
         self.filename = filename
 
-        config = coreaux_api.get_plugin_configuration('wxscheduler')
-        char = config['icon_rules']
+        config = coreaux_api.get_plugin_configuration('wxscheduler')(
+                                                                'TreeIcons')
+        char = config['symbol']
 
         if char != '':
             bits_to_colour = {1: wx.Colour()}
-            bits_to_colour[1].SetFromString(config['icon_rules_color'])
+            bits_to_colour[1].SetFromString(config['color'])
 
             self.property_shift, self.property_mask = \
                                             wxgui_api.add_item_property(

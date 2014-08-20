@@ -116,19 +116,19 @@ class OccurrencesView(object):
         # application is closed, and if a user edits them manually he knows
         # he's done something wrong in the configuration file
         self.listview.InsertColumn(self.DATABASE_COLUMN, 'Database',
-                                width=self.config.get_int('database_column'))
+                        width=self.config('ColumnWidths').get_int('database'))
         self.listview.InsertColumn(self.HEADING_COLUMN, 'Heading',
-                                width=self.config.get_int('heading_column'))
+                        width=self.config('ColumnWidths').get_int('heading'))
         self.listview.InsertColumn(self.START_COLUMN, 'Start',
-                                width=self.config.get_int('start_column'))
+                        width=self.config('ColumnWidths').get_int('start'))
         self.listview.InsertColumn(self.DURATION_COLUMN, 'Duration',
-                                width=self.config.get_int('duration_column'))
+                        width=self.config('ColumnWidths').get_int('duration'))
         self.listview.InsertColumn(self.END_COLUMN, 'End',
-                                width=self.config.get_int('end_column'))
+                        width=self.config('ColumnWidths').get_int('end'))
         self.listview.InsertColumn(self.STATE_COLUMN, 'State',
-                                width=self.config.get_int('state_column'))
+                        width=self.config('ColumnWidths').get_int('state'))
         self.listview.InsertColumn(self.ALARM_COLUMN, 'Alarm',
-                                width=self.config.get_int('alarm_column'))
+                        width=self.config('ColumnWidths').get_int('alarm'))
 
         # Initialize sort column and order *before* enabling the autoscroll
         self.listview.SortListItems(self.STATE_COLUMN, 1)
@@ -323,19 +323,19 @@ class OccurrencesView(object):
     def save_configuration(self):
         config = coreaux_api.get_plugin_configuration('wxtasklist')
 
-        config['database_column'] = str(self.listview.GetColumnWidth(
+        config('ColumnWidths')['database'] = str(self.listview.GetColumnWidth(
                                                         self.DATABASE_COLUMN))
-        config['heading_column'] = str(self.listview.GetColumnWidth(
+        config('ColumnWidths')['heading'] = str(self.listview.GetColumnWidth(
                                                         self.HEADING_COLUMN))
-        config['start_column'] = str(self.listview.GetColumnWidth(
+        config('ColumnWidths')['start'] = str(self.listview.GetColumnWidth(
                                                             self.START_COLUMN))
-        config['duration_column'] = str(self.listview.GetColumnWidth(
+        config('ColumnWidths')['duration'] = str(self.listview.GetColumnWidth(
                                                         self.DURATION_COLUMN))
-        config['end_column'] = str(self.listview.GetColumnWidth(
+        config('ColumnWidths')['end'] = str(self.listview.GetColumnWidth(
                                                             self.END_COLUMN))
-        config['state_column'] = str(self.listview.GetColumnWidth(
+        config('ColumnWidths')['state'] = str(self.listview.GetColumnWidth(
                                                             self.STATE_COLUMN))
-        config['alarm_column'] = str(self.listview.GetColumnWidth(
+        config('ColumnWidths')['alarm'] = str(self.listview.GetColumnWidth(
                                                             self.ALARM_COLUMN))
         config['active_alarms'] = self.active_alarms_mode
         config['show_gaps'] = 'yes' if self.show_gaps else 'no'
@@ -727,9 +727,9 @@ class Formatter(object):
     def __init__(self, config, listview):
         self.config = config
         self.listview = listview
-        self.startformat = config['start_format']
-        self.endformat = config['end_format']
-        self.alarmformat = config['alarm_format']
+        self.startformat = config('Formats')['start']
+        self.endformat = config('Formats')['end']
+        self.alarmformat = config('Formats')['alarm']
 
         if self.endformat == 'start':
             self.endformat = self.startformat
@@ -737,12 +737,12 @@ class Formatter(object):
         if self.alarmformat == 'start':
             self.alarmformat = self.startformat
 
-        if config['database_format'] == 'full':
+        if config('Formats')['database'] == 'full':
             self.format_database = self._format_database_full
         else:
             self.format_database = self._format_database_short
 
-        if config['duration_format'] == 'compact':
+        if config('Formats')['duration'] == 'compact':
             self.format_duration = self._format_duration_compact
         else:
             self.format_duration = self._format_duration_expanded
@@ -751,12 +751,12 @@ class Formatter(object):
 
     def _init_colors(self):
         system = self.listview.GetTextColour()
-        colpast = self.config['color_past']
-        colongoing = self.config['color_ongoing']
-        colfuture = self.config['color_future']
-        colactive = self.config['color_active']
-        colgap = self.config['color_gap']
-        coloverlap = self.config['color_overlapping']
+        colpast = self.config('Colors')['past']
+        colongoing = self.config('Colors')['ongoing']
+        colfuture = self.config('Colors')['future']
+        colactive = self.config('Colors')['active']
+        colgap = self.config('Colors')['gap']
+        coloverlap = self.config('Colors')['overlapping']
         self.colors = {}
 
         if colpast == 'system':
