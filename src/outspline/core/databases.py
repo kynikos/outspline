@@ -23,6 +23,7 @@ import sqlite3 as _sql
 
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import Event, log
+import outspline.dbdeps as dbdeps
 
 import exceptions
 import items
@@ -32,10 +33,13 @@ import history
 protection = None
 memory = None
 
-create_database_event = Event()
+blocked_databases_event = Event()
 open_database_dirty_event = Event()
 open_database_event = Event()
+closing_database_event = Event()
 close_database_event = Event()
+save_permission_check_event = Event()
+save_database_event = Event()
 save_database_copy_event = Event()
 delete_items_event = Event()
 exit_app_event_1 = Event()
@@ -70,10 +74,18 @@ class Protection(object):
         self.q = queue.Queue()
         self.q.put(baton)
 
-    def block(self, block=True):
+    def block(self, block=False, quiet=False):
         log.debug('Block databases')
 
-        self.s = self.q.get(block)
+        try:
+            self.s = self.q.get(block)
+        except queue.Empty:
+            if not quiet:
+                blocked_databases_event.signal()
+
+            return False
+        else:
+            return True
 
     def release(self):
         log.debug('Release databases')
@@ -118,8 +130,8 @@ class Database(object):
         self.connection = DBQueue()
         self.filename = filename
         self.items = {}
-        self.dbhistory = history.DBHistory(self.filename, self.connection,
-                                                                    self.items)
+        self.dbhistory = history.DBHistory(self.connection, self.items,
+                                                                self.filename)
 
         conn = self.connection
         # Enable multi-threading, as the database is protected with a queue
@@ -133,17 +145,23 @@ class Database(object):
             # instance of Outspline), a SELECT query is not enough
             cursor.execute(queries.properties_insert_dummy)
         except _sql.OperationalError:
-            raise exceptions.DatabaseLocked()
+            raise exceptions.DatabaseLockedError()
         else:
             cursor.execute(queries.properties_delete_dummy)
+
+        cursor.execute(queries.properties_select_history)
+        softlimit = cursor.fetchone()[0]
+        config = coreaux_api.get_configuration()('History')
+        timelimit = config.get_int('time_limit')
+        hardlimit = config.get_int('hard_limit')
+        self.dbhistory.set_limits(softlimit, timelimit, hardlimit)
 
         dbitems = cursor.execute(queries.items_select_tree)
         conn.give(qconn)
 
         for item in dbitems:
-            self.items[item['I_id']] = items.Item(database=self,
-                                                  filename=filename,
-                                                  id_=item['I_id'])
+            self.items[item['I_id']] = items.Item(self.connection,
+                    self.dbhistory, self.items, self.filename, item['I_id'])
 
     @staticmethod
     def create(filename):
@@ -165,54 +183,49 @@ class Database(object):
                 cursor = conn.cursor()
 
                 cursor.execute(queries.properties_create)
-                cursor.execute(queries.properties_insert_init,
-                               (coreaux_api.get_default_history_limit(), ))
+
+                limit = coreaux_api.get_configuration()('History').get_int(
+                                                        'default_soft_limit')
+                cursor.execute(queries.properties_insert_init, (limit, ))
 
                 cursor.execute(queries.compatibility_create)
                 # Only store major versions, as they are supposed to keep
                 # backward compatibility
-                cursor.execute(queries.compatibility_insert, ('Core', 'core',
+                # None must be used for core, because it must be safe in case
+                # an extension is called 'core' for some reason
+                cursor.execute(queries.compatibility_insert, (None,
                                 int(float(coreaux_api.get_core_version())), ))
 
-                info = coreaux_api.get_addons_info(disabled=False)
-
-                for t in ('Extensions', 'Interfaces', 'Plugins'):
-                    for a in info(t).get_sections():
-                        if info(t)(a).get('affects_database', fallback=None
-                                                                    ) != 'no':
-                            # Only store major versions, as they are supposed
-                            # to keep backward compatibility
-                            cursor.execute(queries.compatibility_insert, (t, a,
-                                        int(info(t)(a).get_float('version'))))
-
                 cursor.execute(queries.items_create)
-
                 cursor.execute(queries.history_create)
 
                 conn.commit()
                 conn.close()
 
-                create_database_event.signal(filename=filename)
+                extinfo = coreaux_api.get_addons_info(disabled=False)(
+                                                                'Extensions')
+                dbdeps.Database(filename).add(
+                                [ext for ext in extinfo.get_sections() \
+                                if extinfo(ext).get_bool('affects_database')])
 
                 return filename
 
     @classmethod
-    def open(cls, filename):
+    def open(cls, filename, check_new_extensions=True):
         global dbs
         if filename in dbs:
             raise exceptions.DatabaseAlreadyOpenError()
         elif not os.access(filename, os.W_OK):
             raise exceptions.DatabaseNotAccessibleError()
         else:
-            compat = cls._check_compatibility(filename)
+            can_open, dependencies = dbdeps.Database(filename).is_compatible(
+                                                        check_new_extensions)
 
-            if not compat:
-                raise exceptions.DatabaseNotValidError()
-            else:
+            if can_open:
                 dbs[filename] = cls(filename)
 
                 open_database_dirty_event.signal(filename=filename,
-                                                        dependencies=compat)
+                                                    dependencies=dependencies)
 
                 # Reset modified state after instantiating the class, since
                 # this signals an event whose handlers might require the object
@@ -222,52 +235,10 @@ class Database(object):
                 open_database_event.signal(filename=filename)
                 return True
 
-    @staticmethod
-    def _check_compatibility(filename):
-        try:
-            qconn = _sql.connect(filename)
-            cursor = qconn.cursor()
-            cursor.execute(queries.compatibility_select)
-        except _sql.DatabaseError:
-            qconn.close()
-            return False
-
-        info = coreaux_api.get_addons_info(disabled=False)
-        compat = []
-
-        for row in cursor:
-            if row[1] == 'Core':
-                # Only compare major versions, as they are supposed to keep
-                # backward compatibility
-                if row[3] == int(float(coreaux_api.get_core_version())):
-                    compat.append('.'.join(('core', str(row[3]))))
-                else:
-                    break
-            elif row[1] in info.get_sections():
-                if row[2] in info(str(row[1])).get_sections():
-                    # Only compare major versions, as they are supposed to keep
-                    # backward compatibility
-                    if row[3] == int(info(str(row[1]))(str(row[2])
-                                                    ).get_float('version')):
-                        compat.append('.'.join((row[1].lower(), row[2],
-                                                                str(row[3]))))
-                    else:
-                        break
-                else:
-                    break
-            else:
-                break
-        else:
-            # Note that it's possible that there are other addons installed
-            # with the affects_database flag, however all addons are required
-            # to be able to ignore a database that doesn't support them
-            qconn.close()
-            return compat
-
-        qconn.close()
-        return False
-
     def save(self):
+        # Some addons may use this event to generate an exception
+        save_permission_check_event.signal(filename=self.filename)
+
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.history_update_status_new)
@@ -277,7 +248,13 @@ class Database(object):
 
         self.dbhistory.reset_modified_state()
 
+        save_database_event.signal(filename=self.filename)
+
     def save_copy(self, destination):
+        # Some addons may use this event to generate an exception
+        # For consistency, signal 'self.filename' and not 'destination'
+        save_permission_check_event.signal(filename=self.filename)
+
         # Of course the original file cannot be simply copied, in fact in that
         # case it should be saved first, and that's not what is expected
 
@@ -291,7 +268,7 @@ class Database(object):
         for row in cursor:
             cursord.execute(queries.properties_insert_copy, tuple(row))
 
-        cursord.execute(queries.compatibility_delete)
+        cursord.execute(queries.compatibility_delete_all)
         cursor.execute(queries.compatibility_select)
         for row in cursor:
             cursord.execute(queries.compatibility_insert_copy, tuple(row))
@@ -316,6 +293,8 @@ class Database(object):
                                         destination=destination)
 
     def close(self):
+        closing_database_event.signal(filename=self.filename)
+
         self._remove()
 
         qconn = self.connection.get()
@@ -342,7 +321,7 @@ class Database(object):
 
     def delete_items(self, dids, group, description='Delete items'):
         while dids:
-            for id_ in dids:
+            for id_ in dids[:]:
                 # First delete the items without children
                 if not self.items[id_].has_children():
                     self.items[id_].delete(group, description=description)
@@ -357,3 +336,19 @@ class Database(object):
         self.connection.give(qconn)
 
         return cursor.fetchall()
+
+    def add_ignored_dependency(self, extension):
+        qconn = self.connection.get()
+        cur = qconn.cursor()
+        cur.execute(queries.compatibility_insert_ignored, (extension, ))
+        self.connection.give(qconn)
+
+        self.dbhistory.set_modified()
+
+    def remove_ignored_dependency(self, extension):
+        qconn = self.connection.get()
+        cur = qconn.cursor()
+        cur.execute(queries.compatibility_delete, (extension, ))
+        self.connection.give(qconn)
+
+        self.dbhistory.set_modified()

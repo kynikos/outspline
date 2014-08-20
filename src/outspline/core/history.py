@@ -35,10 +35,10 @@ history_clean_event = Event()
 
 
 class DBHistory(object):
-    def __init__(self, filename, connection, items):
-        self.filename = filename
+    def __init__(self, connection, items, filename):
         self.connection = connection
         self.items = items
+        self.filename = filename
 
         self.hactions = {
             'insert': {
@@ -55,6 +55,19 @@ class DBHistory(object):
             },
         }
 
+    def set_limits(self, soft, time, hard):
+        self.historylimits = [soft, time, hard]
+
+    def update_soft_limit(self, limit):
+        qconn = self.connection.get()
+        cur = qconn.cursor()
+        cur.execute(queries.properties_update, (limit, ))
+        self.connection.give(qconn)
+
+        self.set_modified()
+
+        self.historylimits[0] = limit
+
     def register_action_handlers(self, name, redo_handler, undo_handler):
         if name not in self.hactions:
             self.hactions[name] = {
@@ -70,9 +83,8 @@ class DBHistory(object):
         cur = qconn.cursor()
         cur.execute(queries.history_insert, (group, id_, type_, description,
                                                     query_redo, query_undo))
+        cur.execute(queries.history_delete_union, self.historylimits)
         self.connection.give(qconn)
-
-        return cur.lastrowid
 
     def get_next_history_group(self):
         qconn = self.connection.get()
@@ -237,8 +249,8 @@ class DBHistory(object):
         select = cursor.fetchone()
         self.connection.give(qconn)
 
-        self.items[itemid] = items.Item(database=self, filename=self.filename,
-                                                                    id_=itemid)
+        self.items[itemid] = items.Item(self.connection, self, self.items,
+                                                        self.filename, itemid)
 
         history_insert_event.signal(filename=self.filename, id_=itemid,
                                                 parent=select['I_parent'],
@@ -288,28 +300,16 @@ class DBHistory(object):
                                                         hid=hid, text=jparams)
 
     def clean_history(self):
+        # history_clean_event handlers will need a proper connection
+        history_clean_event.signal(filename=self.filename)
+
         # This operation must be performed on a different connection than
         # the main one (which at this point has been closed already anyway)
         qconn = _sql.connect(self.filename)
         cursor = qconn.cursor()
 
-        cursor.execute(queries.properties_select_history)
-        hlimit = cursor.fetchone()[0]
-
-        cursor.execute(queries.history_select_select, (hlimit, ))
-        t = tuple(cursor)
-
-        # history_clean_event handlers will need a proper connection
-        qconn.close()
-
-        history_clean_event.signal(filename=self.filename, hids=t)
-
-        qconn = _sql.connect(self.filename)
-        cursor = qconn.cursor()
-
-        for row in t:
-            cursor.execute(queries.history_delete_id, (row[0], ))
-
+        cursor.execute(queries.history_delete_select,
+                                                    (self.historylimits[0], ))
         cursor.execute(queries.history_update_group)
 
         qconn.commit()

@@ -19,6 +19,7 @@
 import sys
 import importlib
 import copy
+import json
 
 from coreaux.configuration import components, info, config
 import coreaux.configuration
@@ -50,8 +51,7 @@ def get_website():
 
 
 def get_core_contributors():
-    return [info('Core')[o] for o in info.get_options() if o[:11] ==
-                                                                  'contributor']
+    return json.loads(info('Core').get('contibutors', fallback="[]"))
 
 
 def get_standard_extension():
@@ -64,7 +64,7 @@ def get_root_directory():
 
 def get_copyright(alt=False):
     return coreaux.configuration._COPYRIGHT_V2 if alt else \
-                                             coreaux.configuration._COPYRIGHT_V1
+                                            coreaux.configuration._COPYRIGHT_V1
 
 
 def get_disclaimer():
@@ -117,31 +117,31 @@ def get_plugin_configuration(plugin):
     return config('Plugins')(plugin)
 
 
-def get_default_history_limit():
-    return config('History').get_int('default_max_operations')
-
-
 def import_optional_extension_api(extension):
     if extension in config('Extensions').get_sections() and \
-                            config('Extensions')(extension).get_bool('enabled'):
+                        config('Extensions')(extension).get_bool('enabled'):
         return importlib.import_module(''.join(('outspline.extensions.',
-                                                            extension, '_api')))
+                                                        extension, '_api')))
 
 
 def import_optional_interface_api(interface):
     # Interfaces are not optional, but a plugin may support more than one
     # interface, and this is the safe way to test which one is enabled
     if interface in config('Interfaces').get_sections() and \
-                            config('Interfaces')(interface).get_bool('enabled'):
+                        config('Interfaces')(interface).get_bool('enabled'):
         return importlib.import_module(''.join(('outspline.interfaces.',
-                                                            interface, '_api')))
+                                                        interface, '_api')))
 
 
 def import_optional_plugin_api(plugin):
     if plugin in config('Plugins').get_sections() and \
-                                  config('Plugins')(plugin).get_bool('enabled'):
+                                config('Plugins')(plugin).get_bool('enabled'):
         return importlib.import_module(''.join(('outspline.plugins.', plugin,
-                                                                       '_api')))
+                                                                    '_api')))
+
+
+def bind_to_external_nudge(handler, bind=True):
+    return coreaux.events.external_nudge_event.bind(handler, bind)
 
 
 def bind_to_uncaught_exception(handler, bind=True):

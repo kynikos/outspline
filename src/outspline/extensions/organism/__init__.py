@@ -18,6 +18,7 @@
 
 import sqlite3
 
+from outspline.coreaux_api import Event
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
@@ -25,112 +26,143 @@ copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
 import queries
 import items
 
-_ADDON_NAME = ('Extensions', 'organism')
+database_open_event = Event()
+
+extension = None
 
 
-def create_copy_table():
-    mem = core_api.get_memory_connection()
-    cur = mem.cursor()
-    cur.execute(queries.copyrules_create)
-    core_api.give_memory_connection(mem)
+class Main(object):
+    def __init__(self):
+        self._ADDON_NAME = ('Extensions', 'organism')
 
+        self.rules = items.Rules()
+        self.databases = {}
 
-def handle_create_database(kwargs):
-    # Cannot use core_api.get_connection() here because the database isn't
-    # open yet
-    conn = sqlite3.connect(kwargs['filename'])
-    cur = conn.cursor()
-    cur.execute(queries.rules_create)
-    conn.commit()
-    conn.close()
+        self._create_copy_table()
 
+        core_api.bind_to_open_database_dirty(self._handle_open_database_dirty)
+        core_api.bind_to_open_database(self._handle_open_database)
+        core_api.bind_to_save_database_copy(self._handle_save_database_copy)
+        core_api.bind_to_close_database(self._handle_close_database)
+        core_api.bind_to_insert_item(self._handle_insert_item)
+        core_api.bind_to_delete_item(self._handle_delete_item)
 
-def handle_open_database_dirty(kwargs):
-    info = coreaux_api.get_addons_info()
-    dependencies = info(_ADDON_NAME[0])(_ADDON_NAME[1]
+        if copypaste_api:
+            copypaste_api.bind_to_copy_items(self._handle_copy_items)
+            copypaste_api.bind_to_copy_item(self._handle_copy_item)
+            copypaste_api.bind_to_paste_item(self._handle_paste_item)
+            copypaste_api.bind_to_safe_paste_check(
+                                                self._handle_safe_paste_check)
+
+    def _create_copy_table(self):
+        mem = core_api.get_memory_connection()
+        cur = mem.cursor()
+        cur.execute(queries.copyrules_create)
+        core_api.give_memory_connection(mem)
+
+    def _handle_open_database_dirty(self, kwargs):
+        info = coreaux_api.get_addons_info()
+        dependencies = info(self._ADDON_NAME[0])(self._ADDON_NAME[1]
                                     )['database_dependency_group_1'].split(' ')
 
-    if not set(dependencies) - set(kwargs['dependencies']):
-        items.cdbs.add(kwargs['filename'])
+        if not set(dependencies) - set(kwargs['dependencies']):
+            filename = kwargs['filename']
+            self.databases[filename] = items.Database(filename)
 
+    def _handle_open_database(self, kwargs):
+        filename = kwargs['filename']
 
-def handle_open_database(kwargs):
-    filename = kwargs['filename']
+        try:
+            self.databases[filename].post_init()
+        except KeyError:
+            pass
+        else:
+            database_open_event.signal(filename=filename)
 
-    if filename in items.cdbs:
-        core_api.register_history_action_handlers(filename, 'rules_insert',
-                    items.handle_history_insert, items.handle_history_delete)
-        core_api.register_history_action_handlers(filename, 'rules_update',
-                    items.handle_history_update, items.handle_history_update)
-        core_api.register_history_action_handlers(filename, 'rules_delete',
-                    items.handle_history_delete, items.handle_history_insert)
+    def _handle_save_database_copy(self, kwargs):
+        origin = kwargs['origin']
 
+        if origin in self.databases:
+            qconn = core_api.get_connection(origin)
+            qconnd = sqlite3.connect(kwargs['destination'])
+            cur = qconn.cursor()
+            curd = qconnd.cursor()
 
-def handle_save_database_copy(kwargs):
-    if kwargs['origin'] in items.cdbs:
-        qconn = core_api.get_connection(kwargs['origin'])
-        qconnd = sqlite3.connect(kwargs['destination'])
-        cur = qconn.cursor()
-        curd = qconnd.cursor()
+            cur.execute(queries.rules_select)
+            for row in cur:
+                curd.execute(queries.rules_insert, tuple(row))
 
-        cur.execute(queries.rules_select)
-        for row in cur:
-            curd.execute(queries.rules_insert, tuple(row))
+            core_api.give_connection(origin, qconn)
 
-        core_api.give_connection(kwargs['origin'], qconn)
+            qconnd.commit()
+            qconnd.close()
 
-        qconnd.commit()
-        qconnd.close()
+    def _handle_close_database(self, kwargs):
+        try:
+            del self.databases[kwargs['filename']]
+        except KeyError:
+            pass
 
-
-def handle_close_database(kwargs):
-    items.cdbs.discard(kwargs['filename'])
-
-
-def handle_insert_item(kwargs):
-    items.insert_item(kwargs['filename'], kwargs['id_'], kwargs['group'],
-                                                        kwargs['description'])
-
-
-def handle_delete_item(kwargs):
-    items.delete_item_rules(kwargs['filename'], kwargs['id_'], kwargs['text'],
+    def _handle_insert_item(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].insert_item(kwargs['id_'],
                                         kwargs['group'], kwargs['description'])
+        except KeyError:
+            pass
 
+    def _handle_delete_item(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].delete_item_rules(kwargs['id_'],
+                        kwargs['text'], kwargs['group'], kwargs['description'])
+        except KeyError:
+            pass
 
-def handle_copy_items(kwargs):
-    # Do not check if kwargs['filename'] is in cdbs, always clear the table as
-    # the other functions rely on the table to be clear
-    mem = core_api.get_memory_connection()
-    cur = mem.cursor()
-    cur.execute(queries.copyrules_delete)
-    core_api.give_memory_connection(mem)
+    def _handle_copy_items(self, kwargs):
+        # Do not check if kwargs['filename'] is in self.databases, always clear
+        # the table as the other functions rely on the table to be clear
+        mem = core_api.get_memory_connection()
+        cur = mem.cursor()
+        cur.execute(queries.copyrules_delete)
+        core_api.give_memory_connection(mem)
 
+    def _handle_copy_item(self, kwargs):
+        filename = kwargs['filename']
+        id_ = kwargs['id_']
+        record = [id_, ]
 
-def handle_copy_item(kwargs):
-    items.copy_item_rules(kwargs['filename'], kwargs['id_'])
+        try:
+            db = self.databases[filename]
+        except KeyError:
+            # Even if the database doesn't support rules, create a correct
+            # table that can be safely used when pasting
+            record.append(items.Database.rules_to_string([]))
+        else:
+            record.extend(db.copy_item_rules(id_))
 
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+        curm.execute(queries.copyrules_insert, record)
+        core_api.give_memory_connection(mem)
 
-def handle_paste_item(kwargs):
-    items.paste_item_rules(kwargs['filename'], kwargs['id_'], kwargs['oldid'],
-                                        kwargs['group'], kwargs['description'])
+    def _handle_paste_item(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].paste_item_rules(kwargs['id_'],
+                    kwargs['oldid'], kwargs['group'], kwargs['description'])
+        except KeyError:
+            pass
 
+    def _handle_safe_paste_check(self, kwargs):
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+        curm.execute(queries.copyrules_select,
+                                        (items.Database.rules_to_string([]), ))
+        core_api.give_memory_connection(mem)
 
-def handle_safe_paste_check(kwargs):
-    items.can_paste_safely(kwargs['filename'], kwargs['exception'])
+        # Warn if CopyRules table has rules but filename doesn't support them
+        if curm.fetchone() and kwargs['filename'] not in self.databases:
+            raise kwargs['exception']()
 
 
 def main():
-    create_copy_table()
-
-    core_api.bind_to_create_database(handle_create_database)
-    core_api.bind_to_open_database_dirty(handle_open_database_dirty)
-    core_api.bind_to_open_database(handle_open_database)
-    core_api.bind_to_save_database_copy(handle_save_database_copy)
-    core_api.bind_to_close_database(handle_close_database)
-    core_api.bind_to_insert_item(handle_insert_item)
-    core_api.bind_to_delete_item(handle_delete_item)
-    if copypaste_api:
-        copypaste_api.bind_to_copy_items(handle_copy_items)
-        copypaste_api.bind_to_copy_item(handle_copy_item)
-        copypaste_api.bind_to_paste_item(handle_paste_item)
-        copypaste_api.bind_to_safe_paste_check(handle_safe_paste_check)
+    global extension
+    extension = Main()

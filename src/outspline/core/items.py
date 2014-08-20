@@ -30,14 +30,16 @@ item_delete_event = Event()
 
 
 class Item(object):
-    def __init__(self, database, filename, id_):
-        self.database = database
+    def __init__(self, connection, dbhistory, items, filename, id_):
+        self.connection = connection
+        self.dbhistory = dbhistory
+        self.items = items
         self.filename = filename
         self.id_ = id_
 
     @classmethod
     def insert(cls, filename, mode, baseid, group, text='New item',
-               description='Insert item'):
+                                                    description='Insert item'):
         items = databases.dbs[filename].items
 
         if not baseid:
@@ -61,18 +63,19 @@ class Item(object):
 
         cursor.execute(queries.items_insert, (None, parent, previous, text))
         id_ = cursor.lastrowid
-        # For the moment it's necessary to pass 'text' for both the redo and
-        # undo queries, because it's needed also when a history action removes
-        # an item
-        cursor.execute(queries.history_insert,
-                    (group, id_, 'insert', description,
-                    json.dumps((parent, previous, text), separators=(',',':')),
-                    text))
 
         databases.dbs[filename].connection.give(qconn)
 
-        databases.dbs[filename].items[id_] = cls(database=databases.dbs[
-                                        filename], filename=filename, id_=id_)
+        # For the moment it's necessary to pass 'text' for both the redo and
+        # undo queries, because it's needed also when a history action removes
+        # an item
+        databases.dbs[filename].dbhistory.insert_history(group, id_, 'insert',
+                            description, json.dumps((parent, previous, text),
+                            separators=(',',':')), text)
+
+        db = databases.dbs[filename]
+        databases.dbs[filename].items[id_] = cls(db.connection, db.dbhistory,
+                                                    db.items, filename, id_)
 
         item_insert_event.signal(filename=filename, id_=id_, group=group,
                                  description=description)
@@ -96,7 +99,7 @@ class Item(object):
 
     def update_no_event(self, group, parent=None, previous=None, text=None,
                                                     description='Update item'):
-        qconn = self.database.connection.get()
+        qconn = self.connection.get()
         cursor = qconn.cursor()
 
         cursor.execute(queries.items_select_id, (self.id_, ))
@@ -124,13 +127,12 @@ class Item(object):
         query = queries.items_update_id.format(set_fields)
         qparams.append(self.id_)
         cursor.execute(query, qparams)
+        self.connection.give(qconn)
 
         jhparams = json.dumps(hparams, separators=(',',':'))
         jhunparams = json.dumps(hunparams, separators=(',',':'))
-        cursor.execute(queries.history_insert, (group, self.id_, 'update',
-                                            description, jhparams, jhunparams))
-
-        self.database.connection.give(qconn)
+        self.dbhistory.insert_history(group, self.id_, 'update',
+                                            description, jhparams, jhunparams)
 
     def delete(self, group, description='Delete item'):
         prev = self.get_previous()
@@ -143,7 +145,7 @@ class Item(object):
                 previd = 0
             next.update(group, previous=previd, description=description)
 
-        qconn = self.database.connection.get()
+        qconn = self.connection.get()
         cursor = qconn.cursor()
 
         cursor.execute(queries.items_select_id, (self.id_, ))
@@ -157,13 +159,12 @@ class Item(object):
                     current_values['I_previous'], current_values['I_text']),
                     separators=(',',':'))
 
-
-
         cursor.execute(queries.items_delete_id, (self.id_, ))
-        cursor.execute(queries.history_insert, (group, self.id_, 'delete',
-                                            description, hparams, hunparams))
 
-        self.database.connection.give(qconn)
+        self.connection.give(qconn)
+
+        self.dbhistory.insert_history(group, self.id_, 'delete',
+                                            description, hparams, hunparams)
 
         self.remove()
 
@@ -173,10 +174,10 @@ class Item(object):
                          group=group, description=description)
 
     def remove(self):
-        del self.database.items[self.id_]
+        del self.items[self.id_]
 
     def shift(self, mode, group, description='Shift item'):
-        items = self.database.items
+        items = self.items
         filename = self.filename
         id_ = self.id_
         if mode == 'up':
@@ -241,10 +242,10 @@ class Item(object):
         return self.id_
 
     def get_children(self):
-        qconn = self.database.connection.get()
+        qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_children, (self.id_, ))
-        self.database.connection.give(qconn)
+        self.connection.give(qconn)
 
         dd = {}
         for row in cursor:
@@ -253,16 +254,16 @@ class Item(object):
         children = []
         prev = 0
         while prev in dd:
-            children.append(self.database.items[dd[prev]])
+            children.append(self.items[dd[prev]])
             prev = dd[prev]
 
         return children
 
     def get_all_info(self):
-        qconn = self.database.connection.get()
+        qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id, (self.id_, ))
-        self.database.connection.give(qconn)
+        self.connection.give(qconn)
         row = cursor.fetchone()
         if row:
             return {'id_': self.id_,
@@ -295,7 +296,7 @@ class Item(object):
         return ancestors
 
     def get_descendants(self):
-        items = self.database.items
+        items = self.items
         descendants = []
 
         def recurse(id_):
@@ -308,51 +309,51 @@ class Item(object):
         return descendants
 
     def get_previous(self):
-        qconn = self.database.connection.get()
+        qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_previous, (self.id_, ))
-        self.database.connection.give(qconn)
+        self.connection.give(qconn)
         pid = cursor.fetchone()
         if pid['I_previous'] != 0:
-            return self.database.items[pid['I_previous']]
+            return self.items[pid['I_previous']]
         else:
             return None
 
     def get_next(self):
-        qconn = self.database.connection.get()
+        qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_next, (self.id_, ))
-        self.database.connection.give(qconn)
+        self.connection.give(qconn)
         nid = cursor.fetchone()
         if nid:
-            return self.database.items[nid['I_id']]
+            return self.items[nid['I_id']]
         else:
             return None
 
     def get_parent(self):
-        qconn = self.database.connection.get()
+        qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_parent, (self.id_, ))
-        self.database.connection.give(qconn)
+        self.connection.give(qconn)
         pid = cursor.fetchone()
         if pid['I_parent']:
-            return self.database.items[pid['I_parent']]
+            return self.items[pid['I_parent']]
         else:
             return None
 
     def get_text(self):
-        qconn = self.database.connection.get()
+        qconn = self.connection.get()
         cur = qconn.cursor()
         cur.execute(queries.items_select_id_editor, (self.id_, ))
         text = cur.fetchone()['I_text']
-        self.database.connection.give(qconn)
+        self.connection.give(qconn)
         return text
 
     def has_children(self):
-        qconn = self.database.connection.get()
+        qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_haschildren, (self.id_, ))
-        self.database.connection.give(qconn)
+        self.connection.give(qconn)
         if cursor.fetchone():
             return True
         else:

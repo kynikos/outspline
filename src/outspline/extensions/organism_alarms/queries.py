@@ -16,6 +16,27 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+alarmsproperties_create = ('CREATE TABLE AlarmsProperties '
+                          '(AP_id INTEGER PRIMARY KEY, '
+                           'AP_log_limit INTEGER)')
+
+alarmsproperties_select = 'SELECT * FROM AlarmsProperties'
+
+alarmsproperties_select_history = ('SELECT AP_log_limit FROM AlarmsProperties '
+                                    'WHERE AP_log_limit IS NOT NULL LIMIT 1')
+
+alarmsproperties_insert_init = ('INSERT INTO AlarmsProperties '
+                                    '(AP_id, AP_log_limit) VALUES (NULL, ?)')
+
+alarmsproperties_insert_copy = ('INSERT INTO AlarmsProperties '
+                                        '(AP_id, AP_log_limit) VALUES (?, ?)')
+
+alarmsproperties_update = 'UPDATE AlarmsProperties SET AP_log_limit=?'
+
+alarmsproperties_delete = 'DELETE FROM AlarmsProperties'
+
+alarmsproperties_drop = 'DROP TABLE AlarmsProperties'
+
 alarms_create = ("CREATE TABLE Alarms (A_id INTEGER PRIMARY KEY, "
                                       "A_item INTEGER, "
                                       "A_start INTEGER, "
@@ -42,6 +63,8 @@ alarms_update_id = 'UPDATE Alarms SET A_snooze=? WHERE A_id=?'
 alarms_delete_id = 'DELETE FROM Alarms WHERE A_id=?'
 
 alarms_delete_item = 'DELETE FROM Alarms WHERE A_item=?'
+
+alarms_drop = 'DROP TABLE Alarms'
 
 copyalarms_create = ("CREATE TABLE CopyAlarms (CA_id INTEGER, "
                                               "CA_item INTEGER, "
@@ -79,7 +102,27 @@ alarmsofflog_insert = ('INSERT INTO AlarmsOffLog (AOL_id, AOL_item, '
 alarmsofflog_insert_copy = ('INSERT INTO AlarmsOffLog (AOL_id, AOL_item, '
                     'AOL_tstamp, AOL_reason, AOL_text) VALUES (?, ?, ?, ?, ?)')
 
-# DELETE FROM AlarmsOffLog ORDER BY AOL_tstamp DESC LIMIT -1 OFFSET ?
-alarmsofflog_delete_clean = ('DELETE FROM AlarmsOffLog '
-                        'WHERE AOL_id NOT IN (SELECT AOL_id FROM AlarmsOffLog '
-                        'ORDER BY AOL_tstamp DESC LIMIT ?)')
+# The following query is not supported:
+#   DELETE FROM AlarmsOffLog ORDER BY AOL_tstamp DESC LIMIT -1 OFFSET ?
+alarmsofflog_delete_clean_close = ('''
+DELETE FROM AlarmsOffLog WHERE AOL_id NOT IN (
+    SELECT AOL_id FROM AlarmsOffLog ORDER BY AOL_tstamp DESC LIMIT ?
+)''')
+
+# The following query is not supported:
+#   DELETE FROM AlarmsOffLog ORDER BY AOL_tstamp DESC LIMIT -1 OFFSET ?
+alarmsofflog_delete_clean = ('''
+DELETE FROM AlarmsOffLog WHERE AOL_id NOT IN (
+    SELECT AOL_id FROM (
+        SELECT DISTINCT AOL_id FROM AlarmsOffLog
+        ORDER BY AOL_tstamp DESC LIMIT ?
+    )
+    UNION
+    SELECT AOL_id FROM (
+        SELECT DISTINCT AOL_id FROM AlarmsOffLog
+        WHERE AOL_tstamp >= strftime("%s", "now") - ? * 60
+        ORDER BY AOL_tstamp DESC LIMIT ?
+    )
+)''')
+
+alarmsofflog_drop = 'DROP TABLE AlarmsOffLog'

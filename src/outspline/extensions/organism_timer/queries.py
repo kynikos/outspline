@@ -32,3 +32,5 @@ timerproperties_update = 'UPDATE TimerProperties SET TP_last_search=?'
 
 timerproperties_update_copy = ('UPDATE TimerProperties SET TP_id=?, '
                                'TP_last_search=?')
+
+timerproperties_drop = 'DROP TABLE TimerProperties'

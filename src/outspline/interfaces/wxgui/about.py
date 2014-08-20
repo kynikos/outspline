@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import wx
 from datetime import datetime
 
@@ -38,7 +39,7 @@ class AboutWindow(wx.Frame):
         self.SetSizer(sizer1)
 
         logo = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
-                                             'text-editor', wx.ART_CMN_DIALOG))
+                                             '@outspline', wx.ART_CMN_DIALOG))
 
         name = wx.StaticText(self, label='Outspline')
         name.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC,
@@ -49,7 +50,7 @@ class AboutWindow(wx.Frame):
                                 coreaux_api.get_main_component_release_date()))
 
         self.copyright = wx.StaticText(self, label=coreaux_api.get_copyright(
-                                                                      alt=True))
+                                                                    alt=True))
         self.copyright.SetFont(wx.Font(8, wx.FONTFAMILY_DEFAULT,
                                        wx.FONTSTYLE_NORMAL,
                                        wx.FONTWEIGHT_NORMAL))
@@ -153,17 +154,19 @@ class InfoBox(wx.SplitterWindow):
         info = coreaux_api.get_addons_info()
 
         for type_ in ('Extensions', 'Interfaces', 'Plugins'):
-            typeitem = self.tree.AppendItem(self.tree.GetRootItem(), text=type_,
-                           data=wx.TreeItemData({'req': 'lst', 'type_': type_}))
+            typeitem = self.tree.AppendItem(self.tree.GetRootItem(),
+                        text=type_,
+                        data=wx.TreeItemData({'req': 'lst', 'type_': type_}))
             for addon in info(type_).get_sections():
-                self.tree.AppendItem(typeitem, text=addon, data=wx.TreeItemData(
-                                {'req': 'inf', 'type_': type_, 'addon': addon}))
+                self.tree.AppendItem(typeitem, text=addon,
+                            data=wx.TreeItemData(
+                            {'req': 'inf', 'type_': type_, 'addon': addon}))
 
     def compose_license(self):
         self.textw.AppendText('{}\n{}\n\n{}'.format(
-                                                  coreaux_api.get_description(),
-                                                  coreaux_api.get_copyright(),
-                                                  coreaux_api.get_disclaimer()))
+                                              coreaux_api.get_description(),
+                                              coreaux_api.get_copyright(),
+                                              coreaux_api.get_disclaimer()))
 
     def compose_main_info(self):
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
@@ -193,8 +196,8 @@ class InfoBox(wx.SplitterWindow):
         cinfo = coreaux_api.get_components_info()
         for c in cinfo('Components').get_sections():
             self.textw.AppendText('\n\t{} {} ({})'.format(c,
-                                              cinfo('Components')(c)['version'],
-                                        cinfo('Components')(c)['release_date']))
+                                    cinfo('Components')(c)['version'],
+                                    cinfo('Components')(c)['release_date']))
 
     def compose_addon_info(self, type_, addon):
         info = coreaux_api.get_addons_info()(type_)(addon)
@@ -222,24 +225,14 @@ class InfoBox(wx.SplitterWindow):
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
         self.textw.AppendText(info['website'])
 
-        authors = []
-        contributors = []
-        dependencies = []
-        optionaldependencies = []
-        for o in info.get_options():
-            if o[:6] == 'author':
-                authors.append(info[o])
-            elif o[:11] == 'contributor':
-                contributors.append(info[o])
-            elif o[:10] == 'dependency':
-                dependencies.append(info[o])
-            elif o[:19] == 'optional_dependency':
-                optionaldependencies.append(info[o])
-
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
+
+        authors = json.loads(info['authors'])
+
         if len(authors) > 1:
             self.textw.AppendText('\nAuthors:')
             self.textw.SetDefaultStyle(self.STYLE_NORMAL)
+
             for a in authors:
                 self.textw.AppendText('\n\t{}'.format(a))
         else:
@@ -250,7 +243,8 @@ class InfoBox(wx.SplitterWindow):
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nContributors:')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        for c in contributors:
+
+        for c in json.loads(info.get('contributors', fallback="[]")):
             self.textw.AppendText('\n\t{}'.format(c))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
@@ -259,20 +253,32 @@ class InfoBox(wx.SplitterWindow):
         cinfo = coreaux_api.get_components_info()
         component = cinfo(type_)(addon)[info['version']]
         self.textw.AppendText('{} {} ({})'.format(component,
-                                      cinfo('Components')(component)['version'],
-                                cinfo('Components')(component)['release_date']))
+                            cinfo('Components')(component)['version'],
+                            cinfo('Components')(component)['release_date']))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nDependencies:')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        for d in dependencies:
-            self.textw.AppendText('\n\t{}.x'.format(d))
+
+        try:
+            deps = info['dependencies'].split(" ")
+        except KeyError:
+            pass
+        else:
+            for d in deps:
+                self.textw.AppendText('\n\t{} {}.x'.format(*d.rsplit(".", 1)))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nOptional dependencies:')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        for o in optionaldependencies:
-            self.textw.AppendText('\n\t{}.x'.format(o))
+
+        try:
+            opts = info['optional_dependencies'].split(" ")
+        except KeyError:
+            pass
+        else:
+            for o in opts:
+                self.textw.AppendText('\n\t{} {}.x'.format(*o.rsplit(".", 1)))
 
     def compose_list(self, type_):
         # Do not use the configuration because it could have entries about

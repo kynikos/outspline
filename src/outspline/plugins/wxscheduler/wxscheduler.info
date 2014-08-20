@@ -1,10 +1,6 @@
-author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.4
+authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
+version = 1.0
 description = Lets manage the scedule rules for items.
 website = https://github.com/kynikos/outspline/
-affects_database = no
-provides_tables =
-dependency_1 = core 0
-dependency_2 = extensions.organism 0
-dependency_3 = interfaces.wxgui 0
-optional_dependency_1 = plugins.wxcopypaste 0
+dependencies = core.1 extensions.organism.1 interfaces.wxgui.1
+optional_dependencies = plugins.wxcopypaste.1

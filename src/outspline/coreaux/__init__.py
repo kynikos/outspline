@@ -18,9 +18,17 @@
 
 import sys
 import os
+import hashlib
+
+try:
+    import dbus
+    import dbus.service
+    from dbus.mainloop.glib import DBusGMainLoop
+except ImportError:
+    dbus = None
 
 import configuration
-from events import uncaught_exception_event
+from events import external_nudge_event, uncaught_exception_event
 
 
 def handle_uncaught_exception(type, value, traceback):
@@ -37,6 +45,43 @@ def handle_uncaught_exception(type, value, traceback):
     os._exit(1)
 
 
+def check_existing_processes(configfile):
+    # Append the configuration file to the well-known name, not just to the
+    # service name, because in the latter case it would seem to work with 2
+    # processes, but it wouldn't work as expected with 3 or more processes
+    # Add "C" because a digit cannot follow a dot
+    wkname = 'org.Kynikos.Outspline.C' + hashlib.md5(configfile).hexdigest()
+    DBUS_SERVICE_NAME = "/Main"
+
+    # This class must be defined here because dbus.service.method has to get
+    # the right well-known-name
+    class DbusService(dbus.service.Object):
+        def __init__(self):
+            busname = dbus.service.BusName(wkname, bus=bus)
+            super(DbusService, self).__init__(busname, DBUS_SERVICE_NAME)
+
+        @dbus.service.method(wkname)
+        def nudge(self):
+            external_nudge_event.signal()
+
+    try:
+        # DBusGMainLoop must be instantiated *before* SessionBus
+        DBusGMainLoop(set_as_default=True)
+        bus = dbus.SessionBus()
+    except dbus.exceptions.DBusException as err:
+        # D-Bus may be installed but not started
+        sys.exit("DBusException: " + err.message)
+    else:
+        try:
+            service = bus.get_object(wkname, DBUS_SERVICE_NAME)
+        except dbus.exceptions.DBusException:
+            service = DbusService()
+        else:
+            nudge_existing_process = service.get_dbus_method('nudge', wkname)
+            nudge_existing_process()
+            sys.exit("Another instance of Outspline is using " + configfile)
+
+
 def main():
     configuration.load_component_info()
     configuration.load_addon_info_and_default_config()
@@ -44,7 +89,14 @@ def main():
     import cliargparse
     cliargs = cliargparse.parse_cli_args()
 
-    configuration.load_user_config(cliargs)
+    # This must be done *before* checking for existing processes, because a
+    # configuration file may haven't been set in the command arguments
+    configfile = configuration.set_configuration_file(cliargs)
+
+    if dbus:
+        check_existing_processes(configfile)
+
+    configuration.load_configuration()
 
     import logger
     logger.set_logger(cliargs)

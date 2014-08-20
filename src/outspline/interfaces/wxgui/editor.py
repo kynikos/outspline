@@ -39,6 +39,12 @@ config = coreaux_api.get_interface_configuration('wxgui')
 tabs = {}
 
 
+class Editors(object):
+    def __init__(self, nb):
+        self.icon_index = nb.add_image(wx.ArtProvider.GetBitmap(
+                                    '@editortab', wx.ART_TOOLBAR, (16, 16)))
+
+
 class EditorPanel(wx.Panel):
     ctabmenu = None
 
@@ -118,7 +124,9 @@ class Editor():
         open_textctrl_event.signal(filename=filename, id_=id_, item=self.item,
                                    text=text)
 
-        wx.GetApp().nb_right.add_page(self.panel, title, select=True)
+        nb = wx.GetApp().nb_right
+        nb.add_page(self.panel, title, select=True,
+                                                imageId=nb.editors.icon_index)
 
     @classmethod
     def open(cls, filename, id_):

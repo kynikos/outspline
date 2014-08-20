@@ -31,6 +31,8 @@ properties_select_history = ('SELECT P_max_history FROM Properties '
 properties_insert_dummy = ('INSERT INTO Properties (P_id, P_max_history) '
                                                         'VALUES (NULL, NULL)')
 
+properties_update = 'UPDATE Properties SET P_max_history=?'
+
 properties_insert_init = ('INSERT INTO Properties (P_id, P_max_history) '
                           'VALUES (NULL, ?)')
 
@@ -43,19 +45,29 @@ properties_delete_dummy = 'DELETE FROM Properties WHERE P_max_history IS NULL'
 
 compatibility_create = ('CREATE TABLE CoMpatibility ('
                                                   'CM_id INTEGER PRIMARY KEY, '
-                                                  'CM_type TEXT, '
-                                                  'CM_addon TEXT, '
+                                                  'CM_extension TEXT, '
                                                   'CM_version INTEGER)')
 
 compatibility_select = 'SELECT * FROM CoMpatibility'
 
-compatibility_insert = ('INSERT INTO CoMpatibility (CM_id, CM_type, CM_addon, '
-                        'CM_version) VALUES (NULL, ?, ?, ?)')
+compatibility_insert = ('INSERT INTO CoMpatibility (CM_id, CM_extension, '
+                        'CM_version) VALUES (NULL, ?, ?)')
 
-compatibility_insert_copy = ('INSERT INTO CoMpatibility (CM_id, CM_type, '
-                             'CM_addon, CM_version) VALUES (?, ?, ?, ?)')
+compatibility_insert_ignored = ('INSERT INTO CoMpatibility (CM_id, '
+                            'CM_extension, CM_version) VALUES (NULL, ?, NULL)')
 
-compatibility_delete = 'DELETE FROM CoMpatibility'
+compatibility_insert_copy = ('INSERT INTO CoMpatibility (CM_id, '
+                             'CM_extension, CM_version) VALUES (?, ?, ?)')
+
+compatibility_update_core = ('UPDATE CoMpatibility SET CM_version=? '
+                                                'WHERE CM_extension IS NULL')
+
+compatibility_update_extension = ('UPDATE CoMpatibility SET CM_version=? '
+                                                'WHERE CM_extension=?')
+
+compatibility_delete = 'DELETE FROM CoMpatibility WHERE CM_extension=?'
+
+compatibility_delete_all = 'DELETE FROM CoMpatibility'
 
 items_create = ("CREATE TABLE Items (I_id INTEGER PRIMARY KEY, "
                                     "I_parent INTEGER, "
@@ -100,6 +112,7 @@ history_create = ("CREATE TABLE History (H_id INTEGER PRIMARY KEY, "
                                         "H_status INTEGER, "
                                         "H_item INTEGER, "
                                         "H_type TEXT, "
+                                        "H_tstamp INTEGER, "
                                         "H_description TEXT, "
                                         "H_redo TEXT, "
                                         "H_undo TEXT)")
@@ -128,23 +141,17 @@ history_select_status_redo = ('SELECT H_group, H_status '
                               'FROM History WHERE H_status IN (0, 2, 4) '
                               'ORDER BY H_group ASC LIMIT 1')
 
-history_select_description = ('SELECT DISTINCT H_group, H_status, '
+history_select_description = ('SELECT DISTINCT H_group, H_status, H_tstamp, '
                               'H_description FROM History '
-                              'ORDER BY H_group DESC')
-
-history_select_select = ('SELECT H_id FROM History '
-                         'WHERE H_status IN (1, 3, 5) AND H_group NOT IN '
-                         '(SELECT DISTINCT H_group FROM History '
-                         'WHERE H_status IN (1, 3, 5) '
-                         'ORDER BY H_group DESC LIMIT ?)')
+                              'ORDER BY H_group DESC, H_tstamp DESC')
 
 history_insert = ('INSERT INTO History (H_id, H_group, H_status, '
-                  'H_item, H_type, H_description, H_redo, H_undo) '
-                  'VALUES (NULL, ?, 1, ?, ?, ?, ?, ?)')
+                  'H_item, H_type, H_tstamp, H_description, H_redo, H_undo) '
+                  'VALUES (NULL, ?, 1, ?, ?, strftime("%s", "now"), ?, ?, ?)')
 
 history_insert_copy = ('INSERT INTO History (H_id, H_group, H_status, H_item, '
-                       'H_type, H_description, H_redo, H_undo) '
-                       'VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+                       'H_type, H_tstamp, H_description, H_redo, H_undo) '
+                       'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
 
 history_update_status_new = ('UPDATE History SET H_status=5 '
                              'WHERE H_status IN (1, 3)')
@@ -160,4 +167,38 @@ history_update_group = ('UPDATE History '
 
 history_delete_status = 'DELETE FROM History WHERE H_status IN (0, 2, 4)'
 
-history_delete_id = 'DELETE FROM History WHERE H_id=?'
+# Don't delete statuses 0, 2, 4 this way, because those actions are ahead of
+# the current database status, and at most they should be deleted in ascending
+# order; however, they'll be deleted anyway the next time an action is done, so
+# they can just be left alone here
+# Don't just use ORDER BY and OFFSET directly in the main DELETE query, because
+# groups have to be kept intact
+history_delete_select = ('''
+DELETE FROM History WHERE H_group < (
+    SELECT MIN(H_group) FROM (
+        SELECT DISTINCT H_group FROM History WHERE H_status IN (1, 3, 5)
+        ORDER BY H_group DESC LIMIT ?
+    )
+)''')
+
+# There can't be entries with statuses 0, 2, 4 because this query is executed
+# only when *inserting* a group in the history, and before that all 0, 2 and 4
+# actions are deleted by history_delete_status
+# Don't just use ORDER BY and OFFSET directly in the main DELETE query, because
+# groups have to be kept intact
+history_delete_union = ('''
+DELETE FROM History WHERE H_group < (
+    SELECT MIN(H_group) FROM (
+        SELECT H_group FROM (
+            SELECT DISTINCT H_group FROM History ORDER BY H_group DESC LIMIT ?
+        )
+        UNION
+        SELECT H_group FROM (
+            SELECT DISTINCT H_group FROM History
+            WHERE H_tstamp >= strftime("%s", "now") - ? * 60
+            ORDER BY H_group DESC LIMIT ?
+        )
+    )
+)''')
+
+history_delete_purge = 'DELETE FROM History'

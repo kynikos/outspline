@@ -1,9 +1,5 @@
-author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.2
+authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
+version = 1.0
 description = Adds a log the records alarm events
 website = https://github.com/kynikos/outspline/
-affects_database = no
-provides_tables =
-dependency_1 = core 0
-dependency_2 = extensions.organism_alarms 0
-dependency_3 = interfaces.wxgui 0
+dependencies = core.1 extensions.organism_alarms.1 interfaces.wxgui.1

@@ -38,7 +38,7 @@ _ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
 _CORE_INFO = os.path.join(_ROOT_DIR, 'coreaux', 'core.info')
 _CONFIG_FILE = os.path.join(_ROOT_DIR, 'outspline.conf')
 _USER_CONFIG_FILE = os.path.join(os.path.expanduser('~'), '.config',
-                                 'outspline', 'outspline.conf')
+                                                'outspline', 'outspline.conf')
 _USER_FOLDER_PERMISSIONS = 0750
 _DESCRIPTION_LONG = 'Outspline is a highly modular outliner whose '\
                     'functionality can be widely extended through the '\
@@ -46,7 +46,7 @@ _DESCRIPTION_LONG = 'Outspline is a highly modular outliner whose '\
 _COPYRIGHT_V1 = 'Copyright (C) 2011-{} Dario Giovannetti '\
                 '<dev@dariogiovannetti.net>'.format(datetime.now().year)
 _COPYRIGHT_V2 = 'Copyright © 2011-{} Dario Giovannetti'.format(datetime.now(
-                                                                         ).year)
+                                                                        ).year)
 _DISCLAIMER_SHORT = \
 '''This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, you are welcome to redistribute it under the
@@ -90,7 +90,7 @@ def load_component_info():
             components('Components')(split[0]).add(os.path.join(_ROOT_DIR, c))
 
             if components('Components')(split[0]).get_bool('provides_core',
-                                                              fallback='false'):
+                                                            fallback='false'):
                 if 'core' not in components:
                     components['core'] = split[0]
                 else:
@@ -99,7 +99,7 @@ def load_component_info():
             for a in components('Components')(split[0]):
                 if a[:9] == 'extension':
                     extension, version = components('Components')(split[0])[a
-                                                                    ].split(' ')
+                                                                ].split(' ')
                     components('Extensions').make_subsection(extension)
 
                     if version not in components('Extensions')(extension):
@@ -108,7 +108,7 @@ def load_component_info():
                         raise exceptions.ComponentConflictError()
                 elif a[:9] == 'interface':
                     interface, version = components('Components')(split[0])[a
-                                                                    ].split(' ')
+                                                                ].split(' ')
                     components('Interfaces').make_subsection(interface)
 
                     if version not in components('Interfaces')(interface):
@@ -117,7 +117,7 @@ def load_component_info():
                         raise exceptions.ComponentConflictError()
                 elif a[:6] == 'plugin':
                     plugin, version = components('Components')(split[0])[a
-                                                                    ].split(' ')
+                                                                ].split(' ')
                     components('Plugins').make_subsection(plugin)
 
                     if version not in components('Plugins')(plugin):
@@ -148,8 +148,8 @@ def load_addon_info_and_default_config():
             info(t).make_subsection(a)
             config(t).make_subsection(a)
 
-            # Let the normal exception be raised if the .info or .conf files are
-            # not found
+            # Let the normal exception be raised if the .info or .conf files
+            # are not found
             info(t)(a).add(os.path.join(_ROOT_DIR, t.lower(), a, a + '.info'))
             config(t)(a).add(os.path.join(_ROOT_DIR, t.lower(), a + '.conf'))
 
@@ -157,23 +157,33 @@ def load_addon_info_and_default_config():
                 raise exceptions.AddonNotFoundError()
 
 
-def load_user_config(cliargs):
+def set_configuration_file(cliargs):
     if cliargs.configfile != None:
         global user_config_file
         user_config_file = os.path.expanduser(cliargs.configfile)
-        config.upgrade(user_config_file)
-    else:
-        try:
-            config.upgrade(_USER_CONFIG_FILE)
-        except configfile.InvalidFileError:
-            pass
 
+    return user_config_file
+
+
+def load_configuration():
+    # Try to make the directory separately from the logger, because they could
+    # be set to different paths
     try:
         os.makedirs(os.path.dirname(user_config_file),
-                    mode=_USER_FOLDER_PERMISSIONS)
+                                                mode=_USER_FOLDER_PERMISSIONS)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
+
+    try:
+        config.upgrade(user_config_file)
+    except configfile.NonExistentFileError:
+        # If the file just doesn't exist, create it (happens later)
+        pass
+    except configfile.InvalidFileError:
+        # If the file is unreadable but exists, better be safe and crash here
+        # instead of overwriting it
+        raise
 
 
 def export_configuration():

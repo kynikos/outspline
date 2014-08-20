@@ -29,74 +29,117 @@ import outspline.extensions.organism_alarms_api as organism_alarms_api
 import outspline.interfaces.wxgui_api as wxgui_api
 wxtrayicon_api = coreaux_api.import_optional_plugin_api('wxtrayicon')
 
-_ALARMS_MIN_HEIGHT = 140
-_ALARMS_ICON_BUNDLE = wx.IconBundle()
-_ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms', wx.ART_TOOLBAR))
-_ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms', wx.ART_MENU))
-_ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms', wx.ART_BUTTON))
-_ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                   wx.ART_FRAME_ICON))
-_ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                   wx.ART_CMN_DIALOG))
-_ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                   wx.ART_HELP_BROWSER))
-_ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                   wx.ART_MESSAGE_BOX))
-_ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms', wx.ART_OTHER))
-_WRAP = 260
-
 alarmswindow = None
 
 
-class AlarmsWindow():
-    config = None
-    window = None
-    panel = None
-    pbox = None
-    snooze = None
-    bottom = None
-    mainmenu = None
-    number = None
-    unit = None
-    alarms = None
-
+class AlarmsWindow(object):
     def __init__(self, parent):
+        self.ALARMS_MIN_HEIGHT = 140
+        self.ALARMS_ICON_BUNDLE = wx.IconBundle()
+        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
+                                                        wx.ART_TOOLBAR))
+        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
+                                                        wx.ART_MENU))
+        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
+                                                        wx.ART_BUTTON))
+        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
+                                                        wx.ART_FRAME_ICON))
+        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
+                                                        wx.ART_CMN_DIALOG))
+        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
+                                                        wx.ART_HELP_BROWSER))
+        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
+                                                        wx.ART_MESSAGE_BOX))
+        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
+                                                        wx.ART_OTHER))
+
         self.config = coreaux_api.get_plugin_configuration('wxalarms')
 
         self.window = wx.Frame(parent, size=[int(s)
                           for s in self.config['initial_geometry'].split('x')])
 
-        self.window.SetIcons(_ALARMS_ICON_BUNDLE)
+        self.window.SetIcons(self.ALARMS_ICON_BUNDLE)
 
         self.alarms = {}
-        self.update_title()
+        self._update_title()
 
-        box = wx.BoxSizer(wx.VERTICAL)
-        self.window.SetSizer(box)
+        self.box = wx.BoxSizer(wx.VERTICAL)
+        self.window.SetSizer(self.box)
 
         self.panel = wx.ScrolledWindow(self.window, style=wx.BORDER_THEME)
         self.panel.SetScrollRate(20, 20)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
-        box.Add(self.panel, proportion=1, flag=wx.EXPAND | wx.ALL, border=4)
+        self.box.Add(self.panel, proportion=1, flag=wx.EXPAND | wx.ALL,
+                                                                    border=4)
+
+        self.hidden_panel = wx.BoxSizer(wx.HORIZONTAL)
+        self._init_hidden_panel()
+        self.box.Add(self.hidden_panel, flag=wx.LEFT | wx.RIGHT | wx.BOTTOM |
+                                                        wx.EXPAND, border=4)
+        self._hide_hidden_panel()
 
         self.bottom = wx.BoxSizer(wx.HORIZONTAL)
         self._init_bottom()
-        box.Add(self.bottom, flag=wx.LEFT | wx.RIGHT | wx.EXPAND, border=4)
+        self.box.Add(self.bottom, flag=wx.LEFT | wx.RIGHT | wx.EXPAND,
+                                                                    border=4)
 
         # Set the minimum width so that the bottom controls can fit, and also
         # add 20 px for the stretch spacer
         minwidth = self.bottom.ComputeFittingWindowSize(self.window).GetWidth()
-        self.window.SetMinSize((minwidth + 20, _ALARMS_MIN_HEIGHT))
+        self.window.SetMinSize((minwidth + 20, self.ALARMS_MIN_HEIGHT))
+
+        self.DELAY = 50
+        # Set CDELAY shorter than DELAY, so that if an alarm is activated at
+        # the same time an alarm is dismissed, there's a better chance that
+        # the alarm window requests the user attention
+        self.CDELAY = 30
+
+        # Initialize self.timer and self.stimer with a dummy function (int)
+        self.timer = wx.CallLater(1, int)
+        self.stimer = wx.CallLater(1, int)
+
+        self.LIMIT = self.config.get_int('limit')
+        self.hiddenalarms = set()
 
         self.mainmenu = MainMenu(self)
         TrayMenu(self)
 
-        self.window.Bind(wx.EVT_CLOSE, self.handle_close)
+        self.window.Bind(wx.EVT_CLOSE, self._handle_close)
 
-        organism_alarms_api.bind_to_alarm(self.handle_alarm)
-        organism_alarms_api.bind_to_alarm_off(self.handle_alarm_off)
-        wxgui_api.bind_to_close_database(self.handle_close_db)
+        organism_alarms_api.bind_to_alarm(self._handle_alarm)
+        organism_alarms_api.bind_to_alarm_off(self._handle_alarm_off)
+        wxgui_api.bind_to_close_database(self._handle_close_db)
+
+    def _init_hidden_panel(self):
+        icon = wx.StaticBitmap(self.window, bitmap=wx.ArtProvider.GetBitmap(
+                                                    '@warning', wx.ART_BUTTON))
+        self.hidden_panel.Add(icon, flag=wx.ALIGN_CENTER_VERTICAL |
+                                                            wx.RIGHT, border=4)
+
+        self.hiddenL = wx.StaticText(self.window, label='')
+        self.hidden_panel.Add(self.hiddenL, flag=wx.ALIGN_CENTER_VERTICAL |
+                                                            wx.RIGHT, border=4)
+
+        button_d = wx.Button(self.window, label='show', style=wx.BU_EXACTFIT)
+        self.hidden_panel.Add(button_d, flag=wx.RIGHT, border=4)
+
+        label2 = wx.StaticText(self.window, label='up to')
+        self.hidden_panel.Add(label2, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
+
+        self.hiddenN = NarrowSpinCtrl(self.window, min=1, max=99,
+                                                        style=wx.SP_ARROW_KEYS)
+        self.hiddenN.SetValue(5)
+        self.hidden_panel.Add(self.hiddenN, flag=wx.ALIGN_CENTER_VERTICAL |
+                                                            wx.RIGHT, border=4)
+
+        label3 = wx.StaticText(self.window, label='more')
+        self.hidden_panel.Add(label3, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                      border=4)
+
+        self.window.Bind(wx.EVT_BUTTON, self._show_hidden_alarms_prepare,
+                                                                    button_d)
 
     def _init_bottom(self):
         button_s = wx.Button(self.window, label='Snooze all')
@@ -126,14 +169,49 @@ class AlarmsWindow():
         self.window.Bind(wx.EVT_BUTTON, self.snooze_all, button_s)
         self.window.Bind(wx.EVT_BUTTON, self.dismiss_all, button_d)
 
-    def handle_close(self, event):
-        self.hide()
+    def _handle_close(self, event):
+        self._hide()
 
-    def show(self):
+    def _show(self):
         self.window.Show(True)
         self.window.Centre()
 
-    def hide(self):
+    def _display_append(self):
+        self._update_title()
+
+        if len(self.hiddenalarms) > 0:
+            self._show_hidden_panel()
+
+        self._update_hidden_number()
+
+        self.window.Layout()
+
+        if not self.window.IsShown():
+            # Centre only if not already shown; using ShowWithoutActivating
+            # *before* the self.window.IsShown() test would never verify the
+            # condition
+            self.window.ShowWithoutActivating()
+            self.window.Centre()
+
+        self.window.RequestUserAttention()
+
+    def _display_close(self):
+        self._update_title()
+
+        if len(self.hiddenalarms) == 0:
+            self._hide_hidden_panel()
+        else:
+            self._show_hidden_alarms(self.LIMIT - len(self.alarms) +
+                                                        len(self.hiddenalarms))
+
+        self._update_hidden_number()
+
+        if len(self.alarms) == 0:
+            self._hide()
+
+        self.window.Layout()
+
+    def _hide(self):
         self.window.Show(False)
 
     def is_shown(self):
@@ -141,88 +219,125 @@ class AlarmsWindow():
 
     def toggle_shown(self, event):
         if self.window.IsShown():
-            self.hide()
+            self._hide()
         else:
-            self.show()
+            self._show()
+
+    def _show_hidden_panel(self):
+        self.box.Show(self.hidden_panel)
+
+    def _hide_hidden_panel(self):
+        self.box.Hide(self.hidden_panel)
 
     def dismiss_all(self, event):
-        core_api.block_databases()
+        if core_api.block_databases():
+            organism_alarms_api.dismiss_alarms(
+                                        self._get_shown_alarms_dictionary())
+            # Let the alarm off event close the alarms
 
-        organism_alarms_api.dismiss_alarms(self.get_alarms_dictionary())
-        # Let the alarm off event close the alarms
-
-        core_api.release_databases()
+            core_api.release_databases()
 
     def snooze_all(self, event):
-        core_api.block_databases()
+        if core_api.block_databases():
+            organism_alarms_api.snooze_alarms(
+                                        self._get_shown_alarms_dictionary(),
+                                        stime=self.get_snooze_time())
+            # Let the alarm off event close the alarms
 
-        organism_alarms_api.snooze_alarms(self.get_alarms_dictionary(),
-                                                  stime=self.get_snooze_time())
-        # Let the alarm off event close the alarms
+            core_api.release_databases()
 
-        core_api.release_databases()
-
-    def close_alarms(self, filename=None, id_=None, alarmid=None):
-        for a in tuple(self.alarms.keys()):
+    def _close_alarms(self, filename=None, id_=None, alarmid=None):
+        for a in self.alarms.keys():
             afilename = self.alarms[a].get_filename()
             aitem = self.alarms[a].get_id()
             aid = self.alarms[a].get_alarmid()
+
             if filename in (afilename, None) and id_ in (aitem, None) and \
                                                         alarmid in (aid, None):
                 self.alarms[a].close()
+                del self.alarms[a]
+                self.hiddenalarms.discard(a)
 
-    def handle_close_db(self, kwargs):
-        self.close_alarms(filename=kwargs['filename'])
+        self.stimer.Stop()
+        self.stimer = wx.CallLater(self.CDELAY, self._display_close)
 
-    def handle_alarm(self, kwargs):
+    def _handle_close_db(self, kwargs):
+        self._close_alarms(filename=kwargs['filename'])
+
+    def _handle_alarm(self, kwargs):
         # Using CallAfter can cause (minor) bugs if the core timer is refreshed
         # in a loop (events could be displayed when not necessary...)
-        wx.CallAfter(self.append, **kwargs)
+        wx.CallAfter(self._append, **kwargs)
 
-    def handle_alarm_off(self, kwargs):
+    def _handle_alarm_off(self, kwargs):
         filename = kwargs['filename']
         if 'alarmid' in kwargs:
             alarmid = kwargs['alarmid']
-            self.close_alarms(filename=filename, alarmid=alarmid)
+            self._close_alarms(filename=filename, alarmid=alarmid)
         else:
             id_ = kwargs['id_']
-            self.close_alarms(filename=filename, id_=id_)
+            self._close_alarms(filename=filename, id_=id_)
 
-    def append(self, filename, id_, alarmid, start, end, alarm):
+    def _append(self, filename, id_, alarmid, start, end, alarm):
         a = self.make_alarmid(filename, alarmid)
+
         # Check whether the database is still open because this method is
-        # called with wx.CallAfter in handle_alarm, thus running in a different
-        # thread; this way it can happen that, when handle_alarm is called, a
-        # database is still open, but when this method is called, that database
-        # has been already closed; this would happen for example when closing
-        # all the databases: after each database is closed (in rapid
-        # succession), all the remaining alarms are searched and signalled
-        # again, and when this method would be run (in a different thread) the
-        # alarm's database would have already been closed, thus raising an
-        # exception later when looking information for the item (e.g.
-        # core_api.get_item_text)
+        # called with wx.CallAfter in _handle_alarm, thus running in a
+        # different thread; this way it can happen that, when _handle_alarm is
+        # called, a database is still open, but when this method is called,
+        # that database has been already closed; this would happen for example
+        # when closing all the databases: after each database is closed (in
+        # rapid succession), all the remaining alarms are searched and
+        # signalled again, and when this method would be run (in a different
+        # thread) the alarm's database would have already been closed, thus
+        # raising an exception later when looking information for the item
+        # (e.g. core_api.get_item_text)
         # Also, for the same reason, check if the item exists, as for example
         # performing several undos/redos of the database in rapid succession
         # (e.g. using CTRL+Z/Y) would cause the same issue
-        if core_api.is_database_open(filename) and core_api.is_item(filename,
-                                                 id_) and a not in self.alarms:
+        if core_api.is_database_open(filename) and \
+                                        core_api.is_item(filename, id_) and \
+                                        a not in self.alarms:
             self.alarms[a] = Alarm(self, filename, id_, alarmid, start, end,
-                                   alarm)
-            self.update_title()
-            self.window.Layout()
+                                                                        alarm)
 
-            if not self.window.IsShown():
-                # Centre only if not already shown; using ShowWithoutActivating
-                # *before* the self.window.IsShown() test would never verify
-                # the condition
-                self.window.ShowWithoutActivating()
-                self.window.Centre()
+            if len(self.alarms) < self.LIMIT + 1:
+                self.alarms[a].show()
+            else:
+                self.hiddenalarms.add(a)
 
-            self.window.RequestUserAttention()
+            # Besides being much slower, calling Layout and the other
+            # functions at every append would raise an exception for
+            # excessive recursions in case of too many alarms are signalled
+            # at once
+            self.timer.Stop()
+            self.timer = wx.CallLater(self.DELAY, self._display_append)
 
-    def update_title(self):
-        self.window.SetTitle(''.join(('Outspline - ', str(len(self.alarms)),
-                                                                   ' alarms')))
+    def _show_hidden_alarms_prepare(self, event):
+        self._show_hidden_alarms(self.hiddenN.GetValue())
+        self._update_hidden_number()
+        self.window.Layout()
+
+    def _show_hidden_alarms(self, number):
+        for i in xrange(number):
+            try:
+                alarmid = self.hiddenalarms.pop()
+            except KeyError:
+                self._hide_hidden_panel()
+                break
+            else:
+                self.alarms[alarmid].show()
+        else:
+            # KeyError may not be raised, so try to hide the panel also here
+            if len(self.hiddenalarms) == 0:
+                self._hide_hidden_panel()
+
+    def _update_title(self):
+        self.window.SetTitle('Outspline - {} alarms'.format(len(self.alarms)))
+
+    def _update_hidden_number(self):
+        self.hiddenL.SetLabelText('{} alarms are hidden:'.format(
+                                                    len(self.hiddenalarms)))
 
     @staticmethod
     def make_alarmid(filename, alarmid):
@@ -237,24 +352,25 @@ class AlarmsWindow():
                                                     self.unit.GetSelection())]
         return stime
 
-    def get_alarms_dictionary(self):
+    def _get_shown_alarms_dictionary(self):
         alarmsd = {}
 
         for a in self.alarms:
-            filename = self.alarms[a].get_filename()
-            id_ = self.alarms[a].get_id()
+            if self.alarms[a].is_shown():
+                filename = self.alarms[a].get_filename()
+                id_ = self.alarms[a].get_id()
 
-            try:
-                alarmsd[filename]
-            except KeyError:
-                alarmsd[filename] = {id_: []}
-            else:
                 try:
-                    alarmsd[filename][id_]
+                    alarmsd[filename]
                 except KeyError:
-                    alarmsd[filename][id_] = []
+                    alarmsd[filename] = {id_: []}
+                else:
+                    try:
+                        alarmsd[filename][id_]
+                    except KeyError:
+                        alarmsd[filename][id_] = []
 
-            alarmsd[filename][id_].append(self.alarms[a].get_alarmid())
+                alarmsd[filename][id_].append(self.alarms[a].get_alarmid())
 
         return alarmsd
 
@@ -262,38 +378,30 @@ class AlarmsWindow():
         return self.mainmenu.get_show_id()
 
 
-class Alarm():
-    awindow = None
-    panel = None
-    pbox = None
-    filename = None
-    id_ = None
-    alarmid = None
-    start = None
-    end = None
-    alarm = None
-    pane = None
-    cpane = None
-    cbox = None
-
+class Alarm(object):
     def __init__(self, awindow, filename, id_, alarmid, start, end, alarm):
         self.awindow = awindow
-        self.panel = wx.Panel(awindow.panel)
-        self.pbox = wx.BoxSizer(wx.VERTICAL)
-        self.panel.SetSizer(self.pbox)
-
         self.filename = filename
         self.id_ = id_
         self.alarmid = alarmid
         self.start = start
         self.end = end
         self.alarm = alarm
+        self.panel = None
 
+    def show(self):
         log.debug('Appending alarm id: {}'.format(self.alarmid))
+
+        self.panel = wx.Panel(self.awindow.panel)
+        self.pbox = wx.BoxSizer(wx.VERTICAL)
+        self.panel.SetSizer(self.pbox)
 
         self._init_widgets(self.panel)
 
-        awindow.pbox.Add(self.panel, flag=wx.EXPAND)
+        self.awindow.pbox.Add(self.panel, flag=wx.EXPAND)
+
+    def is_shown(self):
+        return bool(self.panel)
 
     def _init_widgets(self, parent):
         hbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -303,13 +411,13 @@ class Alarm():
                                 '%Y.%m.%d %H:%M', _time.localtime(self.start)))
         hbox.Add(startdate, 1, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        button_s = wx.Button(parent, label='Snooze')
+        button_s = wx.Button(parent, label='Snooze', style=wx.BU_EXACTFIT)
         hbox.Add(button_s)
 
-        button_d = wx.Button(parent, label='Dismiss')
+        button_d = wx.Button(parent, label='Dismiss', style=wx.BU_EXACTFIT)
         hbox.Add(button_d, flag=wx.LEFT, border=4)
 
-        button_e = wx.Button(parent, label='Open')
+        button_e = wx.Button(parent, label='Open', style=wx.BU_EXACTFIT)
         hbox.Add(button_e, flag=wx.LEFT, border=4)
 
         # wx.CP_NO_TLW_RESIZE in conjunction with
@@ -319,7 +427,7 @@ class Alarm():
         # Setting the label directly when instantiating CollapsiblePane through
         # the 'label' parameter would make it parse '&' characters to form
         # mnemonic shortcuts, like in menus
-        self.set_pane_label()
+        self._set_pane_label()
         self.pbox.Add(self.pane, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         self.cpane = self.pane.GetPane()
@@ -330,23 +438,23 @@ class Alarm():
         line = wx.StaticLine(parent, style=wx.LI_HORIZONTAL)
         self.pbox.Add(line, flag=wx.EXPAND)
 
-        core_api.bind_to_update_item(self.update_info)
+        core_api.bind_to_update_item(self._update_info)
 
         self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED,
-                                                    self.update_pane_ancestors)
+                                                self._update_pane_ancestors)
         self.panel.Bind(wx.EVT_BUTTON, self.snooze, button_s)
         self.panel.Bind(wx.EVT_BUTTON, self.dismiss, button_d)
-        self.panel.Bind(wx.EVT_BUTTON, self.open_, button_e)
+        self.panel.Bind(wx.EVT_BUTTON, self._open, button_e)
 
-    def update_info(self, kwargs):
+    def _update_info(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_:
-            self.set_pane_label()
+            self._set_pane_label()
 
-    def set_pane_label(self):
+    def _set_pane_label(self):
         text = core_api.get_item_text(self.filename, self.id_)
         self.pane.SetLabel(text.partition('\n')[0])
 
-    def update_pane_ancestors(self, event):
+    def _update_pane_ancestors(self, event):
         # Reset ancestors with EVT_COLLAPSIBLEPANE_CHANGED, otherwise they
         # should be reset everytime one of them is updated
         # This way if an ancestor is updated while the collapsible pane is
@@ -392,43 +500,34 @@ class Alarm():
         self.panel.GetParent().SendSizeEvent()
 
     def snooze(self, event):
-        core_api.block_databases()
-
-        organism_alarms_api.snooze_alarms({self.filename: {self.id_:
+        if core_api.block_databases():
+            organism_alarms_api.snooze_alarms({self.filename: {self.id_:
                     [self.alarmid, ]}}, stime=self.awindow.get_snooze_time())
-        # Let the alarm off event close the alarm
+            # Let the alarm off event close the alarm
 
-        core_api.release_databases()
+            core_api.release_databases()
 
     def dismiss(self, event):
-        core_api.block_databases()
-
-        organism_alarms_api.dismiss_alarms({self.filename: {self.id_:
+        if core_api.block_databases():
+            organism_alarms_api.dismiss_alarms({self.filename: {self.id_:
                                                             [self.alarmid, ]}})
-        # Let the alarm off event close the alarm
+            # Let the alarm off event close the alarm
 
-        core_api.release_databases()
+            core_api.release_databases()
 
-    def open_(self, event):
+    def _open(self, event):
         wxgui_api.show_main_window()
         wxgui_api.open_editor(self.filename, self.id_)
 
     def close(self):
-        log.debug('Destroying alarm id: {}'.format(self.alarmid))
+        if self.is_shown():
+            log.debug('Destroying alarm id: {}'.format(self.alarmid))
 
-        self.panel.Destroy()
-        self.awindow.window.Layout()
-        del self.awindow.alarms[self.awindow.make_alarmid(self.filename,
-                                                                 self.alarmid)]
+            self.panel.Destroy()
 
-        # It's necessary to explicitly unbind the handler, otherwise this
-        # object will not be garbage-collected
-        core_api.bind_to_update_item(self.update_info, False)
-
-        self.awindow.update_title()
-
-        if len(self.awindow.alarms) == 0:
-            self.awindow.hide()
+            # It's necessary to explicitly unbind the handler, otherwise this
+            # object will not be garbage-collected
+            core_api.bind_to_update_item(self._update_info, False)
 
     def get_filename(self):
         return self.filename

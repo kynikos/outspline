@@ -35,6 +35,8 @@ import msgboxes
 
 mainmenu = None
 searches = []
+nb_icon_index = None
+nb_icon_refresh_index = None
 
 
 class SearchViewPanel(wx.Panel):
@@ -87,7 +89,8 @@ class SearchView():
         global searches
         searches.append(searchview)
 
-        wxgui_api.add_page_to_right_nb(searchview.panel, 'Search')
+        wxgui_api.add_page_to_right_nb(searchview.panel, 'Search',
+                                                        imageId=nb_icon_index)
 
     def close_(self):
         self.finish_search_action = self._finish_search_close
@@ -107,6 +110,12 @@ class SearchView():
 
         wxgui_api.set_right_nb_page_title(self.panel, title)
 
+    def set_tab_icon_stopped(self):
+        wxgui_api.set_right_nb_page_image(self.panel, nb_icon_index)
+
+    def set_tab_icon_ongoing(self):
+        wxgui_api.set_right_nb_page_image(self.panel, nb_icon_refresh_index)
+
     def search(self):
         self.finish_search_action = self._finish_search_restart
         self.stop_search()
@@ -120,8 +129,13 @@ class SearchView():
     def finish_search(self):
         self.threads -= 1
 
-        # Perform the action only when the last threads terminates
-        if self.threads == 0:
+        # Perform the action only when the last thread terminates
+        # self.threads could be < 0 if for example the bad regexp dialog is
+        # shown
+        if self.threads < 1:
+            # Reset the icon *before* calling finish_search_action, which
+            # could be set to restart, thus setting the icon ongoing again
+            self.set_tab_icon_stopped()
             self.finish_search_action()
 
     def _finish_search_dummy(self):
@@ -143,6 +157,8 @@ class SearchView():
         self.finish_search_action = self._finish_search_dummy
 
     def _finish_search_restart(self):
+        self.set_tab_icon_ongoing()
+
         string = self.filters.text.GetValue()
         self.set_title(string)
 
@@ -162,25 +178,27 @@ class SearchView():
             regexp = re.compile(string, flags)
         except re.error:
             msgboxes.bad_regular_expression().ShowModal()
+            self.finish_search()
         else:
             # Note that the databases are released *before* the threads are
             # terminated: this is safe as no more calls to the databases are
             # made after core_api.get_all_items_text in
             # self._finish_search_restart_database
-            core_api.block_databases()
-
-            if self.filters.option1.GetValue():
-                filename = wxgui_api.get_selected_database_filename()
-                self._finish_search_restart_database(filename, regexp)
-            else:
-                for filename in core_api.get_open_databases():
+            if core_api.block_databases():
+                if self.filters.option1.GetValue():
+                    filename = wxgui_api.get_selected_database_filename()
                     self._finish_search_restart_database(filename, regexp)
+                else:
+                    for filename in core_api.get_open_databases():
+                        self._finish_search_restart_database(filename, regexp)
 
-            # Note that the databases are released *before* the threads are
-            # terminated: this is safe as no more calls to the databases are
-            # made after core_api.get_all_items_text in
-            # self._finish_search_restart_database
-            core_api.release_databases()
+                # Note that the databases are released *before* the threads are
+                # terminated: this is safe as no more calls to the databases
+                # are made after core_api.get_all_items_text in
+                # self._finish_search_restart_database
+                core_api.release_databases()
+            else:
+                self.finish_search()
 
     def _finish_search_restart_database(self, filename, regexp):
         # It's not easy to benchmark the search for all the databases
@@ -198,6 +216,7 @@ class SearchView():
         thread = threading.Thread(
                 target=self._search_threaded_continue,
                 args=(regexp, filename, iterator, [], search_start))
+        thread.name = "wxdbsearch_{}".format(filename)
         thread.start()
         self.threads += 1
 
@@ -227,16 +246,23 @@ class SearchView():
 
             heading = text.partition('\n')[0]
 
-            if self.filters.option2.GetValue():
-                text = heading
-
-            results = self._find_match_lines(regexp, id_, heading, text,
+            try:
+                if self.filters.option2.GetValue():
+                    text = heading
+            except wx.PyDeadObjectError:
+                # If the application is closed while the search is ongoing,
+                #  this is where it would crash
+                # If there were more problems, consider running this thread as
+                #  a daemon
+                pass
+            else:
+                results = self._find_match_lines(regexp, id_, heading, text,
                                                                     results)
 
-            # Use a recursion instead of a simple for loop, so that it will be
-            # easy to stop the search from the main thread if needed
-            self.search_threaded_action(regexp, filename, iterator, results,
-                                                                search_start)
+                # Use a recursion instead of a simple for loop, so that it will
+                # be easy to stop the search from the main thread if needed
+                self.search_threaded_action(regexp, filename, iterator,
+                                                        results, search_start)
 
     def _search_threaded_stop(self, regexp, filename, iterator, results,
                                                                 search_start):
@@ -340,27 +366,28 @@ class SearchFilters():
         self.ogrid = wx.GridSizer(3, 2, 4, 4)
         self.box.Add(self.ogrid, flag=wx.EXPAND)
 
-        # The order of creation affects the placement in the GridSizer
-        self.option1 = self.make_option('Only in selected database')
-        self.option4 = self.make_option('Regular expression')
-        self.option2 = self.make_option('Only in headings')
-        self.option5 = self.make_option('Case sensitive')
-        self.option3 = self.make_option('Only one result per item')
+        self.option1 = wx.CheckBox(self.mainview.panel,
+                                            label='Only in selected database')
+        self.option2 = wx.CheckBox(self.mainview.panel,
+                                            label='Only in headings')
+        self.option3 = wx.CheckBox(self.mainview.panel,
+                                            label='Only one result per item')
+        self.option4 = wx.CheckBox(self.mainview.panel,
+                                            label='Regular expression')
+        self.option5 = wx.CheckBox(self.mainview.panel,
+                                            label='Case sensitive')
+
+        # The order of addition affects the placement in the GridSizer
+        self.ogrid.Add(self.option1)
+        self.ogrid.Add(self.option4)
+        self.ogrid.Add(self.option2)
+        self.ogrid.Add(self.option5)
+        self.ogrid.Add(self.option3)
 
         mainview.panel.Bind(wx.EVT_BUTTON, self._search, self.search)
 
     def _search(self, event):
         self.mainview.search()
-
-    def make_option(self, label):
-        obox = wx.BoxSizer(wx.HORIZONTAL)
-        check = wx.CheckBox(self.mainview.panel)
-        obox.Add(check, flag=wx.ALIGN_CENTER_VERTICAL)
-        label = wx.StaticText(self.mainview.panel, label=label)
-        obox.Add(label, flag=wx.ALIGN_CENTER_VERTICAL)
-        self.ogrid.Add(obox)
-
-        return check
 
 
 class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
@@ -388,7 +415,7 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
         self.imagemap['small']['sortdown'] = self.imagelistsmall.Add(
                wx.ArtProvider.GetBitmap('@sortdown', wx.ART_TOOLBAR, (16, 16)))
 
-        self.SetImageList(self.imagelistsmall, wx.IMAGE_LIST_SMALL)
+        self.AssignImageList(self.imagelistsmall, wx.IMAGE_LIST_SMALL)
 
     def GetSortImages(self):
         return (self.imagemap['small']['sortup'],
@@ -726,3 +753,12 @@ class TabContextMenu(wx.Menu):
 def main():
     global mainmenu
     mainmenu = MainMenu()
+
+    global nb_icon_index
+    nb_icon_index = wxgui_api.add_right_nb_image(
+                                    wx.ArtProvider.GetBitmap('@find',
+                                    wx.ART_TOOLBAR, (16, 16)))
+    global nb_icon_refresh_index
+    nb_icon_refresh_index = wxgui_api.add_right_nb_image(
+                                    wx.ArtProvider.GetBitmap('@refresh',
+                                    wx.ART_TOOLBAR, (16, 16)))

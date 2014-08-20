@@ -18,15 +18,15 @@
 
 import outspline.core_api as core_api
 
-from organism import queries, items
+from organism import extension, items, database_open_event
 
 
 def install_rule_handler(rulename, handler):
-    return items.install_rule_handler(rulename, handler)
+    return extension.rules.install_rule_handler(rulename, handler)
 
 
 def update_item_rules(filename, id_, rules, group,
-                      description='Update item rules'):
+                                            description='Update item rules'):
     # All rules must be able to produce only occurrences compliant with the
     # following requirements:
     # - Normal rules:
@@ -40,34 +40,44 @@ def update_item_rules(filename, id_, rules, group,
     #   * 'inclusive' must be a boolean value
     #   * 'start', 'end' and 'inclusive' must always be set
     #   * 'end' must always be greater than 'start'
-    return items.update_item_rules(filename, id_, rules, group,
+    return extension.databases[filename].update_item_rules(id_, rules, group,
                                    description=description)
 
 
 def update_item_rules_no_event(filename, id_, rules, group,
                                             description='Update item rules'):
     # See update_item_rules for guidelines
-    return items.update_item_rules_no_event(filename, id_, rules, group,
-                                                    description=description)
+    return extension.databases[filename].update_item_rules_no_event(id_, rules,
+                                                group, description=description)
 
 
 def get_supported_open_databases():
-    return items.cdbs
+    return extension.databases.keys()
 
 
 def get_item_rules(filename, id_):
-    return items.get_item_rules(filename, id_)
+    return extension.databases[filename].get_item_rules(id_)
+
+
+def get_all_valid_item_rules(filename):
+    return extension.databases[filename].get_all_valid_item_rules()
 
 
 def get_all_item_rules(filename):
-    return {row['R_id']: items.string_to_rules(row['R_rules']) for row in \
-                                            items.get_all_item_rules(filename)}
+    return extension.databases[filename].get_all_item_rules()
 
 
-def get_occurrences_range(mint, maxt):
-    # Note that the list is practically unsorted: sorting its items is a duty
-    # of the interface
-    return items.get_occurrences_range(mint, maxt)
+def get_occurrences_range(mint, maxt, filenames):
+    return items.OccurrencesRangeSearch(mint, maxt, filenames,
+                                extension.databases, extension.rules.handlers)
+
+
+def convert_string_to_rules(string):
+    return items.Database.string_to_rules(string)
+
+
+def bind_to_open_database(handler, bind=True):
+    return database_open_event.bind(handler, bind)
 
 
 def bind_to_update_item_rules_conditional(handler, bind=True):

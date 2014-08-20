@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-import time as _time
+import time as time_
 import sqlite3
 
 from outspline.static.pyaux import timeaux
@@ -32,19 +32,192 @@ update_item_rules_conditional_event = Event()
 delete_item_rules_event = Event()
 get_alarms_event = Event()
 
-rule_handlers = {}
-cdbs = set()
+
+class Database(object):
+    def __init__(self, filename):
+        self.filename = filename
+
+    def post_init(self):
+        core_api.register_history_action_handlers(self.filename,
+                                'rules_insert', self._handle_history_insert,
+                                self._handle_history_delete)
+        core_api.register_history_action_handlers(self.filename,
+                                'rules_update', self._handle_history_update,
+                                self._handle_history_update)
+        core_api.register_history_action_handlers(self.filename,
+                                'rules_delete', self._handle_history_delete,
+                                self._handle_history_insert)
+
+    # This method has to accept filename as the first argument, even though
+    # it's part of this object
+    def _handle_history_insert(self, filename, action, jparams, hid, type_,
+                                                                    itemid):
+        qconn = core_api.get_connection(filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.rules_insert, (itemid, jparams))
+        core_api.give_connection(filename, qconn)
+
+    # This method has to accept filename as the first argument, even though
+    # it's part of this object
+    def _handle_history_update(self, filename, action, jparams, hid, type_,
+                                                                    itemid):
+        qconn = core_api.get_connection(filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.rules_update_id, (jparams, itemid))
+        core_api.give_connection(filename, qconn)
+
+    # This method has to accept filename as the first argument, even though
+    # it's part of this object
+    def _handle_history_delete(self, filename, action, jparams, hid, type_,
+                                                                    itemid):
+        qconn = core_api.get_connection(filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.rules_delete_id, (itemid, ))
+        core_api.give_connection(filename, qconn)
+
+    def insert_item(self, id_, group, description='Insert item'):
+        srules = self.rules_to_string([])
+
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.rules_insert, (id_, srules, ))
+        core_api.give_connection(self.filename, qconn)
+
+        core_api.insert_history(self.filename, group, id_, 'rules_insert',
+                                                    description, srules, None)
+
+    def update_item_rules(self, id_, rules, group,
+                                            description='Update item rules'):
+        self.update_item_rules_no_event(id_, rules, group,
+                                                    description=description)
+
+        # Note that update_item_rules_no_event can be called directly, thus not
+        # signalling this event
+        update_item_rules_conditional_event.signal(filename=self.filename,
+                                                        id_=id_, rules=rules)
+
+    def update_item_rules_no_event(self, id_, rules, group,
+                                            description='Update item rules'):
+        if isinstance(rules, list):
+            rules = self.rules_to_string(rules)
+
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+
+        cursor.execute(queries.rules_select_id, (id_, ))
+        sel = cursor.fetchone()
+
+        # The query should always return a result, so sel should never be None
+        unrules = sel['R_rules']
+
+        cursor.execute(queries.rules_update_id, (rules, id_))
+
+        core_api.give_connection(self.filename, qconn)
+
+        core_api.insert_history(self.filename, group, id_, 'rules_update',
+                                                description, rules, unrules)
+
+    def copy_item_rules(self, id_):
+        conn = core_api.get_connection(self.filename)
+        cur = conn.cursor()
+        cur.execute(queries.rules_select_id, (id_, ))
+        core_api.give_connection(self.filename, conn)
+
+        return cur.fetchone()
+
+    def paste_item_rules(self, id_, oldid, group, description):
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+        curm.execute(queries.copyrules_select_id, (oldid, ))
+        core_api.give_memory_connection(mem)
+
+        # Do not signal update_item_rules_conditional_event because it's
+        # handled by organism_timer.timer.NextOccurrencesEngine, and it would
+        # slow down the pasting of items a lot; NextOccurrencesEngine is bound
+        # anyway to copypaste_api.bind_to_items_pasted
+        self.update_item_rules_no_event(id_, curm.fetchone()['CR_rules'],
+                                                            group, description)
+
+    def delete_item_rules(self, id_, text, group,
+                                            description='Delete item rules'):
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+
+        cursor.execute(queries.rules_select_id, (id_, ))
+        sel = cursor.fetchone()
+
+        # The query should always return a result, so sel should never be None
+        current_rules = sel['R_rules']
+
+        cursor.execute(queries.rules_delete_id, (id_, ))
+
+        core_api.give_connection(self.filename, qconn)
+
+        core_api.insert_history(self.filename, group, id_, 'rules_delete',
+                                            description, None, current_rules)
+
+        delete_item_rules_event.signal(filename=self.filename, id_=id_,
+                                                                    text=text)
+
+    def get_item_rules(self, id_):
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.rules_select_id, (id_, ))
+        row = cursor.fetchone()
+        core_api.give_connection(self.filename, qconn)
+
+        # The query should always return a result, so row should never be None
+        return self.string_to_rules(row['R_rules'])
+
+    def get_all_valid_item_rules(self):
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.rules_select_all, (self.rules_to_string([]), ))
+        core_api.give_connection(self.filename, qconn)
+
+        return cursor
+
+    def get_all_item_rules(self):
+        qconn = core_api.get_connection(self.filename)
+        cursor = qconn.cursor()
+        cursor.execute(queries.rules_select)
+        core_api.give_connection(self.filename, qconn)
+
+        return cursor
+
+    @staticmethod
+    def rules_to_string(rules):
+        # rules should always be a list, never equal to None
+        return json.dumps(rules, separators=(',',':'))
+
+    @staticmethod
+    def string_to_rules(string):
+        # Items without rules should have an empty list anyway (thus manageable
+        # by json.loads)
+        return json.loads(string)
 
 
-class OccurrencesRange():
+class Rules(object):
+    def __init__(self):
+        self.handlers = {}
+
+    def install_rule_handler(self, rulename, handler):
+        # The rules should be installed separately for each database (bug #330)
+        if rulename not in self.handlers:
+            self.handlers[rulename] = handler
+        else:
+            raise ConflictingRuleHandlerError()
+
+
+class OccurrencesRange(object):
     def __init__(self, mint, maxt):
         self.mint = mint
         self.maxt = maxt
-        self.d = {}
+        self.dict_ = {}
         self.actd = {}
 
     def update(self, occ, origalarm):
-        return self._update(self.d, self.add_safe, self._replace, occ,
+        return self._update(self.dict_, self.add_safe, self._replace, occ,
                                                                      origalarm)
 
     def move_active(self, occ, origalarm):
@@ -66,7 +239,7 @@ class OccurrencesRange():
         if self.mint <= occ['start'] <= self.maxt or \
                    (occ['end'] and occ['start'] <= self.mint < occ['end']) or \
                      (occ['alarm'] and self.mint <= occ['alarm'] <= self.maxt):
-            self._add(self.d, occ)
+            self._add(self.dict_, occ)
             return True
         else:
             return False
@@ -131,15 +304,15 @@ class OccurrencesRange():
 
     def except_safe(self, filename, id_, start, end, inclusive):
         # If an except rule is put at the start of the rules list for an item,
-        # self.d[filename][id_] wouldn't exist yet; note that if the item is
-        # the first one being processed in the database, even self.d[filename]
-        # wouldn't exist
+        # self.dict_[filename][id_] wouldn't exist yet; note that if the item
+        # is the first one being processed in the database, even
+        # self.dict_[filename] wouldn't exist
         # This way the except rule is of course completely useless, however if
         # the user has to be warned at all, it must be done in the interface
         # when he saves the rules list, not here, where the exception has to be
         # just silenced
         try:
-            dc = self.d[filename][id_][:]
+            dc = self.dict_[filename][id_][:]
         except KeyError:
             pass
         else:
@@ -148,23 +321,23 @@ class OccurrencesRange():
                 # they're not considered part of the end minute
                 if start <= o['start'] <= end or \
                                 (inclusive and o['start'] <= start < o['end']):
-                    self.d[filename][id_].remove(o)
-                    if not self.d[filename][id_]:
-                        del self.d[filename][id_]
-                        if not self.d[filename]:
-                            del self.d[filename]
+                    self.dict_[filename][id_].remove(o)
+                    if not self.dict_[filename][id_]:
+                        del self.dict_[filename][id_]
+                        if not self.dict_[filename]:
+                            del self.dict_[filename]
 
     def get_dict(self):
-        return self.d
+        return self.dict_
 
     def get_active_dict(self):
         return self.actd
 
     def get_list(self):
         occsl = []
-        for f in self.d:
-            for i in self.d[f]:
-                for o in self.d[f][i]:
+        for f in self.dict_:
+            for i in self.dict_[f]:
+                for o in self.dict_[f][i]:
                     occsl.append(o)
         return occsl
 
@@ -179,9 +352,9 @@ class OccurrencesRange():
     def get_next_completion_time(self):
         # Note that this method ignores self.actd _deliberately_
         ctime = None
-        for f in self.d:
-            for i in self.d[f]:
-                for o in self.d[f][i]:
+        for f in self.dict_:
+            for i in self.dict_[f]:
+                for o in self.dict_[f][i]:
                     t = max((o['end'], o['start'], o['alarm']))
                     if t and (not ctime or t < ctime):
                         ctime = t
@@ -190,7 +363,7 @@ class OccurrencesRange():
     def get_item_time_span(self, filename, id_):
         # Note that this method ignores self.actd _deliberately_
         try:
-            occs = self.d[filename][id_]
+            occs = self.dict_[filename][id_]
         except KeyError:
             return False
         else:
@@ -208,201 +381,76 @@ class OccurrencesRange():
             return (minstart, maxend)
 
 
-def install_rule_handler(rulename, handler):
-    global rule_handlers
-
-    if rulename not in rule_handlers:
-        rule_handlers[rulename] = handler
-    else:
-        raise ConflictingRuleHandlerError()
-
-def insert_item(filename, id_, group, description='Insert item'):
-    if filename in cdbs:
-        srules = rules_to_string([])
-
-        qconn = core_api.get_connection(filename)
-        cursor = qconn.cursor()
-        cursor.execute(queries.rules_insert, (id_, srules, ))
-        core_api.give_connection(filename, qconn)
-
-        core_api.insert_history(filename, group, id_, 'rules_insert',
-                                                    description, srules, None)
+class OccurrencesRangeSearchStop(UserWarning):
+    # This class is used as an exception, but used internally, so there's no
+    # need to store it in the exceptions module
+    pass
 
 
-def update_item_rules(filename, id_, rules, group,
-                                              description='Update item rules'):
-    update_item_rules_no_event(filename, id_, rules, group,
-                                                       description=description)
+class OccurrencesRangeSearch(object):
+    def __init__(self, mint, maxt, filenames, databases, rule_handlers):
+        self.mint = mint
+        self.maxt = maxt
+        self.filenames = filenames
+        self.databases = databases
+        self.rule_handlers = rule_handlers
+        self.occs = OccurrencesRange(mint, maxt)
+        self.utcoffset = timeaux.UTCOffset()
+        self.utcmint = mint - self.utcoffset.compute(mint)
+        self._search_item = self._search_item_continue
 
-    # Note that update_item_rules_no_event can be called directly, thus not
-    # signalling this event
-    update_item_rules_conditional_event.signal(filename=filename, id_=id_,
-                                                                rules=rules)
+    def start(self):
+        search_start = (time_.time(), time_.clock())
 
+        try:
+            # Don't use Main.databases because the searched filenames must be
+            #  coherent with the other operations that this class is used in
+            # Note that Main.databases could also change size during the
+            #  search, so it should be copied to iterate in it
+            for filename in self.filenames:
+                # Don'd iterate directly over the returned cursor, but use a
+                # fetchall, otherwise if the application is closed while the
+                # search is on (e.g. while searching the old alarms) an
+                # exception will be raised, because the database will be closed
+                # while the loop is still reading it
+                rows = self.databases[filename].get_all_valid_item_rules(
+                                                                ).fetchall()
 
-def update_item_rules_no_event(filename, id_, rules, group,
-                                              description='Update item rules'):
-    if isinstance(rules, list):
-        rules = rules_to_string(rules)
+                for row in rows:
+                    id_ = row['R_id']
+                    rules = Database.string_to_rules(row['R_rules'])
 
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
+                    for rule in rules:
+                        self._search_item(filename, id_, rule)
 
-    cursor.execute(queries.rules_select_id, (id_, ))
-    sel = cursor.fetchone()
+                # Get active alarms *after* all occurrences, to avoid except
+                # rules
+                get_alarms_event.signal(mint=self.mint, maxt=self.maxt,
+                                            filename=filename, occs=self.occs)
 
-    # The query should always return a result, so sel should never be None
-    unrules = sel['R_rules']
+        # All loops must be broken
+        except OccurrencesRangeSearchStop:
+            pass
 
-    cursor.execute(queries.rules_update_id, (rules, id_))
+        log.debug('Occurrences range found in {} (time) / {} (clock) s'.format(
+                                            time_.time() - search_start[0],
+                                            time_.clock() - search_start[1]))
 
-    core_api.give_connection(filename, qconn)
+    def stop(self):
+        self._search_item = self._search_item_stop
 
-    core_api.insert_history(filename, group, id_, 'rules_update', description,
-                                                                rules, unrules)
+    def get_results(self):
+        # Note that the list is practically unsorted: sorting its items is a
+        # duty of the interface
+        return self.occs
 
+    def _search_item(self, filename, id_, rule):
+        # This method is defined dynamically
+        pass
 
-def copy_item_rules(filename, id_):
-    record = [id_, ]
+    def _search_item_continue(self, filename, id_, rule):
+        self.rule_handlers[rule['rule']](self.mint, self.utcmint, self.maxt,
+                            self.utcoffset, filename,  id_, rule, self.occs)
 
-    if filename in cdbs:
-        conn = core_api.get_connection(filename)
-        cur = conn.cursor()
-        cur.execute(queries.rules_select_id, (id_, ))
-        record.extend(cur.fetchone())
-        core_api.give_connection(filename, conn)
-    else:
-        # Even if filename doesn't support rules, create a correct table that
-        # can be safely used when pasting
-        record.append(rules_to_string([]))
-
-    mem = core_api.get_memory_connection()
-    curm = mem.cursor()
-    curm.execute(queries.copyrules_insert, record)
-    core_api.give_memory_connection(mem)
-
-
-def can_paste_safely(filename, exception):
-    mem = core_api.get_memory_connection()
-    curm = mem.cursor()
-    curm.execute(queries.copyrules_select, (rules_to_string([]), ))
-    core_api.give_memory_connection(mem)
-
-    # Warn if CopyRules table has rules but filename doesn't support them
-    if curm.fetchone() and filename not in cdbs:
-        raise exception()
-
-
-def paste_item_rules(filename, id_, oldid, group, description):
-    if filename in cdbs:
-        mem = core_api.get_memory_connection()
-        curm = mem.cursor()
-        curm.execute(queries.copyrules_select_id, (oldid, ))
-        core_api.give_memory_connection(mem)
-
-        # Do not signal update_item_rules_conditional_event because it's
-        # handled by organism_timer.timer.search_next_occurrences, and it would
-        # slow down the pasting of items a lot; search_next_occurrences is
-        # bound anyway to copypaste_api.bind_to_items_pasted
-        update_item_rules_no_event(filename, id_, curm.fetchone()['CR_rules'],
-                                                            group, description)
-
-
-def delete_item_rules(filename, id_, text, group,
-                                            description='Delete item rules'):
-    if filename in cdbs:
-        qconn = core_api.get_connection(filename)
-        cursor = qconn.cursor()
-
-        cursor.execute(queries.rules_select_id, (id_, ))
-        sel = cursor.fetchone()
-
-        # The query should always return a result, so sel should never be None
-        current_rules = sel['R_rules']
-
-        cursor.execute(queries.rules_delete_id, (id_, ))
-
-        core_api.give_connection(filename, qconn)
-
-        core_api.insert_history(filename, group, id_, 'rules_delete',
-                                            description, None, current_rules)
-
-        delete_item_rules_event.signal(filename=filename, id_=id_, text=text)
-
-
-def get_item_rules(filename, id_):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.rules_select_id, (id_, ))
-    row = cursor.fetchone()
-    core_api.give_connection(filename, qconn)
-
-    # The query should always return a result, so row should never be None
-    return string_to_rules(row['R_rules'])
-
-
-def get_all_item_rules(filename):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.rules_select)
-    rows = cursor.fetchall()
-    core_api.give_connection(filename, qconn)
-
-    return rows
-
-
-def rules_to_string(rules):
-    # rules should always be a list, never equal to None
-    return json.dumps(rules, separators=(',',':'))
-
-
-def string_to_rules(string):
-    # Items without rules should have an empty list anyway (thus manageable by
-    # json.loads)
-    return json.loads(string)
-
-
-def get_occurrences_range(mint, maxt):
-    occs = OccurrencesRange(mint, maxt)
-    utcoffset = timeaux.UTCOffset()
-    utcmint = mint - utcoffset.compute(mint)
-    search_start = (_time.time(), _time.clock())
-
-    for filename in cdbs:
-        for id_ in core_api.get_items_ids(filename):
-            rules = get_item_rules(filename, id_)
-            for rule in rules:
-                rule_handlers[rule['rule']](mint, utcmint, maxt, utcoffset,
-                                                    filename, id_, rule, occs)
-
-        # Get active alarms *after* all occurrences, to avoid except rules
-        get_alarms_event.signal(mint=mint, maxt=maxt, filename=filename,
-                                                                     occs=occs)
-
-    log.debug('Occurrences range found in {} (time) / {} (clock) s'.format(
-              _time.time() - search_start[0], _time.clock() - search_start[1]))
-
-    # Note that the list is practically unsorted: sorting its items is a duty
-    # of the interface
-    return occs
-
-
-def handle_history_insert(filename, action, jparams, hid, type_, itemid):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.rules_insert, (itemid, jparams))
-    core_api.give_connection(filename, qconn)
-
-
-def handle_history_update(filename, action, jparams, hid, type_, itemid):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.rules_update_id, (jparams, itemid))
-    core_api.give_connection(filename, qconn)
-
-
-def handle_history_delete(filename, action, jparams, hid, type_, itemid):
-    qconn = core_api.get_connection(filename)
-    cursor = qconn.cursor()
-    cursor.execute(queries.rules_delete_id, (itemid, ))
-    core_api.give_connection(filename, qconn)
+    def _search_item_stop(self, filename, id_, rule):
+        raise OccurrencesRangeSearchStop()

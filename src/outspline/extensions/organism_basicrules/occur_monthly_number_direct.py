@@ -60,7 +60,7 @@ def make_rule(months, day, hour, minute, rend, ralarm, standard, guiconfig):
 
         nmonths = []
 
-        for n in range(1, 13):
+        for n in xrange(1, 13):
             if n in months:
                 nmonths.extend([n, ] * (n - len(nmonths)))
         # Note that it's ok that nmonths can be shorter than 12 items; do *not*

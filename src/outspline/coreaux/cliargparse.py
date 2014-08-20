@@ -27,15 +27,16 @@ from configuration import (_USER_CONFIG_FILE, _COPYRIGHT_V1, _DISCLAIMER_SHORT,
 class ShowVersion(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         print("Outspline {} ({})\n\n{}\n{}".format(
-                        components('Components')(components['core'])['version'],
-                   components('Components')(components['core'])['release_date'],
-                                              _COPYRIGHT_V1, _DISCLAIMER_SHORT))
+                components('Components')(components['core'])['version'],
+                components('Components')(components['core'])['release_date'],
+                _COPYRIGHT_V1, _DISCLAIMER_SHORT))
         sys.exit()
 
 
 def parse_cli_args():
     # Options -h and --help are automatically created
-    cliparser = argparse.ArgumentParser(description=info('Core')['description'])
+    cliparser = argparse.ArgumentParser(description=info('Core')[
+                                                                'description'])
 
     cliparser.add_argument('-c',
                            '--config',
@@ -56,9 +57,11 @@ def parse_cli_args():
                                 'respectively, stdout and file log messages; '
                                 '0) disabled; 1) essential reports; 2) normal '
                                 'verbosity; 3) debug mode; digits different '
-                                'from 0,1,2,3 will be converted to 3 '
-                                '(default: {}, see also --logfile option)'
-                                ''.format(config('Log')['log_level']))
+                                'from 0,1,2,3 will default to the respective '
+                                'value set in the configuration file '
+                                '(default: {}{}, see also --logfile option)'
+                                ''.format(config('Log')['log_level_stdout'],
+                                config('Log')['log_level_file']))
 
     cliparser.add_argument('-f',
                            '--logfile',
@@ -69,7 +72,7 @@ def parse_cli_args():
                                 'path can be specified (default: {}, see also '
                                 '--loglevel option)'
                                 ''.format(os.path.expanduser(config('Log'
-                                                                )['log_file'])))
+                                                            )['log_file'])))
 
     cliparser.add_argument('-v',
                            '--version',

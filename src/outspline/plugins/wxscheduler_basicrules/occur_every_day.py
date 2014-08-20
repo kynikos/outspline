@@ -20,6 +20,7 @@ import time as _time
 import datetime as _datetime
 import random
 
+from outspline.static.pyaux.timeaux import UTCOffset
 from outspline.static.wxclasses.timectrls import TimeSpanCtrl
 import outspline.extensions.organism_basicrules_api as organism_basicrules_api
 import outspline.plugins.wxscheduler_api as wxscheduler_api
@@ -102,9 +103,11 @@ class Rule(object):
         # Remember to support also time zones that differ from UTC by not
         # exact hours (e.g. Australia/Adelaide)
         if not rule:
-            nextdate = _datetime.datetime.now() + _datetime.timedelta(hours=1)
-            rrstart = nextdate.hour * 3600
-            refstart = int(_time.time()) // 86400 * 86400 + rrstart
+            now = _datetime.datetime.now()
+            nextdate = _datetime.datetime(now.year, now.month, now.day,
+                                    now.hour) + _datetime.timedelta(hours=1)
+            refstart = int(_time.mktime(nextdate.timetuple())) - \
+                                                UTCOffset.compute2_current()
 
             values = {
                 'reference_start': refstart,
@@ -130,8 +133,6 @@ class Rule(object):
                 'time_standard': standard,
             }
 
-            rrstart = values['reference_start'] % 86400
-
         values['end_relative_number'], values['end_relative_unit'] = \
                                 TimeSpanCtrl.compute_widget_values(
                                 values['end_relative_time'])
@@ -140,6 +141,8 @@ class Rule(object):
         values['alarm_relative_number'], values['alarm_relative_unit'] = \
                                 TimeSpanCtrl.compute_widget_values(
                                 max((0, values['alarm_relative_time'])))
+
+        rrstart = values['reference_start'] % 86400
 
         rrend = rrstart + values['end_relative_time']
         values['end_next_day'] = False

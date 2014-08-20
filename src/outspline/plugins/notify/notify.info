@@ -1,10 +1,6 @@
-author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.4
-description = Shows a desktop notification whenever an item occurrence alarm is activated.
+authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
+version = 1.0
+description = Shows a desktop notification whenever an item event/task alarm is activated.
 website = https://github.com/kynikos/outspline/
-affects_database = no
-provides_tables =
-dependency_1 = core 0
-dependency_2 = extensions.organism_alarms 0
-optional_dependency_1 = interfaces.wxgui 0
-optional_dependency_2 = plugins.wxtrayicon 0
+dependencies = core.1 extensions.organism_alarms.1
+optional_dependencies = interfaces.wxgui.1 plugins.wxtrayicon.1

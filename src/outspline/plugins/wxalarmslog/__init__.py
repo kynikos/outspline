@@ -17,6 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import wx
+import wx.propgrid as wxpg
 # Temporary workaround for bug #279
 import time as time_
 
@@ -33,6 +34,7 @@ class Main(object):
         self.mainmenu = LogsMenu(self)
 
         wxgui_api.bind_to_creating_tree(self._handle_creating_tree)
+        wxgui_api.bind_to_load_property_options(self._handle_load_options)
         wxgui_api.bind_to_close_database(self._handle_close_database)
 
     def _handle_creating_tree(self, kwargs):
@@ -41,6 +43,17 @@ class Main(object):
         if filename in organism_alarms_api.get_supported_open_databases():
             self.alarmlogs[filename] = AlarmsLog(wxgui_api.get_logs_parent(
                                             filename), filename, self.mainmenu)
+
+    def _handle_load_options(self, kwargs):
+        filename = kwargs['filename']
+
+        if filename in organism_alarms_api.get_supported_open_databases():
+            alimit = organism_alarms_api.get_alarms_log_limit(filename)
+            prop = wxpg.IntProperty("Alarms log soft limit",
+                            "options.extension.organism_alarms.alimit", alimit)
+            prop.SetEditor("SpinCtrl")
+            wxgui_api.add_property_option(filename, prop,
+                                        self.alarmlogs[filename].set_log_limit)
 
     def _handle_close_database(self, kwargs):
         try:
@@ -65,11 +78,13 @@ class AlarmsLog(object):
                         style=wx.dataview.DV_MULTIPLE |
                         wx.dataview.DV_ROW_LINES | wx.dataview.DV_NO_HEADER)
         # Temporary workaround for bug #279
+        # Note how AppendDateColumn requires a second argument, while
+        # AppendTextColumn doesn't
         #self.view.AppendDateColumn('Timestamp', 0,
         #        width=wx.COL_WIDTH_AUTOSIZE, align=wx.ALIGN_CENTER_VERTICAL)
-        self.view.AppendTextColumn('Timestamp', 0, width=wx.COL_WIDTH_AUTOSIZE)
-        self.view.AppendTextColumn('Action', 1, width=wx.COL_WIDTH_AUTOSIZE)
-        self.view.AppendTextColumn('Item', 2)
+        self.view.AppendTextColumn('Timestamp', width=wx.COL_WIDTH_AUTOSIZE)
+        self.view.AppendTextColumn('Action', width=wx.COL_WIDTH_AUTOSIZE)
+        self.view.AppendTextColumn('Item')
 
         self.reasons = {0: '[snoozed]',
                         1: '[dismissed]',
@@ -82,9 +97,8 @@ class AlarmsLog(object):
                     cmenu.get_items(), cmenu.update)
         cmenu.store_items(menu_items)
 
-        # Disable context menu (temporary workaround for bug #278)
-        #self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
-                                                                #popup_cmenu)
+        self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
+                                                                popup_cmenu)
 
         self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_START_EDITING,
                                                     self._handle_item_editing)
@@ -123,6 +137,11 @@ class AlarmsLog(object):
         text = row['AOL_text']
         return (tstamp, reason, text)
 
+    def set_log_limit(self, data, value):
+        if core_api.block_databases():
+            organism_alarms_api.update_alarms_log_limit(self.filename, value)
+            core_api.release_databases()
+
 
 class LogsMenu(object):
     def __init__(self, plugin):
@@ -136,13 +155,8 @@ class LogsMenu(object):
         self.alarms = wx.MenuItem(wxgui_api.get_menu_logs(), self.ID_ALARMS,
                             '&Alarms', 'Alarms log commands', subMenu=submenu)
         self.find = wx.MenuItem(submenu, self.ID_FIND,
-                "&Find in database\tCTRL+F5",
+                "&Find in database\tCTRL+SHIFT+F6",
                 "Select the database items associated to the selected entries")
-
-        # Use an explicit accelerator (temporary workaround for bug #280)
-        accel = wx.AcceleratorEntry(wx.ACCEL_CTRL, wx.WXK_F5, self.ID_FIND)
-        accelt = wx.AcceleratorTable([accel, ])
-        wx.GetApp().root.SetAcceleratorTable(accelt)
 
         self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))

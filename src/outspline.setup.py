@@ -62,7 +62,7 @@ def compose_package_metadata(head):
 
 def compose_metadata():
     meta = {'name': 'outspline',
-            'version': '0.5.0',
+            'version': '0.6.0',
             'description': 'Highly modular and extensible outliner.',
             'author': 'Dario Giovannetti',
             'author_email': 'dev@dariogiovannetti.net',
@@ -73,7 +73,7 @@ def compose_metadata():
 
     meta['data_files'] = (('/usr/share/applications',
                            ('files/outspline.desktop', )),
-    # Currently there isn't an original icon
+    # Currently there isn't an original icon (bug #24)
     #                      ('/usr/share/icons/hicolor/##x##',
     #                       ('files/outspline.svg', ))
                          )

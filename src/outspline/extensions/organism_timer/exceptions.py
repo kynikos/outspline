@@ -29,3 +29,7 @@ class BadOccurrenceError(OutsplineError):
 
 class BadExceptRuleError(OutsplineError):
     pass
+
+
+class OngoingOldSearchWarning(OutsplineError):
+    pass

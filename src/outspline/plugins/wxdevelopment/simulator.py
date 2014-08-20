@@ -62,11 +62,11 @@ def stop(kwargs=None):
     # kwargs is passed from the binding to core_api.bind_to_exit_app_1
 
     # Do *not* check also if timer.IsRunning(), see also comment [1]
+    global timer
     if timer:
         log.debug('Stop simulator')
         timer.Stop()
 
-        global timer
         timer = None
 
 def is_active():
@@ -84,17 +84,14 @@ def _do_action():
     # designed to be used while interacting manually (the problem with alarms
     # remains, though, although they should block the databases on their own
     # thread, and this should prevent hanging the whole application)
-    try:
-        core_api.block_databases(False)
-    except Empty:
-        log.debug('Databases are locked')
-        _restart()
-    else:
+    if core_api.block_databases(quiet=True):
         if random.choice(simulator_actions.ACTIONS)() == False:
-            # core_api.release_databases must be called by the action even in
-            # case it returns False, see also comment [2]
+            # core_api.release_databases must be called by the action, see also
+            # comment [2]
             _do_action()
         else:
             # core_api.release_databases must be called by the action, see also
             # comment [2]
             _restart()
+    else:
+        _restart()

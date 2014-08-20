@@ -30,8 +30,6 @@ plugin_close_event = Event()
 
 
 class Notebook(FlatNotebook):
-    parent = None
-
     def __init__(self, parent):
         FlatNotebook.__init__(self, parent, agwStyle=
                                         flatnotebook.FNB_FANCY_TABS |
@@ -41,12 +39,12 @@ class Notebook(FlatNotebook):
                                         flatnotebook.FNB_DROPDOWN_TABS_LIST |
                                         flatnotebook.FNB_NO_TAB_FOCUS)
         self.parent = parent
-        self.set_colours(parent)
+        self._set_colours(parent)
 
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CONTEXT_MENU,
-                                                        self.popup_tab_menu)
+                                                        self._popup_tab_menu)
 
-    def set_colours(self, parent):
+    def _set_colours(self, parent):
         bgcolour = parent.GetBackgroundColour()
         avg = (bgcolour.Red() + bgcolour.Green() + bgcolour.Blue()) // 3
 
@@ -78,7 +76,7 @@ class Notebook(FlatNotebook):
 
         self.SetActiveTabTextColour(self.GetForegroundColour())
 
-    def popup_tab_menu(self, event):
+    def _popup_tab_menu(self, event):
         # Select the clicked tab, as many actions are executed on the
         # "selected" tab, which may not be the "right-clicked" one
         # Of course the selection must be set *before* enabling/disabling the
@@ -108,19 +106,20 @@ class LeftNotebook(Notebook):
         Notebook.__init__(self, parent)
 
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
-                                                    self.handle_page_closing)
+                                                    self._handle_page_closing)
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSED,
-                                                    self.handle_page_closed)
+                                                    self._handle_page_closed)
 
-    def handle_page_closing(self, event):
-        core_api.block_databases()
+    def _handle_page_closing(self, event):
         # Veto the event, page deletion is managed explicitly later
         event.Veto()
-        page = self.GetCurrentPage()
-        databases.close_database(page.get_filename())
-        core_api.release_databases()
 
-    def handle_page_closed(self, event):
+        if core_api.block_databases():
+            page = self.GetCurrentPage()
+            databases.close_database(page.get_filename())
+            core_api.release_databases()
+
+    def _handle_page_closed(self, event):
         if self.GetPageCount() == 0:
             self.parent.unsplit_window()
             self.Show(False)
@@ -131,60 +130,75 @@ class LeftNotebook(Notebook):
 
     def close_page(self, pageid):
         # self.DeletePage signals EVT_FLATNOTEBOOK_PAGE_CLOSING, so it's
-        # necessary to unbind self.handle_page_closing, otherwise this would
+        # necessary to unbind self._handle_page_closing, otherwise this would
         # enter an infinite recursion
         self.Unbind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
-                                            handler=self.handle_page_closing)
+                                            handler=self._handle_page_closing)
         self.DeletePage(pageid)
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
-                                                    self.handle_page_closing)
+                                                    self._handle_page_closing)
 
 
 class RightNotebook(Notebook):
     def __init__(self, parent):
         Notebook.__init__(self, parent)
 
+        self.imagelist = wx.ImageList(16, 16)
+        self.AssignImageList(self.imagelist)
+
+        self.editors = editor.Editors(self)
+
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
-                                                    self.handle_page_closing)
+                                                    self._handle_page_closing)
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSED,
-                                                    self.handle_page_closed)
+                                                    self._handle_page_closed)
 
-    def handle_page_closing(self, event):
-        core_api.block_databases()
-
+    def _handle_page_closing(self, event):
         # Veto the event, page deletion is managed explicitly later
         event.Veto()
 
-        page = self.GetCurrentPage()
+        if core_api.block_databases():
+            page = self.GetCurrentPage()
 
-        # This also prevents closing a plugin window
-        for item in tuple(editor.tabs.keys()):
-            if editor.tabs[item].panel is page:
-                editor.tabs[item].close()
-                break
-        else:
-            plugin_close_event.signal(page=page)
+            # This also prevents closing a plugin window
+            for item in tuple(editor.tabs.keys()):
+                if editor.tabs[item].panel is page:
+                    editor.tabs[item].close()
+                    break
+            else:
+                # Note that this event is also bound directly by the dbprops
+                # module
+                plugin_close_event.signal(page=page)
 
-        core_api.release_databases()
+            core_api.release_databases()
 
-    def handle_page_closed(self, event):
-        self.unsplit()
+    def _handle_page_closed(self, event):
+        self._unsplit()
 
-    def split(self):
+    def _split(self):
         if self.parent.nb_left.GetPageCount() > 0:
             self.parent.split_window()
 
-    def unsplit(self):
+    def _unsplit(self):
         if self.GetPageCount() == 0:
             self.parent.unsplit_window()
 
-    def add_page(self, window, caption, select=True):
-        self.AddPage(window, text=caption, select=select)
-        self.split()
+    # wx.NO_IMAGE, which is used in the docs, seems not to exist...
+    def add_page(self, window, caption, select=True, imageId=wx.NOT_FOUND):
+        self.AddPage(window, text=caption, select=select, imageId=imageId)
+        self._split()
 
-    def add_plugin(self, window, caption, select=True):
-        self.InsertPage(0, window, text=caption, select=select)
-        self.split()
+    # wx.NO_IMAGE, which is used in the docs, seems not to exist...
+    def add_plugin(self, window, caption, select=True, imageId=wx.NOT_FOUND):
+        self.InsertPage(0, window, text=caption, select=select,
+                                                            imageId=imageId)
+        self._split()
+
+    def add_image(self, image):
+        return self.imagelist.Add(image)
+
+    def set_page_image(self, page, index):
+        return self.SetPageImage(self.GetPageIndex(page), index)
 
     def set_editor_title(self, item, title):
         self.SetPageText(self.GetPageIndex(editor.tabs[item].panel),
@@ -195,6 +209,7 @@ class RightNotebook(Notebook):
 
     def get_selected_editor(self):
         tab = self.get_selected_tab()
+
         for item in editor.tabs:
             if editor.tabs[item].panel is tab:
                 return item
@@ -207,24 +222,24 @@ class RightNotebook(Notebook):
 
     def hide_page(self, pageid):
         # self.RemovePage signals EVT_FLATNOTEBOOK_PAGE_CLOSING, so it's
-        # necessary to unbind self.handle_page_closing, otherwise this would
+        # necessary to unbind self._handle_page_closing, otherwise this would
         # enter an infinite recursion
         self.Unbind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
-                                            handler=self.handle_page_closing)
+                                            handler=self._handle_page_closing)
         self.RemovePage(pageid)
 
         # EVT_FLATNOTEBOOK_PAGE_CLOSED is not called after self.RemovePage
-        self.unsplit()
+        self._unsplit()
 
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
-                                                    self.handle_page_closing)
+                                                    self._handle_page_closing)
 
     def close_page(self, pageid):
         # self.DeletePage signals EVT_FLATNOTEBOOK_PAGE_CLOSING, so it's
-        # necessary to unbind self.handle_page_closing, otherwise this would
+        # necessary to unbind self._handle_page_closing, otherwise this would
         # enter an infinite recursion
         self.Unbind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
-                                            handler=self.handle_page_closing)
+                                            handler=self._handle_page_closing)
         self.DeletePage(pageid)
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
-                                                    self.handle_page_closing)
+                                                    self._handle_page_closing)

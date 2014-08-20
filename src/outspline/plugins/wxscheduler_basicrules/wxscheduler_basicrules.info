@@ -1,11 +1,5 @@
-author = Dario Giovannetti <dev@dariogiovannetti.net>
-version = 0.6
+authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
+version = 1.0
 description = Adds the interface for creating some basic item schedule rules.
 website = https://github.com/kynikos/outspline/
-affects_database = no
-provides_tables =
-dependency_1 = core 0
-dependency_2 = extensions.organism 0
-dependency_3 = extensions.organism_basicrules 0
-dependency_4 = interfaces.wxgui 0
-dependency_5 = plugins.wxscheduler 0
+dependencies = core.1 extensions.organism.1 extensions.organism_basicrules.1 interfaces.wxgui.1 plugins.wxscheduler.1

@@ -31,15 +31,15 @@ class DatabaseNotAccessibleError(OutsplineError):
     pass
 
 
-class DatabaseNotValidError(OutsplineError):
-    pass
-
-
-class DatabaseLocked(OutsplineError):
+class DatabaseLockedError(OutsplineError):
     pass
 
 
 class CannotMoveItemError(OutsplineError):
+    pass
+
+
+class NoLongerExistingItem(OutsplineError):
     pass
 
 

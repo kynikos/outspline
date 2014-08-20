@@ -353,7 +353,7 @@ def edit_editor_text():
         text = ''
         words = ('the quick brown fox jumps over the lazy dog ' * 6).split()
         seps = ' ' * 6 + '\n'
-        for x in range(random.randint(10, 100)):
+        for x in xrange(random.randint(10, 100)):
             words.append(str(random.randint(0, 100)))
             text = ''.join((text, random.choice(words),
                             random.choice(seps)))
@@ -374,13 +374,15 @@ def edit_editor_rules():
                                                             _select_editor():
         filename, id_ = wxgui_api.get_selected_editor_identification()
 
+        # It should also be checked if the database supports
+        #  organism_basicrules (bug #330)
         if filename in organism_api.get_supported_open_databases():
             wxscheduler_api.simulate_expand_rules_panel(filename, id_)
             wxscheduler_api.simulate_remove_all_rules(filename, id_)
 
             rules = []
 
-            for n in range(random.randint(0, 8)):
+            for n in xrange(random.randint(0, 8)):
                 r = random.randint(0, 16)
 
                 if r == 0:

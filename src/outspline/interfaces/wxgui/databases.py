@@ -16,29 +16,37 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import time
 import os.path
+import time
 import wx
 
 import outspline.coreaux_api as coreaux_api
-from outspline.coreaux_api import Event
+from outspline.coreaux_api import Event, OutsplineError
 import outspline.core_api as core_api
+import outspline.dbdeps as dbdeps
 
 import editor
 import msgboxes
 import tree
+import dbprops
 
 open_database_event = Event()
 close_database_event = Event()
 
+dbpropmanager = dbprops.DatabasePropertyManager()
+aborted_save_warnings = {}
 
-def create_database(deffname=None, filename=None):
+
+def create_database(defpath=None, filename=None):
     if not filename:
+        if not defpath:
+            defpath = os.path.join(os.path.expanduser('~'),
+                                    '.'.join(('new_database',
+                                    coreaux_api.get_standard_extension())))
+
         dlg = msgboxes.create_db_ask()
-        if not deffname:
-            deffname = '.'.join(('new_database',
-                                         coreaux_api.get_standard_extension()))
-        dlg.SetFilename(deffname)
+        dlg.SetPath(defpath)
+
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
         else:
@@ -59,9 +67,11 @@ def create_database(deffname=None, filename=None):
         return False
 
 
-def open_database(filename=None, startup=False):
+def open_database(filename=None, check_new_extensions=True,
+                                                        open_properties=False):
     if not filename:
-        dlg = msgboxes.open_db_ask()
+        dlg = msgboxes.open_db_ask(os.path.expanduser('~'))
+
         if dlg.ShowModal() == wx.ID_OK:
             filename = dlg.GetPath()
         else:
@@ -69,22 +79,38 @@ def open_database(filename=None, startup=False):
 
     if filename:
         try:
-            core_api.open_database(filename)
+            core_api.open_database(filename,
+                                    check_new_extensions=check_new_extensions)
         except core_api.DatabaseAlreadyOpenError:
             msgboxes.open_db_open(filename).ShowModal()
             return False
         except core_api.DatabaseNotAccessibleError:
             msgboxes.open_db_access(filename).ShowModal()
             return False
-        except core_api.DatabaseNotValidError:
-            msgboxes.open_db_incompatible(filename).ShowModal()
+        except dbdeps.DatabaseNotValidError:
+            msgboxes.open_db_invalid(filename).ShowModal()
             return False
-        except core_api.DatabaseLocked:
+        except dbdeps.DatabaseIncompatibleAddError as err:
+            msgboxes.DatabaseUpdaterAdd(err.updater, open_properties)
+            return False
+        except dbdeps.DatabaseIncompatibleUpdateError as err:
+            msgboxes.DatabaseUpdaterUpdate(err.updater, open_properties)
+            return False
+        except dbdeps.DatabaseIncompatibleAbortError as err:
+            msgboxes.DatabaseUpdaterAbort(err.updater)
+            return False
+        except core_api.DatabaseLockedError:
             msgboxes.open_db_locked(filename).ShowModal()
             return False
         else:
             tree.Database.open(filename)
-            open_database_event.signal(filename=filename, startup=startup)
+            # Note that this event is also bound directly by the sessions
+            # module
+            open_database_event.signal(filename=filename)
+
+            if open_properties:
+                dbpropmanager.open(filename)
+
             return True
     else:
         return False
@@ -96,23 +122,31 @@ def save_database_as(origin):
                                                   not editor.tabs[tab].close():
             break
     else:
-        currname = os.path.basename(origin).rpartition('.')
-        deffname = ''.join((currname[0], '_copy', currname[1], currname[2]))
-        destination = create_database(deffname)
+        defpath = '{}_copy{}'.format(*os.path.splitext(origin))
+        destination = create_database(defpath=defpath)
+
         if destination:
-            core_api.save_database_copy(origin, destination)
-            close_database(origin, no_confirm=True)
-            open_database(destination)
+            try:
+                core_api.save_database_copy(origin, destination)
+            except OutsplineError as err:
+                # This will leave the new created file empty, see bug #322
+                warn_aborted_save(err)
+            else:
+                close_database(origin, no_confirm=True)
+                open_database(destination)
 
 
 def save_database_backup(origin):
-    currname = os.path.basename(origin).rpartition('.')
-    deffname = time.strftime('{}_%Y%m%d%H%M%S{}{}'.format(currname[0],
-                                                          currname[1],
-                                                          currname[2]))
-    destination = create_database(deffname)
+    defpath = time.strftime('{}_%Y%m%d%H%M%S{}'.format(
+                                                    *os.path.splitext(origin)))
+    destination = create_database(defpath=defpath)
+
     if destination:
-        core_api.save_database_copy(origin, destination)
+        try:
+            core_api.save_database_copy(origin, destination)
+        except OutsplineError as err:
+            # This will leave the new created file empty, see bug #322
+            warn_aborted_save(err)
 
 
 def close_database(filename, no_confirm=False, exit_=False):
@@ -128,7 +162,11 @@ def close_database(filename, no_confirm=False, exit_=False):
     if not no_confirm and core_api.check_pending_changes(filename):
         save = msgboxes.close_db_ask(filename).ShowModal()
         if save == wx.ID_YES:
-            core_api.save_database(filename)
+            try:
+                core_api.save_database(filename)
+            except OutsplineError as err:
+                warn_aborted_save(err)
+                return False
         elif save == wx.ID_CANCEL:
             return False
 
@@ -138,9 +176,27 @@ def close_database(filename, no_confirm=False, exit_=False):
 
     core_api.close_database(filename)
 
+    # Note that this event is also bound directly by the sessions and dbprops
+    # modules
     close_database_event.signal(filename=filename, exit_=exit_)
+
+    return True
 
 
 def get_open_databases():
     nbl = wx.GetApp().nb_left
     return {nbl.GetPageIndex(tree.dbs[db]): db for db in tree.dbs}
+
+
+def register_aborted_save_warning(exception, message):
+    global aborted_save_warnings
+    aborted_save_warnings[exception] = message
+
+
+def warn_aborted_save(error):
+    try:
+        msgboxes.warn_aborted_save(aborted_save_warnings[error.__class__]
+                                                                ).ShowModal()
+    except KeyError:
+        msgboxes.warn_aborted_save(msgboxes.aborted_save_default_warning
+                                                                ).ShowModal()

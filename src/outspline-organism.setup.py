@@ -62,7 +62,7 @@ def compose_package_metadata(head):
 
 def compose_metadata():
     meta = {'name': 'outspline-organism',
-            'version': '0.5.1',
+            'version': '0.6.0',
             'description': 'Organizer component for Outspline.',
             'author': 'Dario Giovannetti',
             'author_email': 'dev@dariogiovannetti.net',

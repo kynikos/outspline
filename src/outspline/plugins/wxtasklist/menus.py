@@ -28,43 +28,10 @@ import outspline.extensions.organism_alarms_api as organism_alarms_api
 
 import list as list_
 import filters as filters_
+import export
 
 
 class MainMenu(wx.Menu):
-    tasklist = None
-    occview = None
-    ID_SHOW = None
-    show = None
-    filters = None
-    ID_FILTERS = None
-    filters_submenu = None
-    addfilter = None
-    ID_ADD_FILTER = None
-    editfilter = None
-    ID_EDIT_FILTER = None
-    removefilter = None
-    ID_REMOVE_FILTER = None
-    gaps = None
-    ID_GAPS = None
-    overlaps = None
-    ID_OVERLAPS = None
-    scroll = None
-    ID_SCROLL = None
-    autoscroll = None
-    ID_AUTOSCROLL = None
-    find = None
-    ID_FIND = None
-    edit = None
-    ID_EDIT = None
-    snooze = None
-    ID_SNOOZE = None
-    snooze_all = None
-    ID_SNOOZE_ALL = None
-    dismiss = None
-    ID_DISMISS = None
-    dismiss_all = None
-    ID_DISMISS_ALL = None
-
     def __init__(self, tasklist):
         wx.Menu.__init__(self)
 
@@ -72,10 +39,8 @@ class MainMenu(wx.Menu):
         self.occview = tasklist.list_
 
         self.ID_SHOW = wx.NewId()
-        self.ID_FILTERS = wx.NewId()
-        self.ID_ADD_FILTER = wx.NewId()
-        self.ID_EDIT_FILTER = wx.NewId()
-        self.ID_REMOVE_FILTER = wx.NewId()
+        self.ID_NAVIGATOR = wx.NewId()
+        self.ID_ALARMS = wx.NewId()
         self.ID_GAPS = wx.NewId()
         self.ID_OVERLAPS = wx.NewId()
         self.ID_SCROLL = wx.NewId()
@@ -86,43 +51,42 @@ class MainMenu(wx.Menu):
         self.ID_SNOOZE_ALL = wx.NewId()
         self.ID_DISMISS = wx.NewId()
         self.ID_DISMISS_ALL = wx.NewId()
+        self.ID_EXPORT = wx.NewId()
+
+        self.navigator_submenu = NavigatorMenu(tasklist)
+        self.alarms_submenu = AlarmsMenu(tasklist)
+        self.export_submenu = ExportMenu(tasklist)
 
         self.show = wx.MenuItem(self, self.ID_SHOW,
                                                 "Show &panel\tCTRL+SHIFT+F5",
-                                                "Show the occurrences panel",
+                                                "Show the events panel",
                                                 kind=wx.ITEM_CHECK)
-
-        self.filters_submenu = FiltersMenu(self.tasklist)
-
-        self.filters = wx.MenuItem(self, self.ID_FILTERS, 'F&ilters',
-                            'Select a filter', subMenu=self.filters_submenu)
-        self.addfilter = wx.MenuItem(self, self.ID_ADD_FILTER,
-                                            "&Add filter", "Add a new filter")
-        self.editfilter = wx.MenuItem(self, self.ID_EDIT_FILTER,
-                        "Edi&t filter", "Edit the currently selected filter")
-        self.removefilter = wx.MenuItem(self, self.ID_REMOVE_FILTER,
-                    "&Remove filter", "Remove the currently selected filter")
+        self.navigator = wx.MenuItem(self, self.ID_NAVIGATOR, 'Na&vigator',
+                        'Navigator actions', subMenu=self.navigator_submenu)
+        self.alarms = wx.MenuItem(self, self.ID_ALARMS, '&Active alarms',
+                                        'Set the visibility of active alarms',
+                                        subMenu=self.alarms_submenu)
         self.gaps = wx.MenuItem(self, self.ID_GAPS, "Show &gaps\tCTRL+-",
                             "Show any unallocated time in the shown interval",
                             kind=wx.ITEM_CHECK)
         self.overlaps = wx.MenuItem(self, self.ID_OVERLAPS,
                         "Show &overlappings\tCTRL+=",
-                        "Show time intervals used by more than one occurrence",
+                        "Show time intervals used by more than one event",
                         kind=wx.ITEM_CHECK)
         self.scroll = wx.MenuItem(self, self.ID_SCROLL,
                                         "Scro&ll to ongoing\tF5",
                                         "Order the list by State and scroll "
-                                        "to the first ongoing occurrence")
+                                        "to the first ongoing event")
         self.autoscroll = wx.MenuItem(self, self.ID_AUTOSCROLL,
                                             "Enable a&uto-scroll",
                                             "Auto-scroll to the first ongoing "
-                                            "occurrence at pre-defined events",
+                                            "event when refreshing",
                                             kind=wx.ITEM_CHECK)
         self.find = wx.MenuItem(self, self.ID_FIND, "&Find in database\tF6",
-            "Select the database items associated to the selected occurrences")
+            "Select the database items associated to the selected events")
         self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit selected\tCTRL+F6",
                             "Open in the editor the database items associated "
-                            "to the selected occurrences")
+                            "to the selected events")
 
         self.snooze = wx.MenuItem(self, self.ID_SNOOZE, "&Snooze selected",
                             "Snooze the selected alarms",
@@ -135,15 +99,13 @@ class MainMenu(wx.Menu):
                         "&Dismiss selected\tF8", "Dismiss the selected alarms")
         self.dismiss_all = wx.MenuItem(self, self.ID_DISMISS_ALL,
                     "Dis&miss all\tCTRL+F8", "Dismiss all the active alarms")
+        self.export = wx.MenuItem(self, self.ID_EXPORT, 'E&xport view',
+                                        'Export the current view to a file',
+                                        subMenu=self.export_submenu)
 
-        self.filters.SetBitmap(wx.ArtProvider.GetBitmap('@filters',
-                                                                  wx.ART_MENU))
-        self.addfilter.SetBitmap(wx.ArtProvider.GetBitmap('@add-filter',
-                                                                  wx.ART_MENU))
-        self.editfilter.SetBitmap(wx.ArtProvider.GetBitmap('@edit-filter',
-                                                                  wx.ART_MENU))
-        self.removefilter.SetBitmap(wx.ArtProvider.GetBitmap('@remove-filter',
-                                                                  wx.ART_MENU))
+        self.navigator.SetBitmap(wx.ArtProvider.GetBitmap('@navigator',
+                                                                wx.ART_MENU))
+        self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
         self.scroll.SetBitmap(wx.ArtProvider.GetBitmap('@movedown',
                                                                 wx.ART_MENU))
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
@@ -155,14 +117,12 @@ class MainMenu(wx.Menu):
                                                                   wx.ART_MENU))
         self.dismiss_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
                                                                   wx.ART_MENU))
+        self.export.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
 
         self.AppendItem(self.show)
-        self.AppendItem(self.filters)
         self.AppendSeparator()
-        self.AppendItem(self.addfilter)
-        self.AppendItem(self.editfilter)
-        self.AppendItem(self.removefilter)
-        self.AppendSeparator()
+        self.AppendItem(self.navigator)
+        self.AppendItem(self.alarms)
         self.AppendItem(self.gaps)
         self.AppendItem(self.overlaps)
         self.AppendSeparator()
@@ -176,33 +136,30 @@ class MainMenu(wx.Menu):
         self.AppendItem(self.snooze_all)
         self.AppendItem(self.dismiss)
         self.AppendItem(self.dismiss_all)
+        self.AppendSeparator()
+        self.AppendItem(self.export)
 
         wxgui_api.bind_to_menu(self.tasklist.toggle_shown, self.show)
-        wxgui_api.bind_to_menu(self.add_filter, self.addfilter)
-        wxgui_api.bind_to_menu(self.edit_filter, self.editfilter)
-        wxgui_api.bind_to_menu(self.remove_filter, self.removefilter)
-        wxgui_api.bind_to_menu(self.show_gaps, self.gaps)
-        wxgui_api.bind_to_menu(self.show_overlappings, self.overlaps)
-        wxgui_api.bind_to_menu(self.scroll_to_ongoing, self.scroll)
-        wxgui_api.bind_to_menu(self.enable_autoscroll, self.autoscroll)
-        wxgui_api.bind_to_menu(self.find_in_tree, self.find)
-        wxgui_api.bind_to_menu(self.edit_items, self.edit)
-        wxgui_api.bind_to_menu(self.dismiss_selected_alarms, self.dismiss)
-        wxgui_api.bind_to_menu(self.dismiss_all_alarms, self.dismiss_all)
+        wxgui_api.bind_to_menu(self._show_gaps, self.gaps)
+        wxgui_api.bind_to_menu(self._show_overlappings, self.overlaps)
+        wxgui_api.bind_to_menu(self._scroll_to_ongoing, self.scroll)
+        wxgui_api.bind_to_menu(self._enable_autoscroll, self.autoscroll)
+        wxgui_api.bind_to_menu(self._find_in_tree, self.find)
+        wxgui_api.bind_to_menu(self._edit_items, self.edit)
+        wxgui_api.bind_to_menu(self._dismiss_selected_alarms, self.dismiss)
+        wxgui_api.bind_to_menu(self._dismiss_all_alarms, self.dismiss_all)
 
-        wxgui_api.bind_to_update_menu_items(self.update_items)
-        wxgui_api.bind_to_reset_menu_items(self.reset_items)
+        wxgui_api.bind_to_update_menu_items(self._update_items)
+        wxgui_api.bind_to_reset_menu_items(self._reset_items)
 
-        wxgui_api.insert_menu_main_item('&Occurrences',
+        wxgui_api.insert_menu_main_item('E&vents',
                                     wxgui_api.get_menu_logs_position(), self)
 
-    def update_items(self, kwargs):
+    def _update_items(self, kwargs):
         if kwargs['menu'] is self:
             self.show.Check(check=self.tasklist.is_shown())
-            self.filters.Enable(False)
-            self.addfilter.Enable(False)
-            self.editfilter.Enable(False)
-            self.removefilter.Enable(False)
+            self.navigator.Enable(False)
+            self.alarms.Enable(False)
             self.gaps.Enable(False)
             self.gaps.Check(check=self.occview.show_gaps)
             self.overlaps.Enable(False)
@@ -216,17 +173,15 @@ class MainMenu(wx.Menu):
             self.snooze_all.Enable(False)
             self.dismiss.Enable(False)
             self.dismiss_all.Enable(False)
+            self.export.Enable(False)
+
+            self.navigator_submenu.update_items()
+            self.alarms_submenu.update_items()
 
             tab = wxgui_api.get_selected_right_nb_tab()
 
             if tab is self.tasklist.panel:
-                self.filters.Enable()
-                self.addfilter.Enable()
-                self.editfilter.Enable()
                 self.scroll.Enable()
-
-                if len(self.filters.GetSubMenu().GetMenuItems()) > 1:
-                    self.removefilter.Enable()
 
                 sel = self.occview.listview.GetFirstSelected()
 
@@ -237,12 +192,12 @@ class MainMenu(wx.Menu):
                     canbreak = 0
 
                     # Check item is not a gap or an overlapping
-                    if item.filename is not None:
+                    if item.get_filename() is not None:
                         self.find.Enable()
                         self.edit.Enable()
                         canbreak += 1
 
-                    if item.alarm is False:
+                    if item.get_alarm() is False:
                         self.snooze.Enable()
                         self.dismiss.Enable()
                         canbreak += 1
@@ -255,26 +210,29 @@ class MainMenu(wx.Menu):
                 # Note that "all" means all the visible active alarms; some
                 # may be hidden in the current view; this is also why these
                 # actions must be disabled if the tasklist is not focused
-                if len(self.occview.activealarms) > 0:
+                if len(self.occview.get_active_alarms()) > 0:
                     self.snooze_all.Enable()
                     self.dismiss_all.Enable()
 
-                self.filters_submenu.update()
+                self.navigator_submenu.update_items_selected()
 
             if self.tasklist.is_shown():
                 # Already appropriately checked above
+                self.navigator.Enable()
+                self.alarms.Enable()
                 self.gaps.Enable()
                 self.overlaps.Enable()
                 self.autoscroll.Enable()
+                self.export.Enable()
 
-    def reset_items(self, kwargs):
+                self.navigator_submenu.update_items_shown()
+
+    def _reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
         # accelerators
         self.show.Enable()
-        self.filters.Enable()
-        self.addfilter.Enable()
-        self.editfilter.Enable()
-        self.removefilter.Enable()
+        self.navigator.Enable()
+        self.alarms.Enable()
         self.gaps.Enable()
         self.overlaps.Enable()
         self.scroll.Enable()
@@ -285,39 +243,33 @@ class MainMenu(wx.Menu):
         self.snooze_all.Enable()
         self.dismiss.Enable()
         self.dismiss_all.Enable()
+        self.export.Enable()
 
-    def add_filter(self, event):
-        self.tasklist.filters.create()
+        self.navigator_submenu.reset_items()
 
-    def edit_filter(self, event):
-        self.tasklist.filters.edit_selected()
-
-    def remove_filter(self, event):
-        self.tasklist.filters.remove_selected()
-
-    def show_gaps(self, event):
+    def _show_gaps(self, event):
         if self.tasklist.is_shown():
             self.occview.show_gaps = not self.occview.show_gaps
-            self.occview.delay_restart()
+            self.occview.refresh()
 
-    def show_overlappings(self, event):
+    def _show_overlappings(self, event):
         if self.tasklist.is_shown():
             self.occview.show_overlappings = not self.occview.show_overlappings
-            self.occview.delay_restart()
+            self.occview.refresh()
 
-    def scroll_to_ongoing(self, event):
+    def _scroll_to_ongoing(self, event):
         tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.tasklist.panel:
             self.occview.autoscroll.execute_force()
 
-    def enable_autoscroll(self, event):
+    def _enable_autoscroll(self, event):
         if self.occview.autoscroll.is_enabled():
             self.occview.autoscroll.disable()
         else:
             self.occview.autoscroll.enable()
 
-    def find_in_tree(self, event):
+    def _find_in_tree(self, event):
         tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.tasklist.panel:
@@ -332,8 +284,8 @@ class MainMenu(wx.Menu):
                     item = self.occview.occs[self.occview.listview.GetItemData(
                                                                         sel)]
 
-                    if item.filename is not None:
-                        wxgui_api.select_database_tab(item.filename)
+                    if item.get_filename() is not None:
+                        wxgui_api.select_database_tab(item.get_filename())
                         # The item is selected in the loop below
                         break
                     else:
@@ -345,13 +297,13 @@ class MainMenu(wx.Menu):
                     item = self.occview.occs[self.occview.listview.GetItemData(
                                                                         sel)]
 
-                    if item.filename is not None:
-                        wxgui_api.add_item_to_selection(item.filename,
-                                                                    item.id_)
+                    if item.get_filename() is not None:
+                        wxgui_api.add_item_to_selection(item.get_filename(),
+                                                                item.get_id())
 
                     sel = self.occview.listview.GetNextSelected(sel)
 
-    def edit_items(self, event):
+    def _edit_items(self, event):
         tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.tasklist.panel:
@@ -361,70 +313,267 @@ class MainMenu(wx.Menu):
                 item = self.occview.occs[self.occview.listview.GetItemData(
                                                                         sel)]
 
-                if item.filename is not None:
-                    wxgui_api.open_editor(item.filename, item.id_)
+                if item.get_filename() is not None:
+                    wxgui_api.open_editor(item.get_filename(), item.get_id())
 
                 sel = self.occview.listview.GetNextSelected(sel)
 
-    def dismiss_selected_alarms(self, event):
-        core_api.block_databases()
+    def _dismiss_selected_alarms(self, event):
+        if core_api.block_databases():
+            tab = wxgui_api.get_selected_right_nb_tab()
 
-        tab = wxgui_api.get_selected_right_nb_tab()
+            if tab is self.tasklist.panel:
+                alarmsd = self.occview.get_selected_active_alarms()
 
-        if tab is self.tasklist.panel:
-            alarmsd = self.occview.get_selected_active_alarms()
+                if len(alarmsd) > 0:
+                    organism_alarms_api.dismiss_alarms(alarmsd)
+                    # Let the alarm off event update the tasklist
 
-            if len(alarmsd) > 0:
-                organism_alarms_api.dismiss_alarms(alarmsd)
-                # Let the alarm off event update the tasklist
+            core_api.release_databases()
 
-        core_api.release_databases()
-
-    def dismiss_all_alarms(self, event):
+    def _dismiss_all_alarms(self, event):
         # Note that "all" means all the visible active alarms; some may be
         # hidden in the current view
-        core_api.block_databases()
+        if core_api.block_databases():
+            tab = wxgui_api.get_selected_right_nb_tab()
 
-        tab = wxgui_api.get_selected_right_nb_tab()
+            if tab is self.tasklist.panel:
+                alarmsd = self.occview.get_active_alarms()
 
-        if tab is self.tasklist.panel:
-            alarmsd = self.occview.activealarms
+                if len(alarmsd) > 0:
+                    organism_alarms_api.dismiss_alarms(alarmsd)
+                    # Let the alarm off event update the tasklist
 
-            if len(alarmsd) > 0:
-                organism_alarms_api.dismiss_alarms(alarmsd)
-                # Let the alarm off event update the tasklist
-
-        core_api.release_databases()
+            core_api.release_databases()
 
 
-class TabContextMenu(wx.Menu):
-    tasklist = None
-    filters = None
-    filters_submenu = None
-    addfilter = None
-    editfilter = None
-    removefilter = None
-    gaps = None
-    overlaps = None
-    scroll = None
-    autoscroll = None
-    snooze_all = None
-    dismiss_all = None
-
+class NavigatorMenu(wx.Menu):
     def __init__(self, tasklist):
         wx.Menu.__init__(self)
         self.tasklist = tasklist
 
-        self.filters_submenu = FiltersMenu(self.tasklist)
+        self.ID_TOGGLE_NAVIGATOR = wx.NewId()
+        self.ID_PREVIOUS = wx.NewId()
+        self.ID_NEXT = wx.NewId()
+        self.ID_APPLY = wx.NewId()
+        self.ID_SET = wx.NewId()
+        self.ID_RESET = wx.NewId()
 
-        self.filters = wx.MenuItem(self, self.tasklist.mainmenu.ID_FILTERS,
-                                    'F&ilters', subMenu=self.filters_submenu)
-        self.addfilter = wx.MenuItem(self,
-                        self.tasklist.mainmenu.ID_ADD_FILTER, "&Add filter")
-        self.editfilter = wx.MenuItem(self,
-                        self.tasklist.mainmenu.ID_EDIT_FILTER, "Edi&t filter")
-        self.removefilter = wx.MenuItem(self,
-                    self.tasklist.mainmenu.ID_REMOVE_FILTER, "&Remove filter")
+        self.navigator = wx.MenuItem(self, self.ID_TOGGLE_NAVIGATOR,
+                        "&Show\tCTRL+F5", "Show or hide the navigator bar",
+                        kind=wx.ITEM_CHECK)
+        self.previous = wx.MenuItem(self, self.ID_PREVIOUS,
+                                    "&Previous page\tCTRL+[",
+                                    "View the previous page of events")
+        self.next = wx.MenuItem(self, self.ID_NEXT, "&Next page\tCTRL+]",
+                                        "View the next page of events")
+        self.apply = wx.MenuItem(self, self.ID_APPLY, "&Apply filters\tCTRL+,",
+                                                "Apply the configured filters")
+        self.set = wx.MenuItem(self, self.ID_SET, "Se&t filters\tCTRL+.",
+                                    "Apply and save the configured filters")
+        self.reset = wx.MenuItem(self, self.ID_RESET, "&Reset filters\tCTRL+/",
+                                        "Reset the filters to the saved ones")
+
+        self.previous.SetBitmap(wx.ArtProvider.GetBitmap('@previous',
+                                                                  wx.ART_MENU))
+        self.next.SetBitmap(wx.ArtProvider.GetBitmap('@next', wx.ART_MENU))
+        self.apply.SetBitmap(wx.ArtProvider.GetBitmap('@apply',  wx.ART_MENU))
+        self.set.SetBitmap(wx.ArtProvider.GetBitmap('@save', wx.ART_MENU))
+        self.reset.SetBitmap(wx.ArtProvider.GetBitmap('@undo', wx.ART_MENU))
+
+        self.AppendItem(self.navigator)
+        self.AppendSeparator()
+        self.AppendItem(self.previous)
+        self.AppendItem(self.next)
+        self.AppendItem(self.apply)
+        self.AppendItem(self.set)
+        self.AppendItem(self.reset)
+
+        wxgui_api.bind_to_menu(self._toggle_navigator, self.navigator)
+        wxgui_api.bind_to_menu(self._go_to_previous_page, self.previous)
+        wxgui_api.bind_to_menu(self._go_to_next_page, self.next)
+        wxgui_api.bind_to_menu(self._apply_filters, self.apply)
+        wxgui_api.bind_to_menu(self._set_filters, self.set)
+        wxgui_api.bind_to_menu(self._reset_filters, self.reset)
+
+    def update_items(self):
+        self.navigator.Enable(False)
+        self.navigator.Check(check=self.tasklist.navigator.is_shown())
+        self.previous.Enable(False)
+        self.next.Enable(False)
+        self.apply.Enable(False)
+        self.set.Enable(False)
+        self.reset.Enable(False)
+
+    def update_items_shown(self):
+        self.navigator.Enable()
+
+    def update_items_selected(self):
+        self.previous.Enable()
+        self.next.Enable()
+        self.apply.Enable()
+        self.set.Enable()
+        self.reset.Enable()
+
+    def reset_items(self):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.navigator.Enable()
+        self.previous.Enable()
+        self.next.Enable()
+        self.apply.Enable()
+        self.set.Enable()
+        self.reset.Enable()
+
+    def _toggle_navigator(self, event):
+        self.tasklist.navigator.toggle_shown()
+
+    def _go_to_previous_page(self, event):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.tasklist.navigator.show_previous_page()
+
+    def _go_to_next_page(self, event):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.tasklist.navigator.show_next_page()
+
+    def _apply_filters(self, event):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.tasklist.navigator.apply()
+
+    def _set_filters(self, event):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.tasklist.navigator.set()
+
+    def _reset_filters(self, event):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.tasklist.navigator.reset()
+
+
+class AlarmsMenu(wx.Menu):
+    def __init__(self, tasklist):
+        wx.Menu.__init__(self)
+        self.tasklist = tasklist
+        self.occview = tasklist.list_
+
+        self.ID_IN_RANGE = wx.NewId()
+        self.ID_AUTO = wx.NewId()
+        self.ID_ALL = wx.NewId()
+
+        self.inrange = wx.MenuItem(self, self.ID_IN_RANGE,
+                        "Show in &range",
+                        "Show only the active alarms in the filtered range",
+                        kind=wx.ITEM_RADIO)
+        self.auto = wx.MenuItem(self, self.ID_AUTO,
+                    "Show &smartly",
+                    "Show all the active alarms only if current time is shown",
+                    kind=wx.ITEM_RADIO)
+        self.all = wx.MenuItem(self, self.ID_ALL,
+                        "Show &all",
+                        "Always show all the active alarms",
+                        kind=wx.ITEM_RADIO)
+
+        self.modes_to_items = {
+            'in_range': self.inrange,
+            'auto': self.auto,
+            'all': self.all,
+        }
+
+        self.AppendItem(self.inrange)
+        self.AppendItem(self.auto)
+        self.AppendItem(self.all)
+
+        wxgui_api.bind_to_menu(self._set_in_range, self.inrange)
+        wxgui_api.bind_to_menu(self._set_auto, self.auto)
+        wxgui_api.bind_to_menu(self._set_all, self.all)
+
+    def update_items(self):
+        self.modes_to_items[self.occview.active_alarms_mode].Check()
+
+    def _set_in_range(self, event):
+        if self.tasklist.is_shown():
+            self.occview.active_alarms_mode = 'in_range'
+            self.occview.refresh()
+
+    def _set_auto(self, event):
+        if self.tasklist.is_shown():
+            self.occview.active_alarms_mode = 'auto'
+            self.occview.refresh()
+
+    def _set_all(self, event):
+        if self.tasklist.is_shown():
+            self.occview.active_alarms_mode = 'all'
+            self.occview.refresh()
+
+
+class ExportMenu(wx.Menu):
+    def __init__(self, tasklist):
+        wx.Menu.__init__(self)
+        self.tasklist = tasklist
+
+        self.exporter = export.Exporter(tasklist.list_)
+
+        self.ID_JSON = wx.NewId()
+        self.ID_TSV = wx.NewId()
+        self.ID_XML = wx.NewId()
+
+        self.json = wx.MenuItem(self, self.ID_JSON,
+                            "&JSON...", "Export to JSON format")
+        self.tsv = wx.MenuItem(self, self.ID_TSV,
+                            "&TSV...", "Export to tab-separated values format")
+        self.xml = wx.MenuItem(self, self.ID_XML,
+                            "&XML...", "Export to XML format")
+
+        self.json.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
+                                                                wx.ART_MENU))
+        self.tsv.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
+                                                                wx.ART_MENU))
+        self.xml.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
+                                                                wx.ART_MENU))
+
+        self.AppendItem(self.json)
+        self.AppendItem(self.tsv)
+        self.AppendItem(self.xml)
+
+        wxgui_api.bind_to_menu(self._export_to_json, self.json)
+        wxgui_api.bind_to_menu(self._export_to_tsv, self.tsv)
+        wxgui_api.bind_to_menu(self._export_to_xml, self.xml)
+
+    def _export_to_json(self, event):
+        if self.tasklist.is_shown():
+            self.exporter.export_to_json()
+
+    def _export_to_tsv(self, event):
+        if self.tasklist.is_shown():
+            self.exporter.export_to_tsv()
+
+    def _export_to_xml(self, event):
+        if self.tasklist.is_shown():
+            self.exporter.export_to_xml()
+
+
+class TabContextMenu(wx.Menu):
+    def __init__(self, tasklist):
+        wx.Menu.__init__(self)
+        self.tasklist = tasklist
+
+        self.navigator_submenu = TabContextNavigatorMenu(tasklist)
+        self.alarms_submenu = TabContextAlarmsMenu(tasklist)
+        self.export_submenu = TabContextExportMenu(tasklist)
+
+        self.navigator = wx.MenuItem(self, self.tasklist.mainmenu.ID_NAVIGATOR,
+                                'Na&vigator', subMenu=self.navigator_submenu)
+        self.alarms = wx.MenuItem(self, self.tasklist.mainmenu.ID_ALARMS,
+                                '&Active alarms', subMenu=self.alarms_submenu)
         self.gaps = wx.MenuItem(self, self.tasklist.mainmenu.ID_GAPS,
                                             "Show &gaps", kind=wx.ITEM_CHECK)
         self.overlaps = wx.MenuItem(self,
@@ -441,62 +590,146 @@ class TabContextMenu(wx.Menu):
                         subMenu=SnoozeAllConfigMenu(self.tasklist))
         self.dismiss_all = wx.MenuItem(self,
                         self.tasklist.mainmenu.ID_DISMISS_ALL, "Dis&miss all")
+        self.export = wx.MenuItem(self, self.tasklist.mainmenu.ID_EXPORT,
+                                'E&xport view', subMenu=self.export_submenu)
 
-        self.filters.SetBitmap(wx.ArtProvider.GetBitmap('@filters',
-                                                                  wx.ART_MENU))
-        self.addfilter.SetBitmap(wx.ArtProvider.GetBitmap('@add-filter',
-                                                                  wx.ART_MENU))
-        self.editfilter.SetBitmap(wx.ArtProvider.GetBitmap('@edit-filter',
-                                                                  wx.ART_MENU))
-        self.removefilter.SetBitmap(wx.ArtProvider.GetBitmap('@remove-filter',
-                                                                  wx.ART_MENU))
+        self.navigator.SetBitmap(wx.ArtProvider.GetBitmap('@navigator',
+                                                                wx.ART_MENU))
+        self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
         self.scroll.SetBitmap(wx.ArtProvider.GetBitmap('@movedown',
                                                                 wx.ART_MENU))
         self.snooze_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarms',
                                                                   wx.ART_MENU))
         self.dismiss_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
                                                                   wx.ART_MENU))
+        self.export.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
 
-        self.AppendItem(self.filters)
-        self.AppendSeparator()
-        self.AppendItem(self.addfilter)
-        self.AppendItem(self.editfilter)
-        self.AppendItem(self.removefilter)
+        self.AppendItem(self.navigator)
+        self.AppendItem(self.alarms)
+        self.AppendItem(self.gaps)
+        self.AppendItem(self.overlaps)
         self.AppendSeparator()
         self.AppendItem(self.scroll)
         self.AppendItem(self.autoscroll)
         self.AppendSeparator()
-        self.AppendItem(self.gaps)
-        self.AppendItem(self.overlaps)
-        self.AppendSeparator()
         self.AppendItem(self.snooze_all)
         self.AppendItem(self.dismiss_all)
+        self.AppendSeparator()
+        self.AppendItem(self.export)
 
     def update(self):
-        if len(self.tasklist.list_.activealarms) > 0:
+        if len(self.tasklist.list_.get_active_alarms()) > 0:
             self.snooze_all.Enable()
             self.dismiss_all.Enable()
         else:
             self.snooze_all.Enable(False)
             self.dismiss_all.Enable(False)
 
-        self.filters_submenu.update()
-
         self.gaps.Check(check=self.tasklist.list_.show_gaps)
         self.overlaps.Check(check=self.tasklist.list_.show_overlappings)
         self.autoscroll.Check(
                             check=self.tasklist.list_.autoscroll.is_enabled())
 
+        self.navigator_submenu.update_items()
+        self.alarms_submenu.update_items()
+
+
+class TabContextNavigatorMenu(wx.Menu):
+    def __init__(self, tasklist):
+        wx.Menu.__init__(self)
+        self.tasklist = tasklist
+
+        self.navigator = wx.MenuItem(self,
+                self.tasklist.mainmenu.navigator_submenu.ID_TOGGLE_NAVIGATOR,
+                "&Show", "Show or hide the navigator bar", kind=wx.ITEM_CHECK)
+        self.previous = wx.MenuItem(self,
+                        self.tasklist.mainmenu.navigator_submenu.ID_PREVIOUS,
+                        "&Previous page")
+        self.next = wx.MenuItem(self,
+                            self.tasklist.mainmenu.navigator_submenu.ID_NEXT,
+                            "&Next page")
+        self.apply = wx.MenuItem(self,
+                            self.tasklist.mainmenu.navigator_submenu.ID_APPLY,
+                            "&Apply filters")
+        self.set = wx.MenuItem(self,
+                            self.tasklist.mainmenu.navigator_submenu.ID_SET,
+                            "Se&t filters")
+        self.reset = wx.MenuItem(self,
+                            self.tasklist.mainmenu.navigator_submenu.ID_RESET,
+                            "&Reset filters")
+
+        self.previous.SetBitmap(wx.ArtProvider.GetBitmap('@previous',
+                                                                  wx.ART_MENU))
+        self.next.SetBitmap(wx.ArtProvider.GetBitmap('@next', wx.ART_MENU))
+        self.apply.SetBitmap(wx.ArtProvider.GetBitmap('@apply',  wx.ART_MENU))
+        self.set.SetBitmap(wx.ArtProvider.GetBitmap('@save', wx.ART_MENU))
+        self.reset.SetBitmap(wx.ArtProvider.GetBitmap('@undo', wx.ART_MENU))
+
+        self.AppendItem(self.navigator)
+        self.AppendSeparator()
+        self.AppendItem(self.previous)
+        self.AppendItem(self.next)
+        self.AppendItem(self.apply)
+        self.AppendItem(self.set)
+        self.AppendItem(self.reset)
+
+    def update_items(self):
+        self.navigator.Check(check=self.tasklist.navigator.is_shown())
+
+
+class TabContextAlarmsMenu(wx.Menu):
+    def __init__(self, tasklist):
+        wx.Menu.__init__(self)
+        self.occview = tasklist.list_
+
+        self.inrange = wx.MenuItem(self,
+                                tasklist.mainmenu.alarms_submenu.ID_IN_RANGE,
+                                "Show in &range", kind=wx.ITEM_RADIO)
+        self.auto = wx.MenuItem(self,
+                                tasklist.mainmenu.alarms_submenu.ID_AUTO,
+                                "Show &smartly", kind=wx.ITEM_RADIO)
+        self.all = wx.MenuItem(self,
+                                tasklist.mainmenu.alarms_submenu.ID_ALL,
+                                "Show &all", kind=wx.ITEM_RADIO)
+
+        self.modes_to_items = {
+            'in_range': self.inrange,
+            'auto': self.auto,
+            'all': self.all,
+        }
+
+        self.AppendItem(self.inrange)
+        self.AppendItem(self.auto)
+        self.AppendItem(self.all)
+
+    def update_items(self):
+        self.modes_to_items[self.occview.active_alarms_mode].Check()
+
+
+class TabContextExportMenu(wx.Menu):
+    def __init__(self, tasklist):
+        wx.Menu.__init__(self)
+
+        self.json = wx.MenuItem(self, tasklist.mainmenu.export_submenu.ID_JSON,
+                                                                    "&JSON...")
+        self.tsv = wx.MenuItem(self, tasklist.mainmenu.export_submenu.ID_TSV,
+                                                                    "&TSV...")
+        self.xml = wx.MenuItem(self, tasklist.mainmenu.export_submenu.ID_XML,
+                                                                    "&XML...")
+
+        self.json.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
+                                                                wx.ART_MENU))
+        self.tsv.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
+                                                                wx.ART_MENU))
+        self.xml.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
+                                                                wx.ART_MENU))
+
+        self.AppendItem(self.json)
+        self.AppendItem(self.tsv)
+        self.AppendItem(self.xml)
+
 
 class ListContextMenu(wx.Menu):
-    tasklist = None
-    occview = None
-    mainmenu = None
-    find = None
-    edit = None
-    snooze = None
-    dismiss = None
-
     def __init__(self, tasklist, mainmenu):
         wx.Menu.__init__(self)
         self.tasklist = tasklist
@@ -539,12 +772,12 @@ class ListContextMenu(wx.Menu):
             canbreak = 0
 
             # Check item is not a gap or an overlapping
-            if item.filename is not None:
+            if item.get_filename() is not None:
                 self.find.Enable()
                 self.edit.Enable()
                 canbreak += 1
 
-            if item.alarm is False:
+            if item.get_alarm() is False:
                 self.snooze.Enable()
                 self.dismiss.Enable()
                 canbreak += 1
@@ -555,51 +788,7 @@ class ListContextMenu(wx.Menu):
             sel = self.occview.listview.GetNextSelected(sel)
 
 
-class FiltersMenu(wx.Menu):
-    tasklist = None
-    namestoids = None
-
-    def __init__(self, tasklist):
-        wx.Menu.__init__(self)
-        self.tasklist = tasklist
-
-        self.update()
-
-    def update(self):
-        self.namestoids = {}
-
-        for item in self.GetMenuItems():
-            self.DeleteItem(item)
-
-        filters = self.tasklist.filters.get_filters_sorted()
-
-        for filter_ in filters:
-            config = self.tasklist.filters.get_filter_configuration(filter_)
-
-            id_ = wx.NewId()
-            self.namestoids[filter_] = id_
-
-            item = wx.MenuItem(self, id_, config['name'], kind=wx.ITEM_RADIO)
-            self.AppendItem(item)
-
-            wxgui_api.bind_to_menu(self.select_filter_loop(filter_, config),
-                                                                        item)
-
-        # This submenu is created both under the main menu and the tab context
-        # menu, so update the checked item
-        selfilter = self.tasklist.filters.get_selected_filter()
-        self.Check(self.namestoids[selfilter], check=True)
-
-    def select_filter_loop(self, filter_, config):
-        return lambda event: self.tasklist.filters.select_filter(filter_,
-                                                                        config)
-
-
 class _SnoozeConfigMenu(wx.Menu):
-    tasklist = None
-    snoozetimes = None
-    snoozefor = None
-
     def __init__(self, tasklist):
         wx.Menu.__init__(self)
         self.tasklist = tasklist
@@ -617,53 +806,53 @@ class _SnoozeConfigMenu(wx.Menu):
             # don't crash the application
             self.snoozetimes[time] = self.Append(wx.NewId(), "For " +
                                                       str(number) + ' ' + unit)
-            wxgui_api.bind_to_menu(self.snooze_for_loop(time),
+            wxgui_api.bind_to_menu(self._snooze_for_loop(time),
                                                         self.snoozetimes[time])
 
         self.AppendSeparator()
         self.snoozefor = self.Append(wx.NewId(), "For...")
 
-        wxgui_api.bind_to_menu(self.snooze_for_custom, self.snoozefor)
+        wxgui_api.bind_to_menu(self._snooze_for_custom, self.snoozefor)
 
-    def snooze_for_loop(self, time):
-        return lambda event: self.snooze_for(time)
+    def _snooze_for_loop(self, time):
+        return lambda event: self._snooze_for(time)
 
-    def snooze_for(self, time):
-        core_api.block_databases()
+    def _snooze_for(self, time):
+        if core_api.block_databases():
+            tab = wxgui_api.get_selected_right_nb_tab()
 
-        tab = wxgui_api.get_selected_right_nb_tab()
+            if tab is self.tasklist.panel:
+                alarmsd = self.get_alarms()
 
-        if tab is self.tasklist.panel:
-            alarmsd = self.get_alarms()
-
-            if len(alarmsd) > 0:
-                organism_alarms_api.snooze_alarms(alarmsd, time)
-                # Let the alarm off event update the tasklist
-
-        core_api.release_databases()
-
-    def snooze_for_custom(self, event):
-        core_api.block_databases()
-
-        tab = wxgui_api.get_selected_right_nb_tab()
-
-        if tab is self.tasklist.panel:
-            alarmsd = self.get_alarms()
-
-            if len(alarmsd) > 0:
-                dlg = SnoozeDialog()
-
-                if dlg.ShowModal() == wx.ID_OK:
-                    organism_alarms_api.snooze_alarms(alarmsd, dlg.get_time())
+                if len(alarmsd) > 0:
+                    organism_alarms_api.snooze_alarms(alarmsd, time)
                     # Let the alarm off event update the tasklist
 
-        core_api.release_databases()
+            core_api.release_databases()
+
+    def _snooze_for_custom(self, event):
+        if core_api.block_databases():
+            tab = wxgui_api.get_selected_right_nb_tab()
+
+            if tab is self.tasklist.panel:
+                alarmsd = self.get_alarms()
+
+                if len(alarmsd) > 0:
+                    dlg = SnoozeDialog()
+
+                    if dlg.ShowModal() == wx.ID_OK:
+                        organism_alarms_api.snooze_alarms(alarmsd,
+                                                                dlg.get_time())
+                        # Let the alarm off event update the tasklist
+
+                    # Unlike MessageDialog, a Dialog needs to be destroyed
+                    # explicitly
+                    dlg.Destroy()
+
+            core_api.release_databases()
 
 
 class SnoozeDialog(wx.Dialog):
-    number = None
-    unit = None
-
     def __init__(self):
         wx.Dialog.__init__(self, parent=wxgui_api.get_main_frame(),
                                                 title="Snooze configuration")
@@ -674,7 +863,7 @@ class SnoozeDialog(wx.Dialog):
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
 
         icon = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
-                                        'appointment-soon', wx.ART_CMN_DIALOG))
+                                                '@alarms', wx.ART_CMN_DIALOG))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         ssizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -731,6 +920,6 @@ class SnoozeAllConfigMenu(_SnoozeConfigMenu):
     def get_alarms(self):
         # Note that "all" means all the visible active alarms; some may be
         # hidden in the current view
-        return self.tasklist.list_.activealarms
+        return self.tasklist.list_.get_active_alarms()
 
 

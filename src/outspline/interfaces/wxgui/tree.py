@@ -73,7 +73,7 @@ class Database(wx.SplitterWindow):
                                     self.treec.GetBackgroundColour())
 
         self.properties = Properties(self.treec)
-        self.base_properties = DatabaseProperties(self.properties)
+        self.base_properties = DBProperties(self.properties)
 
         self.Initialize(self.treec)
 
@@ -115,7 +115,7 @@ class Database(wx.SplitterWindow):
 
         # The logs panel must be shown only *after* adding the page to the
         # notebook, otherwise *for*some*reason* the databases opened
-        # automatically by the wxsession plugin (those opened manually aren't
+        # automatically by the sessions manager (those opened manually aren't
         # affected) will have the sash of the SplitterWindow not correctly
         # positioned (only if using SetSashGravity)
         if wx.GetApp().logs_configuration.is_shown():
@@ -304,7 +304,7 @@ class Database(wx.SplitterWindow):
         # When deleting items, make sure to delete first those without
         # children, otherwise crashes without exceptions or errors could occur
         while treeitems:
-            for item in treeitems:
+            for item in treeitems[:]:
                 if not self.treec.ItemHasChildren(item):
                     del treeitems[treeitems.index(item)]
                     id_ = self.treec.GetItemPyData(item)[0]
@@ -477,7 +477,7 @@ class Database(wx.SplitterWindow):
         return self.ctabmenu
 
 
-class DatabaseProperties(object):
+class DBProperties(object):
     def __init__(self, properties):
         config = coreaux_api.get_interface_configuration('wxgui')
         multichar = config['icon_multiline']
@@ -734,12 +734,6 @@ class ContextMenu(wx.Menu):
 
 
 class TabContextMenu(wx.Menu):
-    filename = None
-    save = None
-    saveas = None
-    backup = None
-    close = None
-
     def __init__(self, filename):
         wx.Menu.__init__(self)
         self.filename = filename
@@ -753,6 +747,8 @@ class TabContextMenu(wx.Menu):
                                                                  "Sav&e as...")
         self.backup = wx.MenuItem(self, wx.GetApp().menu.file.ID_BACKUP,
                                                              "Save &backup...")
+        self.properties = wx.MenuItem(self,
+                            wx.GetApp().menu.file.ID_PROPERTIES, "&Properties")
         self.close = wx.MenuItem(self, wx.GetApp().menu.file.ID_CLOSE_DB,
                                                                       "&Close")
 
@@ -761,6 +757,8 @@ class TabContextMenu(wx.Menu):
         self.save.SetBitmap(wx.ArtProvider.GetBitmap('@save', wx.ART_MENU))
         self.saveas.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
         self.backup.SetBitmap(wx.ArtProvider.GetBitmap('@backup', wx.ART_MENU))
+        self.properties.SetBitmap(wx.ArtProvider.GetBitmap('@properties',
+                                                                wx.ART_MENU))
         self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
 
         self.AppendItem(self.undo)
@@ -769,6 +767,8 @@ class TabContextMenu(wx.Menu):
         self.AppendItem(self.save)
         self.AppendItem(self.saveas)
         self.AppendItem(self.backup)
+        self.AppendSeparator()
+        self.AppendItem(self.properties)
         self.AppendSeparator()
         self.AppendItem(self.close)
 

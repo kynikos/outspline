@@ -20,17 +20,17 @@ import wx
 
 import outspline.core_api as core_api
 
-from wxgui import rootw, notebooks, editor, menubar, tree, databases
+from wxgui import rootw, notebooks, editor, menubar, tree, databases, dbprops
 
 
 ### DATABASE ###
 
-def open_database(filename, startup=False):
-    return databases.open_database(filename, startup=startup)
-
-
 def get_open_databases():
     return databases.get_open_databases()
+
+
+def register_aborted_save_warning(exception, message):
+    return databases.register_aborted_save_warning(exception, message)
 
 
 ### EDITOR ###
@@ -338,14 +338,20 @@ def get_open_editors_tab_indexes():
     return wx.GetApp().nb_right.get_open_editors()
 
 
-def add_plugin_to_right_nb(window, caption, select=True):
+def add_right_nb_image(image):
+    return wx.GetApp().nb_right.add_image(image)
+
+
+# wx.NO_IMAGE, which is used in the docs, seems not to exist...
+def add_plugin_to_right_nb(window, caption, select=True, imageId=wx.NOT_FOUND):
     return wx.GetApp().nb_right.add_plugin(window, caption=caption,
-                                                                select=select)
+                                                select=select, imageId=imageId)
 
 
-def add_page_to_right_nb(window, caption, select=True):
+# wx.NO_IMAGE, which is used in the docs, seems not to exist...
+def add_page_to_right_nb(window, caption, select=True, imageId=wx.NOT_FOUND):
     return wx.GetApp().nb_right.add_page(window, caption=caption,
-                                                                select=select)
+                                                select=select, imageId=imageId)
 
 
 def hide_right_nb_page(window):
@@ -362,6 +368,10 @@ def close_right_nb_page(window):
 
 def set_right_nb_page_title(window, title):
     return wx.GetApp().nb_right.set_page_title(window, title)
+
+
+def set_right_nb_page_image(page, index):
+    return wx.GetApp().nb_right.set_page_image(page, index)
 
 
 def bind_to_plugin_close_event(handler, bind=True):
@@ -416,10 +426,6 @@ def bind_to_hide_main_window(handler, bind=True):
 
 def bind_to_close_window(handler):
     return wx.GetApp().root.bind_to_close_event(handler)
-
-
-def bind_to_exit_application(handler, bind=True):
-    return rootw.exit_application_event.bind(handler, bind)
 
 
 ### TREE ###
@@ -542,3 +548,14 @@ def simulate_remove_items_from_selection(filename, ids):
     for id_ in ids:
         item = tree.dbs[filename].find_item(id_)
         tree.dbs[filename].remove_item_from_selection(item)
+
+
+### PROPERTIES ###
+
+def add_property_option(filename, property_, action):
+    manager = databases.dbpropmanager.get_open_tab(filename)
+    return manager.add_option(property_, action)
+
+
+def bind_to_load_property_options(handler, bind=True):
+    return dbprops.load_options_event.bind(handler, bind)

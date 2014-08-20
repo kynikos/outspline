@@ -18,8 +18,8 @@
 
 from core import databases, items, history, queries
 from core.exceptions import (AccessDeniedError, DatabaseAlreadyOpenError,
-                             DatabaseNotAccessibleError, DatabaseNotValidError,
-                             DatabaseLocked, CannotMoveItemError)
+                            DatabaseNotAccessibleError, DatabaseLockedError,
+                            CannotMoveItemError, NoLongerExistingItem)
 
 
 def get_memory_connection():
@@ -42,8 +42,9 @@ def create_database(filename):
     return databases.Database.create(filename)
 
 
-def open_database(filename):
-    return databases.Database.open(filename)
+def open_database(filename, check_new_extensions=True):
+    return databases.Database.open(filename,
+                                    check_new_extensions=check_new_extensions)
 
 
 def save_database(filename):
@@ -200,6 +201,18 @@ def is_item(filename, id_):
     return id_ in databases.dbs[filename].items
 
 
+def update_database_history_soft_limit(filename, limit):
+    return databases.dbs[filename].dbhistory.update_soft_limit(limit)
+
+
+def add_database_ignored_dependency(filename, extension):
+    return databases.dbs[filename].add_ignored_dependency(extension)
+
+
+def remove_database_ignored_dependency(filename, extension):
+    return databases.dbs[filename].remove_ignored_dependency(extension)
+
+
 def get_tree_item(filename, parent, previous):
     return items.Item.get_tree_item(filename, parent, previous)
 
@@ -224,7 +237,14 @@ def get_item_ancestors(filename, id_):
 
 
 def get_item_text(filename, id_):
-    return databases.dbs[filename].items[id_].get_text()
+    try:
+        return databases.dbs[filename].items[id_].get_text()
+    except KeyError:
+        # KeyError is raised if the items[id_] has already been deleted
+        raise NoLongerExistingItem()
+    except TypeError:
+        # TypeError is raised if the query in get_text returns no values
+        raise NoLongerExistingItem()
 
 
 def get_all_items_text(filename):
@@ -241,6 +261,26 @@ def select_all_memory_table_names():
     cur.execute(queries.master_select_tables)
     databases.memory.give(qconn)
     return cur
+
+
+def get_database_dependencies(filename, ignored=False):
+    qconn = databases.dbs[filename].connection.get()
+    cur = qconn.cursor()
+    cur.execute(queries.compatibility_select)
+
+    deps = {row['CM_extension']: row['CM_version'] for row in cur
+                                if row['CM_version'] is not None or ignored}
+
+    databases.dbs[filename].connection.give(qconn)
+    return deps
+
+
+def get_database_history_soft_limit(filename):
+    qconn = databases.dbs[filename].connection.get()
+    cur = qconn.cursor()
+    cur.execute(queries.properties_select_history)
+    databases.dbs[filename].connection.give(qconn)
+    return cur.fetchone()[0]
 
 
 def select_all_table_names(filename):
@@ -267,8 +307,8 @@ def select_table(filename, table):
     return cur
 
 
-def block_databases(block=True):
-    return databases.protection.block(block)
+def block_databases(block=False, quiet=False):
+    return databases.protection.block(block=block, quiet=quiet)
 
 
 def release_databases():
@@ -287,8 +327,8 @@ def get_databases_count():
     return len(databases.dbs)
 
 
-def bind_to_create_database(handler, bind=True):
-    return databases.create_database_event.bind(handler, bind)
+def bind_to_blocked_databases(handler, bind=True):
+    return databases.blocked_databases_event.bind(handler, bind)
 
 
 def bind_to_open_database_dirty(handler, bind=True):
@@ -299,8 +339,20 @@ def bind_to_open_database(handler, bind=True):
     return databases.open_database_event.bind(handler, bind)
 
 
+def bind_to_closing_database(handler, bind=True):
+    return databases.closing_database_event.bind(handler, bind)
+
+
 def bind_to_close_database(handler, bind=True):
     return databases.close_database_event.bind(handler, bind)
+
+
+def bind_to_save_permission_check(handler, bind=True):
+    return databases.save_permission_check_event.bind(handler, bind)
+
+
+def bind_to_save_database(handler, bind=True):
+    return databases.save_database_event.bind(handler, bind)
 
 
 def bind_to_save_database_copy(handler, bind=True):

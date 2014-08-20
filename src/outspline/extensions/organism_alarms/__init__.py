@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import sqlite3
+import time as time_
 
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
@@ -27,182 +27,229 @@ copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
 import queries
 import alarmsmod
 
-_ADDON_NAME = ('Extensions', 'organism_alarms')
+extension = None
 
 
-def create_copy_table():
-    mem = core_api.get_memory_connection()
-    cur = mem.cursor()
-    cur.execute(queries.copyalarms_create)
-    core_api.give_memory_connection(mem)
+class Main(object):
+    def __init__(self):
+        self._ADDON_NAME = ('Extensions', 'organism_alarms')
+        self.choose_unique_old_alarms = None
+        self.OLD_THRESHOLD = coreaux_api.get_extension_configuration(
+                            'organism_alarms').get_int('old_alarms_threshold')
 
+        self.databases = {}
 
-def handle_create_database(kwargs):
-    # Cannot use core_api.get_connection() here because the database isn't open
-    # yet
-    conn = sqlite3.connect(kwargs['filename'])
-    cur = conn.cursor()
-    cur.execute(queries.alarms_create)
-    cur.execute(queries.alarmsofflog_create)
-    conn.commit()
-    conn.close()
+        self._create_copy_table()
 
+        core_api.bind_to_open_database_dirty(self._handle_open_database_dirty)
+        core_api.bind_to_open_database(self._handle_open_database)
+        core_api.bind_to_check_pending_changes(
+                                            self._handle_check_pending_changes)
+        core_api.bind_to_reset_modified_state(
+                                            self._handle_reset_modified_state)
+        # No need to bind to close_database, as specific filenames will be
+        # deleted from self.databases in self._handle_history_clean
+        core_api.bind_to_save_database_copy(self._handle_save_database_copy)
+        core_api.bind_to_history_remove(self._handle_history_remove)
+        core_api.bind_to_history_clean(self._handle_history_clean)
 
-def handle_open_database_dirty(kwargs):
-    info = coreaux_api.get_addons_info()
-    dependencies = info(_ADDON_NAME[0])(_ADDON_NAME[1]
+        # Do not bind directly to core_api.bind_to_delete_item because it would
+        # create a race hazard with organism.items.delete_item_rules, which is
+        # bound to the same event
+        organism_api.bind_to_delete_item_rules(self._handle_delete_item_rules)
+        organism_api.bind_to_get_alarms(self._handle_get_alarms)
+
+        organism_timer_api.bind_to_get_next_occurrences(
+                                    self._handle_get_next_occurrences)
+        organism_timer_api.bind_to_activate_occurrences_range(
+                                    self._handle_activate_occurrences_range)
+        organism_timer_api.bind_to_activate_old_occurrences(
+                                    self._handle_activate_old_occurrences)
+        organism_timer_api.bind_to_activate_occurrences(
+                                    self._handle_activate_occurrences)
+
+        if copypaste_api:
+            copypaste_api.bind_to_copy_items(self._handle_copy_items)
+            copypaste_api.bind_to_copy_item(self._handle_copy_item)
+            copypaste_api.bind_to_paste_item(self._handle_paste_item)
+            copypaste_api.bind_to_safe_paste_check(
+                                                self._handle_safe_paste_check)
+
+    def _create_copy_table(self):
+        mem = core_api.get_memory_connection()
+        cur = mem.cursor()
+        cur.execute(queries.copyalarms_create)
+        core_api.give_memory_connection(mem)
+
+    def _handle_open_database_dirty(self, kwargs):
+        info = coreaux_api.get_addons_info()
+        dependencies = info(self._ADDON_NAME[0])(self._ADDON_NAME[1]
                                     )['database_dependency_group_1'].split(' ')
 
-    if not set(dependencies) - set(kwargs['dependencies']):
-        alarmsmod.cdbs.add(kwargs['filename'])
+        if not set(dependencies) - set(kwargs['dependencies']):
+            filename = kwargs['filename']
+            self.databases[filename] = alarmsmod.Database(filename,
+                                                self.choose_unique_old_alarms)
 
+    def _handle_open_database(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].post_init()
+        except KeyError:
+            pass
 
-def handle_close_database(kwargs):
-    try:
-        del alarmsmod.changes[kwargs['filename']]
-        del alarmsmod.dismiss_state[kwargs['filename']]
-    except KeyError:
-        pass
-    else:
-        alarmsmod.cdbs.discard(kwargs['filename'])
-        alarmsmod.tempcdbs.add(kwargs['filename'])
+    def _handle_check_pending_changes(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].check_pending_changes()
+        except KeyError:
+            pass
 
+    def _handle_reset_modified_state(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].reset_modified_state()
+        except KeyError:
+            pass
 
-def handle_check_pending_changes(kwargs):
-    filename = kwargs['filename']
+    def _handle_save_database_copy(self, kwargs):
+        try:
+            self.databases[kwargs['origin']].save_copy(kwargs['destination'])
+        except KeyError:
+            pass
 
-    if filename in alarmsmod.cdbs:
-        conn = core_api.get_connection(filename)
-        cur = conn.cursor()
-        change_state = alarmsmod.changes[filename] != [row for row in
-                                            cur.execute(queries.alarms_select)]
-        core_api.give_connection(filename, conn)
+    def _handle_copy_items(self, kwargs):
+        # Do not check if kwargs['filename'] is in self.databases, always clear
+        # the table as the other functions rely on the table to be clear
+        mem = core_api.get_memory_connection()
+        cur = mem.cursor()
+        cur.execute(queries.copyalarms_delete)
+        core_api.give_memory_connection(mem)
 
-        if change_state or alarmsmod.dismiss_state[filename]:
-            core_api.set_modified(filename)
+    def _handle_copy_item(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].copy_alarms(kwargs['id_'])
+        except KeyError:
+            pass
 
+    def _handle_paste_item(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].paste_alarms(kwargs['id_'],
+                                                            kwargs['oldid'])
+        except KeyError:
+            pass
 
-def handle_reset_modified_state(kwargs):
-    filename = kwargs['filename']
+    def _handle_safe_paste_check(self, kwargs):
+        mem = core_api.get_memory_connection()
+        curm = mem.cursor()
+        curm.execute(queries.copyalarms_select)
+        core_api.give_memory_connection(mem)
 
-    if filename in alarmsmod.cdbs:
-        conn = core_api.get_connection(filename)
-        cur = conn.cursor()
-        alarmsmod.changes[filename] = [row for row in cur.execute(
-                                                        queries.alarms_select)]
-        core_api.give_connection(filename, conn)
+        # Warn if CopyAlarms table has alarms but filename doesn't support them
+        if curm.fetchone() and kwargs['filename'] not in self.databases:
+            raise kwargs['exception']()
 
-        alarmsmod.dismiss_state[filename] = False
+    def _handle_delete_item_rules(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].delete_alarms(kwargs['id_'],
+                                                                kwargs['text'])
+        except KeyError:
+            pass
 
+    def _handle_history_remove(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].delete_alarms(kwargs['id_'],
+                                                                kwargs['text'])
+        except KeyError:
+            pass
 
-def handle_save_database_copy(kwargs):
-    origin = kwargs['origin']
+    def _handle_history_clean(self, kwargs):
+        filename = kwargs['filename']
 
-    if origin in alarmsmod.cdbs:
-        qconn = core_api.get_connection(origin)
-        qconnd = sqlite3.connect(kwargs['destination'])
-        cur = qconn.cursor()
-        curd = qconnd.cursor()
+        try:
+            self.databases[filename].clean_alarms_log()
+        except KeyError:
+            pass
+        else:
+            del self.databases[filename]
 
-        cur.execute(queries.alarms_select)
-        for row in cur:
-            curd.execute(queries.alarms_insert_copy, tuple(row))
+    def _handle_get_alarms(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].get_alarms(kwargs['mint'],
+                                                kwargs['maxt'], kwargs['occs'])
+        except KeyError:
+            pass
 
-        cur.execute(queries.alarmsofflog_select)
-        for row in cur:
-            curd.execute(queries.alarmsofflog_insert_copy, tuple(row))
+    def _handle_get_next_occurrences(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].get_snoozed_alarms(
+                                        kwargs['base_time'], kwargs['occs'])
+        except KeyError:
+            pass
 
-        core_api.give_connection(origin, qconn)
+    def _handle_activate_occurrences_range(self, kwargs):
+        try:
+            self.databases[kwargs['filename']].activate_alarms_range(
+                                        kwargs['mint'], kwargs['maxt'],
+                                        kwargs['occsd'], self.OLD_THRESHOLD)
+        except KeyError:
+            # Due to race conditions, filename could have been closed meanwhile
+            # (e.g. if the modal dialog for closing the database was open in
+            # the interface)
+            pass
 
-        qconnd.commit()
-        qconnd.close()
+    def _handle_activate_old_occurrences(self, kwargs):
+        occsd = kwargs['oldoccsd']
 
+        for filename in occsd:
+            try:
+                self.databases[filename].activate_old_alarms(occsd[filename])
+            except KeyError:
+                # Due to race conditions, filename could have been closed
+                # meanwhile (e.g. if the modal dialog for closing the database
+                # was open in the interface)
+                pass
 
-def handle_copy_items(kwargs):
-    # Do not check if kwargs['filename'] is in cdbs, always clear the table as
-    # the other functions rely on the table to be clear
-    mem = core_api.get_memory_connection()
-    cur = mem.cursor()
-    cur.execute(queries.copyalarms_delete)
-    core_api.give_memory_connection(mem)
+    def _handle_activate_occurrences(self, kwargs):
+        occsd = kwargs['occsd']
 
+        for filename in occsd:
+            try:
+                self.databases[filename].activate_alarms(kwargs['time'],
+                                                            occsd[filename])
+            except KeyError:
+                # Due to race conditions, filename could have been closed
+                # meanwhile (e.g. if the modal dialog for closing the database
+                # was open in the interface)
+                pass
 
-def handle_copy_item(kwargs):
-    alarmsmod.copy_alarms(kwargs['filename'], kwargs['id_'])
+    def install_unique_old_alarms_interface(self, interface):
+        self.choose_unique_old_alarms = interface
 
+    def get_number_of_active_alarms(self):
+        count = 0
 
-def handle_paste_item(kwargs):
-    alarmsmod.paste_alarms(kwargs['filename'], kwargs['id_'], kwargs['oldid'])
+        # self.databases may change size during the loop because of races with
+        # other threads
+        for filename in self.databases.keys():
+            count += self.databases[filename].get_number_of_active_alarms()
 
+        return count
 
-def handle_safe_paste_check(kwargs):
-    alarmsmod.can_paste_safely(kwargs['filename'], kwargs['exception'])
+    def snooze_alarms(self, alarmsd, stime):
+        newalarm = ((int(time_.time()) + stime) // 60 + 1) * 60
 
+        for filename in alarmsd:
+            self.databases[filename].snooze_alarms(alarmsd[filename], stime,
+                                                                    newalarm)
 
-def handle_delete_item_rules(kwargs):
-    alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'], kwargs['text'])
+        # Do not search occurrences (thus restarting the timer) inside the for
+        # loop, otherwise it messes up with the wx.CallAfter() that manages the
+        # activated alarms in the interface
+        organism_timer_api.search_next_occurrences()
 
-
-def handle_history_remove(kwargs):
-    alarmsmod.delete_alarms(kwargs['filename'], kwargs['id_'], kwargs['text'])
-
-
-def handle_history_clean(kwargs):
-    alarmsmod.clean_alarms_log(kwargs['filename'])
-
-
-def handle_get_alarms(kwargs):
-    alarmsmod.get_alarms(kwargs['mint'], kwargs['maxt'], kwargs['filename'],
-                                                                kwargs['occs'])
-
-
-def handle_get_next_occurrences(kwargs):
-    alarmsmod.get_snoozed_alarms(kwargs['base_time'], kwargs['filename'],
-                                                                kwargs['occs'])
-
-
-def handle_activate_occurrences_range(kwargs):
-    alarmsmod.activate_alarms_range(kwargs['filename'], kwargs['mint'],
-                                            kwargs['maxt'], kwargs['occsd'])
-
-
-def handle_activate_old_occurrences(kwargs):
-    alarmsmod.activate_old_alarms(kwargs['oldoccsd'])
-
-
-def handle_activate_occurrences(kwargs):
-    alarmsmod.activate_alarms(kwargs['time'], kwargs['occsd'])
+    def dismiss_alarms(self, alarmsd):
+        for filename in alarmsd:
+            self.databases[filename].dismiss_alarms(alarmsd[filename])
 
 
 def main():
-    create_copy_table()
-
-    core_api.bind_to_create_database(handle_create_database)
-    core_api.bind_to_open_database_dirty(handle_open_database_dirty)
-    core_api.bind_to_check_pending_changes(handle_check_pending_changes)
-    core_api.bind_to_reset_modified_state(handle_reset_modified_state)
-    core_api.bind_to_close_database(handle_close_database)
-    core_api.bind_to_save_database_copy(handle_save_database_copy)
-    core_api.bind_to_history_remove(handle_history_remove)
-    core_api.bind_to_history_clean(handle_history_clean)
-
-    # Do not bind directly to core_api.bind_to_delete_item because it would
-    # create a race hazard with organism.items.delete_item_rules, which is
-    # bound to the same event
-    organism_api.bind_to_delete_item_rules(handle_delete_item_rules)
-    organism_api.bind_to_get_alarms(handle_get_alarms)
-
-    organism_timer_api.bind_to_get_next_occurrences(
-                                                handle_get_next_occurrences)
-    organism_timer_api.bind_to_activate_occurrences_range(
-                                            handle_activate_occurrences_range)
-    organism_timer_api.bind_to_activate_old_occurrences(
-                                            handle_activate_old_occurrences)
-    organism_timer_api.bind_to_activate_occurrences(
-                                                handle_activate_occurrences)
-
-    if copypaste_api:
-        copypaste_api.bind_to_copy_items(handle_copy_items)
-        copypaste_api.bind_to_copy_item(handle_copy_item)
-        copypaste_api.bind_to_paste_item(handle_paste_item)
-        copypaste_api.bind_to_safe_paste_check(handle_safe_paste_check)
+    global extension
+    extension = Main()

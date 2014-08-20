@@ -41,4 +41,5 @@ class Event(object):
             else:
                 self.handlers.discard(handler)
 
+external_nudge_event = Event()
 uncaught_exception_event = Event()

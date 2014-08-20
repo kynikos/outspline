@@ -701,17 +701,11 @@ class IntervalYears(object):
 
 class Inclusive(object):
     def __init__(self, parent, input_values):
-        self.box = wx.BoxSizer(wx.HORIZONTAL)
-
-        self.inclusivew = wx.CheckBox(parent)
+        self.inclusivew = wx.CheckBox(parent, label='Inclusive')
         self.inclusivew.SetValue(input_values['inclusive'])
-        self.box.Add(self.inclusivew)
-
-        self.ilabel = wx.StaticText(parent, label='Inclusive')
-        self.box.Add(self.ilabel, flag=wx.ALIGN_CENTER_VERTICAL)
 
     def get_main_window(self):
-        return self.box
+        return self.inclusivew
 
     def get_first_column_width(self):
         return 0

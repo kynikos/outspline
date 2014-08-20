@@ -25,48 +25,40 @@ import outspline.core_api as core_api
 import art
 import menubar
 import notebooks
+import databases
 import msgboxes
 import logs
-
-config = coreaux_api.get_interface_configuration('wxgui')
+import sessions
 
 application_loaded_event = Event()
 show_main_window_event = Event()
 hide_main_window_event = Event()
-exit_application_event = Event()
-
-_ROOT_MIN_SIZE = (600, 408)
 
 
 class GUI(wx.App):
-    MAIN_ICON_BUNDLE = None
-    root = None
-    logs_configuration = None
-    menu = None
-    nb_left = None
-    nb_right = None
-
     def __init__(self):
+        self.config = coreaux_api.get_interface_configuration('wxgui')
+
         wx.App.__init__(self, False)
 
         wx.ArtProvider.Push(art.ArtProvider())
 
         self.MAIN_ICON_BUNDLE = wx.IconBundle()
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                              wx.ART_TOOLBAR))
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                              wx.ART_MENU))
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                              wx.ART_BUTTON))
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                             wx.ART_FRAME_ICON))
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                             wx.ART_CMN_DIALOG))
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                           wx.ART_HELP_BROWSER))
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                            wx.ART_MESSAGE_BOX))
-        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('text-editor',
+        self.MAIN_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@outspline',
                                                              wx.ART_OTHER))
 
         self.root = MainFrame()
@@ -76,72 +68,95 @@ class GUI(wx.App):
         self.nb_left = self.root.mainpanes.nb_left
         self.nb_right = self.root.mainpanes.nb_right
 
-        coreaux_api.bind_to_uncaught_exception(self.handle_uncaught_exception)
+        core_api.bind_to_blocked_databases(self._handle_blocked_databases)
+        coreaux_api.bind_to_uncaught_exception(self._handle_uncaught_exception)
 
     def get_main_icon_bundle(self):
         return self.MAIN_ICON_BUNDLE
 
     def exit_app(self, event):
-        self.export_options()
+        self._export_options()
 
-        exit_application_event.signal()
+        # Refresh the session also when exiting, in order to save the order of
+        # visualization of the tabs
+        # Do it *before* closing the databases
+        self.root.sessionmanager.refresh_session()
 
         # close_all_databases() already blocks the databases
         if self.menu.file.close_all_databases(event, exit_=True):
             core_api.exit_()
             coreaux_api.bind_to_uncaught_exception(
-                                         self.handle_uncaught_exception, False)
+                                        self._handle_uncaught_exception, False)
             self.root.Destroy()
         # else: event.Veto() doesn't work here
 
-    def export_options(self):
-        config['show_logs'] = 'yes' if \
+    def _export_options(self):
+        self.config['show_logs'] = 'yes' if \
                                 self.logs_configuration.is_shown() else 'no'
-        config.export_upgrade(coreaux_api.get_user_config_file())
 
-    def handle_uncaught_exception(self, kwargs):
-        coreaux_api.bind_to_uncaught_exception(self.handle_uncaught_exception,
+        if self.config.get_bool('remember_geometry'):
+            self.root.save_geometry()
+
+        self.config.export_upgrade(coreaux_api.get_user_config_file())
+
+    def _handle_blocked_databases(self, kwargs):
+        msgboxes.blocked_databases().ShowModal()
+
+    def _handle_uncaught_exception(self, kwargs):
+        coreaux_api.bind_to_uncaught_exception(self._handle_uncaught_exception,
                                                False)
         msgboxes.uncaught_exception(kwargs['exc_info']).ShowModal()
         self.root.Destroy()
 
 
 class MainFrame(wx.Frame):
-    menu = None
-    mainpanes = None
-    close_handler = None
-
     def __init__(self):
-        confsize = [int(s) for s in config['initial_geometry'].split('x')]
+        self._ROOT_MIN_SIZE = (600, 408)
+        self.config = coreaux_api.get_interface_configuration('wxgui')
+
+        confsize = [int(s) for s in self.config['initial_geometry'].split('x')]
         clarea = wx.Display().GetClientArea()
         initsize = [min((confsize[0], clarea.GetWidth())),
                     min((confsize[1], clarea.GetHeight()))]
         wx.Frame.__init__(self, None, title='Outspline', size=initsize)
-        self.SetMinSize(_ROOT_MIN_SIZE)
+        self.SetMinSize(self._ROOT_MIN_SIZE)
 
-        if config.get_bool('maximized'):
+        if self.config.get_bool('maximized'):
             self.Maximize()
 
         self.SetIcons(wx.GetApp().get_main_icon_bundle())
 
-        self.menu = menubar.RootMenu()
+        self.uisim = wx.UIActionSimulator()
+
+        self.menu = menubar.RootMenu(self)
         self.SetMenuBar(self.menu)
 
         self.mainpanes = MainPanes(self)
 
-        self.CreateStatusBar()
+        self.close_handler = False
 
         self.Bind(wx.EVT_WINDOW_CREATE, self._handle_creation)
-        self.Bind(wx.EVT_MENU_OPEN, self.menu.update_menus)
-        self.Bind(wx.EVT_MENU_CLOSE, self.menu.reset_menus)
         self.bind_to_close_event(wx.GetApp().exit_app)
+        coreaux_api.bind_to_external_nudge(self._handle_external_nudge)
 
         self.Centre()
         self.Show(True)
 
     def _handle_creation(self, event):
         self.Unbind(wx.EVT_WINDOW_CREATE, handler=self._handle_creation)
+
+        if self.config.get_bool('autohide_menubar'):
+            self.menu.enable_autohide(self.uisim, self.config)
+
+        databases.dbpropmanager.post_init()
+
+        if self.config.get_bool('remember_session'):
+            self.sessionmanager = sessions.SessionManager()
+
         application_loaded_event.signal()
+
+    def _handle_external_nudge(self, kwargs):
+        self.show()
 
     def bind_to_close_event(self, handler):
         if self.close_handler:
@@ -150,26 +165,42 @@ class MainFrame(wx.Frame):
         self.close_handler = handler
         self.Bind(wx.EVT_CLOSE, handler)
 
-    def hide(self):
-        self.Show(False)
-        hide_main_window_event.signal()
-
     def show(self):
+        # Don't execute self._show if it's already shown, otherwise all the
+        # handlers of show_main_window_event will be executed for no reason
+        if not self.IsShown():
+            self._show()
+
+    def hide(self):
+        # Don't execute self._hide if it's already hidden, otherwise all the
+        # handlers of hide_main_window_event will be executed for no reason
+        if self.IsShown():
+            self._hide()
+
+    def _show(self):
         show_main_window_event.signal()
         self.Show(True)
 
+    def _hide(self):
+        self.Show(False)
+        hide_main_window_event.signal()
+
     def toggle_shown(self):
         if self.IsShown():
-            self.hide()
+            self._hide()
         else:
-            self.show()
+            self._show()
+
+    def save_geometry(self):
+        if self.IsMaximized():
+            self.config['maximized'] = 'yes'
+        else:
+            self.config['initial_geometry'] = 'x'.join([str(s) for s in
+                                                            self.GetSize()])
+            self.config['maximized'] = 'no'
 
 
 class MainPanes(wx.SplitterWindow):
-    parent = None
-    nb_left = None
-    nb_right = None
-
     def __init__(self, parent):
         wx.SplitterWindow.__init__(self, parent, style=wx.SP_LIVE_UPDATE)
 
@@ -188,9 +219,9 @@ class MainPanes(wx.SplitterWindow):
         self.nb_left.Show(False)
         self.nb_right.Show(False)
 
-        self.Bind(wx.EVT_SPLITTER_DCLICK, self.veto_dclick)
+        self.Bind(wx.EVT_SPLITTER_DCLICK, self._veto_dclick)
 
-    def veto_dclick(self, event):
+    def _veto_dclick(self, event):
         event.Veto()
 
     def split_window(self):
