@@ -210,7 +210,7 @@ class Database(object):
             ver = self.dependencies['add'][ext][0]
         except KeyError:
             ver = self.dependencies['ignore'][ext][0]
-            cursor.execute(queries.compatibility_update, (ver, ext))
+            cursor.execute(queries.compatibility_update_extension, (ver, ext))
         else:
             cursor.execute(queries.compatibility_insert, (ext, ver))
 
@@ -222,7 +222,10 @@ class Database(object):
     def _upgrade(self, module, ext, cursor):
         to, from_ = self.dependencies['update'][ext]
 
-        cursor.execute(queries.compatibility_update, (to, ext))
+        if ext is None:
+            cursor.execute(queries.compatibility_update_core, (to, ))
+        else:
+            cursor.execute(queries.compatibility_update_extension, (to, ext))
 
         while from_ < to:
             getattr(module, 'upgrade_{}_to_{}'.format(from_, from_ + 1))(
@@ -234,7 +237,7 @@ class Database(object):
 
     def _remove(self, module, ext, cursor, ignored=False):
         if ignored:
-            cursor.execute(queries.compatibility_update, (None, ext))
+            cursor.execute(queries.compatibility_update_extension, (None, ext))
         else:
             cursor.execute(queries.compatibility_delete, (ext, ))
 

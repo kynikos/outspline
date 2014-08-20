@@ -59,8 +59,11 @@ compatibility_insert_ignored = ('INSERT INTO CoMpatibility (CM_id, '
 compatibility_insert_copy = ('INSERT INTO CoMpatibility (CM_id, '
                              'CM_extension, CM_version) VALUES (?, ?, ?)')
 
-compatibility_update = ('UPDATE CoMpatibility SET CM_version=? '
-                                                        'WHERE CM_extension=?')
+compatibility_update_core = ('UPDATE CoMpatibility SET CM_version=? '
+                                                'WHERE CM_extension IS NULL')
+
+compatibility_update_extension = ('UPDATE CoMpatibility SET CM_version=? '
+                                                'WHERE CM_extension=?')
 
 compatibility_delete = 'DELETE FROM CoMpatibility WHERE CM_extension=?'
 
