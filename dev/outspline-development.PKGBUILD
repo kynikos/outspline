@@ -11,7 +11,7 @@ depends=('outspline')
 conflicts=('organism-development')
 replaces=('organism-development')
 source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
-sha256sums=('3d05876fdec21c5101195fbf998b0cb8400877d69bc87b948541233a0653cdb7')
+sha256sums=('77e50f5a6f77c7ff20dcf33de0beedc160c0ea8c0ff54a26033b6c171b5818d8')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"
