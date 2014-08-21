@@ -191,8 +191,6 @@ def handle_open_database(kwargs):
 
     cmenu[filename] = {}
 
-    config = coreaux_api.get_plugin_configuration('wxcopypaste')
-
     cmenu[filename]['cut'] = wx.MenuItem(
                                     wxgui_api.get_tree_context_menu(filename),
                                     ID_CUT, 'Cu&t items')
@@ -302,24 +300,27 @@ def main():
     ID_PASTE = wx.NewId()
     ID_PASTE_SUB = wx.NewId()
 
+    config = coreaux_api.get_plugin_configuration('wxcopypaste')('Shortcuts')
+
     global mpaste_label_1, mpaste_help_1, mpaste_label_2, mpaste_help_2
-    mpaste_label_1 = '&Paste items\tCTRL+SHIFT+v'
+    mpaste_label_1 = '&Paste items\t{}'.format(config['paste'])
     mpaste_help_1 = 'Paste items as root items'
-    mpaste_label_2 = '&Paste as siblings\tCTRL+SHIFT+v'
+    mpaste_label_2 = '&Paste as siblings\t{}'.format(config['paste'])
     mpaste_help_2 = 'Paste items as siblings below the selected item'
 
     global mcut, mcopy, mpaste, mpastesub
-    config = coreaux_api.get_plugin_configuration('wxcopypaste')
 
     mcut = wx.MenuItem(wxgui_api.get_menu_database(), ID_CUT,
-                        'Cu&t items\tCTRL+SHIFT+x', 'Cut the selected items')
+                                        'Cu&t items\t{}'.format(config['cut']),
+                                        'Cut the selected items')
     mcopy = wx.MenuItem(wxgui_api.get_menu_database(), ID_COPY,
-                        '&Copy items\tCTRL+SHIFT+c', 'Copy the selected items')
+                                    '&Copy items\t{}'.format(config['copy']),
+                                    'Copy the selected items')
     mpaste = wx.MenuItem(wxgui_api.get_menu_database(), ID_PASTE,
                                                 mpaste_label_1, mpaste_help_1)
     mpastesub = wx.MenuItem(wxgui_api.get_menu_database(), ID_PASTE_SUB,
-                                'P&aste as children\tCTRL+SHIFT+b',
-                                'Paste items as children of the selected item')
+                    'P&aste as children\t{}'.format(config['paste_children']),
+                    'Paste items as children of the selected item')
 
     mcut.SetBitmap(wx.ArtProvider.GetBitmap('@cut', wx.ART_MENU))
     mcopy.SetBitmap(wx.ArtProvider.GetBitmap('@copy', wx.ART_MENU))

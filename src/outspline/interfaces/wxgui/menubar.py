@@ -19,6 +19,7 @@
 import wx
 
 from outspline.coreaux_api import Event, OutsplineError
+import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 
 import databases
@@ -81,7 +82,7 @@ class RootMenu(wx.MenuBar):
         frame.Bind(wx.EVT_MENU, self._handle_F10, id=id_)
 
         # This preserves the native Alt+char behaviour
-        if config.get_bool('preserve_alt_menu_shortcuts'):
+        if config('Shortcuts').get_bool('preserve_alt_menu_shortcuts'):
             for menu, label in self.GetMenus():
                 try:
                     amp = label.index('&')
@@ -174,26 +175,36 @@ class MenuFile(wx.Menu):
         self.ID_CLOSE_DB = wx.NewId()
         self.ID_CLOSE_DB_ALL = wx.NewId()
 
-        self.new_ = wx.MenuItem(self, wx.ID_NEW, "&New...\tCTRL+n",
+        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
+                                                                        'File')
+
+        self.new_ = wx.MenuItem(self, wx.ID_NEW,
+                                "&New...\t{}".format(config['new_database']),
                                 "Create a new database")
-        self.open_ = wx.MenuItem(self, wx.ID_OPEN, "&Open...\tCTRL+o",
+        self.open_ = wx.MenuItem(self, wx.ID_OPEN,
+                                "&Open...\t{}".format(config['open_database']),
                                 "Open a database")
-        self.save = wx.MenuItem(self, self.ID_SAVE, "&Save\tCTRL+s",
+        self.save = wx.MenuItem(self, self.ID_SAVE,
+                                "&Save\t{}".format(config['save_database']),
                                 "Save the selected database")
         self.saveas = wx.MenuItem(self, self.ID_SAVE_AS, "Sav&e as...",
                                 "Save the selected database with another name")
         self.backup = wx.MenuItem(self, self.ID_BACKUP, "Save &backup...",
                                 "Create a backup of the selected database")
         self.saveall = wx.MenuItem(self, self.ID_SAVE_ALL,
-                        "Save &all\tCTRL+SHIFT+s", "Save all open databases")
+                        "Save &all\t{}".format(config['save_all_databases']),
+                        "Save all open databases")
         self.properties = wx.MenuItem(self, self.ID_PROPERTIES, "&Properties",
                                                     "Open database properties")
-        self.close_ = wx.MenuItem(self, self.ID_CLOSE_DB, "&Close\tCTRL+w",
+        self.close_ = wx.MenuItem(self, self.ID_CLOSE_DB,
+                                "&Close\t{}".format(config['close_database']),
                                 "Close the selected database")
         self.closeall = wx.MenuItem(self, self.ID_CLOSE_DB_ALL,
-                            "C&lose all\tCTRL+SHIFT+w", "Close all databases")
-        self.exit_ = wx.MenuItem(self, wx.ID_EXIT, "E&xit\tCTRL+q",
-                                "Terminate the program")
+                        "C&lose all\t{}".format(config['close_all_databases']),
+                        "Close all databases")
+        self.exit_ = wx.MenuItem(self, wx.ID_EXIT,
+                                        "E&xit\t{}".format(config['exit']),
+                                        "Terminate the program")
 
         self.save.SetBitmap(wx.ArtProvider.GetBitmap('@save', wx.ART_MENU))
         self.saveas.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
@@ -375,34 +386,41 @@ class MenuDatabase(wx.Menu):
         self.ID_EDIT = wx.NewId()
         self.ID_DELETE = wx.NewId()
 
-        self.sibling_label_1 = "Create &item\tCTRL+INSERT"
+        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
+                                                                    'Database')
+
+        self.sibling_label_1 = "Create &item\t{}".format(config['create_item'])
         self.sibling_help_1 = "Create a root item"
-        self.sibling_label_2 = "Create s&ibling\tCTRL+INSERT"
+        self.sibling_label_2 = "Create s&ibling\t{}".format(
+                                                        config['create_item'])
         self.sibling_help_2 = "Create a sibling below the selected item"
 
-        self.undo = wx.MenuItem(self, self.ID_UNDO, "&Undo\tCTRL+SHIFT+z",
+        self.undo = wx.MenuItem(self, self.ID_UNDO,
+                                "&Undo\t{}".format(config['undo']),
                                 "Undo the previous database edit in history")
-        self.redo = wx.MenuItem(self, self.ID_REDO, "&Redo\tCTRL+SHIFT+y",
-                                    "Redo the next database edit in history")
+        self.redo = wx.MenuItem(self, self.ID_REDO,
+                                "&Redo\t{}".format(config['redo']),
+                                "Redo the next database edit in history")
         self.sibling = wx.MenuItem(self, self.ID_SIBLING, self.sibling_label_1,
                                                         self.sibling_help_1)
         self.child = wx.MenuItem(self, self.ID_CHILD,
-                                        "Create c&hild\tCTRL+SHIFT+INSERT",
-                                        "Create a child for the selected item")
+                        "Create c&hild\t{}".format(config['create_child']),
+                        "Create a child for the selected item")
         self.moveup = wx.MenuItem(self, self.ID_MOVE_UP,
-                                "&Move item up\tCTRL+k",
-                                "Swap the selected item with the one above")
+                            "&Move item up\t{}".format(config['move_up']),
+                            "Swap the selected item with the one above")
         self.movedn = wx.MenuItem(self, self.ID_MOVE_DOWN,
-                                  "Mo&ve item down\tCTRL+j",
-                                  "Swap the selected item with the one below")
+                            "Mo&ve item down\t{}".format(config['move_down']),
+                            "Swap the selected item with the one below")
         self.movept = wx.MenuItem(self, self.ID_MOVE_PARENT,
-                        "M&ove item to parent\tCTRL+h",
-                        "Move the selected item as a sibling of its parent")
-        self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit item\tCTRL+ENTER",
+                "M&ove item to parent\t{}".format(config['move_to_parent']),
+                "Move the selected item as a sibling of its parent")
+        self.edit = wx.MenuItem(self, self.ID_EDIT,
+                                "&Edit item\t{}".format(config['edit']),
                                 "Open the selected item in the editor")
         self.delete = wx.MenuItem(self, self.ID_DELETE,
-                                                "&Delete items\tCTRL+DELETE",
-                                                "Delete the selected items")
+                                "&Delete items\t{}".format(config['delete']),
+                                "Delete the selected items")
 
         self.undo.SetBitmap(wx.ArtProvider.GetBitmap('@undodb', wx.ART_MENU))
         self.redo.SetBitmap(wx.ArtProvider.GetBitmap('@redodb', wx.ART_MENU))
@@ -751,25 +769,36 @@ class MenuEdit(wx.Menu):
         self.ID_CLOSE = wx.NewId()
         self.ID_CLOSE_ALL = wx.NewId()
 
+        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
+                                                                        'Edit')
+
         self.select = wx.MenuItem(self, self.ID_SELECT_ALL,
-                        "&Select all\tCTRL+a", "Select all text in the editor")
-        self.cut = wx.MenuItem(self, self.ID_CUT, "Cu&t\tCTRL+x",
+                                "&Select all\t{}".format(config['select_all']),
+                                "Select all text in the editor")
+        self.cut = wx.MenuItem(self, self.ID_CUT,
+                                            "Cu&t\t{}".format(config['cut']),
                                             "Cut selected text in the editor")
-        self.copy = wx.MenuItem(self, self.ID_COPY, "&Copy\tCTRL+c",
+        self.copy = wx.MenuItem(self, self.ID_COPY,
+                                            "&Copy\t{}".format(config['copy']),
                                             "Copy selected text in the editor")
-        self.paste = wx.MenuItem(self, self.ID_PASTE, "&Paste\tCTRL+v",
-                                                    "Paste text at the cursor")
+        self.paste = wx.MenuItem(self, self.ID_PASTE,
+                                        "&Paste\t{}".format(config['paste']),
+                                        "Paste text at the cursor")
         self.find = wx.MenuItem(self, self.ID_FIND,
-                                "&Find in database\tF2",
+                                "&Find in database\t{}".format(config['find']),
                                 "Find the edited item in the database tree")
-        self.apply = wx.MenuItem(self, self.ID_APPLY, "&Apply\tF3",
-                                 "Apply the focused editor")
+        self.apply = wx.MenuItem(self, self.ID_APPLY,
+                                        "&Apply\t{}".format(config['apply']),
+                                        "Apply the focused editor")
         self.applyall = wx.MenuItem(self, self.ID_APPLY_ALL,
-                            "App&ly all\tCTRL+F3", "Apply all open editors")
-        self.close_ = wx.MenuItem(self, self.ID_CLOSE, "Cl&ose\tF4",
-                                  "Close the focused editor")
+                                "App&ly all\t{}".format(config['apply_all']),
+                                "Apply all open editors")
+        self.close_ = wx.MenuItem(self, self.ID_CLOSE,
+                                        "Cl&ose\t{}".format(config['close']),
+                                        "Close the focused editor")
         self.closeall = wx.MenuItem(self, self.ID_CLOSE_ALL,
-                                    "Clos&e all\tCTRL+F4", "Close all editors")
+                                "Clos&e all\t{}".format(config['close_all']),
+                                "Close all editors")
 
         self.select.SetBitmap(wx.ArtProvider.GetBitmap('@selectall',
                                                        wx.ART_MENU))
@@ -935,9 +964,12 @@ class MenuLogs(wx.Menu):
 
         self.ID_LOGS = wx.NewId()
 
+        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
+                                                                        'Logs')
+
         self.logs = self.AppendCheckItem(self.ID_LOGS,
-                                            "Show &panel\tCTRL+SHIFT+l",
-                                            "Show logs panel")
+                                    "Show &panel\t{}".format(config['show']),
+                                    "Show logs panel")
 
         wx.GetApp().Bind(wx.EVT_MENU, self._toggle_logs, self.logs)
 

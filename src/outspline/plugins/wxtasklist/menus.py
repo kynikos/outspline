@@ -57,36 +57,41 @@ class MainMenu(wx.Menu):
         self.alarms_submenu = AlarmsMenu(tasklist)
         self.export_submenu = ExportMenu(tasklist)
 
+        config = coreaux_api.get_plugin_configuration('wxtasklist')(
+                                                                'Shortcuts')
+
         self.show = wx.MenuItem(self, self.ID_SHOW,
-                                                "Show &panel\tCTRL+SHIFT+F5",
-                                                "Show the events panel",
-                                                kind=wx.ITEM_CHECK)
+                                "Show &panel\t{}".format(config['show_panel']),
+                                "Show the events panel", kind=wx.ITEM_CHECK)
         self.navigator = wx.MenuItem(self, self.ID_NAVIGATOR, 'Na&vigator',
                         'Navigator actions', subMenu=self.navigator_submenu)
         self.alarms = wx.MenuItem(self, self.ID_ALARMS, '&Active alarms',
                                         'Set the visibility of active alarms',
                                         subMenu=self.alarms_submenu)
-        self.gaps = wx.MenuItem(self, self.ID_GAPS, "Show &gaps\tCTRL+-",
+        self.gaps = wx.MenuItem(self, self.ID_GAPS,
+                            "Show &gaps\t{}".format(config['toggle_gaps']),
                             "Show any unallocated time in the shown interval",
                             kind=wx.ITEM_CHECK)
         self.overlaps = wx.MenuItem(self, self.ID_OVERLAPS,
-                        "Show &overlappings\tCTRL+=",
-                        "Show time intervals used by more than one event",
-                        kind=wx.ITEM_CHECK)
+                "Show &overlappings\t{}".format(config['toggle_overlappings']),
+                "Show time intervals used by more than one event",
+                kind=wx.ITEM_CHECK)
         self.scroll = wx.MenuItem(self, self.ID_SCROLL,
-                                        "Scro&ll to ongoing\tF5",
-                                        "Order the list by State and scroll "
-                                        "to the first ongoing event")
+                "Scro&ll to ongoing\t{}".format(config['scroll_to_ongoing']),
+                "Order the list by State and scroll "
+                "to the first ongoing event")
         self.autoscroll = wx.MenuItem(self, self.ID_AUTOSCROLL,
                                             "Enable a&uto-scroll",
                                             "Auto-scroll to the first ongoing "
                                             "event when refreshing",
                                             kind=wx.ITEM_CHECK)
-        self.find = wx.MenuItem(self, self.ID_FIND, "&Find in database\tF6",
+        self.find = wx.MenuItem(self, self.ID_FIND,
+            "&Find in database\t{}".format(config('Items')['find_selected']),
             "Select the database items associated to the selected events")
-        self.edit = wx.MenuItem(self, self.ID_EDIT, "&Edit selected\tCTRL+F6",
-                            "Open in the editor the database items associated "
-                            "to the selected events")
+        self.edit = wx.MenuItem(self, self.ID_EDIT,
+                "&Edit selected\t{}".format(config('Items')['edit_selected']),
+                "Open in the editor the database items associated "
+                "to the selected events")
 
         self.snooze = wx.MenuItem(self, self.ID_SNOOZE, "&Snooze selected",
                             "Snooze the selected alarms",
@@ -96,9 +101,12 @@ class MainMenu(wx.Menu):
                                 subMenu=SnoozeAllConfigMenu(self.tasklist))
 
         self.dismiss = wx.MenuItem(self, self.ID_DISMISS,
-                        "&Dismiss selected\tF8", "Dismiss the selected alarms")
+                                        "&Dismiss selected\t{}".format(
+                                        config('Items')['dismiss_selected']),
+                                        "Dismiss the selected alarms")
         self.dismiss_all = wx.MenuItem(self, self.ID_DISMISS_ALL,
-                    "Dis&miss all\tCTRL+F8", "Dismiss all the active alarms")
+                    "Dis&miss all\t{}".format(config('Items')['dismiss_all']),
+                    "Dismiss all the active alarms")
         self.export = wx.MenuItem(self, self.ID_EXPORT, 'E&xport view',
                                         'Export the current view to a file',
                                         subMenu=self.export_submenu)
@@ -359,20 +367,27 @@ class NavigatorMenu(wx.Menu):
         self.ID_SET = wx.NewId()
         self.ID_RESET = wx.NewId()
 
+        config = coreaux_api.get_plugin_configuration('wxtasklist')(
+                                                    'Shortcuts')('Navigator')
+
         self.navigator = wx.MenuItem(self, self.ID_TOGGLE_NAVIGATOR,
-                        "&Show\tCTRL+F5", "Show or hide the navigator bar",
-                        kind=wx.ITEM_CHECK)
+                        "&Show\t{}".format(config['show']),
+                        "Show or hide the navigator bar", kind=wx.ITEM_CHECK)
         self.previous = wx.MenuItem(self, self.ID_PREVIOUS,
-                                    "&Previous page\tCTRL+[",
-                                    "View the previous page of events")
-        self.next = wx.MenuItem(self, self.ID_NEXT, "&Next page\tCTRL+]",
-                                        "View the next page of events")
-        self.apply = wx.MenuItem(self, self.ID_APPLY, "&Apply filters\tCTRL+,",
-                                                "Apply the configured filters")
-        self.set = wx.MenuItem(self, self.ID_SET, "Se&t filters\tCTRL+.",
+                            "&Previous page\t{}".format(config['previous']),
+                            "View the previous page of events")
+        self.next = wx.MenuItem(self, self.ID_NEXT,
+                                    "&Next page\t{}".format(config['next']),
+                                    "View the next page of events")
+        self.apply = wx.MenuItem(self, self.ID_APPLY,
+                                "&Apply filters\t{}".format(config['apply']),
+                                "Apply the configured filters")
+        self.set = wx.MenuItem(self, self.ID_SET,
+                                    "Se&t filters\t{}".format(config['set']),
                                     "Apply and save the configured filters")
-        self.reset = wx.MenuItem(self, self.ID_RESET, "&Reset filters\tCTRL+/",
-                                        "Reset the filters to the saved ones")
+        self.reset = wx.MenuItem(self, self.ID_RESET,
+                                "&Reset filters\t{}".format(config['reset']),
+                                "Reset the filters to the saved ones")
 
         self.previous.SetBitmap(wx.ArtProvider.GetBitmap('@previous',
                                                                   wx.ART_MENU))
@@ -904,7 +919,9 @@ class SnoozeDialog(wx.Dialog):
 class SnoozeSelectedConfigMenu(_SnoozeConfigMenu):
     def __init__(self, tasklist, accelerator=True):
         _SnoozeConfigMenu.__init__(self, tasklist)
-        accel = "\tF7" if accelerator else ""
+        config = coreaux_api.get_plugin_configuration('wxtasklist')(
+                                                        'Shortcuts')('Items')
+        accel = "\t{}".format(config['snooze_selected']) if accelerator else ""
         self.snoozefor.SetText(self.snoozefor.GetText() + accel)
 
     def get_alarms(self):
@@ -914,7 +931,9 @@ class SnoozeSelectedConfigMenu(_SnoozeConfigMenu):
 class SnoozeAllConfigMenu(_SnoozeConfigMenu):
     def __init__(self, tasklist, accelerator=True):
         _SnoozeConfigMenu.__init__(self, tasklist)
-        accel = "\tCTRL+F7" if accelerator else ""
+        config = coreaux_api.get_plugin_configuration('wxtasklist')(
+                                                        'Shortcuts')('Items')
+        accel = "\t{}".format(config['snooze_all']) if accelerator else ""
         self.snoozefor.SetText(self.snoozefor.GetText() + accel)
 
     def get_alarms(self):

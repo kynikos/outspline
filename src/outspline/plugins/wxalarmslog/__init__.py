@@ -21,6 +21,7 @@ import wx.propgrid as wxpg
 # Temporary workaround for bug #279
 import time as time_
 
+import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 import outspline.extensions.organism_alarms_api as organism_alarms_api
 import outspline.interfaces.wxgui_api as wxgui_api
@@ -152,10 +153,13 @@ class LogsMenu(object):
 
         submenu = wx.Menu()
 
+        config = coreaux_api.get_plugin_configuration('wxalarmslog')(
+                                                                'Shortcuts')
+
         self.alarms = wx.MenuItem(wxgui_api.get_menu_logs(), self.ID_ALARMS,
                             '&Alarms', 'Alarms log commands', subMenu=submenu)
         self.find = wx.MenuItem(submenu, self.ID_FIND,
-                "&Find in database\tCTRL+SHIFT+F6",
+                "&Find in database\t{}".format(config['find']),
                 "Select the database items associated to the selected entries")
 
         self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))

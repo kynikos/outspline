@@ -546,9 +546,11 @@ class MainMenu(wx.Menu):
 
         self.ID_SHOW = wx.NewId()
 
+        config = coreaux_api.get_plugin_configuration('wxalarms')('Shortcuts')
+
         self.menushow = wx.MenuItem(self, self.ID_SHOW,
-                        "&Show window\tCTRL+SHIFT+a", "Show the alarms window",
-                        kind=wx.ITEM_CHECK)
+                                "&Show window\t{}".format(config['show']),
+                                "Show the alarms window", kind=wx.ITEM_CHECK)
 
         self.AppendItem(self.menushow)
 

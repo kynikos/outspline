@@ -512,23 +512,28 @@ class MainMenu(wx.Menu):
         self.ID_CLOSE = wx.NewId()
         self.ID_CLOSE_ALL = wx.NewId()
 
+        config = coreaux_api.get_plugin_configuration('wxdbsearch')(
+                                                                'Shortcuts')
+
         self.search = wx.MenuItem(self, self.ID_NEW_SEARCH,
-                                    "&New search...\tCTRL+f",
-                                    "Open a new text search in the databases")
+                            "&New search...\t{}".format(config['new_search']),
+                            "Open a new text search in the databases")
         self.refresh = wx.MenuItem(self, self.ID_REFRESH_SEARCH,
-                                                "&Start search\tCTRL+r",
-                                                "Start the selected search")
+                            "&Start search\t{}".format(config['start_search']),
+                            "Start the selected search")
         self.find = wx.MenuItem(self, self.ID_FIND,
-                "&Find in database\tF9",
+                "&Find in database\t{}".format(config['find_item']),
                 "Select the database items associated to the selected results")
         self.edit = wx.MenuItem(self, self.ID_EDIT,
-                            "&Edit selected\tCTRL+F9",
+                            "&Edit selected\t{}".format(config['edit_item']),
                             "Open in the editor the database items associated "
                             "to the selected results")
-        self.close_ = wx.MenuItem(self, self.ID_CLOSE, "Cl&ose\tCTRL+t",
-                                                "Close the selected search")
+        self.close_ = wx.MenuItem(self, self.ID_CLOSE,
+                                "Cl&ose\t{}".format(config['close_search']),
+                                "Close the selected search")
         self.closeall = wx.MenuItem(self, self.ID_CLOSE_ALL,
-                        "Clos&e all\tCTRL+SHIFT+t", "Close all open searches")
+                        "Clos&e all\t{}".format(config['close_all_searches']),
+                        "Close all open searches")
 
         self.search.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch',
                                                                 wx.ART_MENU))
@@ -738,9 +743,9 @@ class TabContextMenu(wx.Menu):
         wx.Menu.__init__(self)
 
         refresh = wx.MenuItem(self, mainmenu.ID_REFRESH_SEARCH,
-                                                "&Start search\tCTRL+r",
+                                                "&Start search",
                                                 "Start the selected search")
-        close_ = wx.MenuItem(self, mainmenu.ID_CLOSE, "Cl&ose\tCTRL+t",
+        close_ = wx.MenuItem(self, mainmenu.ID_CLOSE, "Cl&ose",
                                                 "Close the selected search")
 
         refresh.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch', wx.ART_MENU))

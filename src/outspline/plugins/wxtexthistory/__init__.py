@@ -61,10 +61,15 @@ class Menu(object):
         self.ID_UNDO = wx.NewId()
         self.ID_REDO = wx.NewId()
 
+        config = coreaux_api.get_plugin_configuration('wxtexthistory')(
+                                                                'Shortcuts')
+
         self.mundo = wx.MenuItem(wxgui_api.get_menu_editor(), self.ID_UNDO,
-                                '&Undo\tCTRL+z', 'Undo the previous text edit')
+                                            '&Undo\t{}'.format(config['undo']),
+                                            'Undo the previous text edit')
         self.mredo = wx.MenuItem(wxgui_api.get_menu_editor(), self.ID_REDO,
-                                '&Redo\tCTRL+y', 'Redo the next text edit')
+                                            '&Redo\t{}'.format(config['redo']),
+                                            'Redo the next text edit')
         separator = wx.MenuItem(wxgui_api.get_menu_editor(),
                                                         kind=wx.ITEM_SEPARATOR)
 

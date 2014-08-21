@@ -43,13 +43,14 @@ class TrayIcon(wx.TaskBarIcon):
         # in fact this is a check item, while the other is a normal item
         self.ID_RESTORE = wx.NewId()
 
-        config = coreaux_api.get_plugin_configuration('wxtrayicon')
+        config = coreaux_api.get_plugin_configuration('wxtrayicon')(
+                                                                'Shortcuts')
 
         self.icon = BlinkingIcon(self)
 
         menumin = wx.MenuItem(wxgui_api.get_menu_file(), self.ID_MINIMIZE,
-                                    '&Minimize to tray\tCTRL+m',
-                                    'Minimize the main window to tray icon')
+                            '&Minimize to tray\t{}'.format(config['minimize']),
+                            'Minimize the main window to tray icon')
 
         menumin.SetBitmap(wx.ArtProvider.GetBitmap('@tray', wx.ART_MENU))
 
@@ -184,9 +185,13 @@ class TrayMenu(wx.Menu):
     def __init__(self, parent, ID_RESTORE):
         wx.Menu.__init__(self)
 
+        config = coreaux_api.get_plugin_configuration('wxtrayicon')(
+                                                                'Shortcuts')
+
         self.restore = self.AppendCheckItem(ID_RESTORE, "&Show Outspline")
         self.AppendSeparator()
-        self.exit_ = self.Append(wx.ID_EXIT, "E&xit\tCTRL+q")
+        self.exit_ = self.Append(wx.ID_EXIT,
+                                            "E&xit\t{}".format(config['exit']))
 
         parent.Bind(wx.EVT_MENU, self.toggle_main_window, self.restore)
         parent.Bind(wx.EVT_MENU, self.exit_application, self.exit_)
