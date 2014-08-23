@@ -108,7 +108,8 @@ class Database(wx.SplitterWindow):
         self.create()
 
         # Navigating the tree with the keyboard doesn't work until an item is
-        # seletced for the first time, so select the root item now...
+        # seletced for the first time (bug #334), so select the root item
+        # now...
         self.treec.SelectItem(self.treec.GetRootItem())
         # ...then unselect it, otherwise the "create sibling" action will be
         # available, which would try to generate another root item, resulting
