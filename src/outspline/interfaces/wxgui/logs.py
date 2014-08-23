@@ -50,6 +50,7 @@ class LogsPanel(object):
         self.box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(self.box)
 
+        # The tools are not TAB-traversable (bug #335)
         self.toolbar = wx.ToolBar(self.panel, style=wx.TB_VERTICAL)
         self.box.Add(self.toolbar, flag=wx.EXPAND)
 
