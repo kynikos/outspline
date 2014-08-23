@@ -848,6 +848,7 @@ class FilterInterfaceDate(object):
         self.fbox.Add(lowlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
+        # DatePickerCtrl doesn't release TAB (bug #332)
         self.lowdate = wx.DatePickerCtrl(self.panel)
         sdate = wx.DateTime()
         lowdate = self.config['lowdate']
@@ -892,6 +893,7 @@ class FilterInterfaceDate(object):
         return panel
 
     def _create_to_widget(self):
+        # DatePickerCtrl doesn't release TAB (bug #332)
         self.highdate = wx.DatePickerCtrl(self.highchoice.get_main_panel())
         sdate = wx.DateTime()
         highdate = self.config['highdate']
