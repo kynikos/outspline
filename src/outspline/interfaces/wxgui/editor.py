@@ -59,6 +59,7 @@ class EditorPanel(wx.Panel):
 
 class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
     def __init__(self, panel):
+        # Caption bars don't support TAB traversal (bug #333)
         foldpanelbar.CaptionBarStyle.__init__(self)
 
         bgcolour = panel.GetBackgroundColour()
