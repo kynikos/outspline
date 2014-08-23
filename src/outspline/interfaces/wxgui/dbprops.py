@@ -115,6 +115,7 @@ class DatabaseProperties(object):
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(sizer)
 
+        # PropertyGrid doesn't support TAB traversal (bug #331)
         self.propgrid = wxpg.PropertyGrid(self.panel, style=wxpg.PG_TOOLTIPS)
         self.propgrid.SetExtraStyle(wxpg.PG_EX_HELP_AS_TOOLTIPS)
 
