@@ -84,7 +84,7 @@ class LogsPanel(object):
 
         # Labels will appear for example in the dropdown menu that appears when
         # there's not enough room to display all the tools
-        self.toolbar.AddLabelTool(len(self.logviews) - 1, label, icon,
+        self.toolbar.AddRadioLabelTool(len(self.logviews) - 1, label, icon,
                                                             shortHelp=label)
         self.toolbar.Realize()
 
