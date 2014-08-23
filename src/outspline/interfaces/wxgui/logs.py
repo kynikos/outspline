@@ -50,9 +50,7 @@ class LogsPanel(object):
         self.box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(self.box)
 
-        # TB_FLAT and BORDER_NONE seem to have no effect (bug #273)
-        self.toolbar = wx.ToolBar(self.panel, style=wx.TB_VERTICAL |
-                                                wx.TB_FLAT | wx.BORDER_NONE)
+        self.toolbar = wx.ToolBar(self.panel, style=wx.TB_VERTICAL)
         self.box.Add(self.toolbar, flag=wx.EXPAND)
 
         self.logviews = []
