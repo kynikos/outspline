@@ -107,6 +107,14 @@ class Database(wx.SplitterWindow):
         # on the filename to be in the dictionary
         self.create()
 
+        # Navigating the tree with the keyboard doesn't work until an item is
+        # seletced for the first time, so do it with the root item
+        self.treec.SelectItem(self.treec.GetRootItem())
+        # Then unselect it, otherwise the "create sibling" action will be
+        # available, which would try to generate another root item, resulting
+        # in an exception
+        self.treec.UnselectAll()
+
         # Initialize the logs panel *after* signalling creating_tree_event,
         # which is used to add plugin logs
         self.logspanel.initialize()
