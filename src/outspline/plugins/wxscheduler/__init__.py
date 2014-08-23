@@ -171,6 +171,8 @@ class RuleList():
         # up and down
         # Initialize with a small size so that it will expand properly in the
         # sizer
+        # The list doesn't seem to support TAB traversal if there's only one
+        #   rule (but Home/End and PgUp/PgDown do select it) (bug #336)
         self.listview = wx.ListView(self.panel, size=(1, 1),
                     style=wx.LC_REPORT | wx.LC_NO_HEADER | wx.LC_SINGLE_SEL)
         self.listview.InsertColumn(0, 'Rules')
