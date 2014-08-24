@@ -584,6 +584,8 @@ class TabContextMenu(wx.Menu):
         self.alarms_submenu = TabContextAlarmsMenu(tasklist)
         self.export_submenu = TabContextExportMenu(tasklist)
 
+        self.show = wx.MenuItem(self, self.tasklist.mainmenu.ID_SHOW,
+                                                                "Hide &panel")
         self.navigator = wx.MenuItem(self, self.tasklist.mainmenu.ID_NAVIGATOR,
                                 'Na&vigator', subMenu=self.navigator_submenu)
         self.alarms = wx.MenuItem(self, self.tasklist.mainmenu.ID_ALARMS,
@@ -607,6 +609,7 @@ class TabContextMenu(wx.Menu):
         self.export = wx.MenuItem(self, self.tasklist.mainmenu.ID_EXPORT,
                                 'E&xport view', subMenu=self.export_submenu)
 
+        self.show.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
         self.navigator.SetBitmap(wx.ArtProvider.GetBitmap('@navigator',
                                                                 wx.ART_MENU))
         self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
@@ -618,6 +621,8 @@ class TabContextMenu(wx.Menu):
                                                                   wx.ART_MENU))
         self.export.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
 
+        self.AppendItem(self.show)
+        self.AppendSeparator()
         self.AppendItem(self.navigator)
         self.AppendItem(self.alarms)
         self.AppendItem(self.gaps)
