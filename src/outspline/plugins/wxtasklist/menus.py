@@ -60,8 +60,7 @@ class MainMenu(wx.Menu):
         config = coreaux_api.get_plugin_configuration('wxtasklist')(
                                                                 'Shortcuts')
 
-        self.show = wx.MenuItem(self, self.ID_SHOW,
-                                "Show &panel\t{}".format(config['show_panel']),
+        self.show = wx.MenuItem(self, self.ID_SHOW, "Show &panel",
                                 "Show the events panel", kind=wx.ITEM_CHECK)
         self.navigator = wx.MenuItem(self, self.ID_NAVIGATOR, 'Na&vigator',
                         'Navigator actions', subMenu=self.navigator_submenu)
