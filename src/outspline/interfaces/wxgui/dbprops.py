@@ -97,9 +97,9 @@ class DatabasePropertyManager(object):
 
 
 class DatabasePropertiesPanel(wx.Panel):
-    def __init__(self, parent, manager, filename):
+    def __init__(self, parent):
         wx.Panel.__init__(self, parent)
-        self.ctabmenu = TabContextMenu(manager, filename)
+        self.ctabmenu = TabContextMenu()
 
     def get_tab_context_menu(self):
         return self.ctabmenu
@@ -111,7 +111,7 @@ class DatabaseProperties(object):
         self.filename = filename
         nb = wx.GetApp().nb_right
 
-        self.panel = DatabasePropertiesPanel(nb, self.manager, self.filename)
+        self.panel = DatabasePropertiesPanel(nb)
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(sizer)
 
@@ -122,7 +122,8 @@ class DatabaseProperties(object):
         sizer.Add(self.propgrid, 1, flag=wx.EXPAND)
 
         nb.add_page(self.panel, os.path.basename(self.filename),
-                                imageId=self.manager.get_notebook_icon_index())
+                            self.manager.close, closeArgs=(self.filename, ),
+                            imageId=self.manager.get_notebook_icon_index())
 
         self.onchange_actions = {}
 
@@ -488,23 +489,16 @@ class DependencyDialogDisable(_DependencyDialog):
 
 
 class TabContextMenu(wx.Menu):
-    def __init__(self, manager, filename):
+    def __init__(self):
         # Without implementing this menu, the menu of the previously selected
         # tab is shown when righ-clicking the tab
-        self.manager = manager
-        self.filename = filename
-
         wx.Menu.__init__(self)
 
         self.ID_CLOSE = wx.NewId()
 
-        self.close = wx.MenuItem(self, self.ID_CLOSE, "&Close")
+        self.close = wx.MenuItem(self,
+                            wx.GetApp().menu.navigation.ID_CLOSE_TAB, "&Close")
 
         self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
 
         self.AppendItem(self.close)
-
-        wx.GetApp().Bind(wx.EVT_MENU, self._close_tab, self.close)
-
-    def _close_tab(self, event):
-        self.manager.close(self.filename)

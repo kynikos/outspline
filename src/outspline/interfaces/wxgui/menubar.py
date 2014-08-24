@@ -54,12 +54,14 @@ class RootMenu(wx.MenuBar):
         self.database = MenuDatabase()
         self.edit = MenuEdit()
         self.logs = MenuLogs()
+        self.navigation = MenuNavigation()
         self.help = MenuHelp()
 
         self.Append(self.file, "&File")
         self.Append(self.database, "&Database")
         self.Append(self.edit, "&Editor")
         self.Append(self.logs, "&Logs")
+        self.Append(self.navigation, "&Navigation")
         self.Append(self.help, "&Help")
 
         # self.hide_timer must be initialized even if autohide is not set
@@ -766,8 +768,6 @@ class MenuEdit(wx.Menu):
         self.ID_FIND = wx.NewId()
         self.ID_APPLY = wx.NewId()
         self.ID_APPLY_ALL = wx.NewId()
-        self.ID_CLOSE = wx.NewId()
-        self.ID_CLOSE_ALL = wx.NewId()
 
         config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
                                                                         'Edit')
@@ -793,12 +793,6 @@ class MenuEdit(wx.Menu):
         self.applyall = wx.MenuItem(self, self.ID_APPLY_ALL,
                                 "App&ly all\t{}".format(config['apply_all']),
                                 "Apply all open editors")
-        self.close_ = wx.MenuItem(self, self.ID_CLOSE,
-                                        "Cl&ose\t{}".format(config['close']),
-                                        "Close the focused editor")
-        self.closeall = wx.MenuItem(self, self.ID_CLOSE_ALL,
-                                "Clos&e all\t{}".format(config['close_all']),
-                                "Close all editors")
 
         self.select.SetBitmap(wx.ArtProvider.GetBitmap('@selectall',
                                                        wx.ART_MENU))
@@ -808,9 +802,6 @@ class MenuEdit(wx.Menu):
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
         self.apply.SetBitmap(wx.ArtProvider.GetBitmap('@apply', wx.ART_MENU))
         self.applyall.SetBitmap(wx.ArtProvider.GetBitmap('@apply',
-                                                         wx.ART_MENU))
-        self.close_.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
-        self.closeall.SetBitmap(wx.ArtProvider.GetBitmap('@closeall',
                                                          wx.ART_MENU))
 
         self.AppendItem(self.select)
@@ -822,9 +813,6 @@ class MenuEdit(wx.Menu):
         self.AppendSeparator()
         self.AppendItem(self.apply)
         self.AppendItem(self.applyall)
-        self.AppendSeparator()
-        self.AppendItem(self.close_)
-        self.AppendItem(self.closeall)
 
         wx.GetApp().Bind(wx.EVT_MENU, self._select_all_text, self.select)
         wx.GetApp().Bind(wx.EVT_MENU, self._cut_text, self.cut)
@@ -833,8 +821,6 @@ class MenuEdit(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self._find_item, self.find)
         wx.GetApp().Bind(wx.EVT_MENU, self.apply_tab, self.apply)
         wx.GetApp().Bind(wx.EVT_MENU, self.apply_all_tabs, self.applyall)
-        wx.GetApp().Bind(wx.EVT_MENU, self.close_tab, self.close_)
-        wx.GetApp().Bind(wx.EVT_MENU, self.close_all_tabs, self.closeall)
 
     def update_items(self):
         self.select.Enable(False)
@@ -844,16 +830,12 @@ class MenuEdit(wx.Menu):
         self.find.Enable(False)
         self.apply.Enable(False)
         self.applyall.Enable(False)
-        self.close_.Enable(False)
-        self.closeall.Enable(False)
 
         if editor.tabs:
             for i in tuple(editor.tabs.keys()):
                 if editor.tabs[i].is_modified():
                     self.applyall.Enable()
                     break
-
-            self.closeall.Enable()
 
             item = wx.GetApp().nb_right.get_selected_editor()
 
@@ -877,8 +859,6 @@ class MenuEdit(wx.Menu):
                 if editor.tabs[item].is_modified():
                     self.apply.Enable()
 
-                self.close_.Enable()
-
                 menu_edit_update_event.signal(filename=filename, id_=id_,
                                                                     item=item)
             else:
@@ -899,8 +879,6 @@ class MenuEdit(wx.Menu):
         self.find.Enable()
         self.apply.Enable()
         self.applyall.Enable()
-        self.close_.Enable()
-        self.closeall.Enable()
 
     def _select_all_text(self, event):
         tab = wx.GetApp().nb_right.get_selected_editor()
@@ -942,21 +920,6 @@ class MenuEdit(wx.Menu):
 
             core_api.release_databases()
 
-    def close_tab(self, event, ask='apply'):
-        if core_api.block_databases():
-            tab = wx.GetApp().nb_right.get_selected_editor()
-            if tab:
-                editor.tabs[tab].close(ask=ask)
-
-            core_api.release_databases()
-
-    def close_all_tabs(self, event, ask='apply'):
-        if core_api.block_databases():
-            for item in tuple(editor.tabs.keys()):
-                editor.tabs[item].close(ask=ask)
-
-            core_api.release_databases()
-
 
 class MenuLogs(wx.Menu):
     def __init__(self):
@@ -989,6 +952,30 @@ class MenuLogs(wx.Menu):
             for filename in tree.dbs:
                 tree.dbs[filename].show_logs()
             wx.GetApp().logs_configuration.set_shown(True)
+
+
+class MenuNavigation(wx.Menu):
+    def __init__(self):
+        wx.Menu.__init__(self)
+
+        self.ID_CLOSE_TAB = wx.NewId()
+
+        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
+                                                                'Navigation')
+
+        self.close_tab = wx.MenuItem(self, self.ID_CLOSE_TAB,
+                                "&Close tab\t{}".format(config['close_tab']),
+                                "Close the selected right-pane tab")
+
+        self.close_tab.SetBitmap(wx.ArtProvider.GetBitmap('@close',
+                                                                wx.ART_MENU))
+
+        self.AppendItem(self.close_tab)
+
+        wx.GetApp().Bind(wx.EVT_MENU, self._close_tab, self.close_tab)
+
+    def _close_tab(self, event):
+        wx.GetApp().nb_right.close_selected_tab()
 
 
 class MenuHelp(wx.Menu):

@@ -111,7 +111,7 @@ class TaskList(object):
             self._show()
 
     def _show(self):
-        wxgui_api.add_plugin_to_right_nb(self.panel, "",
+        wxgui_api.add_plugin_to_right_nb(self.panel, "", self._hide,
                                                     imageId=self.nb_icon_index)
         self._enable()
 

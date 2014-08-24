@@ -117,11 +117,16 @@ def simulate_apply_all_editors():
 
 
 def simulate_close_editor(ask='apply'):
-    return wx.GetApp().menu.edit.close_tab(None, ask=ask)
+    tab = wx.GetApp().nb_right.get_selected_editor()
+    if tab:
+        return editor.tabs[tab].close(ask=ask)
+    else:
+        return False
 
 
 def simulate_close_all_editors(ask='apply'):
-    return wx.GetApp().menu.edit.close_all_tabs(None, ask=ask)
+    for item in editor.tabs.keys():
+        editor.tabs[item].close(ask=ask)
 
 
 ### MENUBAR ###
@@ -148,6 +153,10 @@ def get_menu_logs_position():
 
 def get_menu_help_position():
     return wx.GetApp().menu.FindMenu('Help')
+
+
+def get_menu_navigation_close_tab_id():
+    return wx.GetApp().menu.navigation.ID_CLOSE_TAB
 
 
 def insert_menu_main_item(title, position, menu):
@@ -343,15 +352,17 @@ def add_right_nb_image(image):
 
 
 # wx.NO_IMAGE, which is used in the docs, seems not to exist...
-def add_plugin_to_right_nb(window, caption, select=True, imageId=wx.NOT_FOUND):
+def add_plugin_to_right_nb(window, caption, close, closeArgs=(), select=True,
+                                                        imageId=wx.NOT_FOUND):
     return wx.GetApp().nb_right.add_plugin(window, caption=caption,
-                                                select=select, imageId=imageId)
+            close=close, closeArgs=closeArgs, select=select, imageId=imageId)
 
 
 # wx.NO_IMAGE, which is used in the docs, seems not to exist...
-def add_page_to_right_nb(window, caption, select=True, imageId=wx.NOT_FOUND):
-    return wx.GetApp().nb_right.add_page(window, caption=caption,
-                                                select=select, imageId=imageId)
+def add_page_to_right_nb(window, caption, close, closeArgs=(), select=True,
+                                                        imageId=wx.NOT_FOUND):
+    return wx.GetApp().nb_right.add_page(window, caption=caption, close=close,
+                        closeArgs=closeArgs, select=select, imageId=imageId)
 
 
 def hide_right_nb_page(window):

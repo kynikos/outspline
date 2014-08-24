@@ -142,6 +142,7 @@ class LeftNotebook(Notebook):
 class RightNotebook(Notebook):
     def __init__(self, parent):
         Notebook.__init__(self, parent)
+        self.close_functions = {}
 
         self.imagelist = wx.ImageList(16, 16)
         self.AssignImageList(self.imagelist)
@@ -184,14 +185,18 @@ class RightNotebook(Notebook):
             self.parent.unsplit_window()
 
     # wx.NO_IMAGE, which is used in the docs, seems not to exist...
-    def add_page(self, window, caption, select=True, imageId=wx.NOT_FOUND):
+    def add_page(self, window, caption, close, closeArgs=(), select=True,
+                                                        imageId=wx.NOT_FOUND):
         self.AddPage(window, text=caption, select=select, imageId=imageId)
+        self.close_functions[window] = (close, closeArgs)
         self._split()
 
     # wx.NO_IMAGE, which is used in the docs, seems not to exist...
-    def add_plugin(self, window, caption, select=True, imageId=wx.NOT_FOUND):
+    def add_plugin(self, window, caption, close, closeArgs=(), select=True,
+                                                        imageId=wx.NOT_FOUND):
         self.InsertPage(0, window, text=caption, select=select,
                                                             imageId=imageId)
+        self.close_functions[window] = (close, closeArgs)
         self._split()
 
     def add_image(self, image):
@@ -233,6 +238,10 @@ class RightNotebook(Notebook):
 
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
                                                     self._handle_page_closing)
+
+    def close_selected_tab(self):
+        fn, args = self.close_functions[self.get_selected_tab()]
+        fn(*args)
 
     def close_page(self, pageid):
         # self.DeletePage signals EVT_FLATNOTEBOOK_PAGE_CLOSING, so it's

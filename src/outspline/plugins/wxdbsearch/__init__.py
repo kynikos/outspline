@@ -90,7 +90,7 @@ class SearchView():
         searches.append(searchview)
 
         wxgui_api.add_page_to_right_nb(searchview.panel, 'Search',
-                                                        imageId=nb_icon_index)
+                                    searchview.close_, imageId=nb_icon_index)
 
     def close_(self):
         self.finish_search_action = self._finish_search_close
@@ -497,10 +497,6 @@ class MainMenu(wx.Menu):
     find = None
     ID_EDIT = None
     edit = None
-    ID_CLOSE = None
-    close_ = None
-    ID_CLOSE_ALL = None
-    closeall = None
 
     def __init__(self):
         wx.Menu.__init__(self)
@@ -509,8 +505,6 @@ class MainMenu(wx.Menu):
         self.ID_REFRESH_SEARCH = wx.NewId()
         self.ID_FIND = wx.NewId()
         self.ID_EDIT = wx.NewId()
-        self.ID_CLOSE = wx.NewId()
-        self.ID_CLOSE_ALL = wx.NewId()
 
         config = coreaux_api.get_plugin_configuration('wxdbsearch')(
                                                                 'Shortcuts')
@@ -528,12 +522,6 @@ class MainMenu(wx.Menu):
                             "&Edit selected\t{}".format(config['edit_item']),
                             "Open in the editor the database items associated "
                             "to the selected results")
-        self.close_ = wx.MenuItem(self, self.ID_CLOSE,
-                                "Cl&ose\t{}".format(config['close_search']),
-                                "Close the selected search")
-        self.closeall = wx.MenuItem(self, self.ID_CLOSE_ALL,
-                        "Clos&e all\t{}".format(config['close_all_searches']),
-                        "Close all open searches")
 
         self.search.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch',
                                                                 wx.ART_MENU))
@@ -541,25 +529,17 @@ class MainMenu(wx.Menu):
                                                                 wx.ART_MENU))
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
         self.edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
-        self.close_.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
-        self.closeall.SetBitmap(wx.ArtProvider.GetBitmap('@closeall',
-                                                                wx.ART_MENU))
 
         self.AppendItem(self.search)
         self.AppendItem(self.refresh)
         self.AppendSeparator()
         self.AppendItem(self.find)
         self.AppendItem(self.edit)
-        self.AppendSeparator()
-        self.AppendItem(self.close_)
-        self.AppendItem(self.closeall)
 
         wxgui_api.bind_to_menu(self.new_search, self.search)
         wxgui_api.bind_to_menu(self.refresh_search, self.refresh)
         wxgui_api.bind_to_menu(self.find_in_tree, self.find)
         wxgui_api.bind_to_menu(self.edit_items, self.edit)
-        wxgui_api.bind_to_menu(self.close_tab, self.close_)
-        wxgui_api.bind_to_menu(self.close_all_tabs, self.closeall)
 
         wxgui_api.bind_to_update_menu_items(self.update_items)
         wxgui_api.bind_to_reset_menu_items(self.reset_items)
@@ -583,8 +563,6 @@ class MainMenu(wx.Menu):
             self.refresh.Enable(False)
             self.find.Enable(False)
             self.edit.Enable(False)
-            self.close_.Enable(False)
-            self.closeall.Enable(False)
 
             if core_api.get_databases_count() > 0:
                 self.search.Enable()
@@ -593,16 +571,12 @@ class MainMenu(wx.Menu):
 
             if mainview:
                 self.refresh.Enable()
-                self.close_.Enable()
 
                 sel = mainview.results.listview.GetFirstSelected()
 
                 if sel > -1:
                     self.find.Enable()
                     self.edit.Enable()
-
-            if len(searches) > 0:
-                self.closeall.Enable()
 
     def reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
@@ -611,8 +585,6 @@ class MainMenu(wx.Menu):
         self.refresh.Enable()
         self.find.Enable()
         self.edit.Enable()
-        self.close_.Enable()
-        self.closeall.Enable()
 
     def new_search(self, event):
         if core_api.get_databases_count() > 0:
@@ -712,17 +684,6 @@ class MainMenu(wx.Menu):
                 else:
                     msgboxes.all_items_not_found().ShowModal()
 
-    def close_tab(self, event):
-        mainview = self.get_selected_search()
-
-        if mainview:
-            mainview.close_()
-
-    def close_all_tabs(self, event):
-        # Use a copy of searches because close_ is modifying it
-        for mainview in searches[:]:
-            mainview.close_()
-
 
 class ContextMenu(wx.Menu):
     def __init__(self):
@@ -745,8 +706,9 @@ class TabContextMenu(wx.Menu):
         refresh = wx.MenuItem(self, mainmenu.ID_REFRESH_SEARCH,
                                                 "&Start search",
                                                 "Start the selected search")
-        close_ = wx.MenuItem(self, mainmenu.ID_CLOSE, "Cl&ose",
-                                                "Close the selected search")
+        close_ = wx.MenuItem(self,
+                                wxgui_api.get_menu_navigation_close_tab_id(),
+                                "Cl&ose", "Close the selected search")
 
         refresh.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch', wx.ART_MENU))
         close_.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))

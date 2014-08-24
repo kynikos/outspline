@@ -126,7 +126,7 @@ class Editor():
                                    text=text)
 
         nb = wx.GetApp().nb_right
-        nb.add_page(self.panel, title, select=True,
+        nb.add_page(self.panel, title, self.close, select=True,
                                                 imageId=nb.editors.icon_index)
 
     @classmethod
@@ -311,8 +311,8 @@ class TabContextMenu(wx.Menu):
                                                         "&Find in database")
         self.apply_ = wx.MenuItem(self, wx.GetApp().menu.edit.ID_APPLY,
                                                                     "&Apply")
-        self.close = wx.MenuItem(self, wx.GetApp().menu.edit.ID_CLOSE,
-                                                                    "Cl&ose")
+        self.close = wx.MenuItem(self,
+                            wx.GetApp().menu.navigation.ID_CLOSE_TAB, "Cl&ose")
 
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
         self.apply_.SetBitmap(wx.ArtProvider.GetBitmap('@apply', wx.ART_MENU))
