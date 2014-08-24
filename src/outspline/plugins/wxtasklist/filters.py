@@ -44,7 +44,6 @@ class Navigator(object):
         self.fbox = wx.WrapSizer(orient=wx.HORIZONTAL)
         self.panel.SetSizer(self.fbox)
 
-
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
         self.limits = (self.config.get_int('minimum_year'),
@@ -795,6 +794,7 @@ class FilterInterfaceRelative(object):
         # unitchoice must be created before highchoice, but added to the sizer
         # after
         self.fbox.Add(self.unitchoice, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.unitchoice.MoveAfterInTabOrder(self.highchoice.get_main_panel())
 
     def _handle_choice(self, event):
         self.lowlimit.SetValue(self.config['low'][event.GetInt()])
