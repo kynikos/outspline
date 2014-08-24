@@ -116,6 +116,8 @@ class DatabaseProperties(object):
         self.panel.SetSizer(sizer)
 
         # PropertyGrid doesn't support TAB traversal (bug #331)
+        # PropertyGrid doesn't get focused immediately, also blocking the first
+        #   attempt to use a keyboard shortcut (bug #337)
         self.propgrid = wxpg.PropertyGrid(self.panel, style=wxpg.PG_TOOLTIPS)
         self.propgrid.SetExtraStyle(wxpg.PG_EX_HELP_AS_TOOLTIPS)
 
