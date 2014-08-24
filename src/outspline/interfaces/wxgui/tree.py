@@ -34,6 +34,8 @@ dbs = {}
 
 class Tree(wx.TreeCtrl):
     def __init__(self, parent):
+        # The tree doesn't seem to support TAB traversal if there's only one
+        #   item (but Home/End and PgUp/PgDown do select it) (bug #336)
         wx.TreeCtrl.__init__(self, parent, wx.NewId(),
                                     style=wx.TR_HAS_BUTTONS | wx.TR_HIDE_ROOT |
                                     wx.TR_MULTIPLE | wx.TR_FULL_ROW_HIGHLIGHT)
