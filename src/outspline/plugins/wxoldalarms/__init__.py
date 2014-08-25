@@ -172,7 +172,7 @@ class DialogSearch(object):
         hsizer2 = wx.BoxSizer(wx.HORIZONTAL)
         vsizer.Add(hsizer2, flag=wx.ALIGN_CENTER | wx.BOTTOM, border=4)
 
-        restrict = wx.Button(self.dialog, label="Restrict")
+        restrict = wx.Button(self.dialog, label="&Restrict")
         hsizer2.Add(restrict, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
@@ -190,7 +190,7 @@ class DialogSearch(object):
 
         self.dialog.Bind(wx.EVT_BUTTON, self._restrict_search, restrict)
 
-        abort = wx.Button(self.dialog, label="Skip searching for old alarms")
+        abort = wx.Button(self.dialog, label="&Skip searching for old alarms")
         vsizer.Add(abort, flag=wx.ALIGN_CENTER)
 
         self.dialog.Bind(wx.EVT_BUTTON, self._abort_search, abort)
@@ -289,13 +289,13 @@ class DialogActivate(object):
         self.label.Wrap(self.WRAP)
 
         self.all_ = wx.Button(self.dialog,
-                                        label="Activate all the found alarms")
+                                        label="Activate &all the found alarms")
         self.vsizer.Add(self.all_, flag=wx.ALIGN_CENTER | wx.BOTTOM, border=4)
 
         self.dialog.Bind(wx.EVT_BUTTON, self._activate_all_alarms, self.all_)
 
         self.unique = wx.Button(self.dialog,
-                    label="Activate only the most recent alarm for each item")
+                    label="Activate only the most &recent alarm for each item")
         self.vsizer.Add(self.unique, flag=wx.ALIGN_CENTER)
 
         self.dialog.Bind(wx.EVT_BUTTON, self._activate_unique_alarms,

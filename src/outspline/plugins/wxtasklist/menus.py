@@ -829,7 +829,7 @@ class _SnoozeConfigMenu(wx.Menu):
                                                         self.snoozetimes[time])
 
         self.AppendSeparator()
-        self.snoozefor = self.Append(wx.NewId(), "For...")
+        self.snoozefor = self.Append(wx.NewId(), "&For...")
 
         wxgui_api.bind_to_menu(self._snooze_for_custom, self.snoozefor)
 

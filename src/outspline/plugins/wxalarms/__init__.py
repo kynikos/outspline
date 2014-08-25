@@ -121,7 +121,7 @@ class AlarmsWindow(object):
         self.hidden_panel.Add(self.hiddenL, flag=wx.ALIGN_CENTER_VERTICAL |
                                                             wx.RIGHT, border=4)
 
-        button_d = wx.Button(self.window, label='show', style=wx.BU_EXACTFIT)
+        button_d = wx.Button(self.window, label='sho&w', style=wx.BU_EXACTFIT)
         self.hidden_panel.Add(button_d, flag=wx.RIGHT, border=4)
 
         label2 = wx.StaticText(self.window, label='up to')
@@ -142,10 +142,10 @@ class AlarmsWindow(object):
                                                                     button_d)
 
     def _init_bottom(self):
-        button_s = wx.Button(self.window, label='Snooze all')
+        button_s = wx.Button(self.window, label='&Snooze all')
         self.bottom.Add(button_s, flag=wx.RIGHT, border=4)
 
-        button_d = wx.Button(self.window, label='Dismiss all')
+        button_d = wx.Button(self.window, label='&Dismiss all')
         self.bottom.Add(button_d, flag=wx.RIGHT, border=4)
 
         self.bottom.AddStretchSpacer()

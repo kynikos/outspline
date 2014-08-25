@@ -358,7 +358,7 @@ class SearchFilters():
         sbox.Add(self.text, 1, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
-        self.search = wx.Button(mainview.panel, label='Search')
+        self.search = wx.Button(mainview.panel, label='&Search')
         sbox.Add(self.search, flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.box.Add(sbox, flag=wx.EXPAND | wx.BOTTOM, border=4)
@@ -367,15 +367,15 @@ class SearchFilters():
         self.box.Add(self.ogrid, flag=wx.EXPAND)
 
         self.option1 = wx.CheckBox(self.mainview.panel,
-                                            label='Only in selected database')
+                                            label='Only in selected &database')
         self.option2 = wx.CheckBox(self.mainview.panel,
-                                            label='Only in headings')
+                                            label='Only in &headings')
         self.option3 = wx.CheckBox(self.mainview.panel,
-                                            label='Only one result per item')
+                                            label='Only &one result per item')
         self.option4 = wx.CheckBox(self.mainview.panel,
-                                            label='Regular expression')
+                                            label='&Regular expression')
         self.option5 = wx.CheckBox(self.mainview.panel,
-                                            label='Case sensitive')
+                                            label='&Case sensitive')
 
         # The order of addition affects the placement in the GridSizer
         self.ogrid.Add(self.option1)

@@ -411,10 +411,10 @@ class _DependencyDialog(object):
 
         hsizer3 = wx.BoxSizer(wx.HORIZONTAL)
 
-        ok = wx.Button(self.dialog, label="OK")
+        ok = wx.Button(self.dialog, label="&OK")
         hsizer3.Add(ok, flag=wx.RIGHT, border=8)
 
-        cancel = wx.Button(self.dialog, label="Cancel")
+        cancel = wx.Button(self.dialog, label="&Cancel")
         hsizer3.Add(cancel)
 
         vsizer.Add(hsizer3, flag=wx.ALIGN_RIGHT)

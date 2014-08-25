@@ -64,7 +64,7 @@ class AboutWindow(wx.Frame):
 
         info = InfoBox(self)
 
-        button = wx.Button(self, label='Close')
+        button = wx.Button(self, label='&Close')
 
         sizer1.Add(logo, (0, 0), span=(2, 1), flag=wx.ALIGN_CENTER | wx.LEFT |
                    wx.TOP | wx.RIGHT, border=8)

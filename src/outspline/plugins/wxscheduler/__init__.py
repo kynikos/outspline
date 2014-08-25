@@ -184,23 +184,23 @@ class RuleList():
 
         pbox = wx.BoxSizer(wx.VERTICAL)
 
-        self.button_add = wx.Button(self.panel, label='Add...',
+        self.button_add = wx.Button(self.panel, label='&Add...',
                                                         style=wx.BU_EXACTFIT)
         pbox.Add(self.button_add, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.button_edit = wx.Button(self.panel, label='Edit...',
+        self.button_edit = wx.Button(self.panel, label='&Edit...',
                                                         style=wx.BU_EXACTFIT)
         pbox.Add(self.button_edit, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.button_up = wx.Button(self.panel, label='Move up',
+        self.button_up = wx.Button(self.panel, label='Move &up',
                                                         style=wx.BU_EXACTFIT)
         pbox.Add(self.button_up, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.button_down = wx.Button(self.panel, label='Move down',
+        self.button_down = wx.Button(self.panel, label='Move &down',
                                                         style=wx.BU_EXACTFIT)
         pbox.Add(self.button_down, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.button_remove = wx.Button(self.panel, label='Remove',
+        self.button_remove = wx.Button(self.panel, label='&Remove',
                                                         style=wx.BU_EXACTFIT)
         pbox.Add(self.button_remove, flag=wx.EXPAND)
 
@@ -389,10 +389,10 @@ class RuleEditor():
         self.choice = wx.Choice(self.panel, choices=())
         mbox2.Add(self.choice, 1, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        button_cancel = wx.Button(self.panel, label='Cancel')
+        button_cancel = wx.Button(self.panel, label='&Cancel')
         mbox2.Add(button_cancel, flag=wx.LEFT | wx.RIGHT, border=4)
 
-        button_ok = wx.Button(self.panel, label='OK')
+        button_ok = wx.Button(self.panel, label='&OK')
         mbox2.Add(button_ok)
 
         self.scwindow = wx.ScrolledWindow(self.panel, style=wx.BORDER_NONE)
