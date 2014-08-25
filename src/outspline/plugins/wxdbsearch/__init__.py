@@ -354,7 +354,7 @@ class SearchFilters():
         label = wx.StaticText(mainview.panel, label='Search for:')
         sbox.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
-        self.text = wx.TextCtrl(mainview.panel)
+        self.text = wx.TextCtrl(mainview.panel, style=wx.TE_PROCESS_ENTER)
         sbox.Add(self.text, 1, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
@@ -384,6 +384,7 @@ class SearchFilters():
         self.ogrid.Add(self.option5)
         self.ogrid.Add(self.option3)
 
+        mainview.panel.Bind(wx.EVT_TEXT_ENTER, self._search, self.text)
         mainview.panel.Bind(wx.EVT_BUTTON, self._search, self.search)
 
     def _search(self, event):
