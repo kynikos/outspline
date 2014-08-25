@@ -126,8 +126,6 @@ class MainFrame(wx.Frame):
 
         self.SetIcons(wx.GetApp().get_main_icon_bundle())
 
-        self.uisim = wx.UIActionSimulator()
-
         self.menu = menubar.RootMenu(self)
         self.SetMenuBar(self.menu)
 
@@ -146,7 +144,7 @@ class MainFrame(wx.Frame):
         self.Unbind(wx.EVT_WINDOW_CREATE, handler=self._handle_creation)
 
         if self.config.get_bool('autohide_menubar'):
-            self.menu.enable_autohide(self.uisim, self.config)
+            self.menu.enable_autohide(self.config)
 
         databases.dbpropmanager.post_init()
 

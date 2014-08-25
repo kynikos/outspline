@@ -70,8 +70,7 @@ class RootMenu(wx.MenuBar):
         frame.Bind(wx.EVT_MENU_OPEN, self.update_menus)
         frame.Bind(wx.EVT_MENU_CLOSE, self.reset_menus)
 
-    def enable_autohide(self, uisim, config):
-        self.uisim = uisim
+    def enable_autohide(self, config):
         self.HIDE_DELAY = 10
         frame = self.GetFrame()
 
@@ -83,7 +82,15 @@ class RootMenu(wx.MenuBar):
         accels = [(wx.ACCEL_NORMAL, wx.WXK_F10, id_), ]
         frame.Bind(wx.EVT_MENU, self._handle_F10, id=id_)
 
-        # This preserves the native Alt+char behaviour
+        # This would preserve the native Alt+char behaviour to open the main
+        #  menu items (thanks to their & shortcuts), however this way such
+        #  shortcuts would conflict with the & shortcuts set for the various
+        #  Buttons, thus triggering both actions at the same time (open the
+        #  menu *and* activate the button)
+        # Also note that the preserve_alt_menu_shortcuts option has been
+        #  removed from the configuration file
+        '''self.uisim = wx.UIActionSimulator()
+
         if config('Shortcuts').get_bool('preserve_alt_menu_shortcuts'):
             for menu, label in self.GetMenus():
                 try:
@@ -97,16 +104,6 @@ class RootMenu(wx.MenuBar):
                     frame.Bind(wx.EVT_MENU,
                                 self._handle_accelerator_loop(char), id=id_)
 
-        acctable = wx.AcceleratorTable(accels)
-        frame.SetAcceleratorTable(acctable)
-
-        frame.Bind(wx.EVT_ENTER_WINDOW, self._handle_enter_frame)
-        frame.Bind(wx.EVT_LEAVE_WINDOW, self._handle_leave_frame)
-
-    def _handle_F10(self, event):
-        self.Show()
-        event.Skip()
-
     def _handle_accelerator_loop(self, char):
         return lambda event: self._handle_accelerator(event, char)
 
@@ -118,6 +115,16 @@ class RootMenu(wx.MenuBar):
         #  even attempt to close the menu or similar
         self.uisim.Char(wx.WXK_F10)
         self.uisim.Char(ord(char))
+        event.Skip()'''
+
+        acctable = wx.AcceleratorTable(accels)
+        frame.SetAcceleratorTable(acctable)
+
+        frame.Bind(wx.EVT_ENTER_WINDOW, self._handle_enter_frame)
+        frame.Bind(wx.EVT_LEAVE_WINDOW, self._handle_leave_frame)
+
+    def _handle_F10(self, event):
+        self.Show()
         event.Skip()
 
     def _handle_enter_frame(self, event):
