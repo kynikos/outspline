@@ -129,7 +129,7 @@ class TaskList(object):
         self.list_.refresh()
         self._update_tab_label()
 
-        organism_alarms_api.bind_to_alarm(self._update_tab_label)
+        organism_alarms_api.bind_to_alarm(self._update_tab_label_after)
         organism_alarms_api.bind_to_alarm_off(self._update_tab_label)
         wxgui_api.bind_to_close_database(self._update_tab_label)
 
@@ -160,6 +160,9 @@ class TaskList(object):
 
     def dismiss_warning(self):
         self.warningsbar.hide()
+
+    def _update_tab_label_after(self, kwargs):
+        wx.CallAfter(self._update_tab_label, kwargs)
 
     def _update_tab_label(self, kwargs=None):
         nalarms = organism_alarms_api.get_number_of_active_alarms()
