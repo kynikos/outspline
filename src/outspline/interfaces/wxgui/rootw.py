@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+import threading
 import wx
 
 import outspline.coreaux_api as coreaux_api
@@ -68,8 +69,15 @@ class GUI(wx.App):
         self.nb_left = self.root.mainpanes.nb_left
         self.nb_right = self.root.mainpanes.nb_right
 
+        self.uncaught_max = self.config.get_int('max_exceptions')
+        self.uncaught_counter = 0
+        self.uncaught_event = threading.Event()
+
         core_api.bind_to_blocked_databases(self._handle_blocked_databases)
-        coreaux_api.bind_to_uncaught_exception(self._handle_uncaught_exception)
+
+        if self.uncaught_max > 0:
+            coreaux_api.bind_to_uncaught_exception(
+                                            self._handle_uncaught_exception)
 
     def get_main_icon_bundle(self):
         return self.MAIN_ICON_BUNDLE
@@ -103,10 +111,31 @@ class GUI(wx.App):
         msgboxes.blocked_databases().ShowModal()
 
     def _handle_uncaught_exception(self, kwargs):
-        coreaux_api.bind_to_uncaught_exception(self._handle_uncaught_exception,
-                                               False)
+        if self.uncaught_counter < self.uncaught_max:
+            # Increment in this thread, otherwise uncaught_event won't work
+            self.uncaught_counter += 1
+
+            if coreaux_api.is_main_thread():
+                self._show_uncaught_dialog(kwargs)
+            else:
+                wx.CallAfter(self._show_uncaught_dialog, kwargs)
+
+        self.uncaught_event.wait()
+
+    def _show_uncaught_dialog(self, kwargs):
         msgboxes.uncaught_exception(kwargs['exc_info']).ShowModal()
-        self.root.Destroy()
+
+        if self.uncaught_counter == 1:
+            # Only unbind here, otherwise another thread that crashes would
+            # bypass this whole mechanism
+            coreaux_api.bind_to_uncaught_exception(
+                                        self._handle_uncaught_exception, False)
+            self.root.Destroy()
+            # No need to set self.uncaught_counter = 0
+            self.uncaught_event.set()
+            # No need to call self.uncaught_event.clear()
+        else:
+            self.uncaught_counter -= 1
 
 
 class MainFrame(wx.Frame):

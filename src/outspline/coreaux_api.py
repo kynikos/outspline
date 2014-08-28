@@ -20,6 +20,7 @@ import sys
 import importlib
 import copy
 import json
+import threading
 
 from coreaux.configuration import components, info, config
 import coreaux.configuration
@@ -117,6 +118,11 @@ def get_plugin_configuration(plugin):
     return config('Plugins')(plugin)
 
 
+def is_main_thread():
+    return threading.current_thread().name == \
+                                        coreaux.configuration.MAIN_THREAD_NAME
+
+
 def import_optional_extension_api(extension):
     if extension in config('Extensions').get_sections() and \
                         config('Extensions')(extension).get_bool('enabled'):
@@ -145,4 +151,5 @@ def bind_to_external_nudge(handler, bind=True):
 
 
 def bind_to_uncaught_exception(handler, bind=True):
+    # This event may be signalled in a separate thread
     return coreaux.events.uncaught_exception_event.bind(handler, bind)

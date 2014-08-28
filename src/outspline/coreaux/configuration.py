@@ -34,6 +34,7 @@ locale.setlocale(locale.LC_ALL, '')
 
 __author__ = "Dario Giovannetti <dev@dariogiovannetti.net>"
 
+MAIN_THREAD_NAME = "MAIN"
 _ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
 _CORE_INFO = os.path.join(_ROOT_DIR, 'coreaux', 'core.info')
 _CONFIG_FILE = os.path.join(_ROOT_DIR, 'outspline.conf')
