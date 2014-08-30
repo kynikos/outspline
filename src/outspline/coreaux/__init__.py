@@ -114,6 +114,7 @@ def main():
     # This must be done *before* checking for existing processes, because a
     # configuration file may haven't been set in the command arguments
     configfile = configuration.set_configuration_file(cliargs)
+    configuration.set_update_only(cliargs)
 
     if dbus:
         check_existing_processes(configfile)

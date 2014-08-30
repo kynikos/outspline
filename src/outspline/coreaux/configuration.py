@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 import os
 import errno
 import locale
@@ -71,6 +72,7 @@ user_config_file = _USER_CONFIG_FILE
 components = None
 info = None
 config = None
+update_only = False
 
 
 def load_component_info():
@@ -166,6 +168,11 @@ def set_configuration_file(cliargs):
     return user_config_file
 
 
+def set_update_only(cliargs):
+    global update_only
+    update_only = cliargs.updonly
+
+
 def load_configuration():
     # Try to make the directory separately from the logger, because they could
     # be set to different paths
@@ -187,5 +194,9 @@ def load_configuration():
         raise
 
 
-def export_configuration():
+def export_configuration(log):
     config.export_add(user_config_file)
+
+    if update_only:
+        log.info('Configuration file correctly created or updated')
+        sys.exit()
