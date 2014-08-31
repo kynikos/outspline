@@ -108,7 +108,7 @@ class TaskList(object):
     def toggle_shown(self, event):
         if self.is_shown():
             self._hide()
-        else:
+        elif wxgui_api.get_databases_count():
             self._show()
 
     def _show(self):

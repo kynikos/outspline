@@ -541,8 +541,9 @@ class ViewMenu(object):
         self.autoscroll.Enable()
 
     def _focus(self, event):
-        wxgui_api.select_right_nb_tab(self.tasklist.panel)
-        self.occview.set_focus()
+        if self.tasklist.is_shown():
+            wxgui_api.select_right_nb_tab(self.tasklist.panel)
+            self.occview.set_focus()
 
     def _toggle_navigator(self, event):
         self.tasklist.navigator.toggle_shown()

@@ -29,6 +29,10 @@ def get_open_databases():
     return databases.get_open_databases()
 
 
+def get_databases_count():
+    return len(tree.dbs)
+
+
 def register_aborted_save_warning(exception, message):
     return databases.register_aborted_save_warning(exception, message)
 
