@@ -499,7 +499,7 @@ class TabContextMenu(wx.Menu):
         self.ID_CLOSE = wx.NewId()
 
         self.close = wx.MenuItem(self,
-                            wx.GetApp().menu.navigation.ID_CLOSE_TAB, "&Close")
+                wx.GetApp().menu.view.rightnb_submenu.ID_CLOSE, "&Close")
 
         self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
 

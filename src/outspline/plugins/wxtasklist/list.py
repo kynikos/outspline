@@ -182,6 +182,9 @@ class OccurrencesView(object):
         self.autoscroll.pre_execute()
         self.refengine.set_filter(config)
 
+    def set_focus(self):
+        self.listview.SetFocus()
+
     def is_time_in_range(self, now, min_time, max_time):
         return self.active_alarms_modes[self.active_alarms_mode](min_time, now,
                                                                     max_time)

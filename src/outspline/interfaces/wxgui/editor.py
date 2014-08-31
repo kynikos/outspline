@@ -217,6 +217,9 @@ class Editor():
     def expand_panel(self, fpanel):
         self.fpbar.Expand(fpanel)
 
+    def focus_text(self):
+        self.area.area.SetFocus()
+
     def apply(self):
         group = core_api.get_next_history_group(self.filename)
         description = 'Apply editor'
@@ -312,7 +315,7 @@ class TabContextMenu(wx.Menu):
         self.apply_ = wx.MenuItem(self, wx.GetApp().menu.edit.ID_APPLY,
                                                                     "&Apply")
         self.close = wx.MenuItem(self,
-                            wx.GetApp().menu.navigation.ID_CLOSE_TAB, "Cl&ose")
+                wx.GetApp().menu.view.rightnb_submenu.ID_CLOSE, "Cl&ose")
 
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
         self.apply_.SetBitmap(wx.ArtProvider.GetBitmap('@apply', wx.ART_MENU))

@@ -61,18 +61,28 @@ def add_window_to_plugin(filename, id_, fpanel, window):
                        ].add_plugin_window(fpanel, window)
 
 
-def resize_foldpanelbar(filename, id_):
-    return editor.tabs[editor.Editor.make_tabid(filename, id_)].resize_fpb()
+def collapse_panel(filename, id_, fpanel, focus_text=True):
+    tab = editor.tabs[editor.Editor.make_tabid(filename, id_)]
+    tab.collapse_panel(fpanel)
+    tab.resize_fpb()
 
-
-def collapse_panel(filename, id_, fpanel):
-    return editor.tabs[editor.Editor.make_tabid(filename, id_)
-                       ].collapse_panel(fpanel)
+    if focus_text:
+        tab.focus_text()
 
 
 def expand_panel(filename, id_, fpanel):
-    return editor.tabs[editor.Editor.make_tabid(filename, id_)
-                       ].expand_panel(fpanel)
+    tab = editor.tabs[editor.Editor.make_tabid(filename, id_)]
+    tab.expand_panel(fpanel)
+    tab.resize_fpb()
+
+
+def toggle_panel(filename, id_, fpanel, focus_text=True):
+    if fpanel.IsExpanded():
+        collapse_panel(filename, id_, fpanel, focus_text=focus_text)
+        return False
+    else:
+        expand_panel(filename, id_, fpanel)
+        return True
 
 
 def set_editor_modified(filename, id_):
@@ -143,20 +153,28 @@ def get_menu_editor():
     return wx.GetApp().menu.edit
 
 
+def get_menu_view():
+    return wx.GetApp().menu.view
+
+
+def get_menu_view_editors():
+    return wx.GetApp().menu.view.editors_submenu
+
+
 def get_menu_logs():
-    return wx.GetApp().menu.logs
+    return wx.GetApp().menu.view.logs_submenu
 
 
-def get_menu_logs_position():
-    return wx.GetApp().menu.FindMenu('Logs')
+def get_menu_view_position():
+    return wx.GetApp().menu.FindMenu('View')
 
 
 def get_menu_help_position():
     return wx.GetApp().menu.FindMenu('Help')
 
 
-def get_menu_navigation_close_tab_id():
-    return wx.GetApp().menu.navigation.ID_CLOSE_TAB
+def get_menu_view_close_tab_id():
+    return wx.GetApp().menu.view.rightnb_submenu.ID_CLOSE
 
 
 def insert_menu_main_item(title, position, menu):
@@ -176,8 +194,20 @@ def add_menu_editor_item(item):
     return wx.GetApp().menu.edit.InsertItem(0, item)
 
 
+def add_menu_view_item(item):
+    return wx.GetApp().menu.view.append_plugin_item(item)
+
+
+def add_menu_editor_plugin(item):
+    return wx.GetApp().menu.view.editors_submenu.append_plugin_item(item)
+
+
+def insert_menu_right_tab_group(menu):
+    return wx.GetApp().menu.view.insert_tab_group(menu)
+
+
 def add_menu_logs_item(item):
-    return wx.GetApp().menu.logs.AppendItem(item)
+    return wx.GetApp().menu.view.logs_submenu.AppendItem(item)
 
 
 def bind_to_update_menu_items(handler, bind=True):
@@ -196,8 +226,24 @@ def bind_to_menu_edit_update(handler, bind=True):
     return menubar.menu_edit_update_event.bind(handler, bind)
 
 
-def bind_to_menu_logs_update(handler, bind=True):
-    return menubar.menu_logs_update_event.bind(handler, bind)
+def bind_to_menu_view_update(handler, bind=True):
+    return menubar.menu_view_update_event.bind(handler, bind)
+
+
+def bind_to_menu_view_logs_disable(handler, bind=True):
+    return menubar.menu_view_logs_disable_event.bind(handler, bind)
+
+
+def bind_to_menu_view_logs_update(handler, bind=True):
+    return menubar.menu_view_logs_update_event.bind(handler, bind)
+
+
+def bind_to_menu_view_editors_disable(handler, bind=True):
+    return menubar.menu_view_editors_disable_event.bind(handler, bind)
+
+
+def bind_to_menu_view_editors_update(handler, bind=True):
+    return menubar.menu_view_editors_update_event.bind(handler, bind)
 
 
 def bind_to_open_database(handler, bind=True):
@@ -312,6 +358,11 @@ def get_selected_database_filename():
 
 def get_right_nb():
     return wx.GetApp().nb_right
+
+
+def select_right_nb_tab(window):
+    nb = wx.GetApp().nb_right
+    return nb.SetSelection(nb.GetPageIndex(window))
 
 
 def is_page_in_right_nb(window):
@@ -527,6 +578,11 @@ def get_logs_parent(filename):
 def add_log(filename, sizer, label, icon, menu_items, menu_update):
     return tree.dbs[filename].get_logs_panel().add_log(sizer, label, icon,
                                                     menu_items, menu_update)
+
+
+def select_log(tool_id):
+    treedb = wx.GetApp().nb_left.get_selected_tab()
+    return treedb.get_logs_panel().select_log(tool_id)
 
 
 def refresh_history(filename):

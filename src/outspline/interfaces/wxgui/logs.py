@@ -63,14 +63,19 @@ class LogsPanel(object):
         self.toolbar.Bind(wx.EVT_TOOL, self._handle_tool)
 
     def _handle_tool(self, event):
+        self.select_log(event.GetId())
+
+    def select_log(self, selection):
         old_view = self.logviews[self.selection]
-        view = self.logviews[event.GetId()]
+        view = self.logviews[selection]
 
         old_view.Show(False)
         self.box.Replace(old_view, view)
         view.Show()
 
-        self.selection = event.GetId()
+        self.selection = selection
+
+        self.toolbar.ToggleTool(selection, True)
 
         self.panel.Layout()
 
@@ -80,16 +85,17 @@ class LogsPanel(object):
     def add_log(self, view, label, icon, menu_items, menu_update):
         self.logviews.append(view)
         view.Show(False)
+        tool_id = len(self.logviews) - 1
 
         # Labels will appear for example in the dropdown menu that appears when
         # there's not enough room to display all the tools
-        self.toolbar.AddRadioLabelTool(len(self.logviews) - 1, label, icon,
-                                                            shortHelp=label)
+        self.toolbar.AddRadioLabelTool(tool_id, label, icon, shortHelp=label)
         self.toolbar.Realize()
 
         cmenu = ContextMenu(view, self.filename, menu_items, menu_update)
 
-        return cmenu.get_items_and_popup()
+        menu_items, popup_cmenu = cmenu.get_items_and_popup()
+        return (tool_id, menu_items, popup_cmenu)
 
     def initialize(self):
         self.selection = 0
@@ -100,9 +106,31 @@ class LogsPanel(object):
         if len(self.logviews) < 2:
             self.toolbar.Show(False)
 
+    def focus_selected(self):
+        self.logviews[self.selection].SetFocus()
+
+    def advance_selection(self):
+        newsel = self.selection + 1
+
+        if newsel >= len(self.logviews):
+            newsel = 0
+
+        self.select_log(newsel)
+
+    def reverse_selection(self):
+        newsel = self.selection - 1
+
+        # Don't rely on the support for negative indices in lists because the
+        # new index is also the id of the respective toolbar tool
+        if newsel < 0:
+            newsel = len(self.logviews) - 1
+
+        self.select_log(newsel)
+
 
 class DatabaseHistory(object):
     def __init__(self, logspanel, parent, filename, bgcolor):
+        self.logspanel = logspanel
         self.filename = filename
         self.config = coreaux_api.get_interface_configuration('wxgui')
 
@@ -122,7 +150,8 @@ class DatabaseHistory(object):
 
         self._make_icons(bgcolor)
 
-        menu_items, popup_cmenu = logspanel.add_log(self.view, "Items",
+        self.tool_id, menu_items, popup_cmenu = self.logspanel.add_log(
+                                self.view, "Items",
                                 wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU),
                                 self._init_context_menu_items(),
                                 self._update_context_menu)
@@ -220,6 +249,9 @@ class DatabaseHistory(object):
                                     "".join(("[", str(row['H_status']), "]")),
                                     tstamp, row['H_description']))
 
+    def select(self):
+        self.logspanel.select_log(self.tool_id)
+
 
 class ContextMenu(wx.Menu):
     def __init__(self, view, filename, items, update):
@@ -229,9 +261,9 @@ class ContextMenu(wx.Menu):
         self._update = update
         self.added_items = []
 
-        self.hide = wx.MenuItem(self, wx.GetApp().menu.logs.ID_LOGS,
-                                                                "&Hide logs")
-        self.hide.SetBitmap(wx.ArtProvider.GetBitmap('@logs', wx.ART_MENU))
+        self.hide = wx.MenuItem(self,
+                    wx.GetApp().menu.view.logs_submenu.ID_SHOW, "&Hide logs")
+        self.hide.SetBitmap(wx.ArtProvider.GetBitmap('@hide', wx.ART_MENU))
 
         self.AppendItem(self.hide)
         self.AppendSeparator()

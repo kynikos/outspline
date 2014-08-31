@@ -100,6 +100,9 @@ class Notebook(FlatNotebook):
     def get_selected_tab(self):
         return self.GetCurrentPage()
 
+    def get_page_count(self):
+        return self.GetPageCount()
+
 
 class LeftNotebook(Notebook):
     def __init__(self, parent):
@@ -239,8 +242,8 @@ class RightNotebook(Notebook):
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
                                                     self._handle_page_closing)
 
-    def close_selected_tab(self):
-        fn, args = self.close_functions[self.get_selected_tab()]
+    def close_tab(self, tab):
+        fn, args = self.close_functions[tab]
         fn(*args)
 
     def close_page(self, pageid):

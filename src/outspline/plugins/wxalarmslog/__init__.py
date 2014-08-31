@@ -93,9 +93,10 @@ class AlarmsLog(object):
 
         cmenu = ContextMenu(mainmenu, self.view)
 
-        menu_items, popup_cmenu = wxgui_api.add_log(filename, self.view,
-                    "Alarms", wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU),
-                    cmenu.get_items(), cmenu.update)
+        self.tool_id, menu_items, popup_cmenu = wxgui_api.add_log(filename,
+                            self.view, "Alarms",
+                            wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU),
+                            cmenu.get_items(), cmenu.update)
         cmenu.store_items(menu_items)
 
         self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
@@ -119,6 +120,9 @@ class AlarmsLog(object):
 
     def get_view(self):
         return self.view
+
+    def get_tool_id(self):
+        return self.tool_id
 
     def _refresh(self):
         self.view.DeleteAllItems()
@@ -149,6 +153,7 @@ class LogsMenu(object):
         self.plugin = plugin
 
         self.ID_ALARMS = wx.NewId()
+        self.ID_SELECT = wx.NewId()
         self.ID_FIND = wx.NewId()
 
         submenu = wx.Menu()
@@ -158,21 +163,29 @@ class LogsMenu(object):
 
         self.alarms = wx.MenuItem(wxgui_api.get_menu_logs(), self.ID_ALARMS,
                             '&Alarms', 'Alarms log commands', subMenu=submenu)
+        self.select = wx.MenuItem(submenu, self.ID_SELECT,
+                "&Select\t{}".format(config['select']),
+                "Select the alarms history log")
         self.find = wx.MenuItem(submenu, self.ID_FIND,
-                "&Find in database\t{}".format(config['find']),
+                "Find in &database\t{}".format(config['find']),
                 "Select the database items associated to the selected entries")
 
         self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
+        self.select.SetBitmap(wx.ArtProvider.GetBitmap('@focus', wx.ART_MENU))
         self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
 
         wxgui_api.add_menu_logs_item(self.alarms)
+        submenu.AppendItem(self.select)
         submenu.AppendItem(self.find)
 
+        wxgui_api.bind_to_menu(self._select, self.select)
         wxgui_api.bind_to_menu(self._find_in_tree, self.find)
-        wxgui_api.bind_to_reset_menu_items(self._reset_items)
-        wxgui_api.bind_to_menu_logs_update(self._handle_menu_logs_update)
 
-    def _handle_menu_logs_update(self, kwargs):
+        wxgui_api.bind_to_menu_view_logs_update(self._update_items)
+        wxgui_api.bind_to_menu_view_logs_disable(self._disable_items)
+        wxgui_api.bind_to_reset_menu_items(self._reset_items)
+
+    def _update_items(self, kwargs):
         self.find.Enable(False)
 
         log, filename = self.plugin.get_selected_log()
@@ -186,10 +199,20 @@ class LogsMenu(object):
                 if sel > 0:
                     self.find.Enable()
 
+    def _disable_items(self, kwargs):
+        self.alarms.Enable(False)
+
     def _reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
         # accelerators
+        self.alarms.Enable()
         self.find.Enable()
+
+    def _select(self, event):
+        log, filename = self.plugin.get_selected_log()
+
+        if log:
+            wxgui_api.select_log(log.get_tool_id())
 
     def _find_in_tree(self, event):
         log, filename = self.plugin.get_selected_log()

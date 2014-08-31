@@ -78,7 +78,6 @@ def bind_to_insert_rule(handler, bind=True):
 def simulate_expand_rules_panel(filename, id_):
     fpanel = wxscheduler.base.get_scheduler(filename, id_).fpanel
     wxgui_api.expand_panel(filename, id_, fpanel)
-    wxgui_api.resize_foldpanelbar(filename, id_)
 
 def simulate_remove_all_rules(filename, id_):
     sched = wxscheduler.base.get_scheduler(filename, id_)

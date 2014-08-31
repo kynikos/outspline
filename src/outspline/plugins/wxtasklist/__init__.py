@@ -69,6 +69,7 @@ class TaskList(object):
         self.list_ = list_.OccurrencesView(self, self.navigator)
 
         self.mainmenu = menus.MainMenu(self)
+        self.viewmenu = menus.ViewMenu(self)
         self.panel.init_tab_menu(self)
         self.list_._init_context_menu(self.mainmenu)
 

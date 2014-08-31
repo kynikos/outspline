@@ -42,6 +42,8 @@ class Main(object):
         self.items = {}
         self.itemicons = {}
 
+        ViewMenu(self)
+
         wxgui_api.bind_to_creating_tree(self._handle_creating_tree)
         wxgui_api.bind_to_close_database(self._handle_close_database)
         wxgui_api.bind_to_open_editor(self._handle_open_editor)
@@ -117,7 +119,8 @@ class Scheduler():
 
         # Must be done *after* resizing
         if not self.rule_list.rules:
-            self.collapse_foldpanel()
+            wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel,
+                                                            focus_text=False)
 
     def resize(self):
         # This is necessary for letting the fold panel adapt to the variable
@@ -125,11 +128,6 @@ class Scheduler():
         self.panel.SetMinSize((-1, -1))
         self.panel.Fit()
         wxgui_api.expand_panel(self.filename, self.id_, self.fpanel)
-        wxgui_api.resize_foldpanelbar(self.filename, self.id_)
-
-    def collapse_foldpanel(self):
-        wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel)
-        wxgui_api.resize_foldpanelbar(self.filename, self.id_)
 
     def show_list(self):
         self.rule_editor.panel.Show(False)
@@ -140,6 +138,14 @@ class Scheduler():
         self.rule_list.panel.Show(False)
         self.rule_editor.panel.Show()
         self.resize()
+
+    def set_focus(self):
+        wxgui_api.expand_panel(self.filename, self.id_, self.fpanel)
+        self.rule_list.focus_list()
+
+    def toggle_focus(self):
+        if wxgui_api.toggle_panel(self.filename, self.id_, self.fpanel):
+            self.rule_list.focus_list()
 
 
 class RuleList():
@@ -360,6 +366,9 @@ class RuleList():
 
         self.listview.SetColumnWidth(0, wx.LIST_AUTOSIZE)
 
+    def focus_list(self):
+        self.listview.SetFocus()
+
 
 class RuleEditor():
     parent = None
@@ -531,6 +540,59 @@ class TreeItemIcons(object):
         wxgui_api.update_item_properties(self.filename, id_, bits,
                                                             self.property_mask)
         wxgui_api.update_item_image(self.filename, id_)
+
+
+class ViewMenu(object):
+    def __init__(self, plugin):
+        self.plugin = plugin
+
+        self.ID_MAIN = wx.NewId()
+        self.ID_FOCUS = wx.NewId()
+        self.ID_TOGGLE = wx.NewId()
+
+        submenu = wx.Menu()
+
+        config = coreaux_api.get_plugin_configuration('wxscheduler')(
+                                                                'Shortcuts')
+
+        self.main = wx.MenuItem(wxgui_api.get_menu_view_editors(),
+                        self.ID_MAIN,
+                        '&Rules editor', 'Rules editor navigation actions',
+                        subMenu=submenu)
+        self.focus = wx.MenuItem(submenu, self.ID_FOCUS,
+                    "&Focus\t{}".format(config['focus']), "Focus rules panel")
+        self.toggle = wx.MenuItem(submenu, self.ID_TOGGLE,
+                "&Toggle\t{}".format(config['toggle']), "Toggle rules panel")
+
+        self.main.SetBitmap(wx.ArtProvider.GetBitmap('@tasklist', wx.ART_MENU))
+        self.focus.SetBitmap(wx.ArtProvider.GetBitmap('@focus', wx.ART_MENU))
+        self.toggle.SetBitmap(wx.ArtProvider.GetBitmap('@toggle', wx.ART_MENU))
+
+        wxgui_api.add_menu_editor_plugin(self.main)
+        submenu.AppendItem(self.focus)
+        submenu.AppendItem(self.toggle)
+
+        wxgui_api.bind_to_menu(self._focus, self.focus)
+        wxgui_api.bind_to_menu(self._toggle, self.toggle)
+
+        wxgui_api.bind_to_menu_view_editors_disable(self._disable_items)
+        wxgui_api.bind_to_reset_menu_items(self._reset_items)
+
+    def _disable_items(self, kwargs):
+        self.main.Enable(False)
+
+    def _reset_items(self, kwargs):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.main.Enable()
+
+    def _focus(self, event):
+        filename, id_ = wxgui_api.get_selected_editor_identification()
+        self.plugin.get_scheduler(filename, id_).set_focus()
+
+    def _toggle(self, event):
+        filename, id_ = wxgui_api.get_selected_editor_identification()
+        self.plugin.get_scheduler(filename, id_).toggle_focus()
 
 
 def main():

@@ -546,7 +546,7 @@ class MainMenu(wx.Menu):
         wxgui_api.bind_to_reset_menu_items(self.reset_items)
 
         wxgui_api.insert_menu_main_item('&Search',
-                                    wxgui_api.get_menu_logs_position(), self)
+                                    wxgui_api.get_menu_view_position(), self)
 
     @staticmethod
     def get_selected_search():
@@ -708,7 +708,7 @@ class TabContextMenu(wx.Menu):
                                                 "&Start search",
                                                 "Start the selected search")
         close_ = wx.MenuItem(self,
-                                wxgui_api.get_menu_navigation_close_tab_id(),
+                                wxgui_api.get_menu_view_close_tab_id(),
                                 "Cl&ose", "Close the selected search")
 
         refresh.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch', wx.ART_MENU))

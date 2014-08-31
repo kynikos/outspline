@@ -34,6 +34,8 @@ class Main(object):
         self.items = {}
         self.itemicons = {}
 
+        ViewMenu(self)
+
         wxgui_api.bind_to_creating_tree(self._handle_creating_tree)
         wxgui_api.bind_to_close_database(self._handle_close_database)
         wxgui_api.bind_to_open_editor(self._handle_open_editor)
@@ -92,11 +94,12 @@ class LinkManager(object):
 
         self._init_buttons()
         self._refresh_mod_state()
-        self._resize_lpanel()
+        self.lpanel.Fit()
+        wxgui_api.expand_panel(self.filename, self.id_, self.fpanel)
 
         if not self.target:
-            wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel)
-            wxgui_api.resize_foldpanelbar(self.filename, self.id_)
+            wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel,
+                                                            focus_text=False)
 
         wxgui_api.bind_to_apply_editor(self._handle_apply)
         wxgui_api.bind_to_check_editor_modified_state(
@@ -125,11 +128,6 @@ class LinkManager(object):
                                     self._handle_check_editor_modified, False)
             wxgui_api.bind_to_close_editor(self._handle_close, False)
 
-    def _resize_lpanel(self):
-        self.lpanel.Fit()
-        wxgui_api.expand_panel(self.filename, self.id_, self.fpanel)
-        wxgui_api.resize_foldpanelbar(self.filename, self.id_)
-
     def _is_modified(self):
         return self.origtarget != self.target
 
@@ -156,6 +154,14 @@ class LinkManager(object):
             if selection:
                 self.target = wxgui_api.get_tree_item_id(filename,
                                                                 selection[0])
+
+    def set_focus(self):
+        wxgui_api.expand_panel(self.filename, self.id_, self.fpanel)
+        self.button_link.SetFocus()
+
+    def toggle_focus(self):
+        if wxgui_api.toggle_panel(self.filename, self.id_, self.fpanel):
+            self.button_link.SetFocus()
 
 
 class TreeItemIcons(object):
@@ -353,6 +359,60 @@ class TreeItemIcons(object):
         if wxgui_api.update_item_properties(self.filename, id_, bits,
                                                         self.property_mask):
             wxgui_api.update_item_image(self.filename, id_)
+
+
+class ViewMenu(object):
+    def __init__(self, plugin):
+        self.plugin = plugin
+
+        self.ID_MAIN = wx.NewId()
+        self.ID_FOCUS = wx.NewId()
+        self.ID_TOGGLE = wx.NewId()
+
+        submenu = wx.Menu()
+
+        config = coreaux_api.get_plugin_configuration('wxlinks')('Shortcuts')
+
+        self.main = wx.MenuItem(wxgui_api.get_menu_view_editors(),
+                        self.ID_MAIN,
+                        '&Links manager', 'Links manager navigation actions',
+                        subMenu=submenu)
+        self.focus = wx.MenuItem(submenu, self.ID_FOCUS,
+                    "&Focus\t{}".format(config['focus']),
+                    "Focus links manager panel")
+        self.toggle = wx.MenuItem(submenu, self.ID_TOGGLE,
+                "&Toggle\t{}".format(config['toggle']),
+                "Toggle links manager panel")
+
+        self.main.SetBitmap(wx.ArtProvider.GetBitmap('@links', wx.ART_MENU))
+        self.focus.SetBitmap(wx.ArtProvider.GetBitmap('@focus', wx.ART_MENU))
+        self.toggle.SetBitmap(wx.ArtProvider.GetBitmap('@toggle', wx.ART_MENU))
+
+        wxgui_api.add_menu_editor_plugin(self.main)
+        submenu.AppendItem(self.focus)
+        submenu.AppendItem(self.toggle)
+
+        wxgui_api.bind_to_menu(self._focus, self.focus)
+        wxgui_api.bind_to_menu(self._toggle, self.toggle)
+
+        wxgui_api.bind_to_menu_view_editors_disable(self._disable_items)
+        wxgui_api.bind_to_reset_menu_items(self._reset_items)
+
+    def _disable_items(self, kwargs):
+        self.main.Enable(False)
+
+    def _reset_items(self, kwargs):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.main.Enable()
+
+    def _focus(self, event):
+        filename, id_ = wxgui_api.get_selected_editor_identification()
+        self.plugin.get_link_manager(filename, id_).set_focus()
+
+    def _toggle(self, event):
+        filename, id_ = wxgui_api.get_selected_editor_identification()
+        self.plugin.get_link_manager(filename, id_).toggle_focus()
 
 def main():
     global base

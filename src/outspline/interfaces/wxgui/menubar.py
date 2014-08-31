@@ -35,7 +35,11 @@ update_menu_items_event = Event()
 reset_menu_items_event = Event()
 menu_database_update_event = Event()
 menu_edit_update_event = Event()
-menu_logs_update_event = Event()
+menu_view_update_event = Event()
+menu_view_logs_disable_event = Event()
+menu_view_logs_update_event = Event()
+menu_view_editors_disable_event = Event()
+menu_view_editors_update_event = Event()
 undo_tree_event = Event()
 redo_tree_event = Event()
 move_item_event = Event()
@@ -53,15 +57,13 @@ class RootMenu(wx.MenuBar):
         self.file = MenuFile()
         self.database = MenuDatabase()
         self.edit = MenuEdit()
-        self.logs = MenuLogs()
-        self.navigation = MenuNavigation()
+        self.view = MenuView()
         self.help = MenuHelp()
 
         self.Append(self.file, "&File")
         self.Append(self.database, "&Database")
         self.Append(self.edit, "&Editor")
-        self.Append(self.logs, "&Logs")
-        self.Append(self.navigation, "&Navigation")
+        self.Append(self.view, "&View")
         self.Append(self.help, "&Help")
 
         # self.hide_timer must be initialized even if autohide is not set
@@ -70,7 +72,15 @@ class RootMenu(wx.MenuBar):
         frame.Bind(wx.EVT_MENU_OPEN, self.update_menus)
         frame.Bind(wx.EVT_MENU_CLOSE, self.reset_menus)
 
-    def enable_autohide(self, config):
+    def post_init(self):
+        config = coreaux_api.get_interface_configuration('wxgui')
+
+        self.view.post_init()
+
+        if config.get_bool('autohide_menubar'):
+            self._enable_autohide(config)
+
+    def _enable_autohide(self, config):
         self.HIDE_DELAY = 10
         frame = self.GetFrame()
 
@@ -148,8 +158,8 @@ class RootMenu(wx.MenuBar):
             self.database.update_items()
         elif menu is self.edit:
             self.edit.update_items()
-        elif menu is self.logs:
-            self.logs.update_items()
+        elif menu is self.view:
+            self.view.update_items()
         else:
             update_menu_items_event.signal(menu=menu)
 
@@ -168,6 +178,7 @@ class RootMenu(wx.MenuBar):
             self.file.reset_items()
             self.database.reset_items()
             self.edit.reset_items()
+            self.view.reset_items()
 
             reset_menu_items_event.signal()
 
@@ -203,8 +214,9 @@ class MenuFile(wx.Menu):
         self.saveall = wx.MenuItem(self, self.ID_SAVE_ALL,
                         "Save &all\t{}".format(config['save_all_databases']),
                         "Save all open databases")
-        self.properties = wx.MenuItem(self, self.ID_PROPERTIES, "&Properties",
-                                                    "Open database properties")
+        self.properties = wx.MenuItem(self, self.ID_PROPERTIES,
+                                "&Properties\t{}".format(config['properties']),
+                                "Open database properties")
         self.close_ = wx.MenuItem(self, self.ID_CLOSE_DB,
                                 "&Close\t{}".format(config['close_database']),
                                 "Close the selected database")
@@ -523,7 +535,6 @@ class MenuDatabase(wx.Menu):
         else:
             # Signal the event even if there are no databases (tabs) open
             menu_database_update_event.signal(filename=None)
-
 
     def reset_items(self):
         # Re-enable all the actions so they are available for their
@@ -928,26 +939,309 @@ class MenuEdit(wx.Menu):
             core_api.release_databases()
 
 
-class MenuLogs(wx.Menu):
+class MenuView(wx.Menu):
     def __init__(self):
         wx.Menu.__init__(self)
 
+        self.has_plugin_items = False
+
+        self.ID_DATABASES = wx.NewId()
         self.ID_LOGS = wx.NewId()
+        self.ID_RIGHTNB = wx.NewId()
+        self.ID_PROPS = wx.NewId()
+        self.ID_EDITORS = wx.NewId()
 
-        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
-                                                                        'Logs')
+        self.databases_submenu = MenuViewDatabases()
+        self.logs_submenu = MenuViewLogs()
+        self.rightnb_submenu = MenuViewRightNB()
+        self.editors_submenu = MenuViewEditors()
 
-        self.logs = self.AppendCheckItem(self.ID_LOGS,
-                                    "Show &panel\t{}".format(config['show']),
-                                    "Show logs panel")
+        self.databases = wx.MenuItem(self, self.ID_DATABASES,
+                        "&Databases", "Databases navigation actions",
+                        subMenu=self.databases_submenu)
+        self.logs = wx.MenuItem(self, self.ID_LOGS,
+                        "&Logs", "Logs navigation actions",
+                        subMenu=self.logs_submenu)
+        self.rightnb = wx.MenuItem(self, self.ID_RIGHTNB,
+                        "&Right notebook", "Right notebook navigation actions",
+                        subMenu=self.rightnb_submenu)
+        self.editors = wx.MenuItem(self, self.ID_EDITORS,
+                        "&Editor plugins", "Editor plugins navigation actions",
+                        subMenu=self.editors_submenu)
 
-        wx.GetApp().Bind(wx.EVT_MENU, self._toggle_logs, self.logs)
+        self.databases.SetBitmap(wx.ArtProvider.GetBitmap('@left',
+                                                                wx.ART_MENU))
+        self.logs.SetBitmap(wx.ArtProvider.GetBitmap('@logs', wx.ART_MENU))
+        self.rightnb.SetBitmap(wx.ArtProvider.GetBitmap('@right', wx.ART_MENU))
+        self.editors.SetBitmap(wx.ArtProvider.GetBitmap('@editortab',
+                                                                wx.ART_MENU))
+
+        self.AppendItem(self.databases)
+        self.AppendItem(self.logs)
+        self.AppendSeparator()
+        self.AppendItem(self.rightnb)
+        self.AppendItem(self.editors)
+
+    def post_init(self):
+        if self.editors_submenu.GetMenuItemCount() < 1:
+            self.DestroyItem(self.editors)
+            self.editors = None
+            self.editors_submenu = None
 
     def update_items(self):
-        self.logs.Check(check=wx.GetApp().logs_configuration.is_shown())
-        menu_logs_update_event.signal()
+        self.databases_submenu.update_items()
+        self.logs_submenu.update_items()
+        self.rightnb_submenu.update_items()
 
-    def _toggle_logs(self, event):
+        if self.editors:
+            self.editors_submenu.update_items()
+
+        menu_view_update_event.signal()
+
+    def reset_items(self):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.databases_submenu.reset_items()
+        self.logs_submenu.reset_items()
+        self.rightnb_submenu.reset_items()
+
+    def insert_tab_group(self, menu):
+        self.InsertItem(5, menu)
+
+    def append_plugin_item(self, item):
+        if not self.has_plugin_items:
+            self.AppendSeparator()
+            self.has_plugin_items = True
+
+        self.AppendItem(item)
+
+
+class MenuViewDatabases(wx.Menu):
+    def __init__(self):
+        wx.Menu.__init__(self)
+
+        self.ID_CYCLE = wx.NewId()
+        self.ID_RCYCLE = wx.NewId()
+        self.ID_FOCUS = wx.NewId()
+        self.ID_FOCUS_1 = wx.NewId()
+        self.ID_FOCUS_2 = wx.NewId()
+        self.ID_FOCUS_3 = wx.NewId()
+        self.ID_FOCUS_4 = wx.NewId()
+        self.ID_FOCUS_5 = wx.NewId()
+        self.ID_FOCUS_6 = wx.NewId()
+        self.ID_FOCUS_7 = wx.NewId()
+        self.ID_FOCUS_8 = wx.NewId()
+        self.ID_FOCUS_9 = wx.NewId()
+        self.ID_FOCUS_10 = wx.NewId()
+
+        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
+                                                    'View')('Databases')
+
+        self.cycle = wx.MenuItem(self, self.ID_CYCLE,
+                        "&Cycle forward\t{}".format(config['cycle']),
+                        "Cycle through the open databases")
+        self.rcycle = wx.MenuItem(self, self.ID_RCYCLE,
+                        "Cycle &backward\t{}".format(config['cycle_reverse']),
+                        "Cycle through the open databases in reverse order")
+        self.focus = wx.MenuItem(self, self.ID_FOCUS,
+                        "&Focus selected\t{}".format(config['focus']),
+                        "Set focus on the selected database")
+        self.focusN = (
+            wx.MenuItem(self, self.ID_FOCUS_1,
+                        "Focus &1st database\t{}".format(config['focus_1']),
+                        "Set focus on the first database"),
+            wx.MenuItem(self, self.ID_FOCUS_2,
+                        "Focus &2nd database\t{}".format(config['focus_2']),
+                        "Set focus on the second database"),
+            wx.MenuItem(self, self.ID_FOCUS_3,
+                        "Focus &3rd database\t{}".format(config['focus_3']),
+                        "Set focus on the third database"),
+            wx.MenuItem(self, self.ID_FOCUS_4,
+                        "Focus &4th database\t{}".format(config['focus_4']),
+                        "Set focus on the fourth database"),
+            wx.MenuItem(self, self.ID_FOCUS_5,
+                        "Focus &5th database\t{}".format(config['focus_5']),
+                        "Set focus on the fifth database"),
+            wx.MenuItem(self, self.ID_FOCUS_6,
+                        "Focus &6th database\t{}".format(config['focus_6']),
+                        "Set focus on the sixth database"),
+            wx.MenuItem(self, self.ID_FOCUS_7,
+                        "Focus &7th database\t{}".format(config['focus_7']),
+                        "Set focus on the seventh database"),
+            wx.MenuItem(self, self.ID_FOCUS_8,
+                        "Focus &8th database\t{}".format(config['focus_8']),
+                        "Set focus on the eighth database"),
+            wx.MenuItem(self, self.ID_FOCUS_9,
+                        "Focus &9th database\t{}".format(config['focus_9']),
+                        "Set focus on the ninth database"),
+            wx.MenuItem(self, self.ID_FOCUS_10,
+                        "Focus 1&0th database\t{}".format(config['focus_10']),
+                        "Set focus on the tenth database"),
+        )
+
+        self.cycle.SetBitmap(wx.ArtProvider.GetBitmap('@right', wx.ART_MENU))
+        self.rcycle.SetBitmap(wx.ArtProvider.GetBitmap('@left', wx.ART_MENU))
+        self.focus.SetBitmap(wx.ArtProvider.GetBitmap('@focus', wx.ART_MENU))
+
+        self.AppendItem(self.cycle)
+        self.AppendItem(self.rcycle)
+        self.AppendItem(self.focus)
+        self.AppendSeparator()
+
+        for focus in self.focusN:
+            self.AppendItem(focus)
+
+        wx.GetApp().Bind(wx.EVT_MENU, self._cycle, self.cycle)
+        wx.GetApp().Bind(wx.EVT_MENU, self._rcycle, self.rcycle)
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus, self.focus)
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus1, self.focusN[0])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus2, self.focusN[1])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus3, self.focusN[2])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus4, self.focusN[3])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus5, self.focusN[4])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus6, self.focusN[5])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus7, self.focusN[6])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus8, self.focusN[7])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus9, self.focusN[8])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus10, self.focusN[9])
+
+    def update_items(self):
+        ndb = len(databases.get_open_databases())
+
+        if ndb < 1:
+            self.cycle.Enable(False)
+            self.rcycle.Enable(False)
+            self.focus.Enable(False)
+
+        # If there are more than 9 open databases, xrange will always be an
+        # empty iterator
+        for N in xrange(ndb, 10):
+            self.focusN[N].Enable(False)
+
+    def reset_items(self):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.cycle.Enable()
+        self.rcycle.Enable()
+        self.focus.Enable()
+
+        for focus in self.focusN:
+            focus.Enable()
+
+    def _cycle(self, event):
+        wx.GetApp().nb_left.AdvanceSelection()
+
+    def _rcycle(self, event):
+        wx.GetApp().nb_left.AdvanceSelection(False)
+
+    def _focus(self, event):
+        tab = wx.GetApp().nb_left.get_selected_tab()
+
+        if tab:
+            tab.SetFocus()
+
+    def _focus1(self, event):
+        tab = wx.GetApp().nb_left.select_page(0)
+
+    def _focus2(self, event):
+        tab = wx.GetApp().nb_left.select_page(1)
+
+    def _focus3(self, event):
+        tab = wx.GetApp().nb_left.select_page(2)
+
+    def _focus4(self, event):
+        tab = wx.GetApp().nb_left.select_page(3)
+
+    def _focus5(self, event):
+        tab = wx.GetApp().nb_left.select_page(4)
+
+    def _focus6(self, event):
+        tab = wx.GetApp().nb_left.select_page(5)
+
+    def _focus7(self, event):
+        tab = wx.GetApp().nb_left.select_page(6)
+
+    def _focus8(self, event):
+        tab = wx.GetApp().nb_left.select_page(7)
+
+    def _focus9(self, event):
+        tab = wx.GetApp().nb_left.select_page(8)
+
+    def _focus10(self, event):
+        tab = wx.GetApp().nb_left.select_page(9)
+
+
+class MenuViewLogs(wx.Menu):
+    def __init__(self):
+        wx.Menu.__init__(self)
+
+        self.ID_SHOW = wx.NewId()
+        self.ID_CYCLE = wx.NewId()
+        self.ID_RCYCLE = wx.NewId()
+        self.ID_FOCUS = wx.NewId()
+        self.ID_ITEMS = wx.NewId()
+
+        self.items_submenu = MenuViewLogItems()
+
+        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
+                                                        'View')('Logs')
+
+        self.show = wx.MenuItem(self, self.ID_SHOW,
+                        "Show &panel\t{}".format(config['show']),
+                        "Show logs panel", kind=wx.ITEM_CHECK)
+        self.cycle = wx.MenuItem(self, self.ID_CYCLE,
+                        "&Cycle forward\t{}".format(config['cycle']),
+                        "Cycle through the logs")
+        self.rcycle = wx.MenuItem(self, self.ID_RCYCLE,
+                        "Cycle &backward\t{}".format(config['cycle_reverse']),
+                        "Cycle through the logs in reverse order")
+        self.focus = wx.MenuItem(self, self.ID_FOCUS,
+                        "&Focus selected\t{}".format(config['focus']),
+                        "Set focus on the selected log")
+        self.items = wx.MenuItem(self, self.ID_ITEMS,
+                        "&Items", "Set focus on the items history log",
+                        subMenu=self.items_submenu)
+
+        self.cycle.SetBitmap(wx.ArtProvider.GetBitmap('@right', wx.ART_MENU))
+        self.rcycle.SetBitmap(wx.ArtProvider.GetBitmap('@left', wx.ART_MENU))
+        self.focus.SetBitmap(wx.ArtProvider.GetBitmap('@focus', wx.ART_MENU))
+        self.items.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
+
+        self.AppendItem(self.show)
+        self.AppendItem(self.cycle)
+        self.AppendItem(self.rcycle)
+        self.AppendItem(self.focus)
+        self.AppendSeparator()
+        self.AppendItem(self.items)
+
+        wx.GetApp().Bind(wx.EVT_MENU, self._toggle_shown, self.show)
+        wx.GetApp().Bind(wx.EVT_MENU, self._cycle, self.cycle)
+        wx.GetApp().Bind(wx.EVT_MENU, self._rcycle, self.rcycle)
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus, self.focus)
+
+    def update_items(self):
+        self.show.Check(check=wx.GetApp().logs_configuration.is_shown())
+        ndb = len(databases.get_open_databases())
+
+        if ndb < 1:
+            self.cycle.Enable(False)
+            self.rcycle.Enable(False)
+            self.focus.Enable(False)
+            self.items.Enable(False)
+
+            menu_view_logs_disable_event.signal()
+        else:
+            menu_view_logs_update_event.signal()
+
+    def reset_items(self):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.cycle.Enable()
+        self.rcycle.Enable()
+        self.focus.Enable()
+        self.items.Enable()
+
+    def _toggle_shown(self, event):
         # Set logs_configuration.set_shown() here, and not in each
         # tree.dbs[].show_logs()... so that this method works also if there
         # aren't open databases
@@ -960,29 +1254,233 @@ class MenuLogs(wx.Menu):
                 tree.dbs[filename].show_logs()
             wx.GetApp().logs_configuration.set_shown(True)
 
+    def _cycle(self, event):
+        tab = wx.GetApp().nb_left.get_selected_tab()
 
-class MenuNavigation(wx.Menu):
+        if tab:
+            tab.get_logs_panel().advance_selection()
+
+    def _rcycle(self, event):
+        tab = wx.GetApp().nb_left.get_selected_tab()
+
+        if tab:
+            tab.get_logs_panel().reverse_selection()
+
+    def _focus(self, event):
+        tab = wx.GetApp().nb_left.get_selected_tab()
+
+        if tab:
+            tab.get_logs_panel().focus_selected()
+
+
+class MenuViewLogItems(wx.Menu):
     def __init__(self):
         wx.Menu.__init__(self)
 
-        self.ID_CLOSE_TAB = wx.NewId()
+        self.ID_SELECT = wx.NewId()
 
         config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
-                                                                'Navigation')
+                                                'View')('Logs')('Items')
 
-        self.close_tab = wx.MenuItem(self, self.ID_CLOSE_TAB,
-                                "&Close tab\t{}".format(config['close_tab']),
-                                "Close the selected right-pane tab")
+        self.select = wx.MenuItem(self, self.ID_SELECT,
+                        "&Select\t{}".format(config['select']),
+                        "Select the items history log")
 
-        self.close_tab.SetBitmap(wx.ArtProvider.GetBitmap('@close',
-                                                                wx.ART_MENU))
+        self.select.SetBitmap(wx.ArtProvider.GetBitmap('@focus', wx.ART_MENU))
 
-        self.AppendItem(self.close_tab)
+        self.AppendItem(self.select)
 
-        wx.GetApp().Bind(wx.EVT_MENU, self._close_tab, self.close_tab)
+        wx.GetApp().Bind(wx.EVT_MENU, self._select, self.select)
 
-    def _close_tab(self, event):
-        wx.GetApp().nb_right.close_selected_tab()
+    def _select(self, event):
+        treedb = wx.GetApp().nb_left.get_selected_tab()
+
+        if treedb:
+            treedb.dbhistory.select()
+
+
+class MenuViewRightNB(wx.Menu):
+    def __init__(self):
+        wx.Menu.__init__(self)
+
+        self.ID_CYCLE = wx.NewId()
+        self.ID_RCYCLE = wx.NewId()
+        self.ID_FOCUS = wx.NewId()
+        self.ID_CLOSE = wx.NewId()
+        self.ID_FOCUS_1 = wx.NewId()
+        self.ID_FOCUS_2 = wx.NewId()
+        self.ID_FOCUS_3 = wx.NewId()
+        self.ID_FOCUS_4 = wx.NewId()
+        self.ID_FOCUS_5 = wx.NewId()
+        self.ID_FOCUS_6 = wx.NewId()
+        self.ID_FOCUS_7 = wx.NewId()
+        self.ID_FOCUS_8 = wx.NewId()
+        self.ID_FOCUS_9 = wx.NewId()
+        self.ID_FOCUS_10 = wx.NewId()
+
+        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
+                                                'View')('RightNotebook')
+
+        self.cycle = wx.MenuItem(self, self.ID_CYCLE,
+                        "&Cycle forward\t{}".format(config['cycle']),
+                        "Cycle through the open right-pane tabs")
+        self.rcycle = wx.MenuItem(self, self.ID_RCYCLE,
+                    "Cycle &backward\t{}".format(config['cycle_reverse']),
+                    "Cycle through the open right-pane tabs in reverse order")
+        self.focus = wx.MenuItem(self, self.ID_FOCUS,
+                        "&Focus selected\t{}".format(config['focus']),
+                        "Set focus on the selected right-pane tab")
+        self.close = wx.MenuItem(self, self.ID_CLOSE,
+                        "C&lose selected\t{}".format(config['close']),
+                        "Close the selected right-pane tab")
+        self.focusN = (
+            wx.MenuItem(self, self.ID_FOCUS_1,
+                            "Focus &1st tab\t{}".format(config['focus_1']),
+                            "Set focus on the first right-pane tab"),
+            wx.MenuItem(self, self.ID_FOCUS_2,
+                            "Focus &2nd tab\t{}".format(config['focus_2']),
+                            "Set focus on the second right-pane tab"),
+            wx.MenuItem(self, self.ID_FOCUS_3,
+                            "Focus &3rd tab\t{}".format(config['focus_3']),
+                            "Set focus on the third right-pane tab"),
+            wx.MenuItem(self, self.ID_FOCUS_4,
+                            "Focus &4th tab\t{}".format(config['focus_4']),
+                            "Set focus on the fourth right-pane tab"),
+            wx.MenuItem(self, self.ID_FOCUS_5,
+                            "Focus &5th tab\t{}".format(config['focus_5']),
+                            "Set focus on the fifth right-pane tab"),
+            wx.MenuItem(self, self.ID_FOCUS_6,
+                            "Focus &6th tab\t{}".format(config['focus_6']),
+                            "Set focus on the sixth right-pane tab"),
+            wx.MenuItem(self, self.ID_FOCUS_7,
+                            "Focus &7th tab\t{}".format(config['focus_7']),
+                            "Set focus on the seventh right-pane tab"),
+            wx.MenuItem(self, self.ID_FOCUS_8,
+                            "Focus &8th tab\t{}".format(config['focus_8']),
+                            "Set focus on the eighth right-pane tab"),
+            wx.MenuItem(self, self.ID_FOCUS_9,
+                            "Focus &9th tab\t{}".format(config['focus_9']),
+                            "Set focus on the ninth right-pane tab"),
+            wx.MenuItem(self, self.ID_FOCUS_10,
+                            "Focus 1&0th tab\t{}".format(config['focus_10']),
+                            "Set focus on the tenth right-pane tab"),
+        )
+
+        self.cycle.SetBitmap(wx.ArtProvider.GetBitmap('@right', wx.ART_MENU))
+        self.rcycle.SetBitmap(wx.ArtProvider.GetBitmap('@left', wx.ART_MENU))
+        self.focus.SetBitmap(wx.ArtProvider.GetBitmap('@focus', wx.ART_MENU))
+        self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+
+        self.AppendItem(self.cycle)
+        self.AppendItem(self.rcycle)
+        self.AppendItem(self.focus)
+        self.AppendItem(self.close)
+        self.AppendSeparator()
+
+        for focus in self.focusN:
+            self.AppendItem(focus)
+
+        wx.GetApp().Bind(wx.EVT_MENU, self._cycle, self.cycle)
+        wx.GetApp().Bind(wx.EVT_MENU, self._rcycle, self.rcycle)
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus, self.focus)
+        wx.GetApp().Bind(wx.EVT_MENU, self._close, self.close)
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus1, self.focusN[0])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus2, self.focusN[1])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus3, self.focusN[2])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus4, self.focusN[3])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus5, self.focusN[4])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus6, self.focusN[5])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus7, self.focusN[6])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus8, self.focusN[7])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus9, self.focusN[8])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus10, self.focusN[9])
+
+    def update_items(self):
+        ntabs = wx.GetApp().nb_right.get_page_count()
+
+        if ntabs < 1:
+            self.cycle.Enable(False)
+            self.rcycle.Enable(False)
+            self.focus.Enable(False)
+            self.close.Enable(False)
+
+        # If there are more than 9 open tabs, xrange will always be an empty
+        # iterator
+        for N in xrange(ntabs, 10):
+            self.focusN[N].Enable(False)
+
+    def reset_items(self):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.cycle.Enable()
+        self.rcycle.Enable()
+        self.focus.Enable()
+        self.close.Enable()
+
+        for focus in self.focusN:
+            focus.Enable()
+
+    def _cycle(self, event):
+        wx.GetApp().nb_right.AdvanceSelection()
+
+    def _rcycle(self, event):
+        wx.GetApp().nb_right.AdvanceSelection(False)
+
+    def _focus(self, event):
+        tab = wx.GetApp().nb_right.get_selected_tab()
+
+        if tab:
+            tab.SetFocus()
+
+    def _close(self, event):
+        tab = wx.GetApp().nb_right.get_selected_tab()
+
+        if tab:
+            wx.GetApp().nb_right.close_tab(tab)
+
+    def _focus1(self, event):
+        tab = wx.GetApp().nb_right.select_page(0)
+
+    def _focus2(self, event):
+        tab = wx.GetApp().nb_right.select_page(1)
+
+    def _focus3(self, event):
+        tab = wx.GetApp().nb_right.select_page(2)
+
+    def _focus4(self, event):
+        tab = wx.GetApp().nb_right.select_page(3)
+
+    def _focus5(self, event):
+        tab = wx.GetApp().nb_right.select_page(4)
+
+    def _focus6(self, event):
+        tab = wx.GetApp().nb_right.select_page(5)
+
+    def _focus7(self, event):
+        tab = wx.GetApp().nb_right.select_page(6)
+
+    def _focus8(self, event):
+        tab = wx.GetApp().nb_right.select_page(7)
+
+    def _focus9(self, event):
+        tab = wx.GetApp().nb_right.select_page(8)
+
+    def _focus10(self, event):
+        tab = wx.GetApp().nb_right.select_page(9)
+
+
+class MenuViewEditors(wx.Menu):
+    def __init__(self):
+        wx.Menu.__init__(self)
+
+    def update_items(self):
+        if editor.tabs:
+            menu_view_editors_update_event.signal()
+        else:
+            menu_view_editors_disable_event.signal()
+
+    def append_plugin_item(self, item):
+        self.AppendItem(item)
 
 
 class MenuHelp(wx.Menu):
