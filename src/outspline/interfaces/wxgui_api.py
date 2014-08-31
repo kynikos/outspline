@@ -382,8 +382,12 @@ def get_selected_editor_tab_index():
 
 def get_selected_editor_identification():
     item = wx.GetApp().nb_right.get_selected_editor()
-    tab = editor.tabs[item]
-    return (tab.get_filename(), tab.get_id())
+
+    if item:
+        tab = editor.tabs[item]
+        return (tab.get_filename(), tab.get_id())
+    else:
+        return (False, False)
 
 
 def get_selected_right_nb_tab():

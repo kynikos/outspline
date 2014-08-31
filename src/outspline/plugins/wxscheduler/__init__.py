@@ -588,11 +588,15 @@ class ViewMenu(object):
 
     def _focus(self, event):
         filename, id_ = wxgui_api.get_selected_editor_identification()
-        self.plugin.get_scheduler(filename, id_).set_focus()
+
+        if filename:
+            self.plugin.get_scheduler(filename, id_).set_focus()
 
     def _toggle(self, event):
         filename, id_ = wxgui_api.get_selected_editor_identification()
-        self.plugin.get_scheduler(filename, id_).toggle_focus()
+
+        if filename:
+            self.plugin.get_scheduler(filename, id_).toggle_focus()
 
 
 def main():
