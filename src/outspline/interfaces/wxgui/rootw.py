@@ -240,7 +240,7 @@ class MainPanes(wx.SplitterWindow):
 
         self.Initialize(self.nb_left)
 
-        # Hide the notebooks *after* self.Initialize, which would isntead show
+        # Hide the notebooks *after* self.Initialize, which would instead show
         # them again implicitly
         self.nb_left.Show(False)
         self.nb_right.Show(False)

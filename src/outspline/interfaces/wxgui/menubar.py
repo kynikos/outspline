@@ -78,15 +78,11 @@ class RootMenu(wx.MenuBar):
         self.view.post_init()
 
         if config.get_bool('autohide_menubar'):
-            self._enable_autohide(config)
+            self._configure_autohide()
 
-    def _enable_autohide(self, config):
+    def _configure_autohide(self):
         self.HIDE_DELAY = 10
         frame = self.GetFrame()
-
-        # This both hides the menu the first time and initializes the timer so
-        # that it can then be just called with Restart
-        self.hide_timer = wx.CallLater(self.HIDE_DELAY, self.Show, False)
 
         id_ = wx.NewId()
         accels = [(wx.ACCEL_NORMAL, wx.WXK_F10, id_), ]
@@ -100,6 +96,7 @@ class RootMenu(wx.MenuBar):
         # Also note that the preserve_alt_menu_shortcuts option has been
         #  removed from the configuration file
         '''self.uisim = wx.UIActionSimulator()
+        config = coreaux_api.get_interface_configuration('wxgui')
 
         if config('Shortcuts').get_bool('preserve_alt_menu_shortcuts'):
             for menu, label in self.GetMenus():
@@ -130,8 +127,38 @@ class RootMenu(wx.MenuBar):
         acctable = wx.AcceleratorTable(accels)
         frame.SetAcceleratorTable(acctable)
 
+        databases.open_database_event.bind(self._enable_autohide)
+
+    def _enable_autohide(self, kwargs):
+        databases.open_database_event.bind(self._enable_autohide, False)
+
+        # This both hides the menu the first time and initializes the timer so
+        # that it can then be just called with Restart
+        self.hide_timer = wx.CallLater(self.HIDE_DELAY, self.Show, False)
+
+        notebooks.last_database_closed_event.bind(self._disable_autohide)
+
+        frame = self.GetFrame()
         frame.Bind(wx.EVT_ENTER_WINDOW, self._handle_enter_frame)
         frame.Bind(wx.EVT_LEAVE_WINDOW, self._handle_leave_frame)
+
+    def _disable_autohide(self, kwargs):
+        # Besides being convenient, disabling the autohide when no database is
+        # open lets keep accessing it with F10, which would stop working
+        # otherwise
+        notebooks.last_database_closed_event.bind(self._disable_autohide,
+                                                                        False)
+
+        # Don't just stop the timer, because it's always restarted when
+        # resetting the menus
+        self.hide_timer = wx.CallLater(0, int)
+        self.Show()
+
+        frame = self.GetFrame()
+        frame.Unbind(wx.EVT_ENTER_WINDOW, handler=self._handle_enter_frame)
+        frame.Unbind(wx.EVT_LEAVE_WINDOW, handler=self._handle_leave_frame)
+
+        databases.open_database_event.bind(self._enable_autohide)
 
     def _handle_F10(self, event):
         self.Show()

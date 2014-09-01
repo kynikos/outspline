@@ -26,6 +26,7 @@ import outspline.core_api as core_api
 import editor
 import databases
 
+last_database_closed_event = Event()
 plugin_close_event = Event()
 
 
@@ -126,6 +127,9 @@ class LeftNotebook(Notebook):
         if self.GetPageCount() == 0:
             self.parent.unsplit_window()
             self.Show(False)
+
+            # Note that this event is bound directly by the menubar module
+            last_database_closed_event.signal()
 
     def add_page(self, window, caption, select=True):
         self.AddPage(window, caption, select=select)
