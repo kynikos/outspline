@@ -86,7 +86,7 @@ class RootMenu(wx.MenuBar):
 
         id_ = wx.NewId()
         accels = [(wx.ACCEL_NORMAL, wx.WXK_F10, id_), ]
-        frame.Bind(wx.EVT_MENU, self._handle_F10, id=id_)
+        frame.Bind(wx.EVT_BUTTON, self._handle_F10, id=id_)
 
         # This would preserve the native Alt+char behaviour to open the main
         #  menu items (thanks to their & shortcuts), however this way such
