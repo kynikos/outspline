@@ -18,6 +18,7 @@
 
 import os
 import wx
+import wx.dataview as dv
 
 from outspline.coreaux_api import Event
 import outspline.coreaux_api as coreaux_api
@@ -30,6 +31,61 @@ reset_context_menu_event = Event()
 popup_context_menu_event = Event()
 
 dbs = {}
+
+
+class Model(dv.PyDataViewModel):
+    def __init__(self, database, filename):
+        super(Model, self).__init__()
+        self.database = database
+        self.filename = filename
+        # Must be initialized ***********************************************************
+        self.labels = {}
+        # Must be initialized ***********************************************************
+        self.properties = {}
+
+    def IsContainer(self, item):
+        return True
+
+    def GetParent(self, item):
+        if not item.IsOk():
+            # Needed? ******************************************************************
+            return dv.NullDataViewItem
+        else:
+            id_ = self.ItemToObject(item)
+            # ******************************************************************
+            pid = core_api.get_item_parent_id(self.filename, id_)
+
+            if pid > 0:
+                return self.ObjectToItem(pid)
+            else:
+                return dv.NullDataViewItem
+
+    def GetChildren(self, parent, children):
+        if not parent.IsOk():
+            # ******************************************************************
+            ids = core_api.get_root_items(self.filename)
+
+        else:
+            pid = self.ItemToObject(parent)
+            # ******************************************************************
+            ids = core_api.get_item_children(self.filename, pid)
+
+        for id_ in ids:
+            children.append(self.ObjectToItem(id_))
+
+        return len(ids)
+
+    def GetColumnCount(self):
+        return 1
+
+    def GetColumnType(self, col):
+        return "string"
+
+    def GetValue(self, item, col):
+        id_ = self.ItemToObject(item)
+        label = self.labels[id_]
+        icon = self.database.get_properties().get_image(self.properties[id_])
+        return dv.DataViewIconText(label, icon)
 
 
 class Tree(wx.TreeCtrl):
@@ -66,6 +122,13 @@ class Database(wx.SplitterWindow):
         data = wx.TreeItemData((0, 0))
         self.root = self.treec.AddRoot(text='root', data=data)
         self.titems = {0: data}
+
+        self.dvmodel = Model(self, filename)
+        #self.treec.AssociateModel(self.dvmodel)  # *****************************************
+        # DataViewModel is reference counted (derives from RefCounter), the
+        # count needs to be decreased explicitly here to avoid memory leaks
+        # This is bullshit, it crashes if closing all databases *****************************
+        #self.dvmodel.DecRef()
 
         self.cmenu = ContextMenu(self)
         self.ctabmenu = TabContextMenu(self.filename)
