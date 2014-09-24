@@ -95,11 +95,11 @@ class Database(wx.SplitterWindow):
         self.SetMinimumPaneSize(20)
 
         self.filename = filename
+        self.data = {}
 
+    def _post_init(self):
         self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
                                             dv.DV_ROW_LINES | dv.DV_NO_HEADER)
-
-        self.data = {}
 
         self.cmenu = ContextMenu(self)
         self.ctabmenu = TabContextMenu(self.filename)
@@ -112,9 +112,6 @@ class Database(wx.SplitterWindow):
         self.properties = Properties(self.treec)
         self.base_properties = DBProperties(self.properties)
 
-        self.Initialize(self.treec)
-
-    def _post_init(self):
         creating_tree_event.signal(filename=self.filename)
 
         # Store an ImageList only *after* instantiating the class, because its
@@ -122,8 +119,8 @@ class Database(wx.SplitterWindow):
         # properties, which requires the filename to be in the dictionary
         # Use a separate ImageList for each database, as they may support a
         # different subset of the installed plugins
-        # Move somewhere else? ************************************************************
-        imagelist = self.properties.get_empty_image_list()
+        # Merge into the Properties constructor? ******************************************************
+        self.properties.init_image_list()
 
         # Initialize the tree only *after* instantiating the class (and storing
         # an ImageList), because actions like the creation of item images rely
@@ -141,6 +138,8 @@ class Database(wx.SplitterWindow):
         #self.dvmodel.DecRef()
 
         self.treec.AppendIconTextColumn('Item', 0)
+
+        self.Initialize(self.treec)
 
         # Initialize the logs panel *after* signalling creating_tree_event,
         # which is used to add plugin logs
@@ -263,7 +262,7 @@ class Database(wx.SplitterWindow):
         # *******************************************************************************
         data = wx.TreeItemData((id_, properties))
 
-        # If no ImageList is assigned, or if it's empty, setting
+        # If no ImageList is stored, or if it's empty, setting
         # image=imageindex has no effect
         if mode == 'append':
             return self.treec.AppendItem(base, text=label, image=imageindex,
@@ -456,7 +455,7 @@ class Database(wx.SplitterWindow):
     def update_item_image(self, treeitem):
         bits = self.treec.GetItemPyData(treeitem)[1]
         imageindex = self.properties.get_image(bits)
-        # If no ImageList is assigned, or if it's empty, SetItemImage has
+        # If no ImageList is stored, or if it's empty, SetItemImage has
         # no effect
         self.treec.SetItemImage(treeitem, imageindex)
 
@@ -594,7 +593,7 @@ class Properties(object):
 
         return (width, height)
 
-    def get_empty_image_list(self):
+    def init_image_list(self):
         # Sort char_data by character to make sure that the icons always appear
         # in the same order regardless of race conditions when loading the
         # plugins
@@ -611,7 +610,7 @@ class Properties(object):
             self.get_icon = self._get_icon_real
             self.get_image = self._get_image_real
 
-        return wx.ImageList(*self.required_size)
+        self.imagelist = wx.ImageList(*self.required_size)
 
     def get_icon(self, bits):
         # This method is re-assigned dynamically
@@ -623,19 +622,18 @@ class Properties(object):
             imageindex = self.bits_to_image[bits]
         except KeyError:
             bitmap = self._make_image(bits)
-            imagelist = self.widget.GetImageList()
-            imageindex = imagelist.Add(bitmap)
+            imageindex = self.imagelist.Add(bitmap)
             self.bits_to_image[bits] = imageindex
 
-        return imagelist.GetIcon(imageindex)
+        return self.imagelist.GetIcon(imageindex)
 
     def _get_image_real(self, bits):
+        # Will become useless ********************************************************
         try:
             imageindex = self.bits_to_image[bits]
         except KeyError:
             bitmap = self._make_image(bits)
-            imagelist = self.widget.GetImageList()
-            imageindex = imagelist.Add(bitmap)
+            imageindex = self.imagelist.Add(bitmap)
             self.bits_to_image[bits] = imageindex
 
         return imageindex
@@ -646,6 +644,7 @@ class Properties(object):
         return wx.NullIcon
 
     def _get_image_dummy(self, bits):
+        # Will become useless ********************************************************
         # If no properties have been added, use the default image index (-1)
         return -1
 
