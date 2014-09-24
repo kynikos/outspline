@@ -78,22 +78,26 @@ def create_sibling(filename, parent, previous, text='New item',
             previous=previous, group=group, text=text, description=description)
 
 
-def append_item(filename, baseid, group=None, text='New item',
-                description='Insert item'):
+def append_item(filename, parent, group=None, text='New item',
+                                                    description='Insert item'):
+    previous = items.Item.get_last_child(filename, parent)
+
     if group == None:
         group = databases.dbs[filename].dbhistory.get_next_history_group()
-    # Pass parent and previous as arguments ******************************************
-    return items.Item.insert(filename=filename, mode='child', baseid=baseid,
-                             group=group, text=text, description=description)
+
+    return items.Item.insert(filename=filename, parent=parent,
+            previous=previous, group=group, text=text, description=description)
 
 
-def insert_item_after(filename, baseid, group=None, text='New item',
-                      description='Insert item'):
+def insert_item_after(filename, previous, group=None, text='New item',
+                                                    description='Insert item'):
+    parent = databases.dbs[filename].items[previous].get_parent()
+
     if group == None:
         group = databases.dbs[filename].dbhistory.get_next_history_group()
-    # Pass parent and previous as arguments ******************************************
-    return items.Item.insert(filename=filename, mode='sibling', baseid=baseid,
-                             group=group, text=text, description=description)
+
+    return items.Item.insert(filename=filename, parent=parent,
+            previous=previous, group=group, text=text, description=description)
 
 
 def move_item_up(filename, id_, description='Move item up'):
