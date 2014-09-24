@@ -105,12 +105,6 @@ class Database(wx.SplitterWindow):
         # This is bullshit, it crashes if closing all databases *****************************
         #self.dvmodel.DecRef()
 
-        # *******************************************************************************
-        data = wx.TreeItemData((0, 0))
-        self.root = self.treec.AddRoot(text='root', data=data)
-        self.titems = {0: data}
-        # *******************************************************************************
-
         self.data = {}
         self.treec.AppendIconTextColumn('Item', 0)
 
@@ -127,7 +121,7 @@ class Database(wx.SplitterWindow):
 
         self.Initialize(self.treec)
 
-        # *******************************************************************************
+        # Test *******************************************************************************
         #self.treec.Bind(dv.EVT_DATAVIEW_ITEM_START_EDITING,
         #                                                self.veto_label_edit)
         self.treec.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
@@ -156,9 +150,6 @@ class Database(wx.SplitterWindow):
         # properties, which requires the filename to be in the dictionary
         # Use a separate ImageList for each database, as they may support a
         # different subset of the installed plugins
-        # *******************************************************************************
-        # Maintaining a common ImageList would be impossible anyway, because an
-        # ImageList can be assigned only once per TreeCtrl
         imagelist = self.properties.get_empty_image_list()
         self.treec.AssignImageList(imagelist)
 
@@ -166,16 +157,6 @@ class Database(wx.SplitterWindow):
         # an ImageList), because actions like the creation of item images rely
         # on the filename to be in the dictionary
         self.create()
-
-        # *******************************************************************************
-        # Navigating the tree with the keyboard doesn't work until an item is
-        # seletced for the first time (bug #334), so select the root item
-        # now...
-        self.treec.SelectItem(self.treec.GetRootItem())
-        # ...then unselect it, otherwise the "create sibling" action will be
-        # available, which would try to generate another root item, resulting
-        # in an exception
-        self.treec.UnselectAll()
 
         # Initialize the logs panel *after* signalling creating_tree_event,
         # which is used to add plugin logs
@@ -230,7 +211,7 @@ class Database(wx.SplitterWindow):
 
             item = self.find_item(id_)
 
-            # *******************************************************************************
+            # Verify *******************************************************************************
             # Reset label and image before moving the item, otherwise the item
             # has to be found again, or the program crashes
             self.set_item_label(item, text)
@@ -274,8 +255,8 @@ class Database(wx.SplitterWindow):
                                                                 multiline_mask)
             imageindex = self.properties.get_image(properties)
 
+        # *******************************************************************************
         data = wx.TreeItemData((id_, properties))
-        self.titems[id_] = data
         self.data[id_] = [label, properties]
 
         # If no ImageList is assigned, or if it's empty, setting
@@ -311,6 +292,7 @@ class Database(wx.SplitterWindow):
             self.create(base=base, previd=id_)
 
     def find_item(self, id_):
+        # Re-implement without titems ************************************************************
         return self.titems[id_].GetId()
 
     def get_selections(self, none=True, many=True, descendants=None):
@@ -323,29 +305,11 @@ class Database(wx.SplitterWindow):
             for item in selection:
                 for ancestor in self.get_item_ancestors(item):
                     if ancestor in selection:
-                        # *******************************************************************************
-                        # Note that UnselectItem may actually select if the
-                        # item is not selected, see
-                        # http://trac.wxwidgets.org/ticket/11157
-                        # However in this case the item has just been checked
-                        # if selected, so no further checks must be done
                         self.treec.UnselectItem(item)
         elif descendants == True:
             for item in selection:
                 for descendant in self.get_item_descendants(item):
-                    # *******************************************************************************
-                    # If the descendant is already selected, SelectItem would
-                    # actually deselect it, see
-                    # http://trac.wxwidgets.org/ticket/11157
-                    # This would e.g. generate the following bug: create an
-                    # item (A), create a sibling (B) of A, create a child (C)
-                    # of B, select *all* three items (thus expanding B) and try
-                    # to delete them: without the IsSelected check it would go
-                    # in an infinite loop since C gets deselected and the
-                    # function that deletes items has to start from the items
-                    # that do not have children
-                    if not self.treec.IsSelected(descendant):
-                        self.treec.SelectItem(descendant)
+                    self.treec.SelectItem(descendant)
 
         return self.treec.GetSelections()
 
@@ -367,6 +331,7 @@ class Database(wx.SplitterWindow):
             # Always use append mode for the descendants
             self.move_item(first[0], newtreeitem)
 
+        # Verify *******************************************************************************
         # Do not use remove_items, as self.titems has already been updated
         # here, and using remove_items would remove the moved item from
         # self.titems
@@ -375,7 +340,7 @@ class Database(wx.SplitterWindow):
         return newtreeitem
 
     def remove_items(self, treeitems):
-        # *******************************************************************************
+        # Re-implement using the event from core ******************************************************
         # When deleting items, make sure to delete first those without
         # children, otherwise crashes without exceptions or errors could occur
         while treeitems:
@@ -384,12 +349,10 @@ class Database(wx.SplitterWindow):
                     del treeitems[treeitems.index(item)]
                     id_ = self.treec.GetItemPyData(item)[0]
                     self.treec.Delete(item)
-                    del self.titems[id_]
                     del self.data[id_]
 
     def close(self):
         self.treec.DeleteAllItems()
-        self.titems = {}
         del self.data
 
         global dbs
@@ -467,7 +430,7 @@ class Database(wx.SplitterWindow):
         return self.data[id_][0]
 
     def get_item_icon(self, id_):
-        # *********************************************************************************
+        # Implement *****************************************************************************
         return self.data[id_][1]
 
     def set_item_label(self, treeitem, text):
@@ -505,45 +468,24 @@ class Database(wx.SplitterWindow):
 
     def select_item(self, treeitem):
         self.treec.UnselectAll()
-        # *******************************************************************************
-        # Note that SelectItem may actually unselect if the item is selected,
-        # see http://trac.wxwidgets.org/ticket/11157
-        # However in this case all the items have just been deselected, so no
-        # check must be done
         self.treec.SelectItem(treeitem)
 
     def unselect_all_items(self):
         self.treec.UnselectAll()
 
     def add_item_to_selection(self, treeitem):
-        # *******************************************************************************
-        # If the item is already selected, SelectItem would actually deselect
-        # it, see http://trac.wxwidgets.org/ticket/11157
-        if not self.treec.IsSelected(treeitem):
-            self.treec.SelectItem(treeitem)
+        self.treec.SelectItem(treeitem)
 
     def remove_item_from_selection(self, treeitem):
-        # *******************************************************************************
-        # If the item is not selected, UnselectItem may actually select it, see
-        # http://trac.wxwidgets.org/ticket/11157
-        if self.treec.IsSelected(treeitem):
-            self.treec.UnselectItem(treeitem)
+        self.treec.UnselectItem(treeitem)
 
     def is_database_root(self, treeitem):
         return self.treec.GetItemParent(treeitem) == self.treec.GetRootItem()
 
     def _popup_item_menu(self, event):
-        # *******************************************************************************
-        # Using a separate procedure for EVT_TREE_ITEM_MENU (instead of always
-        # using EVT_RIGHT_DOWN) ensures a standard behaviour, e.g. selecting
-        # the item if not selected unselecting all the others, or leaving the
-        # selection untouched if clicking on an already selected item
-        self._popup_context_menu(event.GetPoint())
-
-    def _popup_context_menu(self, point):
         self.cmenu.update_items()
         popup_context_menu_event.signal(filename=self.filename)
-        self.treec.PopupMenu(self.cmenu, point)
+        self.treec.PopupMenu(self.cmenu, event.GetPoint())
 
     def get_tab_context_menu(self):
         self.ctabmenu.update()
