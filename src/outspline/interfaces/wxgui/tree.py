@@ -104,8 +104,26 @@ class Database(wx.SplitterWindow):
         #   All the other DataViewCtrl's are doing the same... ****************************************
         #   Also, the text search doesn't work ********************************************************
         #   https://groups.google.com/d/msg/wxpython-users/1sUPp766uXU/0J22mUrkzoAJ *******************
+        #   Try to use a custom renderer for the items ************************************************
+        #     Also use it to draw variable-width icons! ***********************************************
         self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
                                             dv.DV_ROW_LINES | dv.DV_NO_HEADER)
+
+        # *****************************************************************************
+        def test(event):
+            print("TEEEEEEEEST")  # ***************************************************
+
+        id_ = wx.NewId()
+        accels = [
+            (wx.ACCEL_NORMAL, ord("f"), id_),
+            (wx.ACCEL_CTRL, ord("f"), id_),
+            (wx.ACCEL_CTRL, ord("n"), id_),
+            (wx.ACCEL_CTRL, ord("p"), id_),
+        ]
+        self.treec.Bind(wx.EVT_BUTTON, test, id=id_)
+        acctable = wx.AcceleratorTable(accels)
+        self.treec.SetAcceleratorTable(acctable)
+        # *****************************************************************************
 
         self.cmenu = ContextMenu(self)
         self.ctabmenu = TabContextMenu(self.filename)

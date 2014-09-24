@@ -137,6 +137,7 @@ class DatabaseHistory(object):
         statusflags = 0 if self.config('History').get_bool('debug') else \
                                                 wx.dataview.DATAVIEW_COL_HIDDEN
 
+        # "Disable" the "live" search feature? *******************************************
         self.view = wx.dataview.DataViewListCtrl(parent,
                         style=wx.dataview.DV_SINGLE |
                         wx.dataview.DV_ROW_LINES | wx.dataview.DV_NO_HEADER)
