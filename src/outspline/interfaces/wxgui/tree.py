@@ -112,6 +112,8 @@ class MyCustomRenderer(dv.PyDataViewCustomRenderer):
 
 
     def Render(self, rect, dc, state):
+        # Store vertical extent *********************************************************
+        # Check vertical alignment ******************************************************
         if self.image:
             dc.DrawBitmap(self.image, rect.GetX(), rect.GetY() +
                             rect.GetHeight() - self.image.GetHeight(), True)
