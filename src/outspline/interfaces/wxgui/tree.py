@@ -44,7 +44,6 @@ class Model(dv.PyDataViewModel):
 
     def GetParent(self, item):
         if not item.IsOk():
-            # Needed? ******************************************************************
             return dv.NullDataViewItem
         else:
             id_ = self.ItemToObject(item)
@@ -58,7 +57,6 @@ class Model(dv.PyDataViewModel):
     def GetChildren(self, parent, children):
         if not parent.IsOk():
             ids = core_api.get_root_items(self.filename)
-
         else:
             pid = self.ItemToObject(parent)
             ids = core_api.get_item_children(self.filename, pid)
@@ -112,6 +110,7 @@ class Database(wx.SplitterWindow):
         self.properties = Properties(self.treec)
         self.base_properties = DBProperties(self.properties)
 
+        # Merge into the Properties constructor? ******************************************************
         creating_tree_event.signal(filename=self.filename)
 
         # Store an ImageList only *after* instantiating the class, because its
@@ -156,9 +155,6 @@ class Database(wx.SplitterWindow):
         if wx.GetApp().logs_configuration.is_shown():
             self.show_logs()
 
-        # Test *******************************************************************************
-        #self.treec.Bind(dv.EVT_DATAVIEW_ITEM_START_EDITING,
-        #                                                self._veto_label_edit)
         self.treec.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
                                                         self._popup_item_menu)
 
@@ -176,10 +172,6 @@ class Database(wx.SplitterWindow):
 
         # Skipping the event ensures correct left click behaviour
         event.Skip()"""
-
-    def _veto_label_edit(self, event):
-        # No longer used? ****************************************************************
-        event.Veto()
 
     def _handle_update_item(self, kwargs):
         # Don't update an item label only when editing the text area, as there
