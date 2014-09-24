@@ -63,6 +63,10 @@ class Model(dv.PyDataViewModel):
         self.data = data
         self.filename = filename
 
+        # The wxPython demo uses weak references for the item objects: see if
+        # it can be used also in this case (bug #348)
+        #self.objmapper.UseWeakRefs(True)
+
     def IsContainer(self, item):
         # Do not test and return core_api.has_item_children because if a child
         # is added to a previously non-container item, that item should be
