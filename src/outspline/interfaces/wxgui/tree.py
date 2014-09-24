@@ -48,6 +48,7 @@ class Model(dv.PyDataViewModel):
             id_ = self.ItemToObject(item)
             pid = core_api.get_item_parent(self.filename, id_)
 
+            # All these pid > 0 could probably be de-duplicated ****************************
             if pid > 0:
                 return self.ObjectToItem(pid)
             else:
@@ -267,6 +268,7 @@ class Database(wx.SplitterWindow):
         if kwargs['filename'] == self.filename:
             pid = kwargs['parent']
 
+            # All these pid > 0 could probably be de-duplicated ****************************
             if pid > 0:
                 parent = self.get_tree_item(pid)
             else:
@@ -322,11 +324,13 @@ class Database(wx.SplitterWindow):
             if oldpid is not None:
                 item = self.get_tree_item(id_)
 
+                # All these pid > 0 could probably be de-duplicated ****************************
                 if oldpid > 0:
                     oldparent = self.get_tree_item(oldpid)
                 else:
                     oldparent = self.get_root()
 
+                # All these pid > 0 could probably be de-duplicated ****************************
                 if pid > 0:
                     parent = self.get_tree_item(pid)
                 else:
@@ -401,6 +405,7 @@ class Database(wx.SplitterWindow):
     def move_item(self, id_, item):
         pid = core_api.get_item_parent(self.filename, id_)
 
+        # All these pid > 0 could probably be de-duplicated ****************************
         if pid > 0:
             parent = self.get_tree_item(pid)
         else:
@@ -417,6 +422,7 @@ class Database(wx.SplitterWindow):
         # succeded, which means that it wasn't the root item
         oldparent = self.get_tree_item(oldpid)
 
+        # All these pid > 0 could probably be de-duplicated ****************************
         if newpid > 0:
             newparent = self.get_tree_item(newpid)
         else:
@@ -448,6 +454,7 @@ class Database(wx.SplitterWindow):
             if rootpid > 0:
                 rootpid2 = core_api.get_item_parent(self.filename, rootpid)
 
+                # All these pid > 0 could probably be de-duplicated ****************************
                 if rootpid2 > 0:
                     rootparent2 = self.get_tree_item(rootpid2)
                 else:
@@ -466,6 +473,7 @@ class Database(wx.SplitterWindow):
     def _remove_item(self, pid, id_):
         item = self.get_tree_item(id_)
 
+        # All these pid > 0 could probably be de-duplicated ****************************
         if pid > 0:
             parent = self.get_tree_item(pid)
         else:
