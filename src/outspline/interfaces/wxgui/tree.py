@@ -61,7 +61,6 @@ class Model(dv.PyDataViewModel):
 
         else:
             pid = self.ItemToObject(parent)
-            # ******************************************************************
             ids = core_api.get_item_children(self.filename, pid)
 
         for id_ in ids:

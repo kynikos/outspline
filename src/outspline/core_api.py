@@ -233,6 +233,10 @@ def get_item_parent(filename, id_):
     return databases.dbs[filename].items[id_].get_parent()
 
 
+def get_item_children(filename, id_):
+    return databases.dbs[filename].items[id_].get_children()
+
+
 def get_item_ancestors(filename, id_):
     # It's necessary to initialize ancestors=[] because otherwise for some
     # reason the ancestors list from the previous call would be used, thus

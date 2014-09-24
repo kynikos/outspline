@@ -49,7 +49,7 @@ class Item(object):
         elif mode == 'child':
             base = items[baseid]
             parent = baseid
-            children = base.get_children()
+            children = base._get_children()
             previous = children[-1].get_id() if children else 0
             updnext = False
         elif mode == 'sibling':
@@ -215,7 +215,7 @@ class Item(object):
                 parent2 = parent._get_parent()
                 if parent2:
                     parent2id = parent2.get_id()
-                    lastchild = parent2.get_children()[-1]
+                    lastchild = parent2._get_children()[-1]
                     lastchildid = lastchild.get_id()
                 else:
                     parent2id = 0
@@ -241,23 +241,11 @@ class Item(object):
     def get_id(self):
         return self.id_
 
+    def _get_children(self):
+        return [self.items[id_] for id_ in self.get_children()]
+
     def get_children(self):
-        qconn = self.connection.get()
-        cursor = qconn.cursor()
-        cursor.execute(queries.items_select_id_children, (self.id_, ))
-        self.connection.give(qconn)
-
-        dd = {}
-        for row in cursor:
-            dd[row['I_previous']] = row['I_id']
-
-        children = []
-        prev = 0
-        while prev in dd:
-            children.append(self.items[dd[prev]])
-            prev = dd[prev]
-
-        return children
+        return self.get_sorted_children(self.filename, self.id_)
 
     def get_all_info(self):
         qconn = self.connection.get()
@@ -300,7 +288,7 @@ class Item(object):
         descendants = []
 
         def recurse(id_):
-            children = items[id_].get_children()
+            children = items[id_]._get_children()
             descendants.extend(children)
             for child in children:
                 recurse(child)
