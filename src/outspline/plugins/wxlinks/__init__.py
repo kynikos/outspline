@@ -265,7 +265,9 @@ class TreeItemIcons(object):
             if target is not None:
                 self._update_item(target, target_rbits)
 
-            if oldtarget is not False:
+            # oldtarget may not exist anymore
+            if oldtarget is not False and core_api.is_item(self.filename,
+                                                                    oldtarget):
                 self._reset_item(oldtarget)
 
     def _handle_delete_link(self, kwargs):
