@@ -128,19 +128,19 @@ def move_item_to_parent(filename, id_, description='Move item to parent'):
 
 
 def update_item_text(filename, id_, text, group=None,
-                     description='Update item text'):
+                                            description='Update item text'):
     if group == None:
         group = databases.dbs[filename].dbhistory.get_next_history_group()
-    return databases.dbs[filename].items[id_].update(group,
-                                            description=description, text=text)
+    return databases.dbs[filename].items[id_].update_text(text, group,
+                                                    description=description)
 
 
 def update_item_text_no_event(filename, id_, text, group=None,
                                             description='Update item text'):
     if group == None:
         group = databases.dbs[filename].dbhistory.get_next_history_group()
-    return databases.dbs[filename].items[id_].update_no_event(group,
-                                            description=description, text=text)
+    return databases.dbs[filename].items[id_].update_text(text, group,
+                                        event=False, description=description)
 
 
 def register_history_action_handlers(filename, name, redo_handler,
@@ -447,8 +447,16 @@ def bind_to_insert_item(handler, bind=True):
     return items.item_insert_event.bind(handler, bind)
 
 
-def bind_to_update_item(handler, bind=True):
-    return items.item_update_event.bind(handler, bind)
+def bind_to_update_item_previous(handler, bind=True):
+    return items.item_update_previous_event.bind(handler, bind)
+
+
+def bind_to_update_item_parent(handler, bind=True):
+    return items.item_update_parent_event.bind(handler, bind)
+
+
+def bind_to_update_item_text(handler, bind=True):
+    return items.item_update_text_event.bind(handler, bind)
 
 
 def bind_to_deleting_item(handler, bind=True):

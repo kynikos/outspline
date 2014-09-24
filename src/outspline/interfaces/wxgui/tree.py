@@ -247,7 +247,7 @@ class Database(wx.SplitterWindow):
                                                         self._popup_item_menu)
 
         core_api.bind_to_insert_item(self._handle_insert_item)
-        core_api.bind_to_update_item(self._handle_update_item)
+        core_api.bind_to_update_item_text(self._handle_update_item_text)
         core_api.bind_to_deleting_item(self._handle_deleting_item)
         core_api.bind_to_deleted_item_2(self._handle_deleted_item)
         core_api.bind_to_history_insert(self._handle_history_insert)
@@ -276,12 +276,12 @@ class Database(wx.SplitterWindow):
 
             self.insert_item(parent, kwargs['id_'], kwargs['text'])
 
-    def _handle_update_item(self, kwargs):
+    def _handle_update_item_text(self, kwargs):
         # Don't update an item label only when editing the text area, as there
         # may be other plugins that edit an item's text (e.g links)
         # kwargs['text'] could be None if the query updated the position of the
         # item and not its text
-        if kwargs['filename'] == self.filename and kwargs['text'] is not None:
+        if kwargs['filename'] == self.filename:
             self.set_item_label(kwargs['id_'], kwargs['text'])
 
     def _handle_deleting_item(self, kwargs):

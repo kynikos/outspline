@@ -25,7 +25,9 @@ import queries
 import exceptions
 
 item_insert_event = Event()
-item_update_event = Event()
+item_update_previous_event = Event()
+item_update_parent_event = Event()
+item_update_text_event = Event()
 item_deleting_event = Event()
 item_deleted_event = Event()
 item_deleted_2_event = Event()
@@ -72,7 +74,7 @@ class Item(object):
                                                     db.items, filename, id_)
 
         if updnext:
-            items[updnext.get_id()].update(group, previous=id_,
+            items[updnext.get_id()].update_previous(id_, group,
                                                     description=description)
 
         # Signal the even *after* updating the next item
@@ -81,19 +83,31 @@ class Item(object):
 
         return id_
 
-    def update(self, group, parent=None, previous=None, text=None,
-                                                    description='Update item'):
-        self.update_no_event(group, parent=parent, previous=previous,
-                                            text=text, description=description)
+    def update_previous(self, previous, group, description='Update item'):
+        self._update(group, previous=previous, description=description)
 
-        # Note that update_no_event can be called directly, thus not
-        # signalling this event
-        item_update_event.signal(filename=self.filename, id_=self.id_,
-                                parent=parent, previous=previous, text=text,
-                                group=group, description=description)
+        item_update_previous_event.signal(filename=self.filename, id_=self.id_,
+                    previous=previous, group=group, description=description)
 
-    def update_no_event(self, group, parent=None, previous=None, text=None,
+    def update_parent(self, parent, previous, group,
                                                     description='Update item'):
+        self._update(group, parent=parent, previous=previous,
+                                                    description=description)
+
+        item_update_parent_event.signal(filename=self.filename, id_=self.id_,
+                                        parent=parent, previous=previous,
+                                        group=group, description=description)
+
+    def update_text(self, text, group, event=True, description='Update item'):
+        self._update(group, text=text, description=description)
+
+        if event:
+            item_update_text_event.signal(filename=self.filename, id_=self.id_,
+                            text=text, group=group, description=description)
+
+    def _update(self, group, parent=None, previous=None, text=None,
+                                                    description='Update item'):
+        # Split in the above methods ****************************************************
         qconn = self.connection.get()
         cursor = qconn.cursor()
 
@@ -161,7 +175,7 @@ class Item(object):
         next = self._get_next()
 
         if next:
-            next.update(group, previous=previous, description=description)
+            next.update_previous(previous, group, description=description)
 
         qconn = self.connection.get()
         cursor = qconn.cursor()
@@ -203,11 +217,11 @@ class Item(object):
             prev2id = prev2.get_id() if prev2 else 0
             next_ = self._get_next()
             # Keep all items[id_].get_{next,previous,...} _before_ updates!
-            self.update(group, previous=prev2id, description=description)
-            prev.update(group, previous=id_, description=description)
+            self.update_previous(prev2id, group, description=description)
+            prev.update_previous(id_, group, description=description)
 
             if next_:
-                next_.update(group, previous=previd, description=description)
+                next_.update_previous(previd, group, description=description)
         else:
             raise exceptions.CannotMoveItemError()
 
@@ -225,11 +239,11 @@ class Item(object):
             previd = prev.get_id() if prev else 0
             next2 = next_._get_next()
             # Keep all items[id_].get_{next,previous,...} _before_ updates!
-            self.update(group, previous=nextid, description=description)
-            next_.update(group, previous=previd, description=description)
+            self.update_previous(nextid, group, description=description)
+            next_.update_previous(previd, group, description=description)
 
             if next2:
-                next2.update(group, previous=id_, description=description)
+                next2.update_previous(id_, group, description=description)
         else:
             raise exceptions.CannotMoveItemError()
 
@@ -259,11 +273,11 @@ class Item(object):
                 previd = prev.get_id() if prev else 0
 
             # Keep all items[id_].get_{next,previous,...} _before_ updates!
-            self.update(group, parent=parent2id, previous=lastchildid,
+            self.update_parent(parent2id, lastchildid, group,
                                                     description=description)
 
             if next_:
-                next_.update(group, previous=previd, description=description)
+                next_.update_previous(previd, group, description=description)
         else:
             raise exceptions.CannotMoveItemError()
 

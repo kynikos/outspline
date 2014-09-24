@@ -451,7 +451,7 @@ class Alarm(object):
         line = wx.StaticLine(parent, style=wx.LI_HORIZONTAL)
         self.pbox.Add(line, flag=wx.EXPAND)
 
-        core_api.bind_to_update_item(self._update_info)
+        core_api.bind_to_update_item_text(self._update_info)
 
         self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED,
                                                 self._update_pane_ancestors)
@@ -461,10 +461,9 @@ class Alarm(object):
 
     def _update_info(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_:
-            self._set_pane_label()
+            self._set_pane_label(kwargs["text"])
 
-    def _set_pane_label(self):
-        text = core_api.get_item_text(self.filename, self.id_)
+    def _set_pane_label(self, text):
         self.pane.SetLabel(text.partition('\n')[0])
 
     def _update_pane_ancestors(self, event):
@@ -540,7 +539,7 @@ class Alarm(object):
 
             # It's necessary to explicitly unbind the handler, otherwise this
             # object will not be garbage-collected
-            core_api.bind_to_update_item(self._update_info, False)
+            core_api.bind_to_update_item_text(self._update_info, False)
 
     def get_filename(self):
         return self.filename
