@@ -75,8 +75,6 @@ class Protection(object):
         self.q.put(baton)
 
     def block(self, block=False, quiet=False):
-        log.debug('Block databases')
-
         try:
             self.s = self.q.get(block)
         except queue.Empty:
@@ -85,6 +83,7 @@ class Protection(object):
 
             return False
         else:
+            log.debug('Block databases')
             return True
 
     def release(self):
