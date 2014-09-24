@@ -120,17 +120,13 @@ def paste_items_as_siblings(event, no_confirm=False):
             # If multiple items are selected, selection will be False
             if selection is not False:
                 if len(selection) > 0:
-                    base = selection[0]
-                    baseid = wxgui_api.get_tree_item_id(filename, base)
+                    baseid = wxgui_api.get_tree_item_id(filename, selection[0])
 
                     roots, ids = copypaste_api.paste_items_as_siblings(
                                 filename, baseid, description='Paste items')
                 else:
-                    base = wxgui_api.get_root_tree_item(filename)
-                    baseid = wxgui_api.get_tree_item_id(filename, base)
-
                     roots, ids = copypaste_api.paste_items_as_children(
-                                filename, baseid, description='Paste items')
+                                        filename, 0, description='Paste items')
 
                 wxgui_api.refresh_history(filename)
 
