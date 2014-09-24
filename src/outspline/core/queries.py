@@ -90,9 +90,6 @@ items_select_id_previous = ('SELECT I_previous FROM Items WHERE I_id=? '
 
 items_select_id_next = 'SELECT I_id FROM Items WHERE I_previous=? LIMIT 1'
 
-items_select_id_children = ('SELECT I_id, I_previous FROM Items '
-                            'WHERE I_parent=?')
-
 items_select_id_haschildren = 'SELECT I_id FROM Items WHERE I_parent=? LIMIT 1'
 
 items_select_parent = ('SELECT I_id FROM Items WHERE I_parent=? AND '

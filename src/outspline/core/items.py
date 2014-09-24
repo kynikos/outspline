@@ -254,7 +254,6 @@ class Item(object):
         self.connection.give(qconn)
         row = cursor.fetchone()
 
-        # Try except *********************************************************************
         if row:
             return {'id_': self.id_,
                     'parent': row['I_parent'],
@@ -271,7 +270,6 @@ class Item(object):
         databases.dbs[filename].connection.give(qconn)
         row = cursor.fetchone()
 
-        # Try except *********************************************************************
         if row:
             return {'id_': row['I_id'],
                     'text': row['I_text']}
@@ -279,7 +277,6 @@ class Item(object):
             return False
 
     def get_ancestors(self, ancestors=[]):
-        # Simplify *********************************************************************
         parent = self._get_parent()
 
         if parent:
@@ -289,42 +286,42 @@ class Item(object):
         return ancestors
 
     def get_descendants(self):
-        # Simplify *********************************************************************
-        items = self.items
         descendants = []
 
-        def recurse(id_):
-            children = items[id_]._get_children()
-            descendants.extend(children)
-            for child in children:
-                recurse(child)
+        for child in self.get_children():
+            descendants.append(child)
+            descendants.extend(self.items[child].get_descendants())
 
-        recurse(self.id_)
         return descendants
 
     def _get_previous(self):
+        try:
+            return self.items[self.get_previous()]
+        except KeyError:
+            return None
+
+    def get_previous(self):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_previous, (self.id_, ))
         self.connection.give(qconn)
-        pid = cursor.fetchone()
-
-        # Try except *********************************************************************
-        if pid['I_previous'] != 0:
-            return self.items[pid['I_previous']]
-        else:
-            return None
+        return cursor.fetchone()['I_previous']
 
     def _get_next(self):
+        try:
+            return self.items[self.get_next()]
+        except KeyError:
+            return None
+
+    def get_next(self):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_next, (self.id_, ))
         self.connection.give(qconn)
         nid = cursor.fetchone()
 
-        # Try except *********************************************************************
         if nid:
-            return self.items[nid['I_id']]
+            return nid['I_id']
         else:
             return None
 
@@ -363,26 +360,24 @@ class Item(object):
         else:
             return False
 
-    @staticmethod
-    def _get_last_base_item_id(filename):
-        # Simplify *********************************************************************
-        qconn =  databases.dbs[filename].connection.get()
+    def is_root(self):
+        qconn = self.connection.get()
         cursor = qconn.cursor()
-        cursor.execute(queries.items_select_id_children, (0, ))
-        databases.dbs[filename].connection.give(qconn)
+        cursor.execute(queries.items_select_id_parent, (self.id_, ))
+        self.connection.give(qconn)
 
-        ids = set()
-        prevs = set()
+        if cursor.fetchone()["I_parent"] == 0:
+            return True
+        else:
+            return False
 
-        for row in cursor:
-            ids.add(row['I_id'])
-            prevs.add(row['I_previous'])
-
-        last = ids - prevs
+    @classmethod
+    def _get_last_base_item_id(cls, filename):
+        ids = cls.get_sorted_children(filename, 0)
 
         try:
-            return last.pop()
-        except KeyError:
+            return ids[-1]
+        except IndexError:
             return 0
 
     @staticmethod
