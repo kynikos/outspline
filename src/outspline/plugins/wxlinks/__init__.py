@@ -259,7 +259,9 @@ class TreeItemIcons(object):
                 target_rbits = 4
 
             self._update_item(id_, rbits)
-            self._update_item(target, target_rbits)
+
+            if target is not None:
+                self._update_item(target, target_rbits)
 
             if oldtarget is not False:
                 self._reset_item(oldtarget)
