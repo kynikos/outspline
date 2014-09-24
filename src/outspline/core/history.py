@@ -276,15 +276,16 @@ class DBHistory(object):
 
     def _do_history_row_update_parent(self, filename, action, jparams, hid,
                                                                 type_, itemid):
-        parent, previous = json.loads(jparams)
+        oldparent, newparent, previous = json.loads(jparams)
 
         qconn = self.connection.get()
         cursor = qconn.cursor()
-        cursor.execute(queries.items_update_parent, (parent, previous, itemid))
+        cursor.execute(queries.items_update_parent, (newparent, previous,
+                                                                    itemid))
         self.connection.give(qconn)
 
         history_update_parent_event.signal(filename=self.filename, id_=itemid,
-                                            parent=parent, previous=previous)
+                oldparent=oldparent, newparent=newparent, previous=previous)
 
     def _do_history_row_update_text(self, filename, action, jparams, hid,
                                                                 type_, itemid):

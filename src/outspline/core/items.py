@@ -114,8 +114,9 @@ class Item(object):
                                                                     self.id_))
         self.connection.give(qconn)
 
-        jhparams = json.dumps((parent, previous), separators=(',',':'))
-        jhunparams = json.dumps((oldvalues["I_parent"],
+        jhparams = json.dumps((oldvalues["I_parent"], parent, previous),
+                                                        separators=(',',':'))
+        jhunparams = json.dumps((parent, oldvalues["I_parent"],
                                 oldvalues["I_previous"]), separators=(',',':'))
         self.dbhistory.insert_history(group, self.id_, 'update_parent',
                                             description, jhparams, jhunparams)
