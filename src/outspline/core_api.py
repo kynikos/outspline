@@ -63,24 +63,26 @@ def exit_():
     databases.memory.exit_()
 
 
-def create_child(filename, baseid, text='New item',
-                 description='Create child'):
+def create_child(filename, parent, text='New item',
+                                                description='Create child'):
+    previous = items.Item.get_last_child(filename, parent)
     group = databases.dbs[filename].dbhistory.get_next_history_group()
-    return items.Item.insert(filename=filename, mode='child', baseid=baseid,
-                             group=group, text=text, description=description)
+    return items.Item.insert(filename=filename, parent=parent,
+            previous=previous, group=group, text=text, description=description)
 
 
-def create_sibling(filename, baseid, text='New item',
-                   description='Create sibling'):
+def create_sibling(filename, parent, previous, text='New item',
+                                                description='Create sibling'):
     group = databases.dbs[filename].dbhistory.get_next_history_group()
-    return items.Item.insert(filename=filename, mode='sibling', baseid=baseid,
-                             group=group, text=text, description=description)
+    return items.Item.insert(filename=filename, parent=parent,
+            previous=previous, group=group, text=text, description=description)
 
 
 def append_item(filename, baseid, group=None, text='New item',
                 description='Insert item'):
     if group == None:
         group = databases.dbs[filename].dbhistory.get_next_history_group()
+    # Pass parent and previous as arguments ******************************************
     return items.Item.insert(filename=filename, mode='child', baseid=baseid,
                              group=group, text=text, description=description)
 
@@ -89,6 +91,7 @@ def insert_item_after(filename, baseid, group=None, text='New item',
                       description='Insert item'):
     if group == None:
         group = databases.dbs[filename].dbhistory.get_next_history_group()
+    # Pass parent and previous as arguments ******************************************
     return items.Item.insert(filename=filename, mode='sibling', baseid=baseid,
                              group=group, text=text, description=description)
 

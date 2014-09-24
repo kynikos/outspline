@@ -38,25 +38,16 @@ class Item(object):
         self.id_ = id_
 
     @classmethod
-    def insert(cls, filename, mode, baseid, group, text='New item',
+    def insert(cls, filename, parent, previous, group, text='New item',
                                                     description='Insert item'):
         items = databases.dbs[filename].items
 
-        if not baseid:
-            parent = 0
-            previous = cls._get_last_base_item_id(filename)
+        # Set updnext *before* inserting the new item in the database
+        try:
+            updnext = items[previous]._get_next()
+        except KeyError:
+            # previous may be 0
             updnext = False
-        elif mode == 'child':
-            base = items[baseid]
-            parent = baseid
-            children = base._get_children()
-            previous = children[-1].get_id() if children else 0
-            updnext = False
-        elif mode == 'sibling':
-            parentt = items[baseid]._get_parent()
-            parent = parentt.get_id() if parentt else 0
-            previous = items[baseid].get_id()
-            updnext = items[baseid]._get_next()
 
         qconn = databases.dbs[filename].connection.get()
         cursor = qconn.cursor()
@@ -219,7 +210,7 @@ class Item(object):
                     lastchildid = lastchild.get_id()
                 else:
                     parent2id = 0
-                    lastchildid = self._get_last_base_item_id(filename)
+                    lastchildid = self.get_last_child(filename, 0)
                 next_ = self._get_next()
                 if next_:
                     prev = self._get_previous()
@@ -379,8 +370,8 @@ class Item(object):
             return False
 
     @classmethod
-    def _get_last_base_item_id(cls, filename):
-        ids = cls.get_children_sorted(filename, 0)
+    def get_last_child(cls, filename, id_):
+        ids = cls.get_children_sorted(filename, id_)
 
         try:
             return ids[-1]

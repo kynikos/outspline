@@ -621,6 +621,7 @@ class MenuDatabase(wx.Menu):
     def create_sibling(self, event):
         if core_api.block_databases():
             treedb = wx.GetApp().nb_left.get_selected_tab()
+
             if treedb:
                 filename = treedb.get_filename()
 
@@ -633,29 +634,26 @@ class MenuDatabase(wx.Menu):
                     text = 'New item'
 
                     if len(selection) > 0:
-                        base = selection[0]
-                        baseid = treedb.get_item_id(base)
+                        previd = treedb.get_item_id(selection[0])
+                        parid = core_api.get_item_parent(filename, previd)
 
                         id_ = core_api.create_sibling(filename=filename,
-                                                    baseid=baseid,
-                                                    text=text,
-                                                    description='Insert item')
+                                    parent=parid, previous=previd,
+                                    text=text, description='Insert item')
 
-                        # Must use the parent DVitem *****************************************
-                        treedb.insert_item(base, id_, text)
+                        if parid > 0:
+                            parent = treedb.get_tree_item(parid)
+                        else:
+                            parent = treedb.get_root()
                     else:
-                        base = treedb.get_root()
-                        baseid = None
-
                         id_ = core_api.create_child(filename=filename,
-                                                    baseid=baseid,
-                                                    text=text,
+                                                    parent=0, text=text,
                                                     description='Insert item')
 
-                        treedb.insert_item(base, id_, text)
+                        parent = treedb.get_root()
 
+                    treedb.insert_item(parent, id_, text)
                     treedb.select_item(id_)
-
                     treedb.dbhistory.refresh()
 
             core_api.release_databases()
@@ -663,8 +661,10 @@ class MenuDatabase(wx.Menu):
     def create_child(self, event):
         if core_api.block_databases():
             treedb = wx.GetApp().nb_left.get_selected_tab()
+
             if treedb:
                 selection = treedb.get_selections(none=False, many=False)
+
                 if selection:
                     parent = selection[0]
                     filename = treedb.get_filename()
@@ -672,13 +672,11 @@ class MenuDatabase(wx.Menu):
                     text = 'New item'
 
                     id_ = core_api.create_child(filename=filename,
-                                                baseid=pid, text=text,
+                                                parent=pid, text=text,
                                                 description='Insert sub-item')
 
                     treedb.insert_item(parent, id_, text)
-
                     treedb.select_item(id_)
-
                     treedb.dbhistory.refresh()
 
             core_api.release_databases()

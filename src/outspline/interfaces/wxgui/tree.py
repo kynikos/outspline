@@ -248,31 +248,10 @@ class Database(wx.SplitterWindow):
         dbs[filename]._post_init()
 
     def insert_item(self, parent, id_, text):
-        # Check and simplify ***************************************************************************
-        # See if this can just handle the item insert event from core **********************************
+        # Check ****************************************************************************
+        # See if this can just handle the item insert event from core **********************
         self._init_item_data(id_, text)
         self.dvmodel.ItemAdded(parent, self.get_tree_item(id_))
-
-        # *******************************************************************************
-        return False
-        data = wx.TreeItemData((id_, properties))
-
-        # If no ImageList is stored, or if it's empty, setting
-        # image=imageindex has no effect
-        if mode == 'append':
-            return self.treec.AppendItem(base, text=label, image=imageindex,
-                                                                    data=data)
-        elif mode == 'after':
-            return self.treec.InsertItem(self.get_item_parent(base),
-                    idPrevious=base, text=label, image=imageindex, data=data)
-        elif mode == 'before':
-            return self.treec.InsertItemBefore(self.get_item_parent(base),
-                                        self.get_item_index(base), text=label,
-                                        image=imageindex, data=data)
-        else:
-            # mode is an integer
-            return self.treec.InsertItemBefore(base, mode, text=label,
-                                                image=imageindex, data=data)
 
     def create(self, base=None, previd=0):
         # Rename to create_subtree if still needed ****************************************
