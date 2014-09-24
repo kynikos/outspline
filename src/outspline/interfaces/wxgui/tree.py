@@ -145,15 +145,15 @@ class Database(wx.SplitterWindow):
     def post_init(self):
         creating_tree_event.signal(filename=self.filename)
 
-        # Assign an ImageList only *after* instantiating the class, because its
+        # Store an ImageList only *after* instantiating the class, because its
         # size must be calculated after the various plugins have added their
         # properties, which requires the filename to be in the dictionary
         # Use a separate ImageList for each database, as they may support a
         # different subset of the installed plugins
+        # Move somewhere else? ************************************************************
         imagelist = self.properties.get_empty_image_list()
-        self.treec.AssignImageList(imagelist)
 
-        # Create the tree only *after* instantiating the class (and assigning
+        # Create the tree only *after* instantiating the class (and storing
         # an ImageList), because actions like the creation of item images rely
         # on the filename to be in the dictionary
         self.create()
