@@ -238,6 +238,14 @@ class Database(wx.SplitterWindow):
 
         self.Initialize(self.treec)
 
+        # Explicitly set focus on the tree, otherwise after opening a database
+        # no window has focus, and this e.g. prevents F10 from showing the menu
+        # if set on autohide, until a window is manually focused (note that
+        # this would happen only when opening a database manually, it wouldn't
+        # happen when a database is opened automatically by the session
+        # manager)
+        self.treec.SetFocus()
+
         # Initialize the logs panel *after* signalling creating_tree_event,
         # which is used to add plugin logs
         self.logspanel.initialize()

@@ -84,6 +84,10 @@ class RootMenu(wx.MenuBar):
         frame = self.GetFrame()
 
         id_ = wx.NewId()
+        # Note that for F10 to work, a window (any) must be focused: this
+        # wouldn't happen naturally after opening a database, so the tree
+        # is given focus (with SetFocus) explicitly in order to make F10
+        # work
         accels = [(wx.ACCEL_NORMAL, wx.WXK_F10, id_), ]
         frame.Bind(wx.EVT_BUTTON, self._handle_F10, id=id_)
 
