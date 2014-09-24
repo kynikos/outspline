@@ -199,6 +199,7 @@ class Database(wx.SplitterWindow):
         # Ctrl+f can be recovered with by not overriding the Model's
         # GetColumnType method
         # See also bug #349
+        # See bug #260 for generic issues about DataViewCtrl
         # Show the natively working shortcuts in the menu, or in comments in ********************
         #   the config file (also for the other DataViewCtrl's) *********************************
         self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
@@ -291,16 +292,6 @@ class Database(wx.SplitterWindow):
         core_api.bind_to_history_update_text(self._handle_history_update_text)
         core_api.bind_to_history_remove(self._handle_history_remove)
         core_api.bind_to_history(self._handle_history)
-
-        # Check how this bug is currently tracked ****************************************************
-        """self.treec.Bind(wx.EVT_LEFT_DOWN, self._unselect_on_empty_areas)
-
-    def _unselect_on_empty_areas(self, event):
-        if not self.treec.HitTest(event.GetPosition())[0].IsOk():
-            self.treec.UnselectAll()
-
-        # Skipping the event ensures correct left click behaviour
-        event.Skip()"""
 
     def _handle_insert_item(self, kwargs):
         if kwargs['filename'] == self.filename:
