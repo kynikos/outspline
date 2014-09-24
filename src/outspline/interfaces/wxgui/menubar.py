@@ -762,21 +762,23 @@ class MenuDatabase(wx.Menu):
     def delete_items(self, event, no_confirm=False):
         if core_api.block_databases():
             treedb = wx.GetApp().nb_left.get_selected_tab()
+
             if treedb:
                 selection = treedb.get_selections(none=False, descendants=True)
+
                 if selection:
                     filename = treedb.get_filename()
+                    items = []
+
                     for item in selection:
                         id_ = treedb.get_item_id(item)
                         tab = editor.Editor.make_tabid(filename, id_)
+
                         if tab in editor.tabs and not editor.tabs[tab].close(
                                         'quiet' if no_confirm else 'discard'):
                             core_api.release_databases()
                             return False
 
-                    items = []
-                    for item in selection:
-                        id_ = treedb.get_item_id(item)
                         items.append(id_)
 
                     core_api.delete_items(filename, items,
