@@ -259,6 +259,10 @@ def get_item_text(filename, id_):
         raise NoLongerExistingItem()
 
 
+def get_all_items(filename):
+    return databases.dbs[filename].get_all_items()
+
+
 def get_all_items_text(filename):
     return databases.dbs[filename].get_all_items_text()
 

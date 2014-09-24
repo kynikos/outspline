@@ -128,9 +128,11 @@ class Database(wx.SplitterWindow):
         # Initialize the tree only *after* instantiating the class (and storing
         # an ImageList), because actions like the creation of item images rely
         # on the filename to be in the dictionary
-        # Initialize self.data (it was self.create originally) *****************************************
-        #   Also maybe initialize the properties from the plugins directly here ************************
-        #     instead of handling the open_database_event **********************************************
+        # Also maybe initialize the properties from the plugins directly here ************************
+        #   instead of handling the open_database_event **********************************************
+        for row in core_api.get_all_items(self.filename):
+            self.set_item_data(row["I_id"], row["I_text"])
+
         self.dvmodel = Model(self, self.filename)
         self.treec.AssociateModel(self.dvmodel)
         # DataViewModel is reference counted (derives from RefCounter), the
@@ -252,16 +254,14 @@ class Database(wx.SplitterWindow):
     def insert_item(self, base, mode, id_, text=None, label=None,
                                             properties=None, imageindex=None):
         if label is None or properties is None or imageindex is None:
-            label = self._make_item_label(text)
-            multiline_bits, multiline_mask = \
-                    self.base_properties.get_item_multiline_state(text, label)
-            properties = self._compute_property_bits(0, multiline_bits,
-                                                                multiline_mask)
+            self.set_item_data(id_, text)
+            label, properties = self.data[id_]
             imageindex = self.properties.get_image(properties)
+        else:
+            self.data[id_] = [label, properties]
 
         # *******************************************************************************
         data = wx.TreeItemData((id_, properties))
-        self.data[id_] = [label, properties]
 
         # If no ImageList is assigned, or if it's empty, setting
         # image=imageindex has no effect
@@ -435,6 +435,15 @@ class Database(wx.SplitterWindow):
 
     def get_item_icon(self, id_):
         return self.properties.get_icon(self.data[id_][1])
+
+    def set_item_data(self, id_, text):
+        # Missing the plugins contribution *********************************************************
+        label = self._make_item_label(text)
+        multiline_bits, multiline_mask = \
+                    self.base_properties.get_item_multiline_state(text, label)
+        properties = self._compute_property_bits(0, multiline_bits,
+                                                                multiline_mask)
+        self.data[id_] = [label, properties]
 
     def set_item_label(self, treeitem, text):
         label = self._make_item_label(text)

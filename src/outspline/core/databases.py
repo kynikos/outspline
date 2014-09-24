@@ -334,13 +334,15 @@ class Database(object):
     def get_root_items(self):
         return items.Item.get_sorted_children(self.filename, 0)
 
-    def get_all_items_text(self):
+    def get_all_items(self):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_search)
         self.connection.give(qconn)
+        return cursor
 
-        return cursor.fetchall()
+    def get_all_items_text(self):
+        return self.get_all_items().fetchall()
 
     def add_ignored_dependency(self, extension):
         qconn = self.connection.get()
