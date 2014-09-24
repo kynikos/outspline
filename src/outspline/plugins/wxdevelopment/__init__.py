@@ -177,9 +177,9 @@ class MenuDev(wx.Menu):
             if filename:
                 group = core_api.get_next_history_group(filename)
                 description = 'Populate tree'
-
                 i = 0
-                while i < 10:
+
+                while i < 2:  # ***********************************************************
                     dbitems = core_api.get_items_ids(filename)
 
                     try:
@@ -191,7 +191,7 @@ class MenuDev(wx.Menu):
                     else:
                         mode = random.choice(('child', 'sibling'))
 
-                    text = self._populate_tree_text()
+                    text = "A"#self._populate_tree_text()  # ***************************
 
                     id_ = self._populate_tree_item(mode, filename, itemid,
                                                     group, text, description)
@@ -204,11 +204,12 @@ class MenuDev(wx.Menu):
                         self._populate_tree_rules(filename, id_, group,
                                                             description)
 
-                    if links_api and wxlinks_api and len(dbitems) > 0 and \
-                                    filename in \
-                                    links_api.get_supported_open_databases():
-                        self._populate_tree_link(filename, id_, dbitems, group,
-                                                                description)
+                    # *****************************************************************
+                    #if links_api and wxlinks_api and len(dbitems) > 0 and \
+                    #                filename in \
+                    #                links_api.get_supported_open_databases():
+                    #    self._populate_tree_link(filename, id_, dbitems, group,
+                    #                                            description)
 
                     i += 1
 
@@ -238,8 +239,8 @@ class MenuDev(wx.Menu):
     def _populate_tree_rules(self, filename, id_, group, description):
         rules = []
 
-        for n in xrange(random.randint(0, 8)):
-            r = random.randint(0, 16)
+        for n in xrange(1):#random.randint(0, 8)):  # ****************************************
+            r = 0#random.randint(0, 16)  # ***************************************************
 
             if r == 0:
                 rule = \
