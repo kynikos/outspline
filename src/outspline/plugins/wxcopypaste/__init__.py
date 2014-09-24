@@ -127,9 +127,11 @@ def paste_items_as_siblings(event, no_confirm=False):
                                 filename, baseid, description='Paste items')
 
                     for r in roots:
-                        treeroot = wxgui_api.insert_tree_item_after(filename,
-                                                            selection[0], r)
-                        wxgui_api.insert_subtree(filename, treeroot)
+                        pass# %%%%%%%% Check *********************************************************************
+                        #treeroot = wxgui_api.insert_tree_item_after(filename,
+                        #                                    selection[0], r)
+                        # %%%%%%%% Check *********************************************************************
+                        #wxgui_api.insert_subtree(filename, treeroot)
                 else:
                     base = wxgui_api.get_root_tree_item(filename)
                     baseid = wxgui_api.get_tree_item_id(filename, base)
@@ -138,9 +140,11 @@ def paste_items_as_siblings(event, no_confirm=False):
                                     filename, baseid, description='Paste items')
 
                     for r in roots:
-                        treeroot = wxgui_api.append_tree_item(filename, base,
-                                                                            r)
-                        wxgui_api.insert_subtree(filename, treeroot)
+                        pass# %%%%%%%% Check *********************************************************************
+                        #treeroot = wxgui_api.append_tree_item(filename, base,
+                        #                                                    r)
+                        # %%%%%%%% Check *********************************************************************
+                        #wxgui_api.insert_subtree(filename, treeroot)
 
                 wxgui_api.refresh_history(filename)
 
@@ -170,9 +174,11 @@ def paste_items_as_children(event, no_confirm=False):
                                         baseid, description='Paste sub-items')
 
                 for r in roots:
-                    treeroot = wxgui_api.append_tree_item(filename,
-                                                            selection[0], r)
-                    wxgui_api.insert_subtree(filename, treeroot)
+                    pass# %%%%%%%% Check *********************************************************************
+                    #treeroot = wxgui_api.append_tree_item(filename,
+                    #                                        selection[0], r)
+                    # %%%%%%%% Check *********************************************************************
+                    #wxgui_api.insert_subtree(filename, treeroot)
 
                 wxgui_api.refresh_history(filename)
 

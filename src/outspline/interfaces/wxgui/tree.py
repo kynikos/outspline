@@ -245,6 +245,7 @@ class Database(wx.SplitterWindow):
         self.treec.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
                                                         self._popup_item_menu)
 
+        core_api.bind_to_insert_item(self._handle_insert_item)
         core_api.bind_to_update_item(self._handle_update_item)
         core_api.bind_to_deleting_item(self._handle_deleting_item)
         core_api.bind_to_deleted_item_2(self._handle_deleted_item)
@@ -261,6 +262,17 @@ class Database(wx.SplitterWindow):
 
         # Skipping the event ensures correct left click behaviour
         event.Skip()"""
+
+    def _handle_insert_item(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            pid = kwargs['parent']
+
+            if pid > 0:
+                parent = self.get_tree_item(pid)
+            else:
+                parent = self.get_root()
+
+            self.insert_item(parent, kwargs['id_'], kwargs['text'])  # ***********************
 
     def _handle_update_item(self, kwargs):
         # Don't update an item label only when editing the text area, as there
@@ -301,6 +313,8 @@ class Database(wx.SplitterWindow):
                 # Must use parent DVitem *******************************************************
                 pitem = self.get_tree_item(previous)
 
+            # insert_item is now called from the item_insert_event, check it's ************************
+            # really needed here ***************************************************************
             self.insert_item(pitem, id_, text)
 
     def _handle_history_update(self, kwargs):

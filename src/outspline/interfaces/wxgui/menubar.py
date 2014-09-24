@@ -637,22 +637,25 @@ class MenuDatabase(wx.Menu):
                         previd = treedb.get_item_id(selection[0])
                         parid = core_api.get_item_parent(filename, previd)
 
+                        # %%%%%%%% Check *********************************************************************
                         id_ = core_api.create_sibling(filename=filename,
                                     parent=parid, previous=previd,
                                     text=text, description='Insert item')
 
-                        if parid > 0:
+                        if parid > 0:  # ******************************************************
                             parent = treedb.get_tree_item(parid)
                         else:
                             parent = treedb.get_root()
                     else:
+                        # %%%%%%%% Check *********************************************************************
                         id_ = core_api.create_child(filename=filename,
                                                     parent=0, text=text,
                                                     description='Insert item')
 
-                        parent = treedb.get_root()
+                        parent = treedb.get_root()  # *************************************
 
-                    treedb.insert_item(parent, id_, text)
+                    # %%%%%%%% Check *********************************************************************
+                    #treedb.insert_item(parent, id_, text)  # *************************************
                     treedb.select_item(id_)
                     treedb.dbhistory.refresh()
 
@@ -671,11 +674,13 @@ class MenuDatabase(wx.Menu):
                     pid = treedb.get_item_id(parent)
                     text = 'New item'
 
+                    # %%%%%%%% Check *********************************************************************
                     id_ = core_api.create_child(filename=filename,
                                                 parent=pid, text=text,
                                                 description='Insert sub-item')
 
-                    treedb.insert_item(parent, id_, text)
+                    # %%%%%%%% Check *********************************************************************
+                    #treedb.insert_item(parent, id_, text)  # *************************************
                     treedb.select_item(id_)
                     treedb.dbhistory.refresh()
 

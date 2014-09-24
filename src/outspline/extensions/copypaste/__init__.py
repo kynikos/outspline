@@ -69,6 +69,7 @@ def paste_items(filename, baseid, mode, group, description='Paste items'):
         if child:
             id_ = child['C_id']
 
+            # %%%%%%%% Check *********************************************************************
             old_to_new_ids[id_] = core_api.append_item(
                                 filename, old_to_new_ids[baseid], group=group,
                                 text=child['C_text'], description=description)
@@ -85,10 +86,12 @@ def paste_items(filename, baseid, mode, group, description='Paste items'):
 
     for root in old_roots:
         if mode == 'children':
+            # %%%%%%%% Check *********************************************************************
             old_to_new_ids[root['C_id']] = core_api.append_item(
                                 filename, baseid, group=group,
                                 text=root['C_text'], description=description)
         elif mode == 'siblings':
+            # %%%%%%%% Check *********************************************************************
             old_to_new_ids[root['C_id']] = core_api.insert_item_after(
                                 filename, baseid, group=group,
                                 text=root['C_text'], description=description)

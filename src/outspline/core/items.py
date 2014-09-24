@@ -70,12 +70,13 @@ class Item(object):
         databases.dbs[filename].items[id_] = cls(db.connection, db.dbhistory,
                                                     db.items, filename, id_)
 
-        item_insert_event.signal(filename=filename, id_=id_, group=group,
-                                 description=description)
-
         if updnext:
             items[updnext.get_id()].update(group, previous=id_,
                                                     description=description)
+
+        # Signal the even *after* updating the next item
+        item_insert_event.signal(filename=filename, id_=id_, parent=parent,
+                            text=text, group=group,  description=description)
 
         return id_
 

@@ -235,9 +235,11 @@ class MenuDev(wx.Menu):
     def _populate_tree_item(self, mode, filename, itemid, group, text,
                                                                 description):
         if mode == 'child':
+            # %%%%%%%% Check *********************************************************************
             return core_api.append_item(filename, itemid, group, text=text,
                                                     description=description)
         elif mode == 'sibling':
+            # %%%%%%%% Check *********************************************************************
             return core_api.insert_item_after(filename, itemid, group,
                                             text=text, description=description)
 
@@ -313,9 +315,11 @@ class MenuDev(wx.Menu):
 
     def _populate_tree_gui(self, mode, filename, itemid, id_, text):
         if mode == 'child':
-            wxgui_api.append_item(filename, itemid, id_, text)
+            pass# %%%%%%%% Check *********************************************************************
+            #wxgui_api.append_item(filename, itemid, id_, text)
         elif mode == 'sibling':
-            wxgui_api.insert_item_after(filename, itemid, id_, text)
+            pass# %%%%%%%% Check *********************************************************************
+            #wxgui_api.insert_item_after(filename, itemid, id_, text)
 
     def reset_simulator_item(self):
         if simulator.is_active():
