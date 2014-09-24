@@ -291,28 +291,22 @@ class Database(wx.SplitterWindow):
             self._remove_item_data(kwargs['id_'])
 
     def _handle_history_insert(self, kwargs):
-        # Check ***************************************************************************
-        filename = kwargs['filename']
-
-        if filename == self.filename:
+        if kwargs['filename'] == self.filename:
             id_ = kwargs['id_']
-            parent = kwargs['parent']
-            previous = kwargs['previous']
-            text = kwargs['text']
+            pid = kwargs['parent']
 
-            if previous == 0:
-                pitem = self.get_tree_item(parent)
+            # All these pid > 0 could probably be de-duplicated ****************************
+            if pid > 0:
+                parent = self.get_tree_item(pid)
             else:
-                # Must use parent DVitem *******************************************************
-                pitem = self.get_tree_item(previous)
+                parent = self.get_root()
 
-            # insert_item is now called from the item_insert_event, check it's ************************
-            # really needed here ***************************************************************
-            self.insert_item(pitem, id_, text)
+            self.insert_item(parent, id_, kwargs['text'])
 
     def _handle_history_update(self, kwargs):
         # Check ***************************************************************************
         filename = kwargs['filename']
+
         if filename == self.filename:
             id_ = kwargs['id_']
             parent = kwargs['parent']
