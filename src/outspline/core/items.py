@@ -127,7 +127,10 @@ class Item(object):
         self.dbhistory.insert_history(group, self.id_, 'update',
                                             description, jhparams, jhunparams)
 
-    def delete(self, group, description='Delete item'):
+    def delete_subtree(self, group, description='Delete subtree'):
+        for child in self._get_children_unsorted():
+            child.delete_subtree(group, description)
+
         qconn = self.connection.get()
         cursor = qconn.cursor()
 
@@ -268,7 +271,7 @@ class Item(object):
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_children, (self.id_, ))
         self.connection.give(qconn)
-        return [row["I_id"] for row in cursor]
+        return [self.items[row["I_id"]] for row in cursor]
 
     def get_children(self):
         return self.get_children_sorted(self.filename, self.id_)
@@ -316,8 +319,8 @@ class Item(object):
         descendants = []
 
         for child in self._get_children_unsorted():
-            descendants.append(child)
-            descendants.extend(self.items[child].get_descendants())
+            descendants.append(child.get_id())
+            descendants.extend(child.get_descendants())
 
         return descendants
 

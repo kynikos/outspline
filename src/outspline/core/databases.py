@@ -321,18 +321,15 @@ class Database(object):
         del dbs[self.filename]
 
     def delete_items(self, dids, group, description='Delete items'):
-        # Emit an event for every cycle and manage it in the interface ********************************
-        # The algorithm can be optimized a lot ********************************************************
-        #   Or just delete one item at a time: delete_items_event only restarts ***********************
-        #     the occurrences engine, but now it has a queue of requests ******************************
-        #     limited to one, so it shouldn't be a problem to request a restart ***********************
-        #     for every deletion **********************************************************************
-        while dids:
-            for id_ in dids[:]:
-                # First delete the items without children
-                if not self.items[id_].has_children():
-                    self.items[id_].delete(group, description=description)
-                    del dids[dids.index(id_)]
+        for id_ in dids:
+            try:
+                item = self.items[id_]
+            except KeyError:
+                # The item may have been deleted as a descendant of another
+                # item deleted in a previous loop
+                pass
+            else:
+                item.delete_subtree(group, description=description)
 
         delete_items_event.signal()
 
