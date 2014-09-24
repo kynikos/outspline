@@ -300,12 +300,12 @@ class TreeItemIcons(object):
     def _handle_history(self, kwargs):
         if kwargs['filename'] == self.filename:
             wxgui_api.queue_history_handler(self.filename, self._do_history,
-                                                            (kwargs['id_'], ))
+                                                            kwargs['id_'], ())
             # Check ************************************************************************
             #self._do_history(kwargs['id_'])
 
     def _do_history(self, id_):
-        # id_ may not exist anymore, but the history event may have
+        # id_ may not exist anymore, but the history event may have  # ********************
         # effects also on target and backlinks
         backlinks = links_api.find_back_links(self.filename, id_)
         target = links_api.find_link_target(self.filename, id_)
@@ -341,9 +341,9 @@ class TreeItemIcons(object):
 
             self._update_item(target, target_rbits)
 
-        # id_ may not exist anymore
-        if core_api.is_item(self.filename, id_):
-            self._update_item(id_, rbits)
+        # id_ may not exist anymore  # ***************************************************
+        #if core_api.is_item(self.filename, id_):  # *************************************
+        self._update_item(id_, rbits)
 
         for blink in backlinks:
             blink_backlinks = links_api.find_back_links(self.filename, blink)

@@ -512,16 +512,16 @@ class TreeItemIcons(object):
     def _handle_history(self, kwargs):
         if kwargs['filename'] == self.filename:
             wxgui_api.queue_history_handler(self.filename, self._do_history,
-                                            (kwargs['id_'], kwargs['rules']))
+                                            kwargs['id_'], (kwargs['rules'], ))
             # Check ************************************************************************
             #self._do_history(kwargs['id_'], kwargs['rules'])
 
     def _do_history(self, id_, rules):
-        # The history action may have deleted the item; don't do this test
+        # The history action may have deleted the item; don't do this test  # **************
         # in self._handle_history, because there the item is still in the
         # database in any case
-        if core_api.is_item(self.filename, id_):
-            self._update_item(id_, rules)
+        #if core_api.is_item(self.filename, id_):  # **************************************
+        self._update_item(id_, rules)
 
     def _handle_paste(self, kwargs):
         if kwargs['filename'] == self.filename:

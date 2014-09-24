@@ -179,7 +179,7 @@ class MenuDev(wx.Menu):
                 description = 'Populate tree'
                 i = 0
 
-                while i < 2:  # ***********************************************************
+                while i < 10:  # ***********************************************************
                     dbitems = core_api.get_items_ids(filename)
 
                     try:
