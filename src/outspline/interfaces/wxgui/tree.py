@@ -78,50 +78,64 @@ class Model(dv.PyDataViewModel):
 
     def GetValue(self, item, col):
         id_ = self.ItemToObject(item)
-        # For some reason it needs a string *********************************************
-        #   Restoring this would require restoring self.database ************************
-        #label = self.database.get_item_label(id_)
-        #icon = self.database.get_item_image(id_)
-        return str(id_)#dv.DataViewIconText(label, icon)
+        # For some reason it needs a string (ask) *****************************************
+        return str(id_)
 
 
 class MyCustomRenderer(dv.PyDataViewCustomRenderer):
-    def __init__(self, database):
+    def __init__(self, database, treec):
         super(MyCustomRenderer, self).__init__()
+        self.VMARGIN = 1
         self.GAP = 2
+        self.ADDITIONAL_GAP = 4
         self.database = database
+
+        self.deffont = treec.GetFont()
+        self.fgcolor = treec.GetForegroundColour()
+        self.iconfont = treec.GetFont()
+        self.iconfont.SetWeight(wx.FONTWEIGHT_BOLD)
+
+        dc = wx.MemoryDC()
+        dc.SelectObject(wx.NullBitmap)
+        dc.SetFont(self.deffont)
+        # It shouldn't matter whether characters with descent are used or not,
+        # but use "pb" for safety anyway
+        extent = dc.GetTextExtent("pb")
+        self.needed_height = extent[1] + self.VMARGIN * 2
 
     def SetValue(self, value):
         self.value = value
-        self.text = self.database.get_item_label(int(value))
-        self.image = self.database.get_item_image(int(value))
+        self.label = self.database.get_item_label(int(value))
+        self.teststr, self.strdata = self.database.get_item_properties(int(
+                                                                        value))
         return True
 
     def GetValue(self):
         return self.value
 
     def GetSize(self):
-        tsize = self.GetTextExtent(self.text)
-
-        if self.image:
-            width = tsize.GetWidth() + self.GAP + self.image.GetWidth()
-            height = max(tsize.GetHeight(), self.image.GetHeight())
-            return wx.Size(width, height)
-        else:
-            return tsize
-
+        label = "".join((self.teststr, self.label))
+        tsize = self.GetTextExtent(label)
+        gapsw = (len(self.strdata)) * self.GAP + self.ADDITIONAL_GAP
+        return wx.Size(tsize.GetWidth() + gapsw, self.needed_height)
 
     def Render(self, rect, dc, state):
-        # Store vertical extent *********************************************************
-        # Check vertical alignment ******************************************************
-        if self.image:
-            dc.DrawBitmap(self.image, rect.GetX(), rect.GetY() +
-                            rect.GetHeight() - self.image.GetHeight(), True)
-            xoffset = self.image.GetWidth() + self.GAP
-        else:
-            xoffset = 0
+        dc.SetFont(self.iconfont)
+        xoffset = rect.GetX()
 
-        self.RenderText(self.text, xoffset, rect, dc, state)
+        for data in self.strdata:
+            dc.SetTextForeground(data[1])
+            dc.DrawText(data[0], xoffset, rect.GetY() + self.VMARGIN)
+            xoffset += self.GetTextExtent(data[0])[0] + self.GAP
+
+        xoffset += self.ADDITIONAL_GAP
+
+        # Don't use self.RenderText as the official docs would suggest, because
+        # it aligns vertically in a weird way
+        dc.SetFont(self.deffont)
+        dc.SetTextForeground(self.fgcolor)
+        dc.DrawText(self.label, xoffset, rect.GetY() + self.VMARGIN)
+
         return True
 
 
@@ -182,7 +196,7 @@ class Database(wx.SplitterWindow):
 
         # Initialize the icons only *after* the various plugins have added
         # their properties
-        self.properties.init_image_list()
+        self.properties.post_init()
 
         # Initialize the tree only *after* instantiating the class (and
         # initilizing the icons), because actions like the creation of item
@@ -197,7 +211,7 @@ class Database(wx.SplitterWindow):
         # This is bullshit, it crashes if closing all databases *****************************
         #self.dvmodel.DecRef()
 
-        dvrenderer = MyCustomRenderer(self)
+        dvrenderer = MyCustomRenderer(self, self.treec)
         dvcolumn = dv.DataViewColumn("Item", dvrenderer, 0,
                                                         align=wx.ALIGN_LEFT)
         self.treec.AppendColumn(dvcolumn)
@@ -454,8 +468,8 @@ class Database(wx.SplitterWindow):
     def get_item_label(self, id_):
         return self.data[id_][0]
 
-    def get_item_image(self, id_):
-        return self.properties.get_image(self.data[id_][1])
+    def get_item_properties(self, id_):
+        return self.properties.get(self.data[id_][1])
 
     def set_item_label(self, id_, text):
         label = self._make_item_label(text)
@@ -512,13 +526,13 @@ class DBProperties(object):
         multichar = config['symbol']
 
         if multichar != '':
-            bits_to_colour = {
+            bits_to_color = {
                 1: wx.Colour(),
             }
-            bits_to_colour[1].SetFromString(config['color'])
+            bits_to_color[1].SetFromString(config['color'])
 
             self.multiline_shift, self.multiline_mask = properties.add(1,
-                                                    multichar, bits_to_colour)
+                                                    multichar, bits_to_color)
 
     def get_item_multiline_state(self, text, label):
         if text != label:
@@ -533,109 +547,62 @@ class Properties(object):
     def __init__(self, widget):
         self.widget = widget
 
-        self.SPACING = 2
         self.bitsn = 0
-        # Use a list also to preserve the order of the properties
-        self.char_data = []
-        self.bits_to_image = {}
+        self.data = []
+        self.bits_to_chars = {}
 
-        self.bgcolour = self.widget.GetBackgroundColour()
-        self.font = self.widget.GetFont()
-        self.font.SetWeight(wx.FONTWEIGHT_BOLD)
-
-    def add(self, bitsn, character, bits_to_colour):
-        dc = wx.MemoryDC()
-        dc.SelectObject(wx.NullBitmap)
-        dc.SetFont(self.font)
-        extent = dc.GetTextExtent(character)
-
+    def add(self, bitsn, character, bits_to_color):
         shift = self.bitsn
         mask = int('1' * bitsn, 2) << shift
         self.bitsn += bitsn
-        shifted_bits_to_subimage = {}
+        shifted_bits_to_colors = {}
 
-        for bits in bits_to_colour:
-            colour = bits_to_colour[bits]
+        for bits in bits_to_color:
+            shifted_bits_to_colors[bits << shift] = bits_to_color[bits]
 
-            bitmap = wx.EmptyBitmap(*extent, depth=32)
-            dc.SelectObject(bitmap)
-            dc.SetBackground(wx.Brush(self.bgcolour))
-            dc.Clear()
-
-            gc = wx.GraphicsContext.Create(dc)
-            gc.SetFont(gc.CreateFont(self.font, colour))
-            gc.DrawText(character, 0, 0)
-
-            shifted_bits_to_subimage[bits << shift] = bitmap
-
-        self.char_data.append((mask, shifted_bits_to_subimage))
-        dc.SelectObject(wx.NullBitmap)
+        self.data.append((mask, character, shifted_bits_to_colors))
 
         return (shift, mask)
 
-    def init_image_list(self):
+    def post_init(self):
         # char_data is empty if no properties have been added
-        if len(self.char_data) < 1:
-            self.get_image = self._get_image_dummy
+        if len(self.data) < 1:
+            self.get = self._get_dummy
         else:
-            self.get_image = self._get_image_real
+            self.get = self._get_real
 
-    def get_image(self, bits):
+    def get(self, bits):
         # This method is re-assigned dynamically
         pass
 
-    def _get_image_real(self, bits):
+    def _get_real(self, bits):
         try:
-            bitmap = self.bits_to_image[bits]
+            return self.bits_to_chars[bits]
         except KeyError:
-            bitmap = self._make_image(bits)
-            self.bits_to_image[bits] = bitmap
+            teststr, strdata = self._compute_data(bits)
+            self.bits_to_chars[bits] = teststr, strdata
+            return teststr, strdata
 
-        return bitmap
-
-    def _get_image_dummy(self, bits):
+    def _get_dummy(self, bits):
         # Used if no properties have been added
-        # Anything using this method should be prepared to get False, in fact
-        # also self._make_image can return False
-        return False
+        return ("", [])
 
-    def _make_image(self, item_bits):
-        width = 0
-        height = 0
-        subimages = []
+    def _compute_data(self, item_bits):
+        teststr = ""
+        strdata = []
 
-        for property_bits, bits_to_subimage in self.char_data:
+        for property_bits, character, bits_to_colors in self.data:
             bits = (property_bits & item_bits)
 
             try:
-                bitmap = bits_to_subimage[bits]
+                color = bits_to_colors[bits]
             except KeyError:
                 pass
             else:
-                subimages.append((bitmap, width))
-                width += bitmap.GetWidth() + self.SPACING
-                height = max((height, bitmap.GetHeight()))
+                teststr += character
+                strdata.append((character, color))
 
-        width -= self.SPACING
-
-        if width > 0:
-            bitmap = wx.EmptyBitmap(width, height, depth=32)
-
-            dc = wx.MemoryDC()
-            dc.SelectObject(bitmap)
-            dc.SetBackground(wx.Brush(self.bgcolour))
-            dc.Clear()
-
-            for subimage, xoffset in subimages:
-                yoffset = height - subimage.GetHeight()
-                dc.DrawBitmap(subimage, xoffset, yoffset, True)
-
-            bitmap.SetMaskColour(self.bgcolour)
-            dc.SelectObject(wx.NullBitmap)
-
-            return bitmap
-        else:
-            return False
+        return (teststr, strdata)
 
 
 class ContextMenu(wx.Menu):
