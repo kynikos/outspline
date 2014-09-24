@@ -71,7 +71,11 @@ class Model(dv.PyDataViewModel):
         return 1
 
     def GetColumnType(self, col):
-        return "string"
+        # The internal search doesn't work with IconText items ****************************
+        #   Returning None seems to disable it ********************************************
+        #     Ask for other possible unwanted consequences ********************************
+        #   https://groups.google.com/d/msg/wxpython-users/QvSesrnD38E/31l8f6AzIhAJ *******
+        return None#"string"  # ***********************************************************
 
     def GetValue(self, item, col):
         id_ = self.ItemToObject(item)
@@ -97,6 +101,10 @@ class Database(wx.SplitterWindow):
         self.data = {}
 
     def _post_init(self):
+        # Is DataViewCtrl stealing Ctrl+n, Ctrl+p, Ctrl+f and others? *********************************
+        #   All the other DataViewCtrl's are doing the same... ****************************************
+        #   Also, the text search doesn't work ********************************************************
+        #   https://groups.google.com/d/msg/wxpython-users/1sUPp766uXU/0J22mUrkzoAJ *******************
         self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
                                             dv.DV_ROW_LINES | dv.DV_NO_HEADER)
 
