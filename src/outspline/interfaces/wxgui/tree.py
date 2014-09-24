@@ -174,6 +174,7 @@ class Database(wx.SplitterWindow):
         event.Skip()"""
 
     def _handle_update_item(self, kwargs):
+        # Check ***************************************************************************
         # Don't update an item label only when editing the text area, as there
         # may be other plugins that edit an item's text (e.g links)
         # kwargs['text'] could be None if the query updated the position of the
@@ -185,6 +186,7 @@ class Database(wx.SplitterWindow):
             self.update_tree_item(id_)
 
     def _handle_history_insert(self, kwargs):
+        # Check ***************************************************************************
         filename = kwargs['filename']
         if filename == self.filename:
             id_ = kwargs['id_']
@@ -200,6 +202,7 @@ class Database(wx.SplitterWindow):
                 self.insert_item(prev, 'after', id_, text=text)
 
     def _handle_history_update(self, kwargs):
+        # Check ***************************************************************************
         filename = kwargs['filename']
         if filename == self.filename:
             id_ = kwargs['id_']
@@ -230,6 +233,7 @@ class Database(wx.SplitterWindow):
                     self.move_item(item, prev, mode='after')
 
     def _handle_history_remove(self, kwargs):
+        # Check ***************************************************************************
         filename = kwargs['filename']
         id_ = kwargs['id_']
 
@@ -246,6 +250,7 @@ class Database(wx.SplitterWindow):
 
     def insert_item(self, base, mode, id_, text=None, label=None,
                                             properties=None, imageindex=None):
+        # Check ***************************************************************************
         if label is None or properties is None or imageindex is None:
             self._init_item_data(id_, text)
             label, properties = self.data[id_]
@@ -274,6 +279,8 @@ class Database(wx.SplitterWindow):
                                                 image=imageindex, data=data)
 
     def create(self, base=None, previd=0):
+        # Rename to create_subtree if still needed ****************************************
+        # Check ***************************************************************************
         if not base:
             base = self.treec.GetRootItem()
 
@@ -298,7 +305,7 @@ class Database(wx.SplitterWindow):
         self.data[id_] = [label, properties]
 
     def find_item(self, id_):
-        # Re-implement without titems ************************************************************
+        # Re-implement if still needed ************************************************************
         return self.titems[id_].GetId()
 
     def get_selections(self, none=True, many=True, descendants=None):
@@ -319,6 +326,7 @@ class Database(wx.SplitterWindow):
             return selection
 
     def move_item(self, treeitem, base, mode='append'):
+        # Check ***************************************************************************
         label = self.treec.GetItemText(treeitem)
         id_, properties = self.treec.GetItemPyData(treeitem)
         imageindex = self.treec.GetItemImage(treeitem)
@@ -372,6 +380,7 @@ class Database(wx.SplitterWindow):
         return self.filename
 
     def get_root(self):
+        # Gonna be useless **************************************************************
         return self.treec.GetRootItem()
 
     def get_item_id(self, item):
@@ -388,9 +397,11 @@ class Database(wx.SplitterWindow):
         return index
 
     def get_item_previous(self, treeitem):
+        # Gonna be useless **************************************************************
         return self.treec.GetPrevSibling(treeitem)
 
     def get_item_parent(self, treeitem):
+        # Gonna be useless **************************************************************
         return self.treec.GetItemParent(treeitem)
 
     @staticmethod
@@ -404,6 +415,7 @@ class Database(wx.SplitterWindow):
         return self.properties.get_icon(self.data[id_][1])
 
     def set_item_label(self, treeitem, text):
+        # Check ***************************************************************************
         label = self._make_item_label(text)
         # get_item_id takes a DV item now ***********************************************
         self.data[self.get_item_id(treeitem)][0] = label
@@ -435,16 +447,20 @@ class Database(wx.SplitterWindow):
         return self.logspanel
 
     def select_item(self, treeitem):
+        # Check ***************************************************************************
         self.treec.UnselectAll()
         self.treec.SelectItem(treeitem)
 
     def unselect_all_items(self):
+        # Check ***************************************************************************
         self.treec.UnselectAll()
 
     def add_item_to_selection(self, treeitem):
+        # Check ***************************************************************************
         self.treec.SelectItem(treeitem)
 
     def remove_item_from_selection(self, treeitem):
+        # Check ***************************************************************************
         self.treec.UnselectItem(treeitem)
 
     def _popup_item_menu(self, event):
@@ -565,6 +581,11 @@ class Properties(object):
             self.get_image = self._get_image_real
 
         self.imagelist = wx.ImageList(*self.required_size)
+
+    def get_image(self, bits):
+        # Will become useless ********************************************************
+        # This method is re-assigned dynamically
+        pass
 
     def get_icon(self, bits):
         # This method is re-assigned dynamically
