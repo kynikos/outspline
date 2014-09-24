@@ -537,6 +537,7 @@ def insert_item_after(filename, baseid, id_, text):
 
 def append_tree_item(filename, parent, id_):
     text = core_api.get_item_text(filename, id_)
+    # Must use the parent DVitem ***********************************************************
     # Nothing is returned anymore ******************************************************
     return tree.dbs[filename].insert_item(parent, id_, text)
 

@@ -263,7 +263,6 @@ class Database(wx.SplitterWindow):
         event.Skip()"""
 
     def _handle_update_item(self, kwargs):
-        # Check ***************************************************************************
         # Don't update an item label only when editing the text area, as there
         # may be other plugins that edit an item's text (e.g links)
         # kwargs['text'] could be None if the query updated the position of the
@@ -355,7 +354,6 @@ class Database(wx.SplitterWindow):
         dbs[filename]._post_init()
 
     def insert_item(self, parent, id_, text):
-        # Check ****************************************************************************
         # See if this can just handle the item insert event from core **********************
         self._init_item_data(id_, text)
         self.dvmodel.ItemAdded(parent, self.get_tree_item(id_))
