@@ -108,8 +108,6 @@ items_select_search = 'SELECT I_id, I_text FROM Items'
 items_insert = ('INSERT INTO Items (I_id, I_parent, I_previous, I_text) '
                 'VALUES (?, ?, ?, ?)')
 
-items_update_id = 'UPDATE Items SET {} WHERE I_id=?'
-
 items_update_previous = 'UPDATE Items SET I_previous=? WHERE I_id=?'
 
 items_update_parent = 'UPDATE Items SET I_parent=?, I_previous=? WHERE I_id=?'

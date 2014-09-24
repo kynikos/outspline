@@ -87,17 +87,20 @@ class Item(object):
         qconn = self.connection.get()
         cursor = qconn.cursor()
 
-        cursor.execute(queries.items_select_id_previous, (self.id_, ))
-        oldprev = cursor.fetchone()["I_previous"]
+        cursor.execute(queries.items_select_parent_previous, (self.id_, ))
+        oldvalues = cursor.fetchone()
         cursor.execute(queries.items_update_previous, (previous, self.id_))
         self.connection.give(qconn)
 
-        # Is it inserting previous as integers or strings? *******************************
+        jhparams = json.dumps((parent, previous), separators=(',',':'))
+        jhunparams = json.dumps((oldvalues["I_parent"],
+                                oldvalues["I_previous"]), separators=(',',':'))
         self.dbhistory.insert_history(group, self.id_, 'update_previous',
-                                                description, previous, oldprev)
+                                            description, jhparams, jhunparams)
 
         item_update_previous_event.signal(filename=self.filename, id_=self.id_,
-                    previous=previous, group=group, description=description)
+                                        parent=parent, previous=previous,
+                                        group=group, description=description)
 
     def update_parent(self, parent, previous, group,
                                                     description='Update item'):
@@ -135,54 +138,6 @@ class Item(object):
         if event:
             item_update_text_event.signal(filename=self.filename, id_=self.id_,
                             text=text, group=group, description=description)
-
-    def _update(self, group, parent=None, previous=None, text=None,
-                                                    description='Update item'):
-        # Split in the above methods ****************************************************
-        qconn = self.connection.get()
-        cursor = qconn.cursor()
-
-        cursor.execute(queries.items_select_id, (self.id_, ))
-        current_values = cursor.fetchone()
-
-        kwparams = {'I_parent': parent,
-                    'I_previous': previous,
-                    'I_text': text}
-
-        # The interface requires the old parent when undoing/redoing an item
-        # update
-        if parent is not None:
-            hparams = ({}, current_values["I_parent"])
-            hunparams = ({}, parent)
-        elif previous is not None:
-            hparams = ({}, current_values["I_parent"])
-            hunparams = ({}, current_values["I_parent"])
-        else:
-            hparams = ({}, None)
-            hunparams = ({}, None)
-
-        set_fields = ''
-        qparams = []
-
-        for field in kwparams:
-            value = kwparams[field]
-
-            if value is not None:
-                hparams[0][field] = value
-                hunparams[0][field] = current_values[field]
-                set_fields += '{}=?, '.format(field)
-                qparams.append(value)
-
-        set_fields = set_fields[:-2]
-        query = queries.items_update_id.format(set_fields)
-        qparams.append(self.id_)
-        cursor.execute(query, qparams)
-        self.connection.give(qconn)
-
-        jhparams = json.dumps(hparams, separators=(',',':'))
-        jhunparams = json.dumps(hunparams, separators=(',',':'))
-        self.dbhistory.insert_history(group, self.id_, 'update',
-                                            description, jhparams, jhunparams)
 
     def delete_subtree(self, group, description='Delete subtree'):
         for child in self._get_children_unsorted():

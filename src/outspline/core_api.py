@@ -415,10 +415,6 @@ def bind_to_history_insert(handler, bind=True):
     return history.history_insert_event.bind(handler, bind)
 
 
-def bind_to_history_update(handler, bind=True):
-    return history.history_update_event.bind(handler, bind)
-
-
 def bind_to_history_update_previous(handler, bind=True):
     return history.history_update_previous_event.bind(handler, bind)
 

@@ -29,7 +29,6 @@ check_pending_changes_event = Event()
 reset_modified_state_event = Event()
 history_event = Event()
 history_insert_event = Event()
-history_update_event = Event()
 history_update_previous_event = Event()
 history_update_parent_event = Event()
 history_update_text_event = Event()
@@ -47,10 +46,6 @@ class DBHistory(object):
             'insert': {
                 'undo': self._do_history_row_delete,
                 'redo': self._do_history_row_insert,
-            },
-            'update': {
-                'undo': self._do_history_row_update,
-                'redo': self._do_history_row_update,
             },
             'update_previous': {
                 'undo': self._do_history_row_update_previous,
@@ -260,7 +255,8 @@ class DBHistory(object):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_insert, params)
-        cursor.execute(queries.items_select_id, (itemid, ))  # ??? ************************
+        # Useless query? ***************************************************************
+        cursor.execute(queries.items_select_id, (itemid, ))
         select = cursor.fetchone()
         self.connection.give(qconn)
 
@@ -272,46 +268,17 @@ class DBHistory(object):
                                                 previous=select['I_previous'],
                                                 text=select['I_text'], hid=hid)
 
-    def _do_history_row_update(self, filename, action, jparams, hid, type_,
-                                                                    itemid):
-        qconn = self.connection.get()
-        cursor = qconn.cursor()
-
-        kwparams, oldparent = json.loads(jparams)
-        set_fields = ''
-        qparams = []
-
-        for field in kwparams:
-            value = kwparams[field]
-
-            if value is not None:
-                set_fields += '{}=?, '.format(field)
-                qparams.append(value)
-
-        set_fields = set_fields[:-2]
-        query = queries.items_update_id.format(set_fields)
-        qparams.append(itemid)
-        cursor.execute(query, qparams)
-
-        cursor.execute(queries.items_select_id, (itemid, ))  # ??? ************************
-        select = cursor.fetchone()
-
-        self.connection.give(qconn)
-
-        history_update_event.signal(filename=self.filename, id_=itemid,
-                        parent=select['I_parent'], oldparent=oldparent,
-                        previous=select['I_previous'], text=select['I_text'])
-
     def _do_history_row_update_previous(self, filename, action, jparams, hid,
                                                                 type_, itemid):
-        # Is jparams arriving as string or integer? *****************************************
+        parent, previous = jparams
+
         qconn = self.connection.get()
         cursor = qconn.cursor()
-        cursor.execute(queries.items_update_previous, (jparams, itemid))
+        cursor.execute(queries.items_update_previous, (previous, itemid))
         self.connection.give(qconn)
 
-        history_update_parent_event.signal(filename=self.filename, id_=itemid,
-                                                            previous=jparams)
+        history_update_previous_event.signal(filename=self.filename,
+                                id_=itemid, parent=parent, previous=previous)
 
     def _do_history_row_update_parent(self, filename, action, jparams, hid,
                                                                 type_, itemid):

@@ -251,7 +251,11 @@ class Database(wx.SplitterWindow):
         core_api.bind_to_deleting_item(self._handle_deleting_item)
         core_api.bind_to_deleted_item_2(self._handle_deleted_item)
         core_api.bind_to_history_insert(self._handle_history_insert)
-        core_api.bind_to_history_update(self._handle_history_update)
+        core_api.bind_to_history_update_previous(
+                                        self._handle_history_update_previous)
+        core_api.bind_to_history_update_parent(
+                                            self._handle_history_update_parent)
+        core_api.bind_to_history_update_text(self._handle_history_update_text)
         core_api.bind_to_history_remove(self._handle_history_remove)
 
         # Check how this bug is currently tracked ****************************************************
@@ -305,7 +309,21 @@ class Database(wx.SplitterWindow):
 
             self.insert_item(parent, id_, kwargs['text'])
 
-    def _handle_history_update(self, kwargs):
+    def _handle_history_update_previous(self, kwargs):
+        # Check ***************************************************************************
+        filename = kwargs['filename']
+
+        if filename == self.filename:
+            pass
+
+    def _handle_history_update_parent(self, kwargs):
+        # Check ***************************************************************************
+        filename = kwargs['filename']
+
+        if filename == self.filename:
+            pass
+
+    def _handle_history_update_text(self, kwargs):
         # Check ***************************************************************************
         filename = kwargs['filename']
 
