@@ -114,7 +114,7 @@ class Database(wx.SplitterWindow):
 
         self.Initialize(self.treec)
 
-    def post_init(self):
+    def _post_init(self):
         creating_tree_event.signal(filename=self.filename)
 
         # Store an ImageList only *after* instantiating the class, because its
@@ -157,14 +157,14 @@ class Database(wx.SplitterWindow):
 
         # Test *******************************************************************************
         #self.treec.Bind(dv.EVT_DATAVIEW_ITEM_START_EDITING,
-        #                                                self.veto_label_edit)
+        #                                                self._veto_label_edit)
         self.treec.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
                                                         self._popup_item_menu)
 
-        core_api.bind_to_update_item(self.handle_update_item)
-        core_api.bind_to_history_insert(self.handle_history_insert)
-        core_api.bind_to_history_update(self.handle_history_update)
-        core_api.bind_to_history_remove(self.handle_history_remove)
+        core_api.bind_to_update_item(self._handle_update_item)
+        core_api.bind_to_history_insert(self._handle_history_insert)
+        core_api.bind_to_history_update(self._handle_history_update)
+        core_api.bind_to_history_remove(self._handle_history_remove)
 
         # Check how this bug is currently tracked ****************************************************
         """self.treec.Bind(wx.EVT_LEFT_DOWN, self._unselect_on_empty_areas)
@@ -176,11 +176,11 @@ class Database(wx.SplitterWindow):
         # Skipping the event ensures correct left click behaviour
         event.Skip()"""
 
-    def veto_label_edit(self, event):
+    def _veto_label_edit(self, event):
         # No longer used? ****************************************************************
         event.Veto()
 
-    def handle_update_item(self, kwargs):
+    def _handle_update_item(self, kwargs):
         # Don't update an item label only when editing the text area, as there
         # may be other plugins that edit an item's text (e.g links)
         # kwargs['text'] could be None if the query updated the position of the
@@ -190,7 +190,7 @@ class Database(wx.SplitterWindow):
             self.set_item_label(treeitem, kwargs['text'])
             self.update_item_image(treeitem)
 
-    def handle_history_insert(self, kwargs):
+    def _handle_history_insert(self, kwargs):
         filename = kwargs['filename']
         if filename == self.filename:
             id_ = kwargs['id_']
@@ -205,7 +205,7 @@ class Database(wx.SplitterWindow):
                 prev = self.find_item(previous)
                 self.insert_item(prev, 'after', id_, text=text)
 
-    def handle_history_update(self, kwargs):
+    def _handle_history_update(self, kwargs):
         filename = kwargs['filename']
         if filename == self.filename:
             id_ = kwargs['id_']
@@ -234,7 +234,7 @@ class Database(wx.SplitterWindow):
                     prev = self.find_item(previous)
                     self.move_item(item, prev, mode='after')
 
-    def handle_history_remove(self, kwargs):
+    def _handle_history_remove(self, kwargs):
         filename = kwargs['filename']
         id_ = kwargs['id_']
 
@@ -247,7 +247,7 @@ class Database(wx.SplitterWindow):
         global dbs
         dbs[filename] = cls(filename)
 
-        dbs[filename].post_init()
+        dbs[filename]._post_init()
 
     def insert_item(self, base, mode, id_, text=None, label=None,
                                             properties=None, imageindex=None):
@@ -434,8 +434,7 @@ class Database(wx.SplitterWindow):
         return self.data[id_][0]
 
     def get_item_icon(self, id_):
-        # Implement *****************************************************************************
-        return self.data[id_][1]
+        return self.properties.get_icon(self.data[id_][1])
 
     def set_item_label(self, treeitem, text):
         label = self._make_item_label(text)
