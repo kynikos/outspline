@@ -248,14 +248,17 @@ class Database(wx.SplitterWindow):
 
     def insert_item(self, base, mode, id_, text=None, label=None,
                                             properties=None, imageindex=None):
-        # Check ***************************************************************************
+        # Check and simplify ***************************************************************************
         if label is None or properties is None or imageindex is None:
             self._init_item_data(id_, text)
-            label, properties = self.data[id_]
+            #label, properties = self.data[id_]
             # get_image doesn't exist anymore *******************************************
-            imageindex = self.properties.get_image(properties)
+            #imageindex = self.properties.get_image(properties)
         else:
             self.data[id_] = [label, properties]
+
+        self.dvmodel.ItemAdded(self.get_tree_item(id_))
+        return False
 
         # *******************************************************************************
         data = wx.TreeItemData((id_, properties))
@@ -442,10 +445,9 @@ class Database(wx.SplitterWindow):
     def get_logs_panel(self):
         return self.logspanel
 
-    def select_item(self, treeitem):
-        # Check ***************************************************************************
+    def select_item(self, id_):
         self.treec.UnselectAll()
-        self.treec.SelectItem(treeitem)
+        self.treec.Select(self.get_tree_item(id_))
 
     def unselect_all_items(self):
         # Check ***************************************************************************

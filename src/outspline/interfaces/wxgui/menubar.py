@@ -657,7 +657,7 @@ class MenuDatabase(wx.Menu):
                         item = treedb.insert_item(base, 'append', id_,
                                                                     text=text)
 
-                    treedb.select_item(item)
+                    treedb.select_item(id_)
 
                     treedb.dbhistory.refresh()
 
@@ -681,7 +681,7 @@ class MenuDatabase(wx.Menu):
 
                     item = treedb.insert_item(base, 'append', id_, text=text)
 
-                    treedb.select_item(item)
+                    treedb.select_item(id_)
 
                     treedb.dbhistory.refresh()
 
@@ -705,6 +705,7 @@ class MenuDatabase(wx.Menu):
                                         treedb.get_item_parent(item),
                                         mode=treedb.get_item_index(item) - 1)
 
+                        # Cannot use newitem here ****************************************
                         treedb.select_item(newitem)
 
                         treedb.dbhistory.refresh()
@@ -734,6 +735,7 @@ class MenuDatabase(wx.Menu):
                                         treedb.get_item_parent(item),
                                         mode=treedb.get_item_index(item) + 2)
 
+                        # Cannot use newitem here ****************************************
                         treedb.select_item(newitem)
 
                         treedb.dbhistory.refresh()
@@ -759,6 +761,7 @@ class MenuDatabase(wx.Menu):
                                                 treedb.get_item_parent(
                                                 treedb.get_item_parent(item)))
 
+                        # Cannot use newitem here ****************************************
                         treedb.select_item(newitem)
 
                         treedb.dbhistory.refresh()
