@@ -305,13 +305,13 @@ class Item(object):
         else:
             return False
 
-    def get_ancestors(self, ancestors=[]):
-        # Simplify ***********************************************************************
+    def get_ancestors(self):
+        ancestors = []
         parent = self._get_parent()
 
         if parent:
-            ancestors.append(parent)
-            ancestors = parent.get_ancestors(ancestors)
+            ancestors.append(parent.get_id())
+            ancestors.extend(parent.get_ancestors())
 
         return ancestors
 

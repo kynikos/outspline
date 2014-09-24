@@ -488,8 +488,8 @@ class Alarm(object):
                 # characters to form mnemonic shortcuts, like in menus
                 # Note that in this case the '&' characters have to be escaped
                 # explicitly
-                ancestor.SetLabel(anc.get_text().partition('\n')[0].replace(
-                                                                    '&', '&&'))
+                ancestor.SetLabel(core_api.get_item_text(self.filename, anc
+                                    ).partition('\n')[0].replace('&', '&&'))
                 self.cbox.Add(ancestor, flag=wx.LEFT | wx.TOP, border=4)
 
             dbname = wx.StaticText(self.cpane)

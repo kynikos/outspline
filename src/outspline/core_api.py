@@ -261,10 +261,7 @@ def get_item_next(filename, id_):
 
 
 def get_item_ancestors(filename, id_):
-    # It's necessary to initialize ancestors=[] because otherwise for some
-    # reason the ancestors list from the previous call would be used, thus
-    # appending the ancestors again, multiplicating them at every call
-    return databases.dbs[filename].items[id_].get_ancestors(ancestors=[])
+    return databases.dbs[filename].items[id_].get_ancestors()
 
 
 def get_item_descendants(filename, id_):
