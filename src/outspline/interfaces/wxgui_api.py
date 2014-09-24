@@ -513,10 +513,6 @@ def get_tree_item_id(filename, item):
     return tree.dbs[filename].get_item_id(item)
 
 
-def get_root_tree_item(filename):
-    return tree.dbs[filename].get_root()
-
-
 def delete_items(filename, ids, description="Delete items"):
     return tree.dbs[filename].delete_items(ids, description=description)
 
@@ -530,8 +526,7 @@ def add_tree_context_menu_item(filename, item):
 
 
 def add_item_property(filename, bitsn, character, bits_to_colour):
-    return tree.dbs[filename].get_properties().add(bitsn, character,
-                                                                bits_to_colour)
+    return tree.dbs[filename].add_property(bitsn, character, bits_to_colour)
 
 
 def update_item_properties(filename, id_, property_bits, property_mask):

@@ -171,7 +171,6 @@ class Renderer(dv.PyDataViewCustomRenderer):
 
 
 class Database(wx.SplitterWindow):
-    # Mark private methods **************************************************************
     # Addresses #260 ********************************************************************
     # Fixes #334 ************************************************************************
     # Addresses #336 ********************************************************************
@@ -302,7 +301,7 @@ class Database(wx.SplitterWindow):
     def _handle_insert_item(self, kwargs):
         if kwargs['filename'] == self.filename:
             parent = self.get_tree_item_safe(kwargs['parent'])
-            self.insert_item(parent, kwargs['id_'], kwargs['text'])
+            self._insert_item(parent, kwargs['id_'], kwargs['text'])
 
     def _handle_update_item_text(self, kwargs):
         # Don't update an item label only when editing the text area, as there
@@ -311,7 +310,7 @@ class Database(wx.SplitterWindow):
         # item and not its text
         if kwargs['filename'] == self.filename:
             id_ = kwargs['id_']
-            self.set_item_label(id_, kwargs['text'])
+            self._set_item_label(id_, kwargs['text'])
             self.update_tree_item(id_)
 
     def _handle_deleting_item(self, kwargs):
@@ -338,7 +337,7 @@ class Database(wx.SplitterWindow):
     def _handle_history_update_text(self, kwargs):
         if kwargs['filename'] == self.filename:
             id_ = kwargs['id_']
-            self.set_item_label(id_, kwargs['text'])
+            self._set_item_label(id_, kwargs['text'])
             self.request_item_refresh(id_)
 
     def _handle_history_remove(self, kwargs):
@@ -369,8 +368,8 @@ class Database(wx.SplitterWindow):
                 for id_ in core_api.get_root_items(self.filename):
                     item = self.get_tree_item(id_)
                     # For some reason ItemDeleted must be called too first...
-                    self.dvmodel.ItemDeleted(self.get_root(), item)
-                    self.dvmodel.ItemAdded(self.get_root(), item)
+                    self.dvmodel.ItemDeleted(self._get_root(), item)
+                    self.dvmodel.ItemAdded(self._get_root(), item)
                     self._reset_subtree(id_, item)
 
             for id_ in self.history_item_update_requests:
@@ -388,7 +387,7 @@ class Database(wx.SplitterWindow):
 
         dbs[filename]._post_init()
 
-    def insert_item(self, parent, id_, text):
+    def _insert_item(self, parent, id_, text):
         self._init_item_data(id_, text)
         self.dvmodel.ItemAdded(parent, self.get_tree_item(id_))
 
@@ -495,7 +494,7 @@ class Database(wx.SplitterWindow):
     def get_filename(self):
         return self.filename
 
-    def get_root(self):
+    def _get_root(self):
         return dv.NullDataViewItem
 
     def get_item_id(self, item):
@@ -508,7 +507,7 @@ class Database(wx.SplitterWindow):
         if id_ > 0:
             return self.get_tree_item(id_)
         else:
-            return self.get_root()
+            return self._get_root()
 
     @staticmethod
     def _make_item_label(text):
@@ -520,7 +519,7 @@ class Database(wx.SplitterWindow):
     def get_item_properties(self, id_):
         return self.properties.get(self.data[id_].get_properties())
 
-    def set_item_label(self, id_, text):
+    def _set_item_label(self, id_, text):
         label = self._make_item_label(text)
         self.data[id_].set_label(label)
         multiline_bits, multiline_mask = \
@@ -539,8 +538,8 @@ class Database(wx.SplitterWindow):
     def update_tree_item(self, id_):
         self.dvmodel.ItemChanged(self.get_tree_item(id_))
 
-    def get_properties(self):
-        return self.properties
+    def add_property(self, *args, **kwargs):
+        return self.properties.add(*args, **kwargs)
 
     def get_logs_panel(self):
         return self.logspanel
