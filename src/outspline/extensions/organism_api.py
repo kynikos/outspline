@@ -44,13 +44,6 @@ def update_item_rules(filename, id_, rules, group,
                                    description=description)
 
 
-def update_item_rules_no_event(filename, id_, rules, group,
-                                            description='Update item rules'):
-    # See update_item_rules for guidelines
-    return extension.databases[filename].update_item_rules_no_event(id_, rules,
-                                                group, description=description)
-
-
 def get_supported_open_databases():
     return extension.databases.keys()
 

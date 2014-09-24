@@ -96,15 +96,15 @@ class Database(object):
 
     def update_item_rules(self, id_, rules, group,
                                             description='Update item rules'):
-        self.update_item_rules_no_event(id_, rules, group,
+        self._update_item_rules_no_event(id_, rules, group,
                                                     description=description)
 
-        # Note that update_item_rules_no_event can be called directly, thus not
-        # signalling this event
+        # Note that _update_item_rules_no_event can be called directly, thus
+        # not signalling this event
         update_item_rules_conditional_event.signal(filename=self.filename,
                                                         id_=id_, rules=rules)
 
-    def update_item_rules_no_event(self, id_, rules, group,
+    def _update_item_rules_no_event(self, id_, rules, group,
                                             description='Update item rules'):
         if isinstance(rules, list):
             rules = self.rules_to_string(rules)
@@ -143,7 +143,7 @@ class Database(object):
         # handled by organism_timer.timer.NextOccurrencesEngine, and it would
         # slow down the pasting of items a lot; NextOccurrencesEngine is bound
         # anyway to copypaste_api.bind_to_items_pasted
-        self.update_item_rules_no_event(id_, curm.fetchone()['CR_rules'],
+        self._update_item_rules_no_event(id_, curm.fetchone()['CR_rules'],
                                                             group, description)
 
     def delete_item_rules(self, id_, text, group,

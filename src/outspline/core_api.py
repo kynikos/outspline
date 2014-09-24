@@ -135,14 +135,6 @@ def update_item_text(filename, id_, text, group=None,
                                                     description=description)
 
 
-def update_item_text_no_event(filename, id_, text, group=None,
-                                            description='Update item text'):
-    if group == None:
-        group = databases.dbs[filename].dbhistory.get_next_history_group()
-    return databases.dbs[filename].items[id_].update_text(text, group,
-                                        event=False, description=description)
-
-
 def register_history_action_handlers(filename, name, redo_handler,
                                                                 undo_handler):
     return databases.dbs[filename].dbhistory.register_action_handlers(name,

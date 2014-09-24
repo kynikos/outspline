@@ -125,7 +125,7 @@ class Item(object):
                                         parent=parent, previous=previous,
                                         group=group, description=description)
 
-    def update_text(self, text, group, event=True, description='Update item'):
+    def update_text(self, text, group, description='Update item'):
         qconn = self.connection.get()
         cursor = qconn.cursor()
 
@@ -137,8 +137,7 @@ class Item(object):
         self.dbhistory.insert_history(group, self.id_, 'update_text',
                                                     description, text, oldtext)
 
-        if event:
-            item_update_text_event.signal(filename=self.filename, id_=self.id_,
+        item_update_text_event.signal(filename=self.filename, id_=self.id_,
                             text=text, group=group, description=description)
 
     def delete_subtree(self, group, description='Delete subtree'):
