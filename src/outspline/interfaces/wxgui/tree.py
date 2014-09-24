@@ -347,6 +347,18 @@ class Database(wx.SplitterWindow):
             # how it's done in the menubar module ******************************************
             self._remove_item(id_)
 
+    def find_item(self, id_):
+        # Gonna be useless **************************************************************
+        return self.titems[id_].GetId()
+
+    def get_item_previous(self, treeitem):
+        # Gonna be useless **************************************************************
+        return self.treec.GetPrevSibling(treeitem)
+
+    def get_item_parent(self, treeitem):
+        # Gonna be useless **************************************************************
+        return self.treec.GetItemParent(treeitem)
+
     @classmethod
     def open(cls, filename):
         global dbs
@@ -383,10 +395,6 @@ class Database(wx.SplitterWindow):
         properties = self._compute_property_bits(0, multiline_bits,
                                                                 multiline_mask)
         self.data[id_] = [label, properties]
-
-    def find_item(self, id_):
-        # Gonna be useless **************************************************************
-        return self.titems[id_].GetId()
 
     def get_selections(self, none=True, many=True, descendants=None):
         selection = self.treec.GetSelections()
@@ -497,14 +505,6 @@ class Database(wx.SplitterWindow):
 
     def get_tree_item(self, id_):
         return self.dvmodel.ObjectToItem(id_)
-
-    def get_item_previous(self, treeitem):
-        # Gonna be useless **************************************************************
-        return self.treec.GetPrevSibling(treeitem)
-
-    def get_item_parent(self, treeitem):
-        # Gonna be useless **************************************************************
-        return self.treec.GetItemParent(treeitem)
 
     @staticmethod
     def _make_item_label(text):

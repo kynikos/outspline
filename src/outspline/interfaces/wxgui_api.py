@@ -519,6 +519,7 @@ def get_tree_item_id(filename, treeitem):
 
 
 def get_root_tree_item(filename):
+    # Check *********************************************************************************
     return tree.dbs[filename].get_root()
 
 
@@ -551,6 +552,7 @@ def insert_tree_item_after(filename, base, id_):
 
 
 def insert_subtree(filename, treeroot):
+    # Check *********************************************************************************
     return tree.dbs[filename].insert_subtree(base=treeroot)
 
 
