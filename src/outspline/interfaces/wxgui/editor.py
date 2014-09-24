@@ -277,7 +277,7 @@ class Editor():
 
     def find_in_tree(self):
         treedb = tree.dbs[self.filename]
-        treedb.select_item(treedb.find_item(self.id_))
+        treedb.select_item(self.id_)
         nb = wx.GetApp().nb_left
         nb.select_page(nb.GetPageIndex(treedb))
 

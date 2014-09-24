@@ -30,6 +30,8 @@ from exceptions import (BadOccurrenceError, BadExceptRuleError,
 
 update_item_rules_conditional_event = Event()
 delete_item_rules_event = Event()
+history_insert_event = Event()
+history_update_event = Event()
 get_alarms_event = Event()
 
 
@@ -57,6 +59,9 @@ class Database(object):
         cursor.execute(queries.rules_insert, (itemid, jparams))
         core_api.give_connection(filename, qconn)
 
+        history_insert_event.signal(filename=filename, id_=itemid,
+                                        rules=self.string_to_rules(jparams))
+
     # This method has to accept filename as the first argument, even though
     # it's part of this object
     def _handle_history_update(self, filename, action, jparams, hid, type_,
@@ -65,6 +70,9 @@ class Database(object):
         cursor = qconn.cursor()
         cursor.execute(queries.rules_update_id, (jparams, itemid))
         core_api.give_connection(filename, qconn)
+
+        history_update_event.signal(filename=filename, id_=itemid,
+                                        rules=self.string_to_rules(jparams))
 
     # This method has to accept filename as the first argument, even though
     # it's part of this object

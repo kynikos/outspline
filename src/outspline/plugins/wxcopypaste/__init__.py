@@ -53,11 +53,14 @@ def cut_items(event, no_confirm=False):
         # This method may be launched by the menu accelerator, but no database
         # may be open
         if filename:
-            # select() arguments must be compatible with delete_items()
+            # get_tree_selections() arguments must be compatible with the ones
+            # used in delete_items()
             selection = wxgui_api.get_tree_selections(filename, none=False,
                                                             descendants=True)
 
             if selection:
+                items = []
+
                 for item in selection:
                     id_ = wxgui_api.get_tree_item_id(filename, item)
 
@@ -66,16 +69,12 @@ def cut_items(event, no_confirm=False):
                         core_api.release_databases()
                         return False
 
-                items = []
-
-                for item in selection:
-                    id_ = wxgui_api.get_tree_item_id(filename, item)
                     items.append(id_)
 
-                copypaste_api.cut_items(filename, items,
-                                description='Cut {} items'.format(len(items)))
+                copypaste_api.copy_items(filename, items)
 
-                wxgui_api.remove_tree_items(filename, selection)
+                wxgui_api.delete_items(filename, items,
+                                description='Cut {} items'.format(len(items)))
                 wxgui_api.refresh_history(filename)
                 cut_items_event.signal()
 
@@ -89,7 +88,8 @@ def copy_items(event):
         # This method may be launched by the menu accelerator, but not database
         # may be open
         if filename:
-            # select() arguments must be compatible with delete_items()
+            # get_tree_selections() arguments must be compatible with the ones
+            # used in delete_items()
             selection = wxgui_api.get_tree_selections(filename, none=False,
                                                             descendants=True)
 
@@ -117,30 +117,16 @@ def paste_items_as_siblings(event, no_confirm=False):
             # database
             selection = wxgui_api.get_tree_selections(filename, many=False)
 
-            # If multiple items are selected, selection will be bool (False)
-            if isinstance(selection, list):
+            # If multiple items are selected, selection will be False
+            if selection is not False:
                 if len(selection) > 0:
-                    base = selection[0]
-                    baseid = wxgui_api.get_tree_item_id(filename, base)
+                    baseid = wxgui_api.get_tree_item_id(filename, selection[0])
 
                     roots, ids = copypaste_api.paste_items_as_siblings(
                                 filename, baseid, description='Paste items')
-
-                    for r in roots:
-                        treeroot = wxgui_api.insert_tree_item_after(filename,
-                                                            selection[0], r)
-                        wxgui_api.create_tree(filename, treeroot)
                 else:
-                    base = wxgui_api.get_root_tree_item(filename)
-                    baseid = wxgui_api.get_tree_item_id(filename, base)
-
                     roots, ids = copypaste_api.paste_items_as_children(
-                                    filename, baseid, description='Paste items')
-
-                    for r in roots:
-                        treeroot = wxgui_api.append_tree_item(filename, base,
-                                                                            r)
-                        wxgui_api.create_tree(filename, treeroot)
+                                        filename, 0, description='Paste items')
 
                 wxgui_api.refresh_history(filename)
 
@@ -168,11 +154,6 @@ def paste_items_as_children(event, no_confirm=False):
 
                 roots, ids = copypaste_api.paste_items_as_children(filename,
                                         baseid, description='Paste sub-items')
-
-                for r in roots:
-                    treeroot = wxgui_api.append_tree_item(filename,
-                                                            selection[0], r)
-                    wxgui_api.create_tree(filename, treeroot)
 
                 wxgui_api.refresh_history(filename)
 

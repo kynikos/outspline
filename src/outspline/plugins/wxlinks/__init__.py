@@ -19,6 +19,7 @@
 import wx
 
 import outspline.coreaux_api as coreaux_api
+import outspline.core_api as core_api
 import outspline.extensions.links_api as links_api
 import outspline.interfaces.wxgui_api as wxgui_api
 wxcopypaste_api = coreaux_api.import_optional_plugin_api('wxcopypaste')
@@ -186,11 +187,12 @@ class TreeItemIcons(object):
             links_api.bind_to_upsert_link(self._handle_upsert_link)
             links_api.bind_to_delete_link(self._handle_delete_link)
             links_api.bind_to_break_link(self._handle_break_links)
+            links_api.bind_to_history_insert(self._handle_history)
+            links_api.bind_to_history_update(self._handle_history)
+            links_api.bind_to_history_delete(self._handle_history)
 
             wxgui_api.bind_to_open_database(self._handle_open_database)
             wxgui_api.bind_to_close_database(self._handle_close_database)
-            wxgui_api.bind_to_undo_tree(self._handle_history)
-            wxgui_api.bind_to_redo_tree(self._handle_history)
 
             if wxcopypaste_api:
                 wxcopypaste_api.bind_to_items_pasted(self._handle_paste)
@@ -231,8 +233,9 @@ class TreeItemIcons(object):
             wxgui_api.bind_to_open_database(self._handle_open_database, False)
             wxgui_api.bind_to_close_database(self._handle_close_database,
                                                                         False)
-            wxgui_api.bind_to_undo_tree(self._handle_history, False)
-            wxgui_api.bind_to_redo_tree(self._handle_history, False)
+            links_api.bind_to_history_insert(self._handle_history, False)
+            links_api.bind_to_history_update(self._handle_history, False)
+            links_api.bind_to_history_delete(self._handle_history, False)
 
             if wxcopypaste_api:
                 wxcopypaste_api.bind_to_items_pasted(self._handle_paste, False)
@@ -241,6 +244,7 @@ class TreeItemIcons(object):
         if kwargs['filename'] == self.filename:
             id_ = kwargs['id_']
             target = kwargs['target']
+            oldtarget = kwargs['oldtarget']
             backlinks = links_api.find_back_links(self.filename, id_)
             target_target = links_api.find_link_target(self.filename, target)
 
@@ -257,8 +261,14 @@ class TreeItemIcons(object):
                 target_rbits = 4
 
             self._update_item(id_, rbits)
-            self._update_item(target, target_rbits)
-            self._reset_item(kwargs['oldtarget'])
+
+            if target is not None:
+                self._update_item(target, target_rbits)
+
+            # oldtarget may not exist anymore
+            if oldtarget is not False and core_api.is_item(self.filename,
+                                                                    oldtarget):
+                self._reset_item(oldtarget)
 
     def _handle_delete_link(self, kwargs):
         if kwargs['filename'] == self.filename:
@@ -266,10 +276,15 @@ class TreeItemIcons(object):
             backlinks = links_api.find_back_links(self.filename, id_)
             rbits = 3 if len(backlinks) > 0 else 0
 
-            # id_ may not exist anymore, but wxgui_api.update_item_properties
-            # is protected against KeyError
-            self._update_item(id_, rbits)
-            self._reset_item(kwargs['oldtarget'])
+            # id_ may not exist anymore
+            if core_api.is_item(self.filename, id_):
+                self._update_item(id_, rbits)
+
+            oldtarget = kwargs['oldtarget']
+
+            # oldtarget may not exist anymore
+            if core_api.is_item(self.filename, oldtarget):
+                self._reset_item(oldtarget)
 
     def _handle_break_links(self, kwargs):
         if kwargs['filename'] == self.filename:
@@ -278,66 +293,66 @@ class TreeItemIcons(object):
                 rbits = 5 if len(backlinks) > 0 else 2
                 self._update_item(id_, rbits)
 
-            self._reset_item(kwargs['oldtarget'])
+            oldtarget = kwargs['oldtarget']
+
+            # oldtarget may not exist anymore
+            if core_api.is_item(self.filename, oldtarget):
+                self._reset_item(oldtarget)
 
     def _handle_history(self, kwargs):
         if kwargs['filename'] == self.filename:
-            for id_ in kwargs['items']:
-                # id_ may not exist anymore, but
-                # wxgui_api.update_item_properties is protected against
-                # KeyError
-                # The history event may have effects also on target and
-                # backlinks
-                backlinks = links_api.find_back_links(self.filename, id_)
-                target = links_api.find_link_target(self.filename, id_)
+            id_ = kwargs['id_']
 
-                if target is False:
-                    rbits = 3 if len(backlinks) > 0 else 0
+            # The history event may have effects also on target and backlinks
+            backlinks = links_api.find_back_links(self.filename, id_)
+            target = links_api.find_link_target(self.filename, id_)
 
-                    # Find any possible old target and update it
-                    # This fixes for example the case of undoing the linking
-                    # of an item to another, which wouldn't update the tree
-                    # icon of the old target because this function would be
-                    # called *after* removing the link, so the old target
-                    # would not be retrievable through a database query
-                    old_target = links_api.get_last_known_target(self.filename,
-                                                                        id_)
+            if target is False:
+                rbits = 3 if len(backlinks) > 0 else 0
 
-                    if old_target is not None:
-                        self._reset_item(old_target)
+                # Find any possible old target and update it
+                # This fixes for example the case of undoing the linking
+                # of an item to another, which wouldn't update the tree
+                # icon of the old target because this function would be
+                # called *after* removing the link, so the old target
+                # would not be retrievable through a database query
+                old_target = links_api.get_last_known_target(self.filename, id_)
 
-                elif target is None:
-                    rbits = 5 if len(backlinks) > 0 else 2
+                if old_target is not None:
+                    self._reset_item_no_tree_update(old_target)
 
-                else:
-                    rbits = 4 if len(backlinks) > 0 else 1
+            elif target is None:
+                rbits = 5 if len(backlinks) > 0 else 2
 
-                    target_target = links_api.find_link_target(self.filename,
+            else:
+                rbits = 4 if len(backlinks) > 0 else 1
+
+                target_target = links_api.find_link_target(self.filename,
                                                                         target)
 
-                    if target_target is False:
-                        target_rbits = 3
-                    elif target_target is None:
-                        target_rbits = 5
-                    else:
-                        target_rbits = 4
+                if target_target is False:
+                    target_rbits = 3
+                elif target_target is None:
+                    target_rbits = 5
+                else:
+                    target_rbits = 4
 
-                    self._update_item(target, target_rbits)
+                self._update_item_no_tree_update(target, target_rbits)
 
-                self._update_item(id_, rbits)
+            self._update_item_no_tree_update(id_, rbits)
 
-                for blink in backlinks:
-                    blink_backlinks = links_api.find_back_links(self.filename,
+            for blink in backlinks:
+                blink_backlinks = links_api.find_back_links(self.filename,
                                                                         blink)
-                    blink_rbits = 4 if len(blink_backlinks) > 0 else 1
-                    self._update_item(blink, blink_rbits)
+                blink_rbits = 4 if len(blink_backlinks) > 0 else 1
+                self._update_item_no_tree_update(blink, blink_rbits)
 
     def _handle_paste(self, kwargs):
         if kwargs['filename'] == self.filename:
             for id_ in kwargs['ids']:
                 self._reset_item(id_)
 
-    def _reset_item(self, id_):
+    def _compute_rbits(self, id_):
         backlinks = links_api.find_back_links(self.filename, id_)
         target = links_api.find_link_target(self.filename, id_)
 
@@ -348,17 +363,28 @@ class TreeItemIcons(object):
         else:
             rbits = 4 if len(backlinks) > 0 else 1
 
+        return rbits
+
+    def _reset_item_no_tree_update(self, id_):
+        rbits = self._compute_rbits(id_)
+        self._update_item_no_tree_update(id_, rbits)
+
+    def _reset_item(self, id_):
+        rbits = self._compute_rbits(id_)
         self._update_item(id_, rbits)
 
+    def _update_item_properties(self, id_, rbits):
+        bits = rbits << self.property_shift
+        wxgui_api.update_item_properties(self.filename, id_, bits,
+                                                        self.property_mask)
+
+    def _update_item_no_tree_update(self, id_, rbits):
+        self._update_item_properties(id_, rbits)
+        wxgui_api.request_tree_item_refresh(self.filename, id_)
 
     def _update_item(self, id_, rbits):
-        bits = rbits << self.property_shift
-
-        # self._handle_delete_link and self._handle_history may pass a
-        # no-longer-existing id_
-        if wxgui_api.update_item_properties(self.filename, id_, bits,
-                                                        self.property_mask):
-            wxgui_api.update_item_image(self.filename, id_)
+        self._update_item_properties(id_, rbits)
+        wxgui_api.update_tree_item(self.filename, id_)
 
 
 class ViewMenu(object):

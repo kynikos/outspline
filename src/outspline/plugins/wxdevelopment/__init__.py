@@ -177,8 +177,8 @@ class MenuDev(wx.Menu):
             if filename:
                 group = core_api.get_next_history_group(filename)
                 description = 'Populate tree'
-
                 i = 0
+
                 while i < 10:
                     dbitems = core_api.get_items_ids(filename)
 
@@ -187,22 +187,15 @@ class MenuDev(wx.Menu):
                     except IndexError:
                         # No items in the database yet
                         itemid = 0
-
-                    mode = random.choice(('child', 'sibling'))
-
-                    if mode == 'sibling' and itemid == 0:
-                        continue
-
-                    i += 1
+                        mode = 'child'
+                    else:
+                        mode = random.choice(('child', 'sibling'))
 
                     text = self._populate_tree_text()
 
                     id_ = self._populate_tree_item(mode, filename, itemid,
                                                     group, text, description)
 
-                    self._populate_tree_gui(mode, filename, itemid, id_, text)
-
-                    # Rules must be created *after* self._populate_tree_gui
                     # It should also be checked if the database supports
                     #  organism_basicrules (bug #330)
                     if organism_api and wxscheduler_basicrules_api and \
@@ -211,12 +204,13 @@ class MenuDev(wx.Menu):
                         self._populate_tree_rules(filename, id_, group,
                                                             description)
 
-                    # Links must be created *after* self._populate_tree_gui
                     if links_api and wxlinks_api and len(dbitems) > 0 and \
                                     filename in \
                                     links_api.get_supported_open_databases():
                         self._populate_tree_link(filename, id_, dbitems, group,
                                                                 description)
+
+                    i += 1
 
                 wxgui_api.refresh_history(filename)
             core_api.release_databases()
@@ -301,7 +295,8 @@ class MenuDev(wx.Menu):
 
             rules.append(rule)
 
-        organism_api.update_item_rules(filename, id_, rules, group,
+        if rules:
+            organism_api.update_item_rules(filename, id_, rules, group,
                                                     description=description)
 
     def _populate_tree_link(self, filename, id_, dbitems, group, description):
@@ -310,12 +305,6 @@ class MenuDev(wx.Menu):
             # *before* the new item was appended
             target = random.choice(dbitems)
             links_api.make_link(filename, id_, target, group, description)
-
-    def _populate_tree_gui(self, mode, filename, itemid, id_, text):
-        if mode == 'child':
-            wxgui_api.append_item(filename, itemid, id_, text)
-        elif mode == 'sibling':
-            wxgui_api.insert_item_after(filename, itemid, id_, text)
 
     def reset_simulator_item(self):
         if simulator.is_active():

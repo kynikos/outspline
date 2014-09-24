@@ -266,10 +266,6 @@ def bind_to_redo_tree(handler, bind=True):
     return menubar.redo_tree_event.bind(handler, bind)
 
 
-def bind_to_move_item(handler, bind=True):
-    return menubar.move_item_event.bind(handler, bind)
-
-
 def bind_to_delete_items(handler, bind=True):
     return menubar.delete_items_event.bind(handler, bind)
 
@@ -510,44 +506,15 @@ def unselect_all_items(filename):
 
 
 def add_item_to_selection(filename, id_):
-    treeitem = tree.dbs[filename].find_item(id_)
-    return tree.dbs[filename].add_item_to_selection(treeitem)
+    return tree.dbs[filename].add_item_to_selection(id_)
 
 
-def get_tree_item_id(filename, treeitem):
-    return tree.dbs[filename].get_item_id(treeitem)
+def get_tree_item_id(filename, item):
+    return tree.dbs[filename].get_item_id(item)
 
 
-def get_root_tree_item(filename):
-    return tree.dbs[filename].get_root()
-
-
-def append_item(filename, baseid, id_, text):
-    base = tree.dbs[filename].find_item(baseid)
-    return tree.dbs[filename].insert_item(base, 'append', id_, text=text)
-
-
-def insert_item_after(filename, baseid, id_, text):
-    base = tree.dbs[filename].find_item(baseid)
-    return tree.dbs[filename].insert_item(base, 'after', id_, text=text)
-
-
-def append_tree_item(filename, baseid, id_):
-    text = core_api.get_item_text(filename, id_)
-    return tree.dbs[filename].insert_item(baseid, 'append', id_, text=text)
-
-
-def insert_tree_item_after(filename, baseid, id_):
-    text = core_api.get_item_text(filename, id_)
-    return tree.dbs[filename].insert_item(baseid, 'after', id_, text=text)
-
-
-def create_tree(filename, treeroot):
-    return tree.dbs[filename].create(base=treeroot)
-
-
-def remove_tree_items(filename, treeitems):
-    return tree.dbs[filename].remove_items(treeitems)
+def delete_items(filename, ids, description="Delete items"):
+    return tree.dbs[filename].delete_items(ids, description=description)
 
 
 def get_tree_context_menu(filename):
@@ -559,24 +526,20 @@ def add_tree_context_menu_item(filename, item):
 
 
 def add_item_property(filename, bitsn, character, bits_to_colour):
-    return tree.dbs[filename].get_properties().add(bitsn, character,
-                                                                bits_to_colour)
+    return tree.dbs[filename].add_property(bitsn, character, bits_to_colour)
 
 
 def update_item_properties(filename, id_, property_bits, property_mask):
-    try:
-        treeitem = tree.dbs[filename].find_item(id_)
-    except KeyError:
-        return False
-    else:
-        tree.dbs[filename].update_item_properties(treeitem, property_bits,
+    tree.dbs[filename].update_item_properties(id_, property_bits,
                                                                 property_mask)
-        return True
 
 
-def update_item_image(filename, id_):
-    treeitem = tree.dbs[filename].find_item(id_)
-    return tree.dbs[filename].update_item_image(treeitem)
+def update_tree_item(filename, id_):
+    tree.dbs[filename].update_tree_item(id_)
+
+
+def request_tree_item_refresh(filename, id_):
+    return tree.dbs[filename].request_item_refresh(id_)
 
 
 def get_logs_parent(filename):
@@ -615,14 +578,12 @@ def simulate_unselect_all_items(filename):
 
 def simulate_add_items_to_selection(filename, ids):
     for id_ in ids:
-        item = tree.dbs[filename].find_item(id_)
-        tree.dbs[filename].add_item_to_selection(item)
+        tree.dbs[filename].add_item_to_selection(id_)
 
 
 def simulate_remove_items_from_selection(filename, ids):
     for id_ in ids:
-        item = tree.dbs[filename].find_item(id_)
-        tree.dbs[filename].remove_item_from_selection(item)
+        tree.dbs[filename].remove_item_from_selection(id_)
 
 
 ### PROPERTIES ###

@@ -53,9 +53,9 @@ class Main(object):
         core_api.bind_to_history_remove(self._handle_history_remove)
         core_api.bind_to_history_clean(self._handle_history_clean)
 
-        # Do not bind directly to core_api.bind_to_delete_item because it would
-        # create a race hazard with organism.items.delete_item_rules, which is
-        # bound to the same event
+        # Do not bind directly to core_api.bind_to_deleted_item because it
+        # would create a race hazard with organism.items.delete_item_rules,
+        # which is bound to the same event
         organism_api.bind_to_delete_item_rules(self._handle_delete_item_rules)
         organism_api.bind_to_get_alarms(self._handle_get_alarms)
 

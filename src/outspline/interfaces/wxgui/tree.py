@@ -18,6 +18,7 @@
 
 import os
 import wx
+import wx.dataview as dv
 
 from outspline.coreaux_api import Event
 import outspline.coreaux_api as coreaux_api
@@ -32,28 +33,151 @@ popup_context_menu_event = Event()
 dbs = {}
 
 
-class Tree(wx.TreeCtrl):
-    def __init__(self, parent):
-        # The tree doesn't seem to support TAB traversal if there's only one
-        #   item (but Home/End and PgUp/PgDown do select it) (bug #336)
-        wx.TreeCtrl.__init__(self, parent, wx.NewId(),
-                                    style=wx.TR_HAS_BUTTONS | wx.TR_HIDE_ROOT |
-                                    wx.TR_MULTIPLE | wx.TR_FULL_ROW_HIGHLIGHT)
+class Item(object):
+    # The DataViewModel needs proper objects; to *not* store simple integers
+    # (e.g. the items' id's) or strings as items' objects
+    def __init__(self, id_, label, properties):
+        self.id_ = id_
+        self.label = label
+        self.properties = properties
+
+    def get_id(self):
+        return self.id_
+
+    def get_label(self):
+        return self.label
+
+    def get_properties(self):
+        return self.properties
+
+    def set_label(self, label):
+        self.label = label
+
+    def set_properties(self, properties):
+        self.properties = properties
+
+
+class Model(dv.PyDataViewModel):
+    def __init__(self, data, filename):
+        super(Model, self).__init__()
+        self.data = data
+        self.filename = filename
+
+        # The wxPython demo uses weak references for the item objects: see if
+        # it can be used also in this case (bug #348)
+        #self.objmapper.UseWeakRefs(True)
+
+    def IsContainer(self, item):
+        # Do not test and return core_api.has_item_children because if a child
+        # is added to a previously non-container item, that item should be
+        # updated too
+        return True
+
+    def GetParent(self, item):
+        if not item:
+            return dv.NullDataViewItem
+        else:
+            id_ = self.ItemToObject(item).get_id()
+            pid = core_api.get_item_parent(self.filename, id_)
+
+            if pid > 0:
+                return self.ObjectToItem(self.data[pid])
+            else:
+                return dv.NullDataViewItem
+
+    def GetChildren(self, parent, children):
+        if not parent:
+            ids = core_api.get_root_items(self.filename)
+        else:
+            pid = self.ItemToObject(parent).get_id()
+            ids = core_api.get_item_children(self.filename, pid)
+
+        for id_ in ids:
+            children.append(self.ObjectToItem(self.data[id_]))
+
+        return len(ids)
+
+    def GetColumnCount(self):
+        return 1
+
+    def GetValue(self, item, col):
+        # For some reason Renderer needs this to return a string, but it would
+        # be more natural to just pass the Item object or the id as an integer
+        # Bug #347
+        return str(self.ItemToObject(item).get_id())
+
+    '''def GetColumnType(self, col):
+        # It seems not needed to override this method, it's not done in the
+        # demos either
+        # Besides, returning "string" here would activate the "live" search
+        # feature that belongs to the native GTK widget used by DataViewCtrl
+        # See also bug #349
+        # https://groups.google.com/d/msg/wxpython-users/QvSesrnD38E/31l8f6AzIhAJ
+        # https://groups.google.com/d/msg/wxpython-users/4nsv7x1DE-s/ljQHl9RTnuEJ
+        return None'''
+
+
+class Renderer(dv.PyDataViewCustomRenderer):
+    def __init__(self, database, treec):
+        super(Renderer, self).__init__()
+        self.VMARGIN = 1
+        self.GAP = 2
+        self.ADDITIONAL_GAP = 4
+        self.database = database
+
+        self.deffont = treec.GetFont()
+        self.fgcolor = treec.GetForegroundColour()
+        self.iconfont = treec.GetFont()
+        self.iconfont.SetWeight(wx.FONTWEIGHT_BOLD)
+
+        dc = wx.MemoryDC()
+        dc.SelectObject(wx.NullBitmap)
+        dc.SetFont(self.deffont)
+        # It shouldn't matter whether characters with descent are used or not,
+        # but use "pb" for safety anyway
+        extent = dc.GetTextExtent("pb")
+        self.needed_height = extent[1] + self.VMARGIN * 2
+
+    def SetValue(self, value):
+        self.value = value
+        self.label = self.database.get_item_label(int(value))
+        self.teststr, self.strdata = self.database.get_item_properties(int(
+                                                                        value))
+        return True
+
+    def GetValue(self):
+        return self.value
+
+    def GetSize(self):
+        label = "".join((self.teststr, self.label))
+        tsize = self.GetTextExtent(label)
+        gapsw = (len(self.strdata)) * self.GAP + self.ADDITIONAL_GAP
+        return wx.Size(tsize.GetWidth() + gapsw, self.needed_height)
+
+    def Render(self, rect, dc, state):
+        dc.SetFont(self.iconfont)
+        xoffset = rect.GetX()
+
+        for data in self.strdata:
+            dc.SetTextForeground(data[1])
+            dc.DrawText(data[0], xoffset, rect.GetY() + self.VMARGIN)
+            xoffset += self.GetTextExtent(data[0])[0] + self.GAP
+
+        if self.strdata:
+            xoffset += self.ADDITIONAL_GAP
+
+        # Don't use self.RenderText as the official docs would suggest, because
+        # it aligns vertically in a weird way
+        dc.SetFont(self.deffont)
+        dc.SetTextForeground(self.fgcolor)
+        dc.DrawText(self.label, xoffset, rect.GetY() + self.VMARGIN)
+
+        return True
 
 
 class Database(wx.SplitterWindow):
-    treec = None
-    filename = None
-    root = None
-    titems = None
-    cmenu = None
-    ctabmenu = None
-    logspanel = None
-    dbhistory = None
-    properties = None
-
     def __init__(self, filename):
-        wx.SplitterWindow.__init__(self, wx.GetApp().nb_left,
+        super(Database, self).__init__(wx.GetApp().nb_left,
                                                     style=wx.SP_LIVE_UPDATE)
 
         # Prevent the window from unsplitting when dragging the sash to the
@@ -61,11 +185,19 @@ class Database(wx.SplitterWindow):
         self.SetMinimumPaneSize(20)
 
         self.filename = filename
+        self.data = {}
 
-        self.treec = Tree(self)
-        data = wx.TreeItemData((0, 0))
-        self.root = self.treec.AddRoot(text='root', data=data)
-        self.titems = {0: data}
+    def _post_init(self):
+        # The native GTK widget used by DataViewCtrl would have an internal
+        # "live" search feature which steals some keyboard shortcuts: Ctrl+n,
+        # Ctrl+p, Ctrl+f, Ctrl+a, Ctrl+Shift+a
+        # https://groups.google.com/d/msg/wxpython-users/1sUPp766uXU/0J22mUrkzoAJ
+        # Ctrl+f can be recovered with by not overriding the Model's
+        # GetColumnType method
+        # See also bug #349
+        # See bug #260 for generic issues about DataViewCtrl
+        self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
+                                                            dv.DV_NO_HEADER)
 
         self.cmenu = ContextMenu(self)
         self.ctabmenu = TabContextMenu(self.filename)
@@ -78,45 +210,33 @@ class Database(wx.SplitterWindow):
         self.properties = Properties(self.treec)
         self.base_properties = DBProperties(self.properties)
 
-        self.Initialize(self.treec)
-
-        self.treec.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.veto_label_edit)
-        self.treec.Bind(wx.EVT_TREE_ITEM_MENU, self.popup_item_menu)
-        # Note that EVT_CONTEXT_MENU wouldn't work on empty spaces
-        self.treec.Bind(wx.EVT_RIGHT_DOWN, self.popup_window_menu)
-        self.treec.Bind(wx.EVT_LEFT_DOWN, self.unselect_on_empty_areas)
-
-        core_api.bind_to_update_item(self.handle_update_item)
-        core_api.bind_to_history_insert(self.handle_history_insert)
-        core_api.bind_to_history_update(self.handle_history_update)
-        core_api.bind_to_history_remove(self.handle_history_remove)
-
-    def post_init(self):
         creating_tree_event.signal(filename=self.filename)
 
-        # Assign an ImageList only *after* instantiating the class, because its
-        # size must be calculated after the various plugins have added their
-        # properties, which requires the filename to be in the dictionary
-        # Use a separate ImageList for each database, as they may support a
-        # different subset of the installed plugins
-        # Maintaining a common ImageList would be impossible anyway, because an
-        # ImageList can be assigned only once per TreeCtrl
-        imagelist = self.properties.get_empty_image_list()
-        self.treec.AssignImageList(imagelist)
+        # Initialize the icons only *after* the various plugins have added
+        # their properties
+        self.properties.post_init()
 
-        # Create the tree only *after* instantiating the class (and assigning
-        # an ImageList), because actions like the creation of item images rely
-        # on the filename to be in the dictionary
-        self.create()
+        # Initialize the tree only *after* instantiating the class (and
+        # initilizing the icons), because actions like the creation of item
+        # images rely on the filename to be in the dictionary
+        for row in core_api.get_all_items(self.filename):
+            self._init_item_data(row["I_id"], row["I_text"])
 
-        # Navigating the tree with the keyboard doesn't work until an item is
-        # seletced for the first time (bug #334), so select the root item
-        # now...
-        self.treec.SelectItem(self.treec.GetRootItem())
-        # ...then unselect it, otherwise the "create sibling" action will be
-        # available, which would try to generate another root item, resulting
-        # in an exception
-        self.treec.UnselectAll()
+        self.dvmodel = Model(self.data, self.filename)
+        self.treec.AssociateModel(self.dvmodel)
+        # According to DataViewModel's documentation (as of September 2014)
+        # its reference count must be decreased explicitly to avoid memory
+        # leaks; the wxPython demo, however, doesn't do it, and if done here,
+        # the application crashes with a segfault when closing all databases
+        # See also bug #104
+        #self.dvmodel.DecRef()
+
+        dvrenderer = Renderer(self, self.treec)
+        dvcolumn = dv.DataViewColumn("Item", dvrenderer, 0,
+                                                        align=wx.ALIGN_LEFT)
+        self.treec.AppendColumn(dvcolumn)
+
+        self.Initialize(self.treec)
 
         # Initialize the logs panel *after* signalling creating_tree_event,
         # which is used to add plugin logs
@@ -133,200 +253,206 @@ class Database(wx.SplitterWindow):
         if wx.GetApp().logs_configuration.is_shown():
             self.show_logs()
 
-    def veto_label_edit(self, event):
-        event.Veto()
+        self.history_item_update_requests = []
+        self.history_tree_reset_request = False
 
-    def handle_update_item(self, kwargs):
+        self.treec.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
+                                                        self._popup_item_menu)
+
+        core_api.bind_to_insert_item(self._handle_insert_item)
+        core_api.bind_to_update_item_text(self._handle_update_item_text)
+        core_api.bind_to_deleting_item(self._handle_deleting_item)
+        core_api.bind_to_deleted_item_2(self._handle_deleted_item)
+        core_api.bind_to_history_insert(self._handle_history_insert)
+        core_api.bind_to_history_update_simple(
+                                            self._handle_history_update_simple)
+        core_api.bind_to_history_update_deep(self._handle_history_update_deep)
+        core_api.bind_to_history_update_text(self._handle_history_update_text)
+        core_api.bind_to_history_remove(self._handle_history_remove)
+        core_api.bind_to_history(self._handle_history)
+
+    def _handle_insert_item(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            parent = self.get_tree_item_safe(kwargs['parent'])
+            self._insert_item(parent, kwargs['id_'], kwargs['text'])
+
+    def _handle_update_item_text(self, kwargs):
         # Don't update an item label only when editing the text area, as there
         # may be other plugins that edit an item's text (e.g links)
         # kwargs['text'] could be None if the query updated the position of the
         # item and not its text
-        if kwargs['filename'] == self.filename and kwargs['text'] is not None:
-            treeitem = self.find_item(kwargs['id_'])
-            self.set_item_label(treeitem, kwargs['text'])
-            self.update_item_image(treeitem)
-
-    def handle_history_insert(self, kwargs):
-        filename = kwargs['filename']
-        if filename == self.filename:
+        if kwargs['filename'] == self.filename:
             id_ = kwargs['id_']
-            parent = kwargs['parent']
-            previous = kwargs['previous']
-            text = kwargs['text']
+            self._set_item_label(id_, kwargs['text'])
+            self.update_tree_item(id_)
 
-            if previous == 0:
-                par = self.find_item(parent)
-                self.insert_item(par, 0, id_, text=text)
-            else:
-                prev = self.find_item(previous)
-                self.insert_item(prev, 'after', id_, text=text)
+    def _handle_deleting_item(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            self._remove_item(kwargs['parent'], kwargs['id_'])
 
-    def handle_history_update(self, kwargs):
-        filename = kwargs['filename']
-        if filename == self.filename:
+    def _handle_deleted_item(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            self._remove_item_data(kwargs['id_'])
+
+    def _handle_history_insert(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            self._init_item_data(kwargs["id_"], kwargs["text"])
+            self._request_tree_reset()
+
+    def _handle_history_update_simple(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            self._request_tree_reset()
+
+    def _handle_history_update_deep(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            self._request_tree_reset()
+
+    def _handle_history_update_text(self, kwargs):
+        if kwargs['filename'] == self.filename:
             id_ = kwargs['id_']
-            parent = kwargs['parent']
-            previous = kwargs['previous']
-            text = kwargs['text']
+            self._set_item_label(id_, kwargs['text'])
+            self.request_item_refresh(id_)
 
-            item = self.find_item(id_)
+    def _handle_history_remove(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            self._remove_item_data(kwargs['id_'])
+            self._request_tree_reset()
 
-            # Reset label and image before moving the item, otherwise the item
-            # has to be found again, or the program crashes
-            self.set_item_label(item, text)
-            self.update_item_image(item)
+    def _request_tree_reset(self):
+        self.history_tree_reset_request = True
 
-            if self.get_item_id(self.get_item_parent(item)) != parent or \
-                                (self.get_item_previous(item).IsOk() and \
-                                self.get_item_id(
-                                self.get_item_previous(item)) != previous) or \
-                                (not self.get_item_previous(item).IsOk() and \
-                                previous != 0):
-                if previous == 0:
-                    par = self.find_item(parent)
-                    self.move_item(item, par, mode=0)
-                else:
-                    prev = self.find_item(previous)
-                    self.move_item(item, prev, mode='after')
+    def request_item_refresh(self, id_):
+        self.history_item_update_requests.append(id_)
 
-    def handle_history_remove(self, kwargs):
-        filename = kwargs['filename']
-        id_ = kwargs['id_']
+    def _handle_history(self, kwargs):
+        # Yes, this is a very aggressive way of handling history actions, this
+        # is redrawing the whole tree whenever an item is
+        # inserted/moved/deleted, however trying to handle each case separately
+        # is very complicated and thus causes numerous bugs, because each query
+        # in the history group can leave the database in an unstable state
+        # (e.g. the queries that update the previous id to the next/previous
+        # items when moving an item)
+        # It should be quite efficient anyway because self.data is not
+        # recalculated except for the items that explicitly requested it
+        if kwargs['filename'] == self.filename:
+            if self.history_tree_reset_request:
+                self.dvmodel.Cleared()
 
-        if filename == self.filename:
-            item = self.find_item(id_)
-            self.remove_items([item, ])
+                for id_ in core_api.get_root_items(self.filename):
+                    item = self.get_tree_item(id_)
+                    # For some reason ItemDeleted must be called too first...
+                    self.dvmodel.ItemDeleted(self._get_root(), item)
+                    self.dvmodel.ItemAdded(self._get_root(), item)
+                    self._reset_subtree(id_, item)
+
+            for id_ in self.history_item_update_requests:
+                # id_ may have been deleted by an action in the history group
+                if core_api.is_item(self.filename, id_):
+                    self.update_tree_item(id_)
+
+            del self.history_item_update_requests[:]
+            self.history_tree_reset_request = False
 
     @classmethod
     def open(cls, filename):
         global dbs
         dbs[filename] = cls(filename)
 
-        dbs[filename].post_init()
+        dbs[filename]._post_init()
 
-    def insert_item(self, base, mode, id_, text=None, label=None,
-                                            properties=None, imageindex=None):
-        if label is None or properties is None or imageindex is None:
-            label = self.make_item_label(text)
-            multiline_bits, multiline_mask = \
+    def _insert_item(self, parent, id_, text):
+        self._init_item_data(id_, text)
+        self.dvmodel.ItemAdded(parent, self.get_tree_item(id_))
+
+    def _init_item_data(self, id_, text):
+        label = self._make_item_label(text)
+        multiline_bits, multiline_mask = \
                     self.base_properties.get_item_multiline_state(text, label)
-            properties = self._compute_property_bits(0, multiline_bits,
+        properties = self._compute_property_bits(0, multiline_bits,
                                                                 multiline_mask)
-            imageindex = self.properties.get_image(properties)
-
-        data = wx.TreeItemData((id_, properties))
-        self.titems[id_] = data
-
-        # If no ImageList is assigned, or if it's empty, setting
-        # image=imageindex has no effect
-        if mode == 'append':
-            return self.treec.AppendItem(base, text=label, image=imageindex,
-                                                                    data=data)
-        elif mode == 'after':
-            return self.treec.InsertItem(self.get_item_parent(base),
-                    idPrevious=base, text=label, image=imageindex, data=data)
-        elif mode == 'before':
-            return self.treec.InsertItemBefore(self.get_item_parent(base),
-                                        self.get_item_index(base), text=label,
-                                        image=imageindex, data=data)
-        elif isinstance(mode, int):
-            return self.treec.InsertItemBefore(base, mode, text=label,
-                                                image=imageindex, data=data)
-        else:
-            return False
-
-    def create(self, base=None, previd=0):
-        if not base:
-            base = self.treec.GetRootItem()
-
-        baseid = self.get_item_id(base)
-        child = core_api.get_tree_item(self.filename, baseid, previd)
-
-        if child:
-            id_ = child['id_']
-
-            titem = self.insert_item(base, 'append', id_, text=child['text'])
-
-            self.create(base=titem, previd=0)
-            self.create(base=base, previd=id_)
-
-    def find_item(self, id_):
-        return self.titems[id_].GetId()
+        self.data[id_] = Item(id_, label, properties)
 
     def get_selections(self, none=True, many=True, descendants=None):
         selection = self.treec.GetSelections()
 
         if (not none and len(selection) == 0) or (not many and
-                                                  len(selection) > 1):
+                                                        len(selection) > 1):
             return False
-        elif descendants == False:
-            for item in selection:
-                for ancestor in self.get_item_ancestors(item):
-                    if ancestor in selection:
-                        # Note that UnselectItem may actually select if the
-                        # item is not selected, see
-                        # http://trac.wxwidgets.org/ticket/11157
-                        # However in this case the item has just been checked
-                        # if selected, so no further checks must be done
-                        self.treec.UnselectItem(item)
         elif descendants == True:
             for item in selection:
-                for descendant in self.get_item_descendants(item):
-                    # If the descendant is already selected, SelectItem would
-                    # actually deselect it, see
-                    # http://trac.wxwidgets.org/ticket/11157
-                    # This would e.g. generate the following bug: create an
-                    # item (A), create a sibling (B) of A, create a child (C)
-                    # of B, select *all* three items (thus expanding B) and try
-                    # to delete them: without the IsSelected check it would go
-                    # in an infinite loop since C gets deselected and the
-                    # function that deletes items has to start from the items
-                    # that do not have children
-                    if not self.treec.IsSelected(descendant):
-                        self.treec.SelectItem(descendant)
+                id_ = self.get_item_id(item)
 
-        return self.treec.GetSelections()
+                for descid in core_api.get_item_descendants(self.filename,
+                                                                        id_):
+                    self.treec.Select(self.get_tree_item(descid))
 
-    def move_item(self, treeitem, base, mode='append'):
-        label = self.treec.GetItemText(treeitem)
-        id_, properties = self.treec.GetItemPyData(treeitem)
-        imageindex = self.treec.GetItemImage(treeitem)
-
-        if mode in ('append', 'after', 'before') or isinstance(mode, int):
-            # When moving down, add 1 to the destination index, because the
-            # move method first copies the item, and only afterwards deletes it
-            newtreeitem = self.insert_item(base, mode, id_, label=label,
-                                properties=properties, imageindex=imageindex)
+            return self.treec.GetSelections()
         else:
-            raise ValueError()
+            return selection
 
-        while self.treec.ItemHasChildren(treeitem):
-            first = self.treec.GetFirstChild(treeitem)
-            # Always use append mode for the descendants
-            self.move_item(first[0], newtreeitem)
+    def move_item(self, id_, item):
+        pid = core_api.get_item_parent(self.filename, id_)
+        parent = self.get_tree_item_safe(pid)
 
-        # Do not use remove_items, as self.titems has already been updated
-        # here, and using remove_items would remove the moved item from
-        # self.titems
-        self.treec.Delete(treeitem)
+        self.dvmodel.ItemDeleted(parent, item)
+        self.dvmodel.ItemAdded(parent, item)
+        self._reset_subtree(id_, item)
 
-        return newtreeitem
+    def move_item_to_parent(self, oldpid, id_, item):
+        newpid = core_api.get_item_parent(self.filename, id_)
 
-    def remove_items(self, treeitems):
-        # When deleting items, make sure to delete first those without
-        # children, otherwise crashes without exceptions or errors could occur
-        while treeitems:
-            for item in treeitems[:]:
-                if not self.treec.ItemHasChildren(item):
-                    del treeitems[treeitems.index(item)]
-                    id_ = self.treec.GetItemPyData(item)[0]
-                    self.treec.Delete(item)
-                    del self.titems[id_]
+        # oldpid cannot be 0 here because core_api.move_item_to_parent
+        # succeded, which means that it wasn't the root item
+        oldparent = self.get_tree_item(oldpid)
+        newparent = self.get_tree_item_safe(newpid)
+
+        self.dvmodel.ItemDeleted(oldparent, item)
+        self.dvmodel.ItemAdded(newparent, item)
+        self._reset_subtree(id_, item)
+
+        self._refresh_item_arrow(newparent, oldpid, oldparent)
+
+    def _reset_subtree(self, id_, item):
+        childids = core_api.get_item_children(self.filename, id_)
+
+        for childid in childids:
+            child = self.get_tree_item(childid)
+            self.dvmodel.ItemAdded(item, child)
+            self._reset_subtree(childid, child)
+
+    def delete_items(self, ids, description="Delete items"):
+        group = core_api.get_next_history_group(self.filename)
+        roots = core_api.find_independent_items(self.filename, ids)
+
+        for root in roots:
+            rootpid = core_api.get_item_parent(self.filename, root)
+
+            core_api.delete_subtree(self.filename, root, group=group,
+                                                    description=description)
+
+            if rootpid > 0:
+                rootpid2 = core_api.get_item_parent(self.filename, rootpid)
+                rootparent2 = self.get_tree_item_safe(rootpid2)
+
+                self._refresh_item_arrow(rootparent2, rootpid,
+                                                self.get_tree_item(rootpid))
+
+    def _refresh_item_arrow(self, parent, id_, item):
+        if not core_api.has_item_children(self.filename, id_):
+            # This seems to be the only way to hide the arrow next to a parent
+            # that has just lost all of its children
+            self.dvmodel.ItemDeleted(parent, item)
+            self.dvmodel.ItemAdded(parent, item)
+
+    def _remove_item(self, pid, id_):
+        item = self.get_tree_item(id_)
+        parent = self.get_tree_item_safe(pid)
+        self.dvmodel.ItemDeleted(parent, item)
+
+    def _remove_item_data(self, id_):
+        del self.data[id_]
 
     def close(self):
-        self.treec.DeleteAllItems()
-        self.titems = {}
-
         global dbs
         del dbs[self.filename]
 
@@ -341,148 +467,73 @@ class Database(wx.SplitterWindow):
     def get_filename(self):
         return self.filename
 
-    def get_root(self):
-        return self.treec.GetRootItem()
+    def _get_root(self):
+        return dv.NullDataViewItem
 
-    def get_item_id(self, treeitem):
-        return self.treec.GetItemPyData(treeitem)[0]
+    def get_item_id(self, item):
+        return self.dvmodel.ItemToObject(item).get_id()
 
-    def get_item_index(self, treeitem):
-        parent = self.get_item_parent(treeitem)
-        siblings = self.get_item_children(parent)
-        index = siblings.index(treeitem)
-        return index
+    def get_tree_item(self, id_):
+        return self.dvmodel.ObjectToItem(self.data[id_])
 
-    def get_item_previous(self, treeitem):
-        return self.treec.GetPrevSibling(treeitem)
-
-    def get_item_next(self, treeitem):
-        return self.treec.GetNextSibling(treeitem)
-
-    def get_item_parent(self, treeitem):
-        return self.treec.GetItemParent(treeitem)
-
-    def get_item_ancestors(self, treeitem):
-        ancestors = []
-
-        def recurse(treeitem):
-            parent = self.get_item_parent(treeitem)
-            if parent:
-                ancestors.append(parent)
-                recurse(parent)
-
-        recurse(treeitem)
-        return ancestors
-
-    def get_item_children(self, treeitem):
-        child = self.treec.GetFirstChild(treeitem)
-        children = []
-        while child[0].IsOk():
-            children.append(child[0])
-            child = self.treec.GetNextChild(treeitem, cookie=child[1])
-        return children
-
-    def get_item_descendants(self, treeitem):
-        descendants = []
-
-        def recurse(treeitem):
-            children = self.get_item_children(treeitem)
-            descendants.extend(children)
-            for child in children:
-                recurse(child)
-
-        recurse(treeitem)
-        return descendants
+    def get_tree_item_safe(self, id_):
+        if id_ > 0:
+            return self.get_tree_item(id_)
+        else:
+            return self._get_root()
 
     @staticmethod
-    def make_item_label(text):
+    def _make_item_label(text):
         return text.partition('\n')[0]
 
-    def set_item_label(self, treeitem, text):
-        label = self.make_item_label(text)
-        self.treec.SetItemText(treeitem, label)
+    def get_item_label(self, id_):
+        return self.data[id_].get_label()
+
+    def get_item_properties(self, id_):
+        return self.properties.get(self.data[id_].get_properties())
+
+    def _set_item_label(self, id_, text):
+        label = self._make_item_label(text)
+        self.data[id_].set_label(label)
         multiline_bits, multiline_mask = \
                     self.base_properties.get_item_multiline_state(text, label)
-        self.update_item_properties(treeitem, multiline_bits, multiline_mask)
-
-    def update_item_image(self, treeitem):
-        bits = self.treec.GetItemPyData(treeitem)[1]
-        imageindex = self.properties.get_image(bits)
-        # If no ImageList is assigned, or if it's empty, SetItemImage has
-        # no effect
-        self.treec.SetItemImage(treeitem, imageindex)
+        self.update_item_properties(id_, multiline_bits, multiline_mask)
 
     @staticmethod
     def _compute_property_bits(old_property_bits, new_property_bits,
                                                                 property_mask):
         return (old_property_bits & ~property_mask) | new_property_bits
 
-    def update_item_properties(self, treeitem, property_bits, property_mask):
-        data = self.treec.GetItemPyData(treeitem)
-        new_bits = self._compute_property_bits(data[1], property_bits,
-                                                                property_mask)
-        self.treec.SetItemPyData(treeitem, (data[0], new_bits))
+    def update_item_properties(self, id_, property_bits, property_mask):
+        self.data[id_].set_properties(self._compute_property_bits(
+                self.data[id_].get_properties(), property_bits, property_mask))
 
-    def get_properties(self):
-        return self.properties
+    def update_tree_item(self, id_):
+        self.dvmodel.ItemChanged(self.get_tree_item(id_))
+
+    def add_property(self, *args, **kwargs):
+        return self.properties.add(*args, **kwargs)
 
     def get_logs_panel(self):
         return self.logspanel
 
-    def select_item(self, treeitem):
+    def select_item(self, id_):
         self.treec.UnselectAll()
-        # Note that SelectItem may actually unselect if the item is selected,
-        # see http://trac.wxwidgets.org/ticket/11157
-        # However in this case all the items have just been deselected, so no
-        # check must be done
-        self.treec.SelectItem(treeitem)
+        self.treec.Select(self.get_tree_item(id_))
 
     def unselect_all_items(self):
         self.treec.UnselectAll()
 
-    def add_item_to_selection(self, treeitem):
-        # If the item is already selected, SelectItem would actually deselect
-        # it, see http://trac.wxwidgets.org/ticket/11157
-        if not self.treec.IsSelected(treeitem):
-            self.treec.SelectItem(treeitem)
+    def add_item_to_selection(self, id_):
+        self.treec.Select(self.get_tree_item(id_))
 
-    def remove_item_from_selection(self, treeitem):
-        # If the item is not selected, UnselectItem may actually select it, see
-        # http://trac.wxwidgets.org/ticket/11157
-        if self.treec.IsSelected(treeitem):
-            self.treec.UnselectItem(treeitem)
+    def remove_item_from_selection(self, id_):
+        self.treec.Unselect(self.get_tree_item(id_))
 
-    def is_database_root(self, treeitem):
-        return self.treec.GetItemParent(treeitem) == self.treec.GetRootItem()
-
-    def popup_item_menu(self, event):
-        # Using a separate procedure for EVT_TREE_ITEM_MENU (instead of always
-        # using EVT_RIGHT_DOWN) ensures a standard behaviour, e.g. selecting
-        # the item if not selected unselecting all the others, or leaving the
-        # selection untouched if clicking on an already selected item
-        self._popup_context_menu(event.GetPoint())
-
-    def popup_window_menu(self, event):
-        # Use EVT_RIGHT_DOWN when clicking in areas without items, because in
-        # that case EVT_TREE_ITEM_MENU is not triggered
-        if not self.treec.HitTest(event.GetPosition())[0].IsOk():
-            self.treec.UnselectAll()
-            self._popup_context_menu(event.GetPosition())
-
-        # Skip the event so that self.popup_item_menu can work correctly
-        event.Skip()
-
-    def _popup_context_menu(self, point):
+    def _popup_item_menu(self, event):
         self.cmenu.update_items()
         popup_context_menu_event.signal(filename=self.filename)
-        self.treec.PopupMenu(self.cmenu, point)
-
-    def unselect_on_empty_areas(self, event):
-        if not self.treec.HitTest(event.GetPosition())[0].IsOk():
-            self.treec.UnselectAll()
-
-        # Skipping the event ensures correct left click behaviour
-        event.Skip()
+        self.treec.PopupMenu(self.cmenu, event.GetPosition())
 
     def get_tab_context_menu(self):
         self.ctabmenu.update()
@@ -495,13 +546,13 @@ class DBProperties(object):
         multichar = config['symbol']
 
         if multichar != '':
-            bits_to_colour = {
+            bits_to_color = {
                 1: wx.Colour(),
             }
-            bits_to_colour[1].SetFromString(config['color'])
+            bits_to_color[1].SetFromString(config['color'])
 
             self.multiline_shift, self.multiline_mask = properties.add(1,
-                                                    multichar, bits_to_colour)
+                                                    multichar, bits_to_color)
 
     def get_item_multiline_state(self, text, label):
         if text != label:
@@ -516,146 +567,65 @@ class Properties(object):
     def __init__(self, widget):
         self.widget = widget
 
-        self.SPACING = 2
         self.bitsn = 0
-        # Use a list also to preserve the order of the properties
-        self.char_data = []
-        self.bits_to_image = {}
+        self.data = []
+        self.bits_to_chars = {}
 
-        self._init_font()
-        self._compute_off_colour()
+    def add(self, bitsn, character, bits_to_color):
+        shift = self.bitsn
+        mask = int('1' * bitsn, 2) << shift
+        self.bitsn += bitsn
+        shifted_bits_to_colors = {}
 
-    def _init_font(self):
-        self.font = self.widget.GetFont()
-        self.font.SetWeight(wx.FONTWEIGHT_BOLD)
+        for bits in bits_to_color:
+            shifted_bits_to_colors[bits << shift] = bits_to_color[bits]
 
-    def _compute_off_colour(self):
-        self.bgcolour = self.widget.GetBackgroundColour()
-        avg = (self.bgcolour.Red() + self.bgcolour.Green() +
-                                                    self.bgcolour.Blue()) // 3
-        DIFF = 16
-
-        if avg > 127:
-            self.off_colour = wx.Colour(max((self.bgcolour.Red() - DIFF, 0)),
-                                      max((self.bgcolour.Green() - DIFF, 0)),
-                                      max((self.bgcolour.Blue() - DIFF, 0)))
-        else:
-            self.off_colour = wx.Colour(min((self.bgcolour.Red() + DIFF, 255)),
-                                    min((self.bgcolour.Green() + DIFF, 255)),
-                                    min((self.bgcolour.Blue() + DIFF, 255)))
-
-    def add(self, bitsn, character, bits_to_colour):
-        dc = wx.MemoryDC()
-        dc.SelectObject(wx.NullBitmap)
-        dc.SetFont(self.font)
-        extent = dc.GetTextExtent(character)
-
-        # Be safe and only check the width, because if in future versions of
-        # wxPython, dc.GetTextExtent returned a Size object instead of a tuple,
-        # it would never match (0, 0)
-        if extent[0] != 0:
-            shift = self.bitsn
-            mask = int('1' * bitsn, 2) << shift
-            self.bitsn += bitsn
-            shifted_bits_to_colour = {}
-
-            for bits in bits_to_colour:
-                shifted_bits_to_colour[bits << shift] = bits_to_colour[bits]
-
-            self.char_data.append((mask, character, extent,
-                                                    shifted_bits_to_colour))
+        self.data.append((mask, character, shifted_bits_to_colors))
 
         return (shift, mask)
 
-    def _compute_required_size(self):
-        width = 0
-        height = 0
-
-        for data in self.char_data:
-            width += data[2][0] + self.SPACING
-            height = max((height, data[2][1]))
-
-        width -= self.SPACING
-
-        return (width, height)
-
-    def get_empty_image_list(self):
-        # Sort char_data by character to make sure that the icons always appear
-        # in the same order regardless of race conditions when loading the
-        # plugins
-        self.char_data.sort(key=lambda data: data[1])
-
-        self.required_size = self._compute_required_size()
-
-        # required_size is 0 if no properties have been added, or if they've
-        # been added with empty strings
-        if self.required_size == (0, 0):
-            self.get_image = self._get_image_dummy
+    def post_init(self):
+        # char_data is empty if no properties have been added
+        if len(self.data) < 1:
+            self.get = self._get_dummy
         else:
-            self.get_image = self._get_image_real
+            self.get = self._get_real
 
-        return wx.ImageList(*self.required_size)
+    def get(self, bits):
+        # This method is re-assigned dynamically
+        pass
 
-    def _get_image_real(self, bits):
+    def _get_real(self, bits):
         try:
-            imageindex = self.bits_to_image[bits]
+            return self.bits_to_chars[bits]
         except KeyError:
-            bitmap = self._make_image(bits)
-            imagelist = self.widget.GetImageList()
-            imageindex = imagelist.Add(bitmap)
-            self.bits_to_image[bits] = imageindex
+            teststr, strdata = self._compute_data(bits)
+            self.bits_to_chars[bits] = teststr, strdata
+            return teststr, strdata
 
-        return imageindex
+    def _get_dummy(self, bits):
+        # Used if no properties have been added
+        return ("", [])
 
-    def _get_image_dummy(self, bits):
-        # If no properties have been added, use the default image index (-1)
-        return -1
+    def _compute_data(self, item_bits):
+        teststr = ""
+        strdata = []
 
-    def _make_image(self, item_bits):
-        bitmap = wx.EmptyBitmap(*self.required_size, depth=32)
-
-        dc = wx.MemoryDC()
-        dc.SelectObject(bitmap)
-        dc.SetBackground(wx.Brush(self.bgcolour))
-        dc.Clear()
-
-        gc = wx.GraphicsContext.Create(dc)
-
-        x = 0
-
-        for property_bits, character, extent, bits_to_colour in self.char_data:
+        for property_bits, character, bits_to_colors in self.data:
             bits = (property_bits & item_bits)
 
             try:
-                colour = bits_to_colour[bits]
+                color = bits_to_colors[bits]
             except KeyError:
-                colour = self.off_colour
+                pass
+            else:
+                teststr += character
+                strdata.append((character, color))
 
-            gc.SetFont(gc.CreateFont(self.font, colour))
-
-            y = self.required_size[1] - extent[1]
-            gc.DrawText(character, x, y)
-
-            x += extent[0] + self.SPACING
-
-        bitmap.SetMaskColour(self.bgcolour)
-        dc.SelectObject(wx.NullBitmap)
-
-        return bitmap
+        return (teststr, strdata)
 
 
 class ContextMenu(wx.Menu):
-    parent = None
-    sibling = None
-    sibling_label_1 = None
-    sibling_label_2 = None
-    child = None
-    moveup = None
-    movedn = None
-    movept = None
-    edit = None
-    delete = None
-
     def __init__(self, parent):
         wx.Menu.__init__(self)
 
@@ -703,7 +673,7 @@ class ContextMenu(wx.Menu):
         self.AppendSeparator()
         self.AppendItem(self.delete)
 
-    def reset_items(self):
+    def _reset_items(self):
         self.sibling.Enable(False)
         self.child.Enable(False)
         self.moveup.Enable(False)
@@ -716,7 +686,7 @@ class ContextMenu(wx.Menu):
         reset_context_menu_event.signal(filename=self.parent.filename)
 
     def update_items(self):
-        self.reset_items()
+        self._reset_items()
 
         sel = self.parent.get_selections()
 
@@ -725,13 +695,15 @@ class ContextMenu(wx.Menu):
             self.sibling.SetItemLabel(self.sibling_label_2)
             self.child.Enable()
 
-            if self.parent.get_item_previous(sel[0]).IsOk():
+            id_ = self.parent.get_item_id(sel[0])
+
+            if core_api.get_item_previous(self.parent.filename, id_):
                 self.moveup.Enable()
 
-            if self.parent.get_item_next(sel[0]).IsOk():
+            if core_api.get_item_next(self.parent.filename, id_):
                 self.movedn.Enable()
 
-            if not self.parent.is_database_root(sel[0]):
+            if not core_api.is_item_root(self.parent.filename, id_):
                 self.movept.Enable()
 
             self.edit.Enable()
@@ -785,15 +757,17 @@ class TabContextMenu(wx.Menu):
         self.AppendItem(self.close)
 
     def update(self):
-        self.undo.Enable(False)
-        self.redo.Enable(False)
-        self.save.Enable(False)
-
         if core_api.preview_undo_tree(self.filename):
             self.undo.Enable()
+        else:
+            self.undo.Enable(False)
 
         if core_api.preview_redo_tree(self.filename):
             self.redo.Enable()
+        else:
+            self.redo.Enable(False)
 
         if core_api.check_pending_changes(self.filename):
             self.save.Enable()
+        else:
+            self.save.Enable(False)

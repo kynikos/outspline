@@ -80,6 +80,14 @@ def bind_to_open_database(handler, bind=True):
     return database_open_event.bind(handler, bind)
 
 
+def bind_to_history_insert(handler, bind=True):
+    return items.history_insert_event.bind(handler, bind)
+
+
+def bind_to_history_update(handler, bind=True):
+    return items.history_update_event.bind(handler, bind)
+
+
 def bind_to_update_item_rules_conditional(handler, bind=True):
     return items.update_item_rules_conditional_event.bind(handler, bind)
 

@@ -90,20 +90,29 @@ items_select_id_previous = ('SELECT I_previous FROM Items WHERE I_id=? '
 
 items_select_id_next = 'SELECT I_id FROM Items WHERE I_previous=? LIMIT 1'
 
-items_select_id_children = ('SELECT I_id, I_previous FROM Items '
-                            'WHERE I_parent=?')
+items_select_id_children = 'SELECT I_id FROM Items WHERE I_parent=?'
 
 items_select_id_haschildren = 'SELECT I_id FROM Items WHERE I_parent=? LIMIT 1'
 
-items_select_parent = ('SELECT I_id, I_text FROM Items WHERE I_parent=? AND '
-                       'I_previous=? LIMIT 1')
+items_select_parent = ('SELECT I_id FROM Items WHERE I_parent=? AND '
+                                                        'I_previous=? LIMIT 1')
+
+items_select_parent_previous = ('SELECT I_parent, I_previous FROM Items '
+                                                        'WHERE I_id=? LIMIT 1')
+
+items_select_parent_text = ('SELECT I_id, I_text FROM Items '
+                                'WHERE I_parent=? AND I_previous=? LIMIT 1')
 
 items_select_search = 'SELECT I_id, I_text FROM Items'
 
 items_insert = ('INSERT INTO Items (I_id, I_parent, I_previous, I_text) '
                 'VALUES (?, ?, ?, ?)')
 
-items_update_id = 'UPDATE Items SET {} WHERE I_id=?'
+items_update_previous = 'UPDATE Items SET I_previous=? WHERE I_id=?'
+
+items_update_parent = 'UPDATE Items SET I_parent=?, I_previous=? WHERE I_id=?'
+
+items_update_text = 'UPDATE Items SET I_text=? WHERE I_id=?'
 
 items_delete_id = 'DELETE FROM Items WHERE I_id=?'
 

@@ -30,6 +30,9 @@ import exceptions
 upsert_link_event = Event()
 delete_link_event = Event()
 break_link_event = Event()
+history_insert_event = Event()
+history_update_event = Event()
+history_delete_event = Event()
 
 cdbs = set()
 
@@ -190,24 +193,28 @@ def break_links(filename, id_, group, description='Break links'):
     cursor.execute(queries.links_select_target, (id_, ))
 
     ids = set()
+    rows = cursor.fetchall()
 
-    for row in cursor.fetchall():
-        linkid = row['L_id']
-        ids.add(linkid)
+    if rows:
+        for row in rows:
+            linkid = row['L_id']
+            ids.add(linkid)
 
-        do_update_link(filename, cursor, None, linkid)
+            do_update_link(filename, cursor, None, linkid)
+
+            core_api.give_connection(filename, qconn)
+
+            core_api.insert_history(filename, group, linkid, 'link_update',
+                                                description, None, str(id_))
+
+            qconn = core_api.get_connection(filename)
+            cursor = qconn.cursor()
 
         core_api.give_connection(filename, qconn)
 
-        core_api.insert_history(filename, group, linkid, 'link_update',
-                                                description, None, str(id_))
-
-        qconn = core_api.get_connection(filename)
-        cursor = qconn.cursor()
-
-    core_api.give_connection(filename, qconn)
-
-    break_link_event.signal(filename=filename, ids=ids, oldtarget=id_)
+        break_link_event.signal(filename=filename, ids=ids, oldtarget=id_)
+    else:
+        core_api.give_connection(filename, qconn)
 
 
 def break_copied_links(filename, id_):
@@ -350,6 +357,8 @@ def handle_history_insert(filename, action, jparams, hid, type_, itemid):
                         itemid, int(jparams) if jparams is not None else None)
     core_api.give_connection(filename, qconn)
 
+    history_insert_event.signal(filename=filename, id_=itemid)
+
 
 def handle_history_update(filename, action, jparams, hid, type_, itemid):
     qconn = core_api.get_connection(filename)
@@ -358,12 +367,16 @@ def handle_history_update(filename, action, jparams, hid, type_, itemid):
                         int(jparams) if jparams is not None else None, itemid)
     core_api.give_connection(filename, qconn)
 
+    history_update_event.signal(filename=filename, id_=itemid)
+
 
 def handle_history_delete(filename, action, jparams, hid, type_, itemid):
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
     do_delete_link(cursor, itemid)
     core_api.give_connection(filename, qconn)
+
+    history_delete_event.signal(filename=filename, id_=itemid)
 
 
 def get_last_known_target(filename, id_):

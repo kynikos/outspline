@@ -440,7 +440,7 @@ class Alarm(object):
         # Setting the label directly when instantiating CollapsiblePane through
         # the 'label' parameter would make it parse '&' characters to form
         # mnemonic shortcuts, like in menus
-        self._set_pane_label()
+        self._set_pane_label(core_api.get_item_text(self.filename, self.id_))
         self.pbox.Add(self.pane, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         self.cpane = self.pane.GetPane()
@@ -451,7 +451,7 @@ class Alarm(object):
         line = wx.StaticLine(parent, style=wx.LI_HORIZONTAL)
         self.pbox.Add(line, flag=wx.EXPAND)
 
-        core_api.bind_to_update_item(self._update_info)
+        core_api.bind_to_update_item_text(self._update_info)
 
         self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED,
                                                 self._update_pane_ancestors)
@@ -461,10 +461,9 @@ class Alarm(object):
 
     def _update_info(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_:
-            self._set_pane_label()
+            self._set_pane_label(kwargs["text"])
 
-    def _set_pane_label(self):
-        text = core_api.get_item_text(self.filename, self.id_)
+    def _set_pane_label(self, text):
         self.pane.SetLabel(text.partition('\n')[0])
 
     def _update_pane_ancestors(self, event):
@@ -488,8 +487,8 @@ class Alarm(object):
                 # characters to form mnemonic shortcuts, like in menus
                 # Note that in this case the '&' characters have to be escaped
                 # explicitly
-                ancestor.SetLabel(anc.get_text().partition('\n')[0].replace(
-                                                                    '&', '&&'))
+                ancestor.SetLabel(core_api.get_item_text(self.filename, anc
+                                    ).partition('\n')[0].replace('&', '&&'))
                 self.cbox.Add(ancestor, flag=wx.LEFT | wx.TOP, border=4)
 
             dbname = wx.StaticText(self.cpane)
@@ -540,7 +539,7 @@ class Alarm(object):
 
             # It's necessary to explicitly unbind the handler, otherwise this
             # object will not be garbage-collected
-            core_api.bind_to_update_item(self._update_info, False)
+            core_api.bind_to_update_item_text(self._update_info, False)
 
     def get_filename(self):
         return self.filename

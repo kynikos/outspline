@@ -94,11 +94,8 @@ def handle_close_database(kwargs):
     links.cdbs.discard(kwargs['filename'])
 
 
-def handle_update_item(kwargs):
-    # kwargs['text'] could be None if the query updated the position of the
-    # item and not its text
-    if kwargs['text'] is not None:
-        links.synchronize_links_text(kwargs['filename'], kwargs['id_'],
+def handle_update_item_text(kwargs):
+    links.synchronize_links_text(kwargs['filename'], kwargs['id_'],
                         kwargs['text'], kwargs['group'], kwargs['description'])
 
 
@@ -155,11 +152,11 @@ def main():
     core_api.bind_to_open_database(handle_open_database)
     core_api.bind_to_save_database_copy(handle_save_database_copy)
     core_api.bind_to_close_database(handle_close_database)
-    core_api.bind_to_delete_item(handle_delete_item)
+    core_api.bind_to_deleting_item(handle_delete_item)
     core_api.bind_to_history(handle_history)
 
     if coreaux_api.get_extension_configuration('links').get_bool('sync_text'):
-        core_api.bind_to_update_item(handle_update_item)
+        core_api.bind_to_update_item_text(handle_update_item_text)
 
     if copypaste_api:
         copypaste_api.bind_to_copy_items(handle_copy_items)
