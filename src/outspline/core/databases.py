@@ -295,7 +295,8 @@ class Database(object):
     def close(self):
         closing_database_event.signal(filename=self.filename)
 
-        self._remove()
+        global dbs
+        del dbs[self.filename]
 
         qconn = self.connection.get()
         qconn.close()
@@ -309,16 +310,6 @@ class Database(object):
         self.dbhistory.clean_history()
 
         return True
-
-    def _remove(self):
-        # Is this loop still needed? *******************************************************
-        for id_ in self.items.copy():
-            item = self.items[id_]
-            if item.get_filename() == self.filename:
-                item.remove()
-
-        global dbs
-        del dbs[self.filename]
 
     def delete_items(self, dids, group, description='Delete items'):
         for id_ in dids:
