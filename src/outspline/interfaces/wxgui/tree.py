@@ -177,6 +177,7 @@ class Database(wx.SplitterWindow):
     # Addresses #260 ********************************************************************
     # Fixes #334 ************************************************************************
     # Addresses #336 ********************************************************************
+    # Test SetExpanderColumn ************************************************************
     # Check all the upstream bugs now that the new wxPython version has been ************
     #   released ************************************************************************
     def __init__(self, filename):
@@ -356,7 +357,10 @@ class Database(wx.SplitterWindow):
         # Yes, this is a very aggressive way of handling history actions, this
         # is redrawing the whole tree whenever an item is
         # inserted/moved/deleted, however trying to handle each case separately
-        # is very complicated and thus causes numerous bugs...
+        # is very complicated and thus causes numerous bugs, because each query
+        # in the history group can leave the database in an unstable state
+        # (e.g. the queries that update the previous id to the next/previous
+        # items when moving an item)
         # It should be quite efficient anyway because self.data is not
         # recalculated except for the items that explicitly requested it
         if kwargs['filename'] == self.filename:
