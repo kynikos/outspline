@@ -30,6 +30,7 @@ reset_modified_state_event = Event()
 history_event = Event()
 history_insert_event = Event()
 history_update_event = Event()
+history_update_previous_event = Event()
 history_update_parent_event = Event()
 history_update_text_event = Event()
 history_delete_event = Event()
@@ -50,6 +51,10 @@ class DBHistory(object):
             'update': {
                 'undo': self._do_history_row_update,
                 'redo': self._do_history_row_update,
+            },
+            'update_previous': {
+                'undo': self._do_history_row_update_previous,
+                'redo': self._do_history_row_update_previous,
             },
             'update_parent': {
                 'undo': self._do_history_row_update_parent,
@@ -296,6 +301,17 @@ class DBHistory(object):
         history_update_event.signal(filename=self.filename, id_=itemid,
                         parent=select['I_parent'], oldparent=oldparent,
                         previous=select['I_previous'], text=select['I_text'])
+
+    def _do_history_row_update_previous(self, filename, action, jparams, hid,
+                                                                type_, itemid):
+        # Is jparams arriving as string or integer? *****************************************
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+        cursor.execute(queries.items_update_previous, (jparams, itemid))
+        self.connection.give(qconn)
+
+        history_update_parent_event.signal(filename=self.filename, id_=itemid,
+                                                            previous=jparams)
 
     def _do_history_row_update_parent(self, filename, action, jparams, hid,
                                                                 type_, itemid):

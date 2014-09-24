@@ -84,7 +84,17 @@ class Item(object):
         return id_
 
     def update_previous(self, previous, group, description='Update item'):
-        self._update(group, previous=previous, description=description)
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+
+        cursor.execute(queries.items_select_id_previous, (self.id_, ))
+        oldprev = cursor.fetchone()["I_previous"]
+        cursor.execute(queries.items_update_previous, (previous, self.id_))
+        self.connection.give(qconn)
+
+        # Is it inserting previous as integers or strings? *******************************
+        self.dbhistory.insert_history(group, self.id_, 'update_previous',
+                                                description, previous, oldprev)
 
         item_update_previous_event.signal(filename=self.filename, id_=self.id_,
                     previous=previous, group=group, description=description)
