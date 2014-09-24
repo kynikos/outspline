@@ -781,27 +781,8 @@ class MenuDatabase(wx.Menu):
 
                         items.append(id_)
 
-                    roots = core_api.find_independent_items(filename, items)
-
-                    for root in roots:
-                        rootpid = core_api.get_item_parent(filename, root)
-
-                        core_api.delete_subtree(filename, root,
-                                              description='Delete {} items'
-                                              ''.format(len(items)))
-
-                        if rootpid > 0:
-                            rootpid2 = core_api.get_item_parent(filename,
-                                                                    rootpid)
-
-                            if rootpid2 > 0:
-                                rootparent2 = treedb.get_tree_item(rootpid2)
-                            else:
-                                rootparent2 = treedb.get_root()
-
-                            treedb.refresh_item(rootparent2, rootpid,
-                                                treedb.get_tree_item(rootpid))
-
+                    treedb.delete_items(items,
+                            description='Delete {} items'.format(len(items)))
                     treedb.dbhistory.refresh()
                     delete_items_event.signal()
 

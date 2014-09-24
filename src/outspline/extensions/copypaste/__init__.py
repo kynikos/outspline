@@ -30,8 +30,7 @@ items_pasted_event = Event()
 paste_check_event = Event()
 
 
-def copy_items(filename, cids, cut=False, group=None,
-               description='Cut items'):
+def copy_items(filename, cids):
     qmemory = core_api.get_memory_connection()
     cursorm = qmemory.cursor()
     cursorm.execute(queries.copy_delete)
@@ -52,12 +51,6 @@ def copy_items(filename, cids, cut=False, group=None,
         core_api.give_memory_connection(qmemory)
 
         item_copy_event.signal(filename=filename, id_=id_)
-
-    if cut and group:
-        for cid in cids:
-            # delete_subtree is new, check it works correctly here ****************************
-            core_api.delete_subtree(filename, cid, group=group,
-                                                    description=description)
 
 
 def paste_items(filename, baseid, mode, group, description='Paste items'):

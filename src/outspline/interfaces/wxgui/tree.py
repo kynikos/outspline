@@ -433,7 +433,7 @@ class Database(wx.SplitterWindow):
         self.dvmodel.ItemAdded(newparent, item)
         self._move_subtree(id_, item)
 
-        self.refresh_item(newparent, oldpid, oldparent)
+        self._refresh_item(newparent, oldpid, oldparent)
 
     def _move_subtree(self, id_, item):
         childids = core_api.get_item_children(self.filename, id_)
@@ -443,7 +443,27 @@ class Database(wx.SplitterWindow):
             self.dvmodel.ItemAdded(item, child)
             self._move_subtree(childid, child)
 
-    def refresh_item(self, parent, id_, item):
+    def delete_items(self, ids, description="Delete items"):
+        roots = core_api.find_independent_items(self.filename, ids)
+
+        for root in roots:
+            rootpid = core_api.get_item_parent(self.filename, root)
+
+            core_api.delete_subtree(self.filename, root,
+                                                    description=description)
+
+            if rootpid > 0:
+                rootpid2 = core_api.get_item_parent(self.filename, rootpid)
+
+                if rootpid2 > 0:
+                    rootparent2 = self.get_tree_item(rootpid2)
+                else:
+                    rootparent2 = self.get_root()
+
+                self._refresh_item(rootparent2, rootpid,
+                                                self.get_tree_item(rootpid))
+
+    def _refresh_item(self, parent, id_, item):
         if not core_api.has_item_children(self.filename, id_):
             # This seems to be the only way to hide the arrow next to a parent
             # that has just lost all of its children
@@ -455,20 +475,9 @@ class Database(wx.SplitterWindow):
         # All algorithms calling this method should clear the tree items *****************
         #   *beforehand* now, see how it's done in the menubar module ********************
         # Remove only 1 item? ************************************************************
+        # Make private? ******************************************************************
         for id_ in ids:
             del self.data[id_]
-
-        # ***********************************************************************************
-        return False
-        # When deleting items, make sure to delete first those without
-        # children, otherwise crashes without exceptions or errors could occur
-        while treeitems:
-            for item in treeitems[:]:
-                if not self.treec.ItemHasChildren(item):
-                    del treeitems[treeitems.index(item)]
-                    id_ = self.treec.GetItemPyData(item)[0]
-                    self.treec.Delete(item)
-                    del self.data[id_]
 
     def close(self):
         global dbs

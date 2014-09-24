@@ -47,18 +47,20 @@ cpaste_label_2 = None
 
 
 def cut_items(event, no_confirm=False):
-    # See how delete items in wxgui's menubar has changed **************************************
     if core_api.block_databases():
         filename = wxgui_api.get_selected_database_filename()
 
         # This method may be launched by the menu accelerator, but no database
         # may be open
         if filename:
-            # select() arguments must be compatible with delete_items()
+            # get_tree_selections() arguments must be compatible with the ones
+            # used in delete_items()
             selection = wxgui_api.get_tree_selections(filename, none=False,
                                                             descendants=True)
 
             if selection:
+                items = []
+
                 for item in selection:
                     id_ = wxgui_api.get_tree_item_id(filename, item)
 
@@ -67,21 +69,12 @@ def cut_items(event, no_confirm=False):
                         core_api.release_databases()
                         return False
 
-                items = []
-
-                for item in selection:
-                    id_ = wxgui_api.get_tree_item_id(filename, item)
                     items.append(id_)
 
-                copypaste_api.cut_items(filename, items,
+                copypaste_api.copy_items(filename, items)
+
+                wxgui_api.delete_items(filename, items,
                                 description='Cut {} items'.format(len(items)))
-
-                # If an item has been left without children, it must be ******************
-                # deleted and re-added just like when moving, to remove ******************
-                # its arrow **************************************************************
-
-                # remove_tree_items has changed ****************************************************
-                wxgui_api.remove_tree_items(filename, items)
                 wxgui_api.refresh_history(filename)
                 cut_items_event.signal()
 
@@ -95,7 +88,8 @@ def copy_items(event):
         # This method may be launched by the menu accelerator, but not database
         # may be open
         if filename:
-            # select() arguments must be compatible with delete_items()
+            # get_tree_selections() arguments must be compatible with the ones
+            # used in delete_items()
             selection = wxgui_api.get_tree_selections(filename, none=False,
                                                             descendants=True)
 
