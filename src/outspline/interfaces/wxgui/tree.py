@@ -57,7 +57,6 @@ class Model(dv.PyDataViewModel):
 
     def GetChildren(self, parent, children):
         if not parent.IsOk():
-            # ******************************************************************
             ids = core_api.get_root_items(self.filename)
 
         else:

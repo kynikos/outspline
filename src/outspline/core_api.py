@@ -240,6 +240,10 @@ def get_item_ancestors(filename, id_):
     return databases.dbs[filename].items[id_].get_ancestors(ancestors=[])
 
 
+def get_root_items(filename):
+    return databases.dbs[filename].get_root_items()
+
+
 def get_item_text(filename, id_):
     try:
         return databases.dbs[filename].items[id_].get_text()

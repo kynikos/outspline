@@ -277,7 +277,7 @@ class Item(object):
     def get_tree_item(filename, parentid, previd):
         qconn = databases.dbs[filename].connection.get()
         cursor = qconn.cursor()
-        cursor.execute(queries.items_select_parent, (parentid, previd))
+        cursor.execute(queries.items_select_parent_text, (parentid, previd))
         databases.dbs[filename].connection.give(qconn)
         row = cursor.fetchone()
         if row:
@@ -383,3 +383,26 @@ class Item(object):
             return last.pop()
         except KeyError:
             return 0
+
+    @staticmethod
+    def get_sorted_children(filename, parent):
+        qconn = databases.dbs[filename].connection.get()
+        cursor = qconn.cursor()
+        cursor.execute(queries.items_select_parent, (parent, 0))
+        row = cursor.fetchone()
+        ids = []
+
+        if row:
+            ids.append(row["I_id"])
+
+            while True:
+                cursor.execute(queries.items_select_id_next, (ids[-1], ))
+                row = cursor.fetchone()
+
+                if row:
+                    ids.append(row["I_id"])
+                else:
+                    break
+
+        databases.dbs[filename].connection.give(qconn)
+        return ids
