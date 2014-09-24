@@ -241,6 +241,7 @@ class TreeItemIcons(object):
         if kwargs['filename'] == self.filename:
             id_ = kwargs['id_']
             target = kwargs['target']
+            oldtarget = kwargs['oldtarget']
             backlinks = links_api.find_back_links(self.filename, id_)
             target_target = links_api.find_link_target(self.filename, target)
 
@@ -258,7 +259,9 @@ class TreeItemIcons(object):
 
             self._update_item(id_, rbits)
             self._update_item(target, target_rbits)
-            self._reset_item(kwargs['oldtarget'])
+
+            if oldtarget is not False:
+                self._reset_item(oldtarget)
 
     def _handle_delete_link(self, kwargs):
         if kwargs['filename'] == self.filename:
@@ -349,7 +352,6 @@ class TreeItemIcons(object):
             rbits = 4 if len(backlinks) > 0 else 1
 
         self._update_item(id_, rbits)
-
 
     def _update_item(self, id_, rbits):
         bits = rbits << self.property_shift

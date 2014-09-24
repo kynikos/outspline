@@ -513,47 +513,12 @@ def add_item_to_selection(filename, id_):
     return tree.dbs[filename].add_item_to_selection(id_)
 
 
-def get_tree_item_id(filename, treeitem):
-    # get_item_id takes a DV item now ***********************************************
-    return tree.dbs[filename].get_item_id(treeitem)
+def get_tree_item_id(filename, item):
+    return tree.dbs[filename].get_item_id(item)
 
 
 def get_root_tree_item(filename):
-    # Check *********************************************************************************
     return tree.dbs[filename].get_root()
-
-
-def append_item(filename, pid, id_, text):
-    parent = tree.dbs[filename].get_tree_item(pid)
-    # Nothing is returned anymore ******************************************************
-    return tree.dbs[filename].insert_item(parent, id_, text)
-
-
-def insert_item_after(filename, baseid, id_, text):
-    # This will be the same as append_item *********************************************
-    # Must use the parent DVitem ***********************************************************
-    # Nothing is returned anymore ******************************************************
-    return tree.dbs[filename].insert_item(base, id_, text)
-
-
-def append_tree_item(filename, parent, id_):
-    text = core_api.get_item_text(filename, id_)
-    # Must use the parent DVitem ***********************************************************
-    # Nothing is returned anymore ******************************************************
-    return tree.dbs[filename].insert_item(parent, id_, text)
-
-
-def insert_tree_item_after(filename, base, id_):
-    # This will be the same as append_tree_item ****************************************
-    text = core_api.get_item_text(filename, id_)
-    # Must use the parent DVitem ***********************************************************
-    # Nothing is returned anymore ******************************************************
-    return tree.dbs[filename].insert_item(base, id_, text)
-
-
-def insert_subtree(filename, treeroot):
-    # Check *********************************************************************************
-    return tree.dbs[filename].insert_subtree(base=treeroot)
 
 
 def delete_items(filename, ids, description="Delete items"):
@@ -574,6 +539,7 @@ def add_item_property(filename, bitsn, character, bits_to_colour):
 
 
 def update_item_properties(filename, id_, property_bits, property_mask):
+    # Test this very well because it was trying-excepting the id_ before *******************
     tree.dbs[filename].update_item_properties(id_, property_bits,
                                                                 property_mask)
 

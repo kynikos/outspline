@@ -200,9 +200,6 @@ class MenuDev(wx.Menu):
                     id_ = self._populate_tree_item(mode, filename, itemid,
                                                     group, text, description)
 
-                    self._populate_tree_gui(mode, filename, itemid, id_, text)
-
-                    # Rules must be created *after* self._populate_tree_gui
                     # It should also be checked if the database supports
                     #  organism_basicrules (bug #330)
                     if organism_api and wxscheduler_basicrules_api and \
@@ -211,7 +208,6 @@ class MenuDev(wx.Menu):
                         self._populate_tree_rules(filename, id_, group,
                                                             description)
 
-                    # Links must be created *after* self._populate_tree_gui
                     if links_api and wxlinks_api and len(dbitems) > 0 and \
                                     filename in \
                                     links_api.get_supported_open_databases():
@@ -235,11 +231,9 @@ class MenuDev(wx.Menu):
     def _populate_tree_item(self, mode, filename, itemid, group, text,
                                                                 description):
         if mode == 'child':
-            # %%%%%%%% Check *********************************************************************
             return core_api.append_item(filename, itemid, group, text=text,
                                                     description=description)
         elif mode == 'sibling':
-            # %%%%%%%% Check *********************************************************************
             return core_api.insert_item_after(filename, itemid, group,
                                             text=text, description=description)
 
@@ -312,14 +306,6 @@ class MenuDev(wx.Menu):
             # *before* the new item was appended
             target = random.choice(dbitems)
             links_api.make_link(filename, id_, target, group, description)
-
-    def _populate_tree_gui(self, mode, filename, itemid, id_, text):
-        if mode == 'child':
-            pass# %%%%%%%% Check *********************************************************************
-            #wxgui_api.append_item(filename, itemid, id_, text)
-        elif mode == 'sibling':
-            pass# %%%%%%%% Check *********************************************************************
-            #wxgui_api.insert_item_after(filename, itemid, id_, text)
 
     def reset_simulator_item(self):
         if simulator.is_active():
