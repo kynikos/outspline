@@ -152,7 +152,7 @@ def main():
     core_api.bind_to_open_database(handle_open_database)
     core_api.bind_to_save_database_copy(handle_save_database_copy)
     core_api.bind_to_close_database(handle_close_database)
-    core_api.bind_to_deleted_item(handle_delete_item)
+    core_api.bind_to_deleting_item(handle_delete_item)
     core_api.bind_to_history(handle_history)
 
     if coreaux_api.get_extension_configuration('links').get_bool('sync_text'):

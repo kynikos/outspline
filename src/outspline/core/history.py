@@ -241,7 +241,6 @@ class DBHistory(object):
             status = read['status']
 
             for row in history:
-                print("row", row)  # *******************************************************
                 self.hactions[row['H_type']][action](self.filename, action,
                             row[3], row['H_id'], row['H_type'], row['H_item'])
                 self._update_history_id(row['H_id'], status)
@@ -308,6 +307,7 @@ class DBHistory(object):
         self.connection.give(qconn)
 
         self.items[itemid].remove()
+
         history_delete_event.signal(filename=self.filename, id_=itemid,
                                             hid=hid, parent=parent, text=text)
 

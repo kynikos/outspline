@@ -540,8 +540,12 @@ def update_item_properties(filename, id_, property_bits, property_mask):
                                                                 property_mask)
 
 
-def queue_history_handler(filename, handler, id_, args):
-    return tree.dbs[filename].queue_history_handler(handler, id_, args)
+def update_tree_item(filename, id_):
+    tree.dbs[filename].update_tree_item(id_)
+
+
+def request_tree_item_refresh(filename, id_):
+    return tree.dbs[filename].request_item_refresh(id_)
 
 
 def get_logs_parent(filename):

@@ -299,63 +299,58 @@ class TreeItemIcons(object):
 
     def _handle_history(self, kwargs):
         if kwargs['filename'] == self.filename:
-            wxgui_api.queue_history_handler(self.filename, self._do_history,
-                                                            kwargs['id_'], ())
-            # Check ************************************************************************
-            #self._do_history(kwargs['id_'])
+            id_ = kwargs['id_']
 
-    def _do_history(self, id_):
-        # id_ may not exist anymore, but the history event may have  # ********************
-        # effects also on target and backlinks
-        backlinks = links_api.find_back_links(self.filename, id_)
-        target = links_api.find_link_target(self.filename, id_)
+            # The history event may have effects also on target and backlinks
+            backlinks = links_api.find_back_links(self.filename, id_)
+            target = links_api.find_link_target(self.filename, id_)
 
-        if target is False:
-            rbits = 3 if len(backlinks) > 0 else 0
+            if target is False:
+                rbits = 3 if len(backlinks) > 0 else 0
 
-            # Find any possible old target and update it
-            # This fixes for example the case of undoing the linking
-            # of an item to another, which wouldn't update the tree
-            # icon of the old target because this function would be
-            # called *after* removing the link, so the old target
-            # would not be retrievable through a database query
-            old_target = links_api.get_last_known_target(self.filename, id_)
+                # Find any possible old target and update it
+                # This fixes for example the case of undoing the linking
+                # of an item to another, which wouldn't update the tree
+                # icon of the old target because this function would be
+                # called *after* removing the link, so the old target
+                # would not be retrievable through a database query
+                old_target = links_api.get_last_known_target(self.filename, id_)
 
-            if old_target is not None:
-                self._reset_item(old_target)
+                if old_target is not None:
+                    self._reset_item_no_tree_update(old_target)
 
-        elif target is None:
-            rbits = 5 if len(backlinks) > 0 else 2
+            elif target is None:
+                rbits = 5 if len(backlinks) > 0 else 2
 
-        else:
-            rbits = 4 if len(backlinks) > 0 else 1
-
-            target_target = links_api.find_link_target(self.filename, target)
-
-            if target_target is False:
-                target_rbits = 3
-            elif target_target is None:
-                target_rbits = 5
             else:
-                target_rbits = 4
+                rbits = 4 if len(backlinks) > 0 else 1
 
-            self._update_item(target, target_rbits)
+                target_target = links_api.find_link_target(self.filename,
+                                                                        target)
 
-        # id_ may not exist anymore  # ***************************************************
-        #if core_api.is_item(self.filename, id_):  # *************************************
-        self._update_item(id_, rbits)
+                if target_target is False:
+                    target_rbits = 3
+                elif target_target is None:
+                    target_rbits = 5
+                else:
+                    target_rbits = 4
 
-        for blink in backlinks:
-            blink_backlinks = links_api.find_back_links(self.filename, blink)
-            blink_rbits = 4 if len(blink_backlinks) > 0 else 1
-            self._update_item(blink, blink_rbits)
+                self._update_item_no_tree_update(target, target_rbits)
+
+            self._update_item_no_tree_update(id_, rbits)
+
+            for blink in backlinks:
+                blink_backlinks = links_api.find_back_links(self.filename,
+                                                                        blink)
+                blink_rbits = 4 if len(blink_backlinks) > 0 else 1
+                self._update_item_no_tree_update(blink, blink_rbits)
 
     def _handle_paste(self, kwargs):
         if kwargs['filename'] == self.filename:
             for id_ in kwargs['ids']:
                 self._reset_item(id_)
 
-    def _reset_item(self, id_):
+    def _compute_rbits(self, id_):
         backlinks = links_api.find_back_links(self.filename, id_)
         target = links_api.find_link_target(self.filename, id_)
 
@@ -366,12 +361,28 @@ class TreeItemIcons(object):
         else:
             rbits = 4 if len(backlinks) > 0 else 1
 
+        return rbits
+
+    def _reset_item_no_tree_update(self, id_):
+        rbits = self._compute_rbits(id_)
+        self._update_item_no_tree_update(id_, rbits)
+
+    def _reset_item(self, id_):
+        rbits = self._compute_rbits(id_)
         self._update_item(id_, rbits)
 
-    def _update_item(self, id_, rbits):
+    def _update_item_properties(self, id_, rbits):
         bits = rbits << self.property_shift
         wxgui_api.update_item_properties(self.filename, id_, bits,
                                                         self.property_mask)
+
+    def _update_item_no_tree_update(self, id_, rbits):
+        self._update_item_properties(id_, rbits)
+        wxgui_api.request_tree_item_refresh(self.filename, id_)
+
+    def _update_item(self, id_, rbits):
+        self._update_item_properties(id_, rbits)
+        wxgui_api.update_tree_item(self.filename, id_)
 
 
 class ViewMenu(object):

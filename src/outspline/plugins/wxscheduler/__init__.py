@@ -480,6 +480,7 @@ class TreeItemIcons(object):
 
             organism_api.bind_to_update_item_rules_conditional(
                                                     self._handle_update_rules)
+            organism_api.bind_to_history_insert(self._handle_history)
             organism_api.bind_to_history_update(self._handle_history)
 
             wxgui_api.bind_to_open_database(self._handle_open_database)
@@ -496,6 +497,7 @@ class TreeItemIcons(object):
         if kwargs['filename'] == self.filename:
             organism_api.bind_to_update_item_rules_conditional(
                                             self._handle_update_rules, False)
+            organism_api.bind_to_history_insert(self._handle_history, False)
             organism_api.bind_to_history_update(self._handle_history, False)
 
             wxgui_api.bind_to_open_database(self._handle_open_database, False)
@@ -511,17 +513,8 @@ class TreeItemIcons(object):
 
     def _handle_history(self, kwargs):
         if kwargs['filename'] == self.filename:
-            wxgui_api.queue_history_handler(self.filename, self._do_history,
-                                            kwargs['id_'], (kwargs['rules'], ))
-            # Check ************************************************************************
-            #self._do_history(kwargs['id_'], kwargs['rules'])
-
-    def _do_history(self, id_, rules):
-        # The history action may have deleted the item; don't do this test  # **************
-        # in self._handle_history, because there the item is still in the
-        # database in any case
-        #if core_api.is_item(self.filename, id_):  # **************************************
-        self._update_item(id_, rules)
+            id_ = kwargs["id_"]
+            self._update_item_no_tree_update(id_, kwargs["rules"])
 
     def _handle_paste(self, kwargs):
         if kwargs['filename'] == self.filename:
@@ -535,7 +528,7 @@ class TreeItemIcons(object):
             rules = organism_api.convert_string_to_rules(row['R_rules'])
             self._update_item(id_, rules)
 
-    def _update_item(self, id_, rules):
+    def _update_item_properties(self, id_, rules):
         if len(rules) > 0:
             bits = 1 << self.property_shift
         else:
@@ -543,6 +536,14 @@ class TreeItemIcons(object):
 
         wxgui_api.update_item_properties(self.filename, id_, bits,
                                                             self.property_mask)
+
+    def _update_item_no_tree_update(self, id_, rules):
+        self._update_item_properties(id_, rules)
+        wxgui_api.request_tree_item_refresh(self.filename, id_)
+
+    def _update_item(self, id_, rules):
+        self._update_item_properties(id_, rules)
+        wxgui_api.update_tree_item(self.filename, id_)
 
 
 class ViewMenu(object):

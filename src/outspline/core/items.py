@@ -158,7 +158,8 @@ class Item(object):
 
         # This event must be signalled *before* updating the next item
         item_deleting_event.signal(filename=self.filename, parent=parent,
-                                                                id_=self.id_)
+                                        id_=self.id_, text=text,
+                                        group=group, description=description)
 
         next = self._get_next()
 
