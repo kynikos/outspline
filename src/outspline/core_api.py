@@ -185,10 +185,10 @@ def redo_tree(filename):
     return databases.dbs[filename].dbhistory.redo_history()
 
 
-def delete_items(filename, ditems, group=None, description='Delete items'):
+def delete_subtree(filename, id_, group=None, description='Delete subtree'):
     if group == None:
         group = databases.dbs[filename].dbhistory.get_next_history_group()
-    return databases.dbs[filename].delete_items(ditems, group=group,
+    return databases.dbs[filename].delete_subtree(id_, group=group,
                                                description=description)
 
 
@@ -266,6 +266,10 @@ def get_item_ancestors(filename, id_):
 
 def get_item_descendants(filename, id_):
     return databases.dbs[filename].items[id_].get_descendants()
+
+
+def find_independent_items(filename, ids):
+    return databases.dbs[filename].find_independent_items(ids)
 
 
 def get_root_items(filename):
@@ -399,8 +403,8 @@ def bind_to_save_database_copy(handler, bind=True):
     return databases.save_database_copy_event.bind(handler, bind)
 
 
-def bind_to_delete_items(handler, bind=True):
-    return databases.delete_items_event.bind(handler, bind)
+def bind_to_delete_subtree(handler, bind=True):
+    return databases.delete_subtree_event.bind(handler, bind)
 
 
 def bind_to_history(handler, bind=True):

@@ -41,7 +41,7 @@ close_database_event = Event()
 save_permission_check_event = Event()
 save_database_event = Event()
 save_database_copy_event = Event()
-delete_items_event = Event()
+delete_subtree_event = Event()
 exit_app_event_1 = Event()
 exit_app_event_2 = Event()
 
@@ -311,18 +311,17 @@ class Database(object):
 
         return True
 
-    def delete_items(self, dids, group, description='Delete items'):
-        for id_ in dids:
-            try:
-                item = self.items[id_]
-            except KeyError:
-                # The item may have been deleted as a descendant of another
-                # item deleted in a previous loop
-                pass
-            else:
-                item.delete_subtree(group, description=description)
+    def delete_subtree(self, id_, group, description='Delete subtree'):
+        self.items[id_].delete_subtree(group, description=description)
+        delete_subtree_event.signal()
 
-        delete_items_event.signal()
+    def find_independent_items(self, ids):
+        roots = set(ids)
+
+        for id_ in ids:
+            roots -= set(self.items[id_].get_children())
+
+        return roots
 
     def get_root_items(self):
         return items.Item.get_children_sorted(self.filename, 0)

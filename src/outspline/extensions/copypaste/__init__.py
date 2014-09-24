@@ -54,8 +54,10 @@ def copy_items(filename, cids, cut=False, group=None,
         item_copy_event.signal(filename=filename, id_=id_)
 
     if cut and group:
-        core_api.delete_items(filename, cids, group=group,
-                              description=description)
+        for cid in cids:
+            # delete_subtree is new, check it works correctly here ****************************
+            core_api.delete_subtree(filename, cid, group=group,
+                                                    description=description)
 
 
 def paste_items(filename, baseid, mode, group, description='Paste items'):

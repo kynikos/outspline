@@ -433,11 +433,7 @@ class Database(wx.SplitterWindow):
         self.dvmodel.ItemAdded(newparent, item)
         self._move_subtree(id_, item)
 
-        if not core_api.has_item_children(self.filename, oldpid):
-            # This seems to be the only way to hide the arrow next to a parent
-            # that has just lost its last child
-            self.dvmodel.ItemDeleted(newparent, oldparent)
-            self.dvmodel.ItemAdded(newparent, oldparent)
+        self.refresh_item(newparent, oldpid, oldparent)
 
     def _move_subtree(self, id_, item):
         childids = core_api.get_item_children(self.filename, id_)
@@ -446,6 +442,13 @@ class Database(wx.SplitterWindow):
             child = self.get_tree_item(childid)
             self.dvmodel.ItemAdded(item, child)
             self._move_subtree(childid, child)
+
+    def refresh_item(self, parent, id_, item):
+        if not core_api.has_item_children(self.filename, id_):
+            # This seems to be the only way to hide the arrow next to a parent
+            # that has just lost all of its children
+            self.dvmodel.ItemDeleted(parent, item)
+            self.dvmodel.ItemAdded(parent, item)
 
     def remove_items(self, ids):
         # ********************************************************************************
