@@ -201,6 +201,10 @@ def is_item(filename, id_):
     return id_ in databases.dbs[filename].items
 
 
+def is_item_root(filename, id_):
+    return databases.dbs[filename].items[id_].is_root()
+
+
 def update_database_history_soft_limit(filename, limit):
     return databases.dbs[filename].dbhistory.update_soft_limit(limit)
 
@@ -237,11 +241,23 @@ def get_item_children(filename, id_):
     return databases.dbs[filename].items[id_].get_children()
 
 
+def get_item_previous(filename, id_):
+    return databases.dbs[filename].items[id_].get_previous()
+
+
+def get_item_next(filename, id_):
+    return databases.dbs[filename].items[id_].get_next()
+
+
 def get_item_ancestors(filename, id_):
     # It's necessary to initialize ancestors=[] because otherwise for some
     # reason the ancestors list from the previous call would be used, thus
     # appending the ancestors again, multiplicating them at every call
     return databases.dbs[filename].items[id_].get_ancestors(ancestors=[])
+
+
+def get_item_descendants(filename, id_):
+    return databases.dbs[filename].items[id_].get_descendants()
 
 
 def get_root_items(filename):
