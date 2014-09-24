@@ -703,8 +703,16 @@ class MenuDatabase(wx.Menu):
 
 
 
-                        # Doesn't work on level-1 items ****************************************
-                        parent = treedb.get_tree_item(core_api.get_item_parent(filename, id_))
+                        # ***************************************************************
+                        pid = core_api.get_item_parent(filename, id_)
+
+                        if pid > 0:
+                            parent = treedb.get_tree_item(pid)
+                        else:
+                            parent = treedb.get_root()
+
+                        # If item had children, they must all be re-added ***************
+                        # recursively ***************************************************
                         treedb.dvmodel.ItemDeleted(parent, item)
                         treedb.dvmodel.ItemAdded(parent, item)
                         # ***************************************************************
@@ -744,8 +752,16 @@ class MenuDatabase(wx.Menu):
 
 
 
-                        # Doesn't work on level-1 items ****************************************
-                        parent = treedb.get_tree_item(core_api.get_item_parent(filename, id_))
+                        # ***************************************************************
+                        pid = core_api.get_item_parent(filename, id_)
+
+                        if pid > 0:
+                            parent = treedb.get_tree_item(pid)
+                        else:
+                            parent = treedb.get_root()
+
+                        # If item had children, they must all be re-added ***************
+                        # recursively ***************************************************
                         treedb.dvmodel.ItemDeleted(parent, item)
                         treedb.dvmodel.ItemAdded(parent, item)
                         # ***************************************************************
@@ -772,8 +788,7 @@ class MenuDatabase(wx.Menu):
                     item = selection[0]
                     filename = treedb.get_filename()
                     id_ = treedb.get_item_id(item)
-                    # ********************************************************************
-                    oldparent = treedb.get_tree_item(core_api.get_item_parent(filename, id_))
+                    oldpid = core_api.get_item_parent(filename, id_)
 
                     if core_api.move_item_to_parent(filename, id_,
                                             description='Move item to parent'):
@@ -785,13 +800,30 @@ class MenuDatabase(wx.Menu):
 
 
 
-                        # Doesn't work if the item ends up at the 1st level ********************
-                        # The old parent may need to be updated if it's left *******************
-                        #   without children ***************************************************
-                        newparent = treedb.get_tree_item(core_api.get_item_parent(filename, id_))
-                        #newparent2 = treedb.get_tree_item(core_api.get_item_parent(filename, core_api.get_item_parent(filename, id_)))
+                        # ***************************************************************
+                        newpid = core_api.get_item_parent(filename, id_)
+
+                        # oldpid cannot be 0 here because
+                        #  core_api.move_item_to_parent succeded, which means
+                        #  that it wasn't the root item
+                        oldparent = treedb.get_tree_item(oldpid)
+
+                        if newpid > 0:
+                            newparent = treedb.get_tree_item(newpid)
+                        else:
+                            newparent = treedb.get_root()
+
+                        # If item had children, they must all be re-added ***************
+                        # recursively ***************************************************
                         treedb.dvmodel.ItemDeleted(oldparent, item)
                         treedb.dvmodel.ItemAdded(newparent, item)
+
+                        if not core_api.has_item_children(filename, oldpid):
+                            # This seems to be the only way to hide the arrow
+                            # next to a parent that has just lost its last
+                            # child
+                            treedb.dvmodel.ItemDeleted(newparent, oldparent)
+                            treedb.dvmodel.ItemAdded(newparent, oldparent)
                         # ***************************************************************
 
 

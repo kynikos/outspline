@@ -208,6 +208,10 @@ def is_item_root(filename, id_):
     return databases.dbs[filename].items[id_].is_root()
 
 
+def has_item_children(filename, id_):
+    return databases.dbs[filename].items[id_].has_children()
+
+
 def update_database_history_soft_limit(filename, limit):
     return databases.dbs[filename].dbhistory.update_soft_limit(limit)
 
