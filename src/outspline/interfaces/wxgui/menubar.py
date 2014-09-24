@@ -684,23 +684,35 @@ class MenuDatabase(wx.Menu):
     def move_item_up(self, event):
         if core_api.block_databases():
             treedb = wx.GetApp().nb_left.get_selected_tab()
+
             if treedb:
                 selection = treedb.get_selections(none=False, many=False)
+
                 if selection:
                     item = selection[0]
-
                     filename = treedb.get_filename()
                     id_ = treedb.get_item_id(item)
 
                     if core_api.move_item_up(filename, id_,
                                                 description='Move item up'):
-                        newitem = treedb.move_item(item,
-                                        treedb.get_item_parent(item),
-                                        mode=treedb.get_item_index(item) - 1)
+                        # ***************************************************************
+                        #newitem = treedb.move_item(item,
+                        #                treedb.get_item_parent(item),
+                        #                mode=treedb.get_item_index(item) - 1)
 
-                        # Cannot use newitem here ****************************************
-                        treedb.select_item(newitem)
 
+
+
+                        # Doesn't work on level-1 items ****************************************
+                        parent = treedb.get_tree_item(core_api.get_item_parent(filename, id_))
+                        treedb.dvmodel.ItemDeleted(parent, item)
+                        treedb.dvmodel.ItemAdded(parent, item)
+                        # ***************************************************************
+
+
+
+
+                        treedb.select_item(id_)
                         treedb.dbhistory.refresh()
 
                         move_item_event.signal(filename=filename)
@@ -710,26 +722,39 @@ class MenuDatabase(wx.Menu):
     def move_item_down(self, event):
         if core_api.block_databases():
             treedb = wx.GetApp().nb_left.get_selected_tab()
+
             if treedb:
                 selection = treedb.get_selections(none=False, many=False)
+
                 if selection:
                     item = selection[0]
-
                     filename = treedb.get_filename()
                     id_ = treedb.get_item_id(item)
 
                     if core_api.move_item_down(filename, id_,
                                                 description='Move item down'):
+                        # ***************************************************************
                         # When moving down, increase the index by 2, because
                         # the move method first copies the item, and only
                         # afterwards deletes it
-                        newitem = treedb.move_item(item,
-                                        treedb.get_item_parent(item),
-                                        mode=treedb.get_item_index(item) + 2)
+                        #newitem = treedb.move_item(item,
+                        #                treedb.get_item_parent(item),
+                        #                mode=treedb.get_item_index(item) + 2)
 
-                        # Cannot use newitem here ****************************************
-                        treedb.select_item(newitem)
 
+
+
+                        # Doesn't work on level-1 items ****************************************
+                        parent = treedb.get_tree_item(core_api.get_item_parent(filename, id_))
+                        treedb.dvmodel.ItemDeleted(parent, item)
+                        treedb.dvmodel.ItemAdded(parent, item)
+                        # ***************************************************************
+
+
+
+
+
+                        treedb.select_item(id_)
                         treedb.dbhistory.refresh()
 
                         move_item_event.signal(filename=filename)
@@ -739,22 +764,41 @@ class MenuDatabase(wx.Menu):
     def move_item_to_parent(self, event):
         if core_api.block_databases():
             treedb = wx.GetApp().nb_left.get_selected_tab()
+
             if treedb:
                 selection = treedb.get_selections(none=False, many=False)
+
                 if selection:
                     item = selection[0]
                     filename = treedb.get_filename()
                     id_ = treedb.get_item_id(item)
+                    # ********************************************************************
+                    oldparent = treedb.get_tree_item(core_api.get_item_parent(filename, id_))
 
                     if core_api.move_item_to_parent(filename, id_,
                                             description='Move item to parent'):
-                        newitem = treedb.move_item(item,
-                                                treedb.get_item_parent(
-                                                treedb.get_item_parent(item)))
+                        # ***************************************************************
+                        #newitem = treedb.move_item(item,
+                        #                        treedb.get_item_parent(
+                        #                        treedb.get_item_parent(item)))
 
-                        # Cannot use newitem here ****************************************
-                        treedb.select_item(newitem)
 
+
+
+                        # Doesn't work if the item ends up at the 1st level ********************
+                        # The old parent may need to be updated if it's left *******************
+                        #   without children ***************************************************
+                        newparent = treedb.get_tree_item(core_api.get_item_parent(filename, id_))
+                        #newparent2 = treedb.get_tree_item(core_api.get_item_parent(filename, core_api.get_item_parent(filename, id_)))
+                        treedb.dvmodel.ItemDeleted(oldparent, item)
+                        treedb.dvmodel.ItemAdded(newparent, item)
+                        # ***************************************************************
+
+
+
+
+
+                        treedb.select_item(id_)
                         treedb.dbhistory.refresh()
 
                         move_item_event.signal(filename=filename)

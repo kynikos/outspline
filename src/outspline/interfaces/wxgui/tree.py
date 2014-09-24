@@ -47,6 +47,7 @@ class Model(dv.PyDataViewModel):
             return dv.NullDataViewItem
         else:
             id_ = self.ItemToObject(item)
+            print("IDDDDDD", id_)  # **************************************************
             pid = core_api.get_item_parent(self.filename, id_)
 
             if pid > 0:
@@ -366,10 +367,12 @@ class Database(wx.SplitterWindow):
         return self.dvmodel.ItemToObject(item)
 
     def get_tree_item(self, id_):
+        obj = self.dvmodel.ObjectToItem(id_)  # ****************************************
+        print("self.dvmodel.ObjectToItem(id_)", id_, obj, obj.IsOk())  # *************
         return self.dvmodel.ObjectToItem(id_)
 
     def get_item_index(self, treeitem):
-        # Re-implement if needed ********************************************************
+        # Gonna be useless **************************************************************
         parent = self.get_item_parent(treeitem)
         siblings = self.get_item_children(parent)
         index = siblings.index(treeitem)
