@@ -38,10 +38,20 @@ class Model(dv.PyDataViewModel):
         super(Model, self).__init__()
         self.database = database
         self.filename = filename
-        # Must be initialized ***********************************************************
         self.labels = {}
-        # Must be initialized ***********************************************************
         self.properties = {}
+
+        for row in core_api.get_all_items_text(self.filename):
+            text = row["I_text"]
+            label = self.database.make_item_label(text)
+            self.labels[row["I_id"]] = label
+            multiline_bits, multiline_mask = \
+                                        self.database.get_base_properties(
+                                        ).get_item_multiline_state(text, label)
+            # Initialize the plugin properties here ****************************************
+            self.properties[row["I_id"]] = \
+                                        self.database.compute_property_bits(
+                                        0, multiline_bits, multiline_mask)
 
     def IsContainer(self, item):
         return True
@@ -90,6 +100,7 @@ class Model(dv.PyDataViewModel):
 
 class Tree(wx.TreeCtrl):
     def __init__(self, parent):
+        # *******************************************************************************
         # The tree doesn't seem to support TAB traversal if there's only one
         #   item (but Home/End and PgUp/PgDown do select it) (bug #336)
         wx.TreeCtrl.__init__(self, parent, wx.NewId(),
@@ -98,16 +109,10 @@ class Tree(wx.TreeCtrl):
 
 
 class Database(wx.SplitterWindow):
-    treec = None
-    filename = None
-    root = None
-    titems = None
-    cmenu = None
-    ctabmenu = None
-    logspanel = None
-    dbhistory = None
-    properties = None
-
+    # Mark private methods **************************************************************
+    # Addresses #260 ********************************************************************
+    # Fixes #334 ************************************************************************
+    # Addresses #336 ********************************************************************
     def __init__(self, filename):
         wx.SplitterWindow.__init__(self, wx.GetApp().nb_left,
                                                     style=wx.SP_LIVE_UPDATE)
@@ -123,13 +128,6 @@ class Database(wx.SplitterWindow):
         self.root = self.treec.AddRoot(text='root', data=data)
         self.titems = {0: data}
 
-        self.dvmodel = Model(self, filename)
-        #self.treec.AssociateModel(self.dvmodel)  # *****************************************
-        # DataViewModel is reference counted (derives from RefCounter), the
-        # count needs to be decreased explicitly here to avoid memory leaks
-        # This is bullshit, it crashes if closing all databases *****************************
-        #self.dvmodel.DecRef()
-
         self.cmenu = ContextMenu(self)
         self.ctabmenu = TabContextMenu(self.filename)
 
@@ -141,10 +139,18 @@ class Database(wx.SplitterWindow):
         self.properties = Properties(self.treec)
         self.base_properties = DBProperties(self.properties)
 
+        self.dvmodel = Model(self, filename)
+        #self.treec.AssociateModel(self.dvmodel)  # *****************************************
+        # DataViewModel is reference counted (derives from RefCounter), the
+        # count needs to be decreased explicitly here to avoid memory leaks
+        # This is bullshit, it crashes if closing all databases *****************************
+        #self.dvmodel.DecRef()
+
         self.Initialize(self.treec)
 
         self.treec.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.veto_label_edit)
         self.treec.Bind(wx.EVT_TREE_ITEM_MENU, self.popup_item_menu)
+        # *******************************************************************************
         # Note that EVT_CONTEXT_MENU wouldn't work on empty spaces
         self.treec.Bind(wx.EVT_RIGHT_DOWN, self.popup_window_menu)
         self.treec.Bind(wx.EVT_LEFT_DOWN, self.unselect_on_empty_areas)
@@ -162,6 +168,7 @@ class Database(wx.SplitterWindow):
         # properties, which requires the filename to be in the dictionary
         # Use a separate ImageList for each database, as they may support a
         # different subset of the installed plugins
+        # *******************************************************************************
         # Maintaining a common ImageList would be impossible anyway, because an
         # ImageList can be assigned only once per TreeCtrl
         imagelist = self.properties.get_empty_image_list()
@@ -172,6 +179,7 @@ class Database(wx.SplitterWindow):
         # on the filename to be in the dictionary
         self.create()
 
+        # *******************************************************************************
         # Navigating the tree with the keyboard doesn't work until an item is
         # seletced for the first time (bug #334), so select the root item
         # now...
@@ -234,6 +242,7 @@ class Database(wx.SplitterWindow):
 
             item = self.find_item(id_)
 
+            # *******************************************************************************
             # Reset label and image before moving the item, otherwise the item
             # has to be found again, or the program crashes
             self.set_item_label(item, text)
@@ -273,7 +282,7 @@ class Database(wx.SplitterWindow):
             label = self.make_item_label(text)
             multiline_bits, multiline_mask = \
                     self.base_properties.get_item_multiline_state(text, label)
-            properties = self._compute_property_bits(0, multiline_bits,
+            properties = self.compute_property_bits(0, multiline_bits,
                                                                 multiline_mask)
             imageindex = self.properties.get_image(properties)
 
@@ -326,6 +335,7 @@ class Database(wx.SplitterWindow):
             for item in selection:
                 for ancestor in self.get_item_ancestors(item):
                     if ancestor in selection:
+                        # *******************************************************************************
                         # Note that UnselectItem may actually select if the
                         # item is not selected, see
                         # http://trac.wxwidgets.org/ticket/11157
@@ -335,6 +345,7 @@ class Database(wx.SplitterWindow):
         elif descendants == True:
             for item in selection:
                 for descendant in self.get_item_descendants(item):
+                    # *******************************************************************************
                     # If the descendant is already selected, SelectItem would
                     # actually deselect it, see
                     # http://trac.wxwidgets.org/ticket/11157
@@ -376,6 +387,7 @@ class Database(wx.SplitterWindow):
         return newtreeitem
 
     def remove_items(self, treeitems):
+        # *******************************************************************************
         # When deleting items, make sure to delete first those without
         # children, otherwise crashes without exceptions or errors could occur
         while treeitems:
@@ -476,24 +488,28 @@ class Database(wx.SplitterWindow):
         self.treec.SetItemImage(treeitem, imageindex)
 
     @staticmethod
-    def _compute_property_bits(old_property_bits, new_property_bits,
+    def compute_property_bits(old_property_bits, new_property_bits,
                                                                 property_mask):
         return (old_property_bits & ~property_mask) | new_property_bits
 
     def update_item_properties(self, treeitem, property_bits, property_mask):
         data = self.treec.GetItemPyData(treeitem)
-        new_bits = self._compute_property_bits(data[1], property_bits,
+        new_bits = self.compute_property_bits(data[1], property_bits,
                                                                 property_mask)
         self.treec.SetItemPyData(treeitem, (data[0], new_bits))
 
     def get_properties(self):
         return self.properties
 
+    def get_base_properties(self):
+        return self.base_properties
+
     def get_logs_panel(self):
         return self.logspanel
 
     def select_item(self, treeitem):
         self.treec.UnselectAll()
+        # *******************************************************************************
         # Note that SelectItem may actually unselect if the item is selected,
         # see http://trac.wxwidgets.org/ticket/11157
         # However in this case all the items have just been deselected, so no
@@ -504,12 +520,14 @@ class Database(wx.SplitterWindow):
         self.treec.UnselectAll()
 
     def add_item_to_selection(self, treeitem):
+        # *******************************************************************************
         # If the item is already selected, SelectItem would actually deselect
         # it, see http://trac.wxwidgets.org/ticket/11157
         if not self.treec.IsSelected(treeitem):
             self.treec.SelectItem(treeitem)
 
     def remove_item_from_selection(self, treeitem):
+        # *******************************************************************************
         # If the item is not selected, UnselectItem may actually select it, see
         # http://trac.wxwidgets.org/ticket/11157
         if self.treec.IsSelected(treeitem):
@@ -519,6 +537,7 @@ class Database(wx.SplitterWindow):
         return self.treec.GetItemParent(treeitem) == self.treec.GetRootItem()
 
     def popup_item_menu(self, event):
+        # *******************************************************************************
         # Using a separate procedure for EVT_TREE_ITEM_MENU (instead of always
         # using EVT_RIGHT_DOWN) ensures a standard behaviour, e.g. selecting
         # the item if not selected unselecting all the others, or leaving the
@@ -526,6 +545,7 @@ class Database(wx.SplitterWindow):
         self._popup_context_menu(event.GetPoint())
 
     def popup_window_menu(self, event):
+        # *******************************************************************************
         # Use EVT_RIGHT_DOWN when clicking in areas without items, because in
         # that case EVT_TREE_ITEM_MENU is not triggered
         if not self.treec.HitTest(event.GetPosition())[0].IsOk():
