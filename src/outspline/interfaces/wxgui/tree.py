@@ -449,6 +449,7 @@ class Database(wx.SplitterWindow):
         self.treec.SetItemText(treeitem, label)
         multiline_bits, multiline_mask = \
                     self.base_properties.get_item_multiline_state(text, label)
+        # Pass id_ **************************************************************************
         self.update_item_properties(treeitem, multiline_bits, multiline_mask)
 
     def update_item_image(self, treeitem):
@@ -463,12 +464,12 @@ class Database(wx.SplitterWindow):
                                                                 property_mask):
         return (old_property_bits & ~property_mask) | new_property_bits
 
-    def update_item_properties(self, treeitem, property_bits, property_mask):
-        data = self.treec.GetItemPyData(treeitem)
+    def update_item_properties(self, id_, property_bits, property_mask):
+        # Simplify? **************************************************************************
+        data = self.data[id_]
         new_bits = self._compute_property_bits(data[1], property_bits,
                                                                 property_mask)
-        self.treec.SetItemPyData(treeitem, (data[0], new_bits))
-        self.data[self.get_item_id(treeitem)][1] = new_bits
+        self.data[id_][1] = new_bits
 
     def get_properties(self):
         return self.properties

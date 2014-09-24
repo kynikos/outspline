@@ -565,11 +565,12 @@ def add_item_property(filename, bitsn, character, bits_to_colour):
 
 def update_item_properties(filename, id_, property_bits, property_mask):
     try:
+        # Do a different test ************************************************************
         treeitem = tree.dbs[filename].find_item(id_)
     except KeyError:
         return False
     else:
-        tree.dbs[filename].update_item_properties(treeitem, property_bits,
+        tree.dbs[filename].update_item_properties(id_, property_bits,
                                                                 property_mask)
         return True
 
