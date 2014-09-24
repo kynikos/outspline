@@ -162,12 +162,13 @@ class Database(wx.SplitterWindow):
     def _post_init(self):
         # The native GTK widget used by DataViewCtrl would have an internal
         # "live" search feature which steals some keyboard shortcuts: Ctrl+n,
-        # Ctrl+p, Ctrl+f
+        # Ctrl+p, Ctrl+f, Ctrl+a, Ctrl+Shift+a
         # https://groups.google.com/d/msg/wxpython-users/1sUPp766uXU/0J22mUrkzoAJ
         # Track as an upstream bug **********************************************************
         # Ctrl+f can be recovered with a hack explained above in the Model's
         # GetColumnType method
-        # See if other shortcuts are stolen and release them from the config ********************
+        # Show the natively working shortcuts in the menu, or in comments in ********************
+        #   the config file (also for the other DataViewCtrl's) *********************************
         self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
                                             dv.DV_ROW_LINES | dv.DV_NO_HEADER)
 
