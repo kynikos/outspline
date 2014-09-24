@@ -539,13 +539,15 @@ class MenuDatabase(wx.Menu):
                 self.sibling.SetHelp(self.sibling_help_2)
                 self.child.Enable()
 
-                if tab.get_item_previous(sel[0]).IsOk():
+                id_ = tab.get_item_id(sel[0])
+
+                if core_api.get_item_previous(filename, id_):
                     self.moveup.Enable()
 
-                if tab.get_item_next(sel[0]).IsOk():
+                if core_api.get_item_next(filename, id_):
                     self.movedn.Enable()
 
-                if not tab.is_database_root(sel[0]):
+                if not core_api.is_item_root(filename, id_):
                     self.movept.Enable()
 
                 self.edit.Enable()
@@ -633,6 +635,7 @@ class MenuDatabase(wx.Menu):
 
                     if len(selection) > 0:
                         base = selection[0]
+                        # get_item_id takes a DV item now ***********************************************
                         baseid = treedb.get_item_id(base)
 
                         id_ = core_api.create_sibling(filename=filename,
@@ -668,6 +671,7 @@ class MenuDatabase(wx.Menu):
                 if selection:
                     base = selection[0]
                     filename = treedb.get_filename()
+                    # get_item_id takes a DV item now ***********************************************
                     baseid = treedb.get_item_id(base)
                     text = 'New item'
 
@@ -692,6 +696,7 @@ class MenuDatabase(wx.Menu):
                     item = selection[0]
 
                     filename = treedb.get_filename()
+                    # get_item_id takes a DV item now ***********************************************
                     id_ = treedb.get_item_id(item)
 
                     if core_api.move_item_up(filename, id_,
@@ -717,6 +722,7 @@ class MenuDatabase(wx.Menu):
                     item = selection[0]
 
                     filename = treedb.get_filename()
+                    # get_item_id takes a DV item now ***********************************************
                     id_ = treedb.get_item_id(item)
 
                     if core_api.move_item_down(filename, id_,
@@ -744,6 +750,7 @@ class MenuDatabase(wx.Menu):
                 if selection:
                     item = selection[0]
                     filename = treedb.get_filename()
+                    # get_item_id takes a DV item now ***********************************************
                     id_ = treedb.get_item_id(item)
 
                     if core_api.move_item_to_parent(filename, id_,
@@ -768,6 +775,7 @@ class MenuDatabase(wx.Menu):
                 filename = treedb.get_filename()
 
                 for sel in selection:
+                    # get_item_id takes a DV item now ***********************************************
                     id_ = treedb.get_item_id(sel)
                     editor.Editor.open(filename, id_)
 
@@ -779,6 +787,7 @@ class MenuDatabase(wx.Menu):
                 if selection:
                     filename = treedb.get_filename()
                     for item in selection:
+                        # get_item_id takes a DV item now ***********************************************
                         id_ = treedb.get_item_id(item)
                         tab = editor.Editor.make_tabid(filename, id_)
                         if tab in editor.tabs and not editor.tabs[tab].close(
@@ -788,6 +797,7 @@ class MenuDatabase(wx.Menu):
 
                     items = []
                     for item in selection:
+                        # get_item_id takes a DV item now ***********************************************
                         id_ = treedb.get_item_id(item)
                         items.append(id_)
 

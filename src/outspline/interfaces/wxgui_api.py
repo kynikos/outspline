@@ -515,6 +515,7 @@ def add_item_to_selection(filename, id_):
 
 
 def get_tree_item_id(filename, treeitem):
+    # get_item_id takes a DV item now ***********************************************
     return tree.dbs[filename].get_item_id(treeitem)
 
 

@@ -223,6 +223,7 @@ class Database(wx.SplitterWindow):
             self.set_item_label(item, text)
             self.update_tree_item(id_)
 
+            # get_item_id takes a DV item now ***********************************************
             if self.get_item_id(self.get_item_parent(item)) != parent or \
                                 (self.get_item_previous(item).IsOk() and \
                                 self.get_item_id(
@@ -284,6 +285,7 @@ class Database(wx.SplitterWindow):
         if not base:
             base = self.treec.GetRootItem()
 
+        # get_item_id takes a DV item now ***********************************************
         baseid = self.get_item_id(base)
         child = core_api.get_tree_item(self.filename, baseid, previd)
 
@@ -313,17 +315,16 @@ class Database(wx.SplitterWindow):
         if (not none and len(selection) == 0) or (not many and
                                                   len(selection) > 1):
             return False
-        elif descendants == False:
-            for item in selection:
-                for ancestor in self.get_item_ancestors(item):
-                    if ancestor in selection:
-                        self.treec.UnselectItem(item)
         elif descendants == True:
             for item in selection:
-                for descendant in self.get_item_descendants(item):
-                    self.treec.SelectItem(descendant)
+                id_ = self.get_item_id(item)
 
-        return self.treec.GetSelections()
+                for descid in core_api.get_item_descendants(id_):
+                    self.treec.Select(self.get_tree_item(descid))
+
+            return self.treec.GetSelections()
+        else:
+            return selection
 
     def move_item(self, treeitem, base, mode='append'):
         label = self.treec.GetItemText(treeitem)
@@ -384,10 +385,14 @@ class Database(wx.SplitterWindow):
     def get_root(self):
         return self.treec.GetRootItem()
 
-    def get_item_id(self, treeitem):
-        return self.treec.GetItemPyData(treeitem)[0]
+    def get_item_id(self, item):
+        return self.dvmodel.ItemToObject(item)
+
+    def get_tree_item(self, id_):
+        return self.dvmodel.ObjectToItem(id_)
 
     def get_item_index(self, treeitem):
+        # Re-implement if needed ********************************************************
         parent = self.get_item_parent(treeitem)
         siblings = self.get_item_children(parent)
         index = siblings.index(treeitem)
@@ -396,43 +401,8 @@ class Database(wx.SplitterWindow):
     def get_item_previous(self, treeitem):
         return self.treec.GetPrevSibling(treeitem)
 
-    def get_item_next(self, treeitem):
-        return self.treec.GetNextSibling(treeitem)
-
     def get_item_parent(self, treeitem):
         return self.treec.GetItemParent(treeitem)
-
-    def get_item_ancestors(self, treeitem):
-        ancestors = []
-
-        def recurse(treeitem):
-            parent = self.get_item_parent(treeitem)
-            if parent:
-                ancestors.append(parent)
-                recurse(parent)
-
-        recurse(treeitem)
-        return ancestors
-
-    def get_item_children(self, treeitem):
-        child = self.treec.GetFirstChild(treeitem)
-        children = []
-        while child[0].IsOk():
-            children.append(child[0])
-            child = self.treec.GetNextChild(treeitem, cookie=child[1])
-        return children
-
-    def get_item_descendants(self, treeitem):
-        descendants = []
-
-        def recurse(treeitem):
-            children = self.get_item_children(treeitem)
-            descendants.extend(children)
-            for child in children:
-                recurse(child)
-
-        recurse(treeitem)
-        return descendants
 
     @staticmethod
     def _make_item_label(text):
@@ -446,6 +416,7 @@ class Database(wx.SplitterWindow):
 
     def set_item_label(self, treeitem, text):
         label = self._make_item_label(text)
+        # get_item_id takes a DV item now ***********************************************
         self.data[self.get_item_id(treeitem)][0] = label
         self.treec.SetItemText(treeitem, label)
         multiline_bits, multiline_mask = \
@@ -454,7 +425,7 @@ class Database(wx.SplitterWindow):
         self.update_item_properties(treeitem, multiline_bits, multiline_mask)
 
     def update_tree_item(self, id_):
-        self.dvmodel.ItemChanged(self.dvmodel.ObjectToItem(id_))
+        self.dvmodel.ItemChanged(self.get_tree_item(id_))
 
     @staticmethod
     def _compute_property_bits(old_property_bits, new_property_bits,
@@ -487,13 +458,10 @@ class Database(wx.SplitterWindow):
     def remove_item_from_selection(self, treeitem):
         self.treec.UnselectItem(treeitem)
 
-    def is_database_root(self, treeitem):
-        return self.treec.GetItemParent(treeitem) == self.treec.GetRootItem()
-
     def _popup_item_menu(self, event):
         self.cmenu.update_items()
         popup_context_menu_event.signal(filename=self.filename)
-        self.treec.PopupMenu(self.cmenu, event.GetPoint())
+        self.treec.PopupMenu(self.cmenu, event.GetPosition())
 
     def get_tab_context_menu(self):
         self.ctabmenu.update()
@@ -748,13 +716,15 @@ class ContextMenu(wx.Menu):
             self.sibling.SetItemLabel(self.sibling_label_2)
             self.child.Enable()
 
-            if self.parent.get_item_previous(sel[0]).IsOk():
+            id_ = self.parent.get_item_id(sel[0])
+
+            if core_api.get_item_previous(self.parent.filename, id_):
                 self.moveup.Enable()
 
-            if self.parent.get_item_next(sel[0]).IsOk():
+            if core_api.get_item_next(self.parent.filename, id_):
                 self.movedn.Enable()
 
-            if not self.parent.is_database_root(sel[0]):
+            if not core_api.is_item_root(self.parent.filename, id_):
                 self.movept.Enable()
 
             self.edit.Enable()

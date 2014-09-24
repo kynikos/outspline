@@ -332,7 +332,7 @@ class Database(object):
         delete_items_event.signal()
 
     def get_root_items(self):
-        return items.Item.get_sorted_children(self.filename, 0)
+        return items.Item.get_children_sorted(self.filename, 0)
 
     def get_all_items(self):
         qconn = self.connection.get()

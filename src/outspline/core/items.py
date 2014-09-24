@@ -244,8 +244,15 @@ class Item(object):
     def _get_children(self):
         return [self.items[id_] for id_ in self.get_children()]
 
+    def _get_children_unsorted(self):
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+        cursor.execute(queries.items_select_id_children, (self.id_, ))
+        self.connection.give(qconn)
+        return [row["I_id"] for row in cursor]
+
     def get_children(self):
-        return self.get_sorted_children(self.filename, self.id_)
+        return self.get_children_sorted(self.filename, self.id_)
 
     def get_all_info(self):
         qconn = self.connection.get()
@@ -288,7 +295,7 @@ class Item(object):
     def get_descendants(self):
         descendants = []
 
-        for child in self.get_children():
+        for child in self._get_children_unsorted():
             descendants.append(child)
             descendants.extend(self.items[child].get_descendants())
 
@@ -373,7 +380,7 @@ class Item(object):
 
     @classmethod
     def _get_last_base_item_id(cls, filename):
-        ids = cls.get_sorted_children(filename, 0)
+        ids = cls.get_children_sorted(filename, 0)
 
         try:
             return ids[-1]
@@ -381,7 +388,7 @@ class Item(object):
             return 0
 
     @staticmethod
-    def get_sorted_children(filename, parent):
+    def get_children_sorted(filename, parent):
         qconn = databases.dbs[filename].connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_parent, (parent, 0))
