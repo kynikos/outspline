@@ -419,6 +419,10 @@ def bind_to_history_update(handler, bind=True):
     return history.history_update_event.bind(handler, bind)
 
 
+def bind_to_history_update_parent(handler, bind=True):
+    return history.history_update_parent_event.bind(handler, bind)
+
+
 def bind_to_history_update_text(handler, bind=True):
     return history.history_update_text_event.bind(handler, bind)
 

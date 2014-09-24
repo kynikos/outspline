@@ -91,8 +91,20 @@ class Item(object):
 
     def update_parent(self, parent, previous, group,
                                                     description='Update item'):
-        self._update(group, parent=parent, previous=previous,
-                                                    description=description)
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+
+        cursor.execute(queries.items_select_parent_previous, (self.id_, ))
+        oldvalues = cursor.fetchone()
+        cursor.execute(queries.items_update_parent, (parent, previous,
+                                                                    self.id_))
+        self.connection.give(qconn)
+
+        jhparams = json.dumps((parent, previous), separators=(',',':'))
+        jhunparams = json.dumps((oldvalues["I_parent"],
+                                oldvalues["I_previous"]), separators=(',',':'))
+        self.dbhistory.insert_history(group, self.id_, 'update_parent',
+                                            description, jhparams, jhunparams)
 
         item_update_parent_event.signal(filename=self.filename, id_=self.id_,
                                         parent=parent, previous=previous,
