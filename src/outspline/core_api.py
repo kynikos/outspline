@@ -415,11 +415,11 @@ def bind_to_history_insert(handler, bind=True):
     return history.history_insert_event.bind(handler, bind)
 
 
-def bind_to_history_update_previous(handler, bind=True):
+def bind_to_history_update_simple(handler, bind=True):
     return history.history_update_previous_event.bind(handler, bind)
 
 
-def bind_to_history_update_parent(handler, bind=True):
+def bind_to_history_update_deep(handler, bind=True):
     return history.history_update_parent_event.bind(handler, bind)
 
 
@@ -455,11 +455,11 @@ def bind_to_insert_item(handler, bind=True):
     return items.item_insert_event.bind(handler, bind)
 
 
-def bind_to_update_item_previous(handler, bind=True):
+def bind_to_update_item_simple(handler, bind=True):
     return items.item_update_previous_event.bind(handler, bind)
 
 
-def bind_to_update_item_parent(handler, bind=True):
+def bind_to_update_item_deep(handler, bind=True):
     return items.item_update_parent_event.bind(handler, bind)
 
 

@@ -250,10 +250,9 @@ class Database(wx.SplitterWindow):
         core_api.bind_to_deleting_item(self._handle_deleting_item)
         core_api.bind_to_deleted_item_2(self._handle_deleted_item)
         core_api.bind_to_history_insert(self._handle_history_insert)
-        core_api.bind_to_history_update_previous(
-                                        self._handle_history_update_previous)
-        core_api.bind_to_history_update_parent(
-                                            self._handle_history_update_parent)
+        core_api.bind_to_history_update_simple(
+                                            self._handle_history_update_simple)
+        core_api.bind_to_history_update_deep(self._handle_history_update_deep)
         core_api.bind_to_history_update_text(self._handle_history_update_text)
         core_api.bind_to_history_remove(self._handle_history_remove)
 
@@ -294,7 +293,7 @@ class Database(wx.SplitterWindow):
             parent = self.get_tree_item_safe(kwargs['parent'])
             self.insert_item(parent, id_, kwargs['text'])
 
-    def _handle_history_update_previous(self, kwargs):
+    def _handle_history_update_simple(self, kwargs):
         # Check ***************************************************************************
         if kwargs['filename'] == self.filename:
             id_ = kwargs['id_']
@@ -316,7 +315,7 @@ class Database(wx.SplitterWindow):
                     oldparent2 = self.get_tree_item(oldpid2)
                     self._refresh_item(oldparent2, oldpid, oldparent)
 
-    def _handle_history_update_parent(self, kwargs):
+    def _handle_history_update_deep(self, kwargs):
         # Implement ***************************************************************************
         if kwargs['filename'] == self.filename:
             pass
@@ -388,7 +387,7 @@ class Database(wx.SplitterWindow):
         self.dvmodel.ItemAdded(newparent, item)
         self._move_subtree(id_, item)
 
-        self._refresh_item(newparent, oldpid, oldparent)
+        self._refresh_item_arrow(newparent, oldpid, oldparent)
 
     def _move_subtree(self, id_, item):
         childids = core_api.get_item_children(self.filename, id_)
@@ -411,10 +410,10 @@ class Database(wx.SplitterWindow):
                 rootpid2 = core_api.get_item_parent(self.filename, rootpid)
                 rootparent2 = self.get_tree_item_safe(rootpid2)
 
-                self._refresh_item(rootparent2, rootpid,
+                self._refresh_item_arrow(rootparent2, rootpid,
                                                 self.get_tree_item(rootpid))
 
-    def _refresh_item(self, parent, id_, item):
+    def _refresh_item_arrow(self, parent, id_, item):
         if not core_api.has_item_children(self.filename, id_):
             # This seems to be the only way to hide the arrow next to a parent
             # that has just lost all of its children
