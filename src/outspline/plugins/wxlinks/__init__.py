@@ -266,9 +266,10 @@ class TreeItemIcons(object):
             backlinks = links_api.find_back_links(self.filename, id_)
             rbits = 3 if len(backlinks) > 0 else 0
 
-            # id_ may not exist anymore, but wxgui_api.update_item_properties
-            # is protected against KeyError
-            self._update_item(id_, rbits)
+            # id_ may not exist anymore
+            if core_api.is_item(self.filename, id_):
+                self._update_item(id_, rbits)
+
             self._reset_item(kwargs['oldtarget'])
 
     def _handle_break_links(self, kwargs):
@@ -283,11 +284,8 @@ class TreeItemIcons(object):
     def _handle_history(self, kwargs):
         if kwargs['filename'] == self.filename:
             for id_ in kwargs['items']:
-                # id_ may not exist anymore, but
-                # wxgui_api.update_item_properties is protected against
-                # KeyError
-                # The history event may have effects also on target and
-                # backlinks
+                # id_ may not exist anymore, but the history event may have
+                # effects also on target and backlinks
                 backlinks = links_api.find_back_links(self.filename, id_)
                 target = links_api.find_link_target(self.filename, id_)
 
@@ -324,7 +322,9 @@ class TreeItemIcons(object):
 
                     self._update_item(target, target_rbits)
 
-                self._update_item(id_, rbits)
+                # id_ may not exist anymore
+                if core_api.is_item(self.filename, id_):
+                    self._update_item(id_, rbits)
 
                 for blink in backlinks:
                     blink_backlinks = links_api.find_back_links(self.filename,
@@ -353,12 +353,9 @@ class TreeItemIcons(object):
 
     def _update_item(self, id_, rbits):
         bits = rbits << self.property_shift
-
-        # self._handle_delete_link and self._handle_history may pass a
-        # no-longer-existing id_
-        if wxgui_api.update_item_properties(self.filename, id_, bits,
-                                                        self.property_mask):
-            wxgui_api.update_item_image(self.filename, id_)
+        wxgui_api.update_item_properties(self.filename, id_, bits,
+                                                        self.property_mask)
+        wxgui_api.update_item_image(self.filename, id_)
 
 
 class ViewMenu(object):
