@@ -247,9 +247,11 @@ class Database(wx.SplitterWindow):
 
         self.dvmodel = Model(self.data, self.filename)
         self.treec.AssociateModel(self.dvmodel)
-        # DataViewModel is reference counted (derives from RefCounter), the
-        # count needs to be decreased explicitly here to avoid memory leaks
-        # This is bullshit, it crashes if closing all databases *****************************
+        # According to DataViewModel's documentation (as of September 2014)
+        # its reference count must be decreased explicitly to avoid memory
+        # leaks; the wxPython demo, however, doesn't do it, and if done here,
+        # the application crashes with a segfault when closing all databases
+        # See also bug #104
         #self.dvmodel.DecRef()
 
         dvrenderer = Renderer(self, self.treec)
