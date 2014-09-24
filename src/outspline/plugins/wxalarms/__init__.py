@@ -440,7 +440,7 @@ class Alarm(object):
         # Setting the label directly when instantiating CollapsiblePane through
         # the 'label' parameter would make it parse '&' characters to form
         # mnemonic shortcuts, like in menus
-        self._set_pane_label()
+        self._set_pane_label(core_api.get_item_text(self.filename, self.id_))
         self.pbox.Add(self.pane, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         self.cpane = self.pane.GetPane()
