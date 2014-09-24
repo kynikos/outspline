@@ -69,22 +69,26 @@ class Model(dv.PyDataViewModel):
         return 1
 
     def GetColumnType(self, col):
-        # The internal search doesn't work with IconText items ****************************
-        #   Returning None seems to disable it ********************************************
-        #     Ask for other possible unwanted consequences ********************************
-        #   https://groups.google.com/d/msg/wxpython-users/QvSesrnD38E/31l8f6AzIhAJ *******
-        #return "string"  # ***************************************************************
-        return None  # ***************************************************************
+        # The native GTK widget used by DataViewCtrl would have an internal
+        # "live" search feature which however unfortunately only seems to work
+        # if the first column's type is purely string
+        # https://groups.google.com/d/msg/wxpython-users/QvSesrnD38E/31l8f6AzIhAJ
+        # Track as an upstream bug **********************************************************
+        # Returning None seems to disable it
+        # Are there any unwanted consequences? **********************************************
+        #   https://groups.google.com/d/msg/wxpython-users/4nsv7x1DE-s/ljQHl9RTnuEJ *********
+        return None
 
     def GetValue(self, item, col):
         id_ = self.ItemToObject(item)
-        # For some reason it needs a string (ask) *****************************************
+        # For some reason Renderer needs a string *******************************************
+        #   https://groups.google.com/forum/#!topic/wxpython-users/F9tqqwOcIFw **************
         return str(id_)
 
 
-class MyCustomRenderer(dv.PyDataViewCustomRenderer):
+class Renderer(dv.PyDataViewCustomRenderer):
     def __init__(self, database, treec):
-        super(MyCustomRenderer, self).__init__()
+        super(Renderer, self).__init__()
         self.VMARGIN = 1
         self.GAP = 2
         self.ADDITIONAL_GAP = 4
@@ -156,12 +160,14 @@ class Database(wx.SplitterWindow):
         self.data = {}
 
     def _post_init(self):
-        # Is DataViewCtrl stealing Ctrl+n, Ctrl+p, Ctrl+f and others? *********************************
-        #   All the other DataViewCtrl's are doing the same... ****************************************
-        #   Also, the text search doesn't work ********************************************************
-        #   https://groups.google.com/d/msg/wxpython-users/1sUPp766uXU/0J22mUrkzoAJ *******************
-        #   Try to use a custom renderer for the items ************************************************
-        #     Also use it to draw variable-width icons! ***********************************************
+        # The native GTK widget used by DataViewCtrl would have an internal
+        # "live" search feature which steals some keyboard shortcuts: Ctrl+n,
+        # Ctrl+p, Ctrl+f
+        # https://groups.google.com/d/msg/wxpython-users/1sUPp766uXU/0J22mUrkzoAJ
+        # Track as an upstream bug **********************************************************
+        # Ctrl+f can be recovered with a hack explained above in the Model's
+        # GetColumnType method
+        # See if other shortcuts are stolen and release them from the config ********************
         self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
                                             dv.DV_ROW_LINES | dv.DV_NO_HEADER)
 
@@ -211,7 +217,7 @@ class Database(wx.SplitterWindow):
         # This is bullshit, it crashes if closing all databases *****************************
         #self.dvmodel.DecRef()
 
-        dvrenderer = MyCustomRenderer(self, self.treec)
+        dvrenderer = Renderer(self, self.treec)
         dvcolumn = dv.DataViewColumn("Item", dvrenderer, 0,
                                                         align=wx.ALIGN_LEFT)
         self.treec.AppendColumn(dvcolumn)
