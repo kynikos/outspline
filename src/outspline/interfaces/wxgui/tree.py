@@ -379,7 +379,8 @@ class Database(wx.SplitterWindow):
             for item in selection:
                 id_ = self.get_item_id(item)
 
-                for descid in core_api.get_item_descendants(id_):
+                for descid in core_api.get_item_descendants(self.filename,
+                                                                        id_):
                     self.treec.Select(self.get_tree_item(descid))
 
             return self.treec.GetSelections()
