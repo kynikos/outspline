@@ -299,10 +299,10 @@ class TreeItemIcons(object):
 
     def _handle_history(self, kwargs):
         if kwargs['filename'] == self.filename:
-            #wxgui_api.queue_history_handler(self.filename, self._do_history,
-            #                                                (kwargs['id_'], ))
+            wxgui_api.queue_history_handler(self.filename, self._do_history,
+                                                            (kwargs['id_'], ))
             # Check ************************************************************************
-            self._do_history(kwargs['id_'])
+            #self._do_history(kwargs['id_'])
 
     def _do_history(self, id_):
         # id_ may not exist anymore, but the history event may have

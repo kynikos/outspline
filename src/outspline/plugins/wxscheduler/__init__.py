@@ -511,10 +511,10 @@ class TreeItemIcons(object):
 
     def _handle_history(self, kwargs):
         if kwargs['filename'] == self.filename:
-            #wxgui_api.queue_history_handler(self.filename, self._do_history,
-            #                                (kwargs['id_'], kwargs['rules']))
+            wxgui_api.queue_history_handler(self.filename, self._do_history,
+                                            (kwargs['id_'], kwargs['rules']))
             # Check ************************************************************************
-            self._do_history(kwargs['id_'], kwargs['rules'])
+            #self._do_history(kwargs['id_'], kwargs['rules'])
 
     def _do_history(self, id_, rules):
         # The history action may have deleted the item; don't do this test

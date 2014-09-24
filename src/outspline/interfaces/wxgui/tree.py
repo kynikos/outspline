@@ -294,11 +294,11 @@ class Database(wx.SplitterWindow):
     def _handle_history_insert(self, kwargs):
         # Check ***************************************************************************
         if kwargs['filename'] == self.filename:
-            #self.queue_history_handler(self._do_history_insert,
-            #                (kwargs["parent"], kwargs["id_"], kwargs["text"]))
+            self.queue_history_handler(self._do_history_insert,
+                            (kwargs["parent"], kwargs["id_"], kwargs["text"]))
             # Check ***************************************************************************
-            self._do_history_insert(kwargs["parent"], kwargs["id_"],
-                                                                kwargs["text"])
+            #self._do_history_insert(kwargs["parent"], kwargs["id_"],
+            #                                                    kwargs["text"])
 
     def _do_history_insert(self, pid, id_, text):
         # Check ***************************************************************************
@@ -308,10 +308,10 @@ class Database(wx.SplitterWindow):
     def _handle_history_update_simple(self, kwargs):
         # Check ***************************************************************************
         if kwargs['filename'] == self.filename:
-            #self.queue_history_handler(self._do_history_update_simple,
-            #                                (kwargs["parent"], kwargs["id_"]))
+            self.queue_history_handler(self._do_history_update_simple,
+                                            (kwargs["parent"], kwargs["id_"]))
             # Check ***************************************************************************
-            self._do_history_update_simple(kwargs["parent"], kwargs["id_"])
+            #self._do_history_update_simple(kwargs["parent"], kwargs["id_"])
 
     def _do_history_update_simple(self, pid, id_):
         # Check ***************************************************************************
@@ -324,11 +324,11 @@ class Database(wx.SplitterWindow):
     def _handle_history_update_deep(self, kwargs):
         # Check ***************************************************************************
         if kwargs['filename'] == self.filename:
-            #self.queue_history_handler(self._do_history_update_deep,
-            #        (kwargs["oldparent"], kwargs["newparent"], kwargs["id_"]))
+            self.queue_history_handler(self._do_history_update_deep,
+                    (kwargs["oldparent"], kwargs["newparent"], kwargs["id_"]))
             # Check ***************************************************************************
-            self._do_history_update_deep(kwargs["oldparent"],
-                                            kwargs["newparent"], kwargs["id_"])
+            #self._do_history_update_deep(kwargs["oldparent"],
+            #                                kwargs["newparent"], kwargs["id_"])
 
     def _do_history_update_deep(self, oldpid, newpid, id_):
         # Check ***************************************************************************
@@ -350,10 +350,10 @@ class Database(wx.SplitterWindow):
     def _handle_history_update_text(self, kwargs):
         # Check ***************************************************************************
         if kwargs['filename'] == self.filename:
-            #self.queue_history_handler(self._do_history_update_text,
-            #                                (kwargs['id_'], kwargs['text']))
+            self.queue_history_handler(self._do_history_update_text,
+                                            (kwargs['id_'], kwargs['text']))
             # Check ***************************************************************************
-            self._do_history_update_text(kwargs['id_'], kwargs['text'])
+            #self._do_history_update_text(kwargs['id_'], kwargs['text'])
 
     def _do_history_update_text(self, id_, text):
         # Check ***************************************************************************
@@ -362,9 +362,22 @@ class Database(wx.SplitterWindow):
     def _handle_history_remove(self, kwargs):
         # Check ***************************************************************************
         if kwargs['filename'] == self.filename:
-            # In case of item deletion, the tree must be updated immediately
-            self._remove_item(kwargs['parent'], kwargs['id_'])
-            self._remove_item_data(kwargs['id_'])
+            self.queue_history_handler(self._do_history_update_remove,
+                                            (kwargs['parent'], kwargs['id_']))
+            # In case of item deletion, the tree must be updated immediately  # ***********
+            #self._remove_item(kwargs['parent'], kwargs['id_'])
+            #self._remove_item_data(kwargs['id_'])
+
+    def _do_history_update_remove(self, pid, id_):
+        # Check ***************************************************************************
+        self._remove_item(pid, id_)
+        self._remove_item_data(id_)
+
+        if pid > 0:
+            parent = self.get_tree_item(pid)
+            pid2 = core_api.get_item_parent(self.filename, pid)
+            parent2 = self.get_tree_item_safe(pid2)
+            self._refresh_item_arrow(parent2, pid, parent)  # *******************************
 
     def _handle_history(self, kwargs):
         # When handling history actions, the DV tree items must be updated only
