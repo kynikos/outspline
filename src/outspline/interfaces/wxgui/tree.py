@@ -34,9 +34,8 @@ dbs = {}
 
 
 class Model(dv.PyDataViewModel):
-    def __init__(self, database, filename):
+    def __init__(self, filename):
         super(Model, self).__init__()
-        self.database = database
         self.filename = filename
 
     def IsContainer(self, item):
@@ -74,13 +73,54 @@ class Model(dv.PyDataViewModel):
         #   Returning None seems to disable it ********************************************
         #     Ask for other possible unwanted consequences ********************************
         #   https://groups.google.com/d/msg/wxpython-users/QvSesrnD38E/31l8f6AzIhAJ *******
-        return None#"string"  # ***********************************************************
+        #return "string"  # ***************************************************************
+        return None  # ***************************************************************
 
     def GetValue(self, item, col):
         id_ = self.ItemToObject(item)
-        label = self.database.get_item_label(id_)
-        icon = self.database.get_item_icon(id_)
-        return dv.DataViewIconText(label, icon)
+        # For some reason it needs a string *********************************************
+        #   Restoring this would require restoring self.database ************************
+        #label = self.database.get_item_label(id_)
+        #icon = self.database.get_item_image(id_)
+        return str(id_)#dv.DataViewIconText(label, icon)
+
+
+class MyCustomRenderer(dv.PyDataViewCustomRenderer):
+    def __init__(self, database):
+        super(MyCustomRenderer, self).__init__()
+        self.GAP = 2
+        self.database = database
+
+    def SetValue(self, value):
+        self.value = value
+        self.text = self.database.get_item_label(int(value))
+        self.image = self.database.get_item_image(int(value))
+        return True
+
+    def GetValue(self):
+        return self.value
+
+    def GetSize(self):
+        tsize = self.GetTextExtent(self.text)
+
+        if self.image:
+            width = tsize.GetWidth() + self.GAP + self.image.GetWidth()
+            height = max(tsize.GetHeight(), self.image.GetHeight())
+            return wx.Size(width, height)
+        else:
+            return tsize
+
+
+    def Render(self, rect, dc, state):
+        if self.image:
+            dc.DrawBitmap(self.image, rect.GetX(), rect.GetY() +
+                            rect.GetHeight() - self.image.GetHeight(), True)
+            xoffset = self.image.GetWidth() + self.GAP
+        else:
+            xoffset = 0
+
+        self.RenderText(self.text, xoffset, rect, dc, state)
+        return True
 
 
 class Database(wx.SplitterWindow):
@@ -136,33 +176,29 @@ class Database(wx.SplitterWindow):
         self.properties = Properties(self.treec)
         self.base_properties = DBProperties(self.properties)
 
-        # Merge into the Properties constructor? ******************************************************
         creating_tree_event.signal(filename=self.filename)
 
-        # Store an ImageList only *after* instantiating the class, because its
-        # size must be calculated after the various plugins have added their
-        # properties, which requires the filename to be in the dictionary
-        # Use a separate ImageList for each database, as they may support a
-        # different subset of the installed plugins
-        # Merge into the Properties constructor? ******************************************************
+        # Initialize the icons only *after* the various plugins have added
+        # their properties
         self.properties.init_image_list()
 
-        # Initialize the tree only *after* instantiating the class (and storing
-        # an ImageList), because actions like the creation of item images rely
-        # on the filename to be in the dictionary
-        # Also maybe initialize the properties from the plugins directly here ************************
-        #   instead of handling the open_database_event **********************************************
+        # Initialize the tree only *after* instantiating the class (and
+        # initilizing the icons), because actions like the creation of item
+        # images rely on the filename to be in the dictionary
         for row in core_api.get_all_items(self.filename):
             self._init_item_data(row["I_id"], row["I_text"])
 
-        self.dvmodel = Model(self, self.filename)
+        self.dvmodel = Model(self.filename)
         self.treec.AssociateModel(self.dvmodel)
         # DataViewModel is reference counted (derives from RefCounter), the
         # count needs to be decreased explicitly here to avoid memory leaks
         # This is bullshit, it crashes if closing all databases *****************************
         #self.dvmodel.DecRef()
 
-        self.treec.AppendIconTextColumn('Item', 0)
+        dvrenderer = MyCustomRenderer(self)
+        dvcolumn = dv.DataViewColumn("Item", dvrenderer, 0,
+                                                        align=wx.ALIGN_LEFT)
+        self.treec.AppendColumn(dvcolumn)
 
         self.Initialize(self.treec)
 
@@ -416,8 +452,8 @@ class Database(wx.SplitterWindow):
     def get_item_label(self, id_):
         return self.data[id_][0]
 
-    def get_item_icon(self, id_):
-        return self.properties.get_icon(self.data[id_][1])
+    def get_item_image(self, id_):
+        return self.properties.get_image(self.data[id_][1])
 
     def set_item_label(self, id_, text):
         label = self._make_item_label(text)
@@ -501,27 +537,9 @@ class Properties(object):
         self.char_data = []
         self.bits_to_image = {}
 
-        self._init_font()
-        self._compute_off_colour()
-
-    def _init_font(self):
+        self.bgcolour = self.widget.GetBackgroundColour()
         self.font = self.widget.GetFont()
         self.font.SetWeight(wx.FONTWEIGHT_BOLD)
-
-    def _compute_off_colour(self):
-        self.bgcolour = self.widget.GetBackgroundColour()
-        avg = (self.bgcolour.Red() + self.bgcolour.Green() +
-                                                    self.bgcolour.Blue()) // 3
-        DIFF = 16
-
-        if avg > 127:
-            self.off_colour = wx.Colour(max((self.bgcolour.Red() - DIFF, 0)),
-                                      max((self.bgcolour.Green() - DIFF, 0)),
-                                      max((self.bgcolour.Blue() - DIFF, 0)))
-        else:
-            self.off_colour = wx.Colour(min((self.bgcolour.Red() + DIFF, 255)),
-                                    min((self.bgcolour.Green() + DIFF, 255)),
-                                    min((self.bgcolour.Blue() + DIFF, 255)))
 
     def add(self, bitsn, character, bits_to_colour):
         dc = wx.MemoryDC()
@@ -529,102 +547,93 @@ class Properties(object):
         dc.SetFont(self.font)
         extent = dc.GetTextExtent(character)
 
-        # Be safe and only check the width, because if in future versions of
-        # wxPython, dc.GetTextExtent returned a Size object instead of a tuple,
-        # it would never match (0, 0)
-        if extent[0] != 0:
-            shift = self.bitsn
-            mask = int('1' * bitsn, 2) << shift
-            self.bitsn += bitsn
-            shifted_bits_to_colour = {}
+        shift = self.bitsn
+        mask = int('1' * bitsn, 2) << shift
+        self.bitsn += bitsn
+        shifted_bits_to_subimage = {}
 
-            for bits in bits_to_colour:
-                shifted_bits_to_colour[bits << shift] = bits_to_colour[bits]
+        for bits in bits_to_colour:
+            colour = bits_to_colour[bits]
 
-            self.char_data.append((mask, character, extent,
-                                                    shifted_bits_to_colour))
+            bitmap = wx.EmptyBitmap(*extent, depth=32)
+            dc.SelectObject(bitmap)
+            dc.SetBackground(wx.Brush(self.bgcolour))
+            dc.Clear()
+
+            gc = wx.GraphicsContext.Create(dc)
+            gc.SetFont(gc.CreateFont(self.font, colour))
+            gc.DrawText(character, 0, 0)
+
+            shifted_bits_to_subimage[bits << shift] = bitmap
+
+        self.char_data.append((mask, shifted_bits_to_subimage))
+        dc.SelectObject(wx.NullBitmap)
 
         return (shift, mask)
 
-    def _compute_required_size(self):
-        width = 0
-        height = 0
-
-        for data in self.char_data:
-            width += data[2][0] + self.SPACING
-            height = max((height, data[2][1]))
-
-        width -= self.SPACING
-
-        return (width, height)
-
     def init_image_list(self):
-        # Sort char_data by character to make sure that the icons always appear
-        # in the same order regardless of race conditions when loading the
-        # plugins
-        self.char_data.sort(key=lambda data: data[1])
-
-        self.required_size = self._compute_required_size()
-
-        # required_size is 0 if no properties have been added, or if they've
-        # been added with empty strings
-        if self.required_size == (0, 0):
-            self.get_icon = self._get_icon_dummy
+        # char_data is empty if no properties have been added
+        if len(self.char_data) < 1:
+            self.get_image = self._get_image_dummy
         else:
-            self.get_icon = self._get_icon_real
+            self.get_image = self._get_image_real
 
-        self.imagelist = wx.ImageList(*self.required_size)
-
-    def get_icon(self, bits):
+    def get_image(self, bits):
         # This method is re-assigned dynamically
         pass
 
-    def _get_icon_real(self, bits):
+    def _get_image_real(self, bits):
         try:
-            imageindex = self.bits_to_image[bits]
+            bitmap = self.bits_to_image[bits]
         except KeyError:
             bitmap = self._make_image(bits)
-            imageindex = self.imagelist.Add(bitmap)
-            self.bits_to_image[bits] = imageindex
+            self.bits_to_image[bits] = bitmap
 
-        return self.imagelist.GetIcon(imageindex)
+        return bitmap
 
-    def _get_icon_dummy(self, bits):
+    def _get_image_dummy(self, bits):
         # Used if no properties have been added
-        # Test ****************************************************************************
-        return wx.NullIcon
+        # Anything using this method should be prepared to get False, in fact
+        # also self._make_image can return False
+        return False
 
     def _make_image(self, item_bits):
-        bitmap = wx.EmptyBitmap(*self.required_size, depth=32)
+        width = 0
+        height = 0
+        subimages = []
 
-        dc = wx.MemoryDC()
-        dc.SelectObject(bitmap)
-        dc.SetBackground(wx.Brush(self.bgcolour))
-        dc.Clear()
-
-        gc = wx.GraphicsContext.Create(dc)
-
-        x = 0
-
-        for property_bits, character, extent, bits_to_colour in self.char_data:
+        for property_bits, bits_to_subimage in self.char_data:
             bits = (property_bits & item_bits)
 
             try:
-                colour = bits_to_colour[bits]
+                bitmap = bits_to_subimage[bits]
             except KeyError:
-                colour = self.off_colour
+                pass
+            else:
+                subimages.append((bitmap, width))
+                width += bitmap.GetWidth() + self.SPACING
+                height = max((height, bitmap.GetHeight()))
 
-            gc.SetFont(gc.CreateFont(self.font, colour))
+        width -= self.SPACING
 
-            y = self.required_size[1] - extent[1]
-            gc.DrawText(character, x, y)
+        if width > 0:
+            bitmap = wx.EmptyBitmap(width, height, depth=32)
 
-            x += extent[0] + self.SPACING
+            dc = wx.MemoryDC()
+            dc.SelectObject(bitmap)
+            dc.SetBackground(wx.Brush(self.bgcolour))
+            dc.Clear()
 
-        bitmap.SetMaskColour(self.bgcolour)
-        dc.SelectObject(wx.NullBitmap)
+            for subimage, xoffset in subimages:
+                yoffset = height - subimage.GetHeight()
+                dc.DrawBitmap(subimage, xoffset, yoffset, True)
 
-        return bitmap
+            bitmap.SetMaskColour(self.bgcolour)
+            dc.SelectObject(wx.NullBitmap)
+
+            return bitmap
+        else:
+            return False
 
 
 class ContextMenu(wx.Menu):
