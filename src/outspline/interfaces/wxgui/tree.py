@@ -679,17 +679,6 @@ class Properties(object):
 
 
 class ContextMenu(wx.Menu):
-    parent = None
-    sibling = None
-    sibling_label_1 = None
-    sibling_label_2 = None
-    child = None
-    moveup = None
-    movedn = None
-    movept = None
-    edit = None
-    delete = None
-
     def __init__(self, parent):
         wx.Menu.__init__(self)
 
@@ -737,7 +726,7 @@ class ContextMenu(wx.Menu):
         self.AppendSeparator()
         self.AppendItem(self.delete)
 
-    def reset_items(self):
+    def _reset_items(self):
         self.sibling.Enable(False)
         self.child.Enable(False)
         self.moveup.Enable(False)
@@ -750,7 +739,7 @@ class ContextMenu(wx.Menu):
         reset_context_menu_event.signal(filename=self.parent.filename)
 
     def update_items(self):
-        self.reset_items()
+        self._reset_items()
 
         sel = self.parent.get_selections()
 
@@ -819,15 +808,17 @@ class TabContextMenu(wx.Menu):
         self.AppendItem(self.close)
 
     def update(self):
-        self.undo.Enable(False)
-        self.redo.Enable(False)
-        self.save.Enable(False)
-
         if core_api.preview_undo_tree(self.filename):
             self.undo.Enable()
+        else:
+            self.undo.Enable(False)
 
         if core_api.preview_redo_tree(self.filename):
             self.redo.Enable()
+        else:
+            self.redo.Enable(False)
 
         if core_api.check_pending_changes(self.filename):
             self.save.Enable()
+        else:
+            self.save.Enable(False)
