@@ -84,6 +84,7 @@ class RootMenu(wx.MenuBar):
         self.HIDE_DELAY = 10
         frame = self.GetFrame()
 
+        # F10 seems not to work immediately after opening/creating a database ****************
         id_ = wx.NewId()
         accels = [(wx.ACCEL_NORMAL, wx.WXK_F10, id_), ]
         frame.Bind(wx.EVT_BUTTON, self._handle_F10, id=id_)
