@@ -81,23 +81,13 @@ class Model(dv.PyDataViewModel):
         return dv.DataViewIconText(label, icon)
 
 
-class Tree(wx.TreeCtrl):
-    def __init__(self, parent):
-        # *******************************************************************************
-        # The tree doesn't seem to support TAB traversal if there's only one
-        #   item (but Home/End and PgUp/PgDown do select it) (bug #336)
-        wx.TreeCtrl.__init__(self, parent, wx.NewId(),
-                                    style=wx.TR_HAS_BUTTONS | wx.TR_HIDE_ROOT |
-                                    wx.TR_MULTIPLE | wx.TR_FULL_ROW_HIGHLIGHT)
-
-
 class Database(wx.SplitterWindow):
     # Mark private methods **************************************************************
     # Addresses #260 ********************************************************************
     # Fixes #334 ************************************************************************
     # Addresses #336 ********************************************************************
     def __init__(self, filename):
-        wx.SplitterWindow.__init__(self, wx.GetApp().nb_left,
+        super(Database, self).__init__(wx.GetApp().nb_left,
                                                     style=wx.SP_LIVE_UPDATE)
 
         # Prevent the window from unsplitting when dragging the sash to the
@@ -106,11 +96,23 @@ class Database(wx.SplitterWindow):
 
         self.filename = filename
 
-        self.treec = Tree(self)
+        self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
+                                            dv.DV_ROW_LINES | dv.DV_NO_HEADER)
+        self.dvmodel = Model(self, filename)
+        self.treec.AssociateModel(self.dvmodel)  # *****************************************
+        # DataViewModel is reference counted (derives from RefCounter), the
+        # count needs to be decreased explicitly here to avoid memory leaks
+        # This is bullshit, it crashes if closing all databases *****************************
+        #self.dvmodel.DecRef()
+
+        # *******************************************************************************
         data = wx.TreeItemData((0, 0))
         self.root = self.treec.AddRoot(text='root', data=data)
         self.titems = {0: data}
+        # *******************************************************************************
+
         self.data = {}
+        self.treec.AppendIconTextColumn('Item', 0)
 
         self.cmenu = ContextMenu(self)
         self.ctabmenu = TabContextMenu(self.filename)
@@ -123,26 +125,28 @@ class Database(wx.SplitterWindow):
         self.properties = Properties(self.treec)
         self.base_properties = DBProperties(self.properties)
 
-        self.dvmodel = Model(self, filename)
-        #self.treec.AssociateModel(self.dvmodel)  # *****************************************
-        # DataViewModel is reference counted (derives from RefCounter), the
-        # count needs to be decreased explicitly here to avoid memory leaks
-        # This is bullshit, it crashes if closing all databases *****************************
-        #self.dvmodel.DecRef()
-
         self.Initialize(self.treec)
 
-        self.treec.Bind(wx.EVT_TREE_BEGIN_LABEL_EDIT, self.veto_label_edit)
-        self.treec.Bind(wx.EVT_TREE_ITEM_MENU, self.popup_item_menu)
         # *******************************************************************************
-        # Note that EVT_CONTEXT_MENU wouldn't work on empty spaces
-        self.treec.Bind(wx.EVT_RIGHT_DOWN, self.popup_window_menu)
-        self.treec.Bind(wx.EVT_LEFT_DOWN, self.unselect_on_empty_areas)
+        #self.treec.Bind(dv.EVT_DATAVIEW_ITEM_START_EDITING,
+        #                                                self.veto_label_edit)
+        self.treec.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
+                                                        self._popup_item_menu)
 
         core_api.bind_to_update_item(self.handle_update_item)
         core_api.bind_to_history_insert(self.handle_history_insert)
         core_api.bind_to_history_update(self.handle_history_update)
         core_api.bind_to_history_remove(self.handle_history_remove)
+
+        # Check how this bug is currently tracked ****************************************************
+        """self.treec.Bind(wx.EVT_LEFT_DOWN, self._unselect_on_empty_areas)
+
+    def _unselect_on_empty_areas(self, event):
+        if not self.treec.HitTest(event.GetPosition())[0].IsOk():
+            self.treec.UnselectAll()
+
+        # Skipping the event ensures correct left click behaviour
+        event.Skip()"""
 
     def post_init(self):
         creating_tree_event.signal(filename=self.filename)
@@ -528,7 +532,7 @@ class Database(wx.SplitterWindow):
     def is_database_root(self, treeitem):
         return self.treec.GetItemParent(treeitem) == self.treec.GetRootItem()
 
-    def popup_item_menu(self, event):
+    def _popup_item_menu(self, event):
         # *******************************************************************************
         # Using a separate procedure for EVT_TREE_ITEM_MENU (instead of always
         # using EVT_RIGHT_DOWN) ensures a standard behaviour, e.g. selecting
@@ -536,28 +540,10 @@ class Database(wx.SplitterWindow):
         # selection untouched if clicking on an already selected item
         self._popup_context_menu(event.GetPoint())
 
-    def popup_window_menu(self, event):
-        # *******************************************************************************
-        # Use EVT_RIGHT_DOWN when clicking in areas without items, because in
-        # that case EVT_TREE_ITEM_MENU is not triggered
-        if not self.treec.HitTest(event.GetPosition())[0].IsOk():
-            self.treec.UnselectAll()
-            self._popup_context_menu(event.GetPosition())
-
-        # Skip the event so that self.popup_item_menu can work correctly
-        event.Skip()
-
     def _popup_context_menu(self, point):
         self.cmenu.update_items()
         popup_context_menu_event.signal(filename=self.filename)
         self.treec.PopupMenu(self.cmenu, point)
-
-    def unselect_on_empty_areas(self, event):
-        if not self.treec.HitTest(event.GetPosition())[0].IsOk():
-            self.treec.UnselectAll()
-
-        # Skipping the event ensures correct left click behaviour
-        event.Skip()
 
     def get_tab_context_menu(self):
         self.ctabmenu.update()
