@@ -89,12 +89,13 @@ class Item(object):
 
         cursor.execute(queries.items_select_parent_previous, (self.id_, ))
         oldvalues = cursor.fetchone()
+        parent = oldvalues["I_parent"]
         cursor.execute(queries.items_update_previous, (previous, self.id_))
         self.connection.give(qconn)
 
         jhparams = json.dumps((parent, previous), separators=(',',':'))
-        jhunparams = json.dumps((oldvalues["I_parent"],
-                                oldvalues["I_previous"]), separators=(',',':'))
+        jhunparams = json.dumps((parent, oldvalues["I_previous"]),
+                                                        separators=(',',':'))
         self.dbhistory.insert_history(group, self.id_, 'update_previous',
                                             description, jhparams, jhunparams)
 

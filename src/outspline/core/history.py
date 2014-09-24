@@ -264,7 +264,7 @@ class DBHistory(object):
 
     def _do_history_row_update_previous(self, filename, action, jparams, hid,
                                                                 type_, itemid):
-        parent, previous = jparams
+        parent, previous = json.loads(jparams)
 
         qconn = self.connection.get()
         cursor = qconn.cursor()
@@ -276,7 +276,7 @@ class DBHistory(object):
 
     def _do_history_row_update_parent(self, filename, action, jparams, hid,
                                                                 type_, itemid):
-        parent, previous = jparams
+        parent, previous = json.loads(jparams)
 
         qconn = self.connection.get()
         cursor = qconn.cursor()
