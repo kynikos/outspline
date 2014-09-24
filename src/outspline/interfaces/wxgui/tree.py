@@ -177,6 +177,10 @@ class Renderer(dv.PyDataViewCustomRenderer):
 
 class Database(wx.SplitterWindow):
     def __init__(self, filename):
+        # Addresses #260 #336 ***************************************************************
+        # Fixes #269 #311 #320 #334 *********************************************************
+        # Check all the upstream bugs now that the new wxPython version has been ************
+        #   released ************************************************************************
         super(Database, self).__init__(wx.GetApp().nb_left,
                                                     style=wx.SP_LIVE_UPDATE)
 
@@ -196,12 +200,6 @@ class Database(wx.SplitterWindow):
         # GetColumnType method
         # See also bug #349
         # See bug #260 for generic issues about DataViewCtrl
-        # Addresses #260 #336 ***************************************************************
-        # Fixes #269 #311 #320 #334 *********************************************************
-        # Check all the upstream bugs now that the new wxPython version has been ************
-        #   released ************************************************************************
-        # Show the natively working shortcuts in the menu, or in comments in ****************
-        #   the config file (also for the other DataViewCtrl's) *****************************
         self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
                                                             dv.DV_NO_HEADER)
 
