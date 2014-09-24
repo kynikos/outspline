@@ -111,6 +111,7 @@ class Model(dv.PyDataViewModel):
         # demos either
         # Besides, returning "string" here would activate the "live" search
         # feature that belongs to the native GTK widget used by DataViewCtrl
+        # See also bug #349
         # https://groups.google.com/d/msg/wxpython-users/QvSesrnD38E/31l8f6AzIhAJ
         # https://groups.google.com/d/msg/wxpython-users/4nsv7x1DE-s/ljQHl9RTnuEJ
         return None'''
@@ -198,9 +199,9 @@ class Database(wx.SplitterWindow):
         # "live" search feature which steals some keyboard shortcuts: Ctrl+n,
         # Ctrl+p, Ctrl+f, Ctrl+a, Ctrl+Shift+a
         # https://groups.google.com/d/msg/wxpython-users/1sUPp766uXU/0J22mUrkzoAJ
-        # Track as an upstream bug **********************************************************
-        # Ctrl+f can be recovered with a hack explained above in the Model's
+        # Ctrl+f can be recovered with by not overriding the Model's
         # GetColumnType method
+        # See also bug #349
         # Show the natively working shortcuts in the menu, or in comments in ********************
         #   the config file (also for the other DataViewCtrl's) *********************************
         self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
