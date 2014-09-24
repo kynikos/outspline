@@ -97,10 +97,10 @@ class Model(dv.PyDataViewModel):
         return 1
 
     def GetValue(self, item, col):
-        id_ = self.ItemToObject(item).get_id()
-        # For some reason Renderer needs a string *******************************************
-        #   https://groups.google.com/forum/#!topic/wxpython-users/F9tqqwOcIFw **************
-        return str(id_)
+        # For some reason Renderer needs this to return a string, but it would
+        # be more natural to just pass the Item object or the id as an integer
+        # Bug #347
+        return str(self.ItemToObject(item).get_id())
 
     '''def GetColumnType(self, col):
         # It seems not needed to override this method, it's not done in the
