@@ -245,7 +245,7 @@ class DBHistory(object):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_insert, params)
-        cursor.execute(queries.items_select_id, (itemid, ))
+        cursor.execute(queries.items_select_id, (itemid, ))  # ??? ************************
         select = cursor.fetchone()
         self.connection.give(qconn)
 
@@ -262,7 +262,7 @@ class DBHistory(object):
         qconn = self.connection.get()
         cursor = qconn.cursor()
 
-        kwparams = json.loads(jparams)
+        kwparams, oldparent = json.loads(jparams)
         set_fields = ''
         qparams = []
 
@@ -278,15 +278,14 @@ class DBHistory(object):
         qparams.append(itemid)
         cursor.execute(query, qparams)
 
-        cursor.execute(queries.items_select_id, (itemid, ))
+        cursor.execute(queries.items_select_id, (itemid, ))  # ??? ************************
         select = cursor.fetchone()
 
         self.connection.give(qconn)
 
         history_update_event.signal(filename=self.filename, id_=itemid,
-                                                parent=select['I_parent'],
-                                                previous=select['I_previous'],
-                                                text=select['I_text'])
+                        parent=select['I_parent'], oldparent=oldparent,
+                        previous=select['I_previous'], text=select['I_text'])
 
     def _do_history_row_delete(self, filename, action, jparams, hid, type_,
                                                                     itemid):

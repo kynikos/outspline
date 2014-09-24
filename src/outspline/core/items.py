@@ -104,8 +104,18 @@ class Item(object):
                     'I_previous': previous,
                     'I_text': text}
 
-        hparams = {}
-        hunparams = {}
+        # The interface requires the old parent when undoing/redoing an item
+        # update
+        if parent is not None:
+            hparams = ({}, current_values["I_parent"])
+            hunparams = ({}, parent)
+        elif previous is not None:
+            hparams = ({}, current_values["I_parent"])
+            hunparams = ({}, current_values["I_parent"])
+        else:
+            hparams = ({}, None)
+            hunparams = ({}, None)
+
         set_fields = ''
         qparams = []
 
@@ -113,8 +123,8 @@ class Item(object):
             value = kwparams[field]
 
             if value is not None:
-                hparams[field] = value
-                hunparams[field] = current_values[field]
+                hparams[0][field] = value
+                hunparams[0][field] = current_values[field]
                 set_fields += '{}=?, '.format(field)
                 qparams.append(value)
 

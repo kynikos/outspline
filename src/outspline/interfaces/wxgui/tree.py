@@ -309,34 +309,39 @@ class Database(wx.SplitterWindow):
 
         if filename == self.filename:
             id_ = kwargs['id_']
-            parent = kwargs['parent']
-            previous = kwargs['previous']
+            pid = kwargs['parent']
+            oldpid = kwargs['oldparent']
             text = kwargs['text']
-
-            item = self.find_item(id_)
 
             # Verify *******************************************************************************
             # Reset label and image before moving the item, otherwise the item
             # has to be found again, or the program crashes
-            # set_item_label now takes an id_ *********************************************
-            self.set_item_label(item, text)
-            self.update_tree_item(id_)
+            if text is not None:
+                self.set_item_label(id_, text)
 
-            # get_item_id takes a DV item now ***********************************************
-            if self.get_item_id(self.get_item_parent(item)) != parent or \
-                                (self.get_item_previous(item).IsOk() and \
-                                self.get_item_id(
-                                self.get_item_previous(item)) != previous) or \
-                                (not self.get_item_previous(item).IsOk() and \
-                                previous != 0):
-                if previous == 0:
-                    par = self.find_item(parent)
-                    # move_item has changed *********************************************
-                    self.move_item(item, par, mode=0)
+            if oldpid is not None:
+                item = self.get_tree_item(id_)
+
+                if oldpid > 0:
+                    oldparent = self.get_tree_item(oldpid)
                 else:
-                    prev = self.find_item(previous)
-                    # move_item has changed *********************************************
-                    self.move_item(item, prev, mode='after')
+                    oldparent = self.get_root()
+
+                if pid > 0:
+                    parent = self.get_tree_item(pid)
+                else:
+                    parent = self.get_root()
+
+                self.dvmodel.ItemDeleted(oldparent, item)
+                self.dvmodel.ItemAdded(parent, item)
+                self._move_subtree(id_, item)
+
+                if pid != oldpid:
+                    oldpid2 = core_api.get_item_parent(self.filename, oldpid)
+
+                    if oldpid2 > 0:
+                        oldparent2 = self.get_tree_item(oldpid2)
+                        self._refresh_item(oldparent2, oldpid, oldparent)
 
     def _handle_history_remove(self, kwargs):
         if kwargs['filename'] == self.filename:
