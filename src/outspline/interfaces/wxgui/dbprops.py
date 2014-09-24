@@ -44,7 +44,7 @@ class DatabasePropertyManager(object):
         core_api.bind_to_history_insert(self._handle_items_number)
         core_api.bind_to_history_remove(self._handle_items_number)
         core_api.bind_to_insert_item(self._handle_items_number)
-        core_api.bind_to_delete_item(self._handle_items_number)
+        core_api.bind_to_deleted_item(self._handle_items_number)
         # No need to bind to pasting items
 
         databases.close_database_event.bind(self._handle_close_database)

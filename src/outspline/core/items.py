@@ -26,7 +26,7 @@ import exceptions
 
 item_insert_event = Event()
 item_update_event = Event()
-item_delete_event = Event()
+item_deleted_event = Event()
 
 
 class Item(object):
@@ -160,7 +160,7 @@ class Item(object):
         self.remove()
 
         # This event is designed to be signalled _after_ self.remove()
-        item_delete_event.signal(filename=self.filename, id_=self.id_,
+        item_deleted_event.signal(filename=self.filename, id_=self.id_,
                          hid=cursor.lastrowid, text=current_values['I_text'],
                          group=group, description=description)
 
