@@ -30,6 +30,7 @@ reset_modified_state_event = Event()
 history_event = Event()
 history_insert_event = Event()
 history_update_event = Event()
+history_update_text_event = Event()
 history_delete_event = Event()
 history_clean_event = Event()
 
@@ -48,6 +49,10 @@ class DBHistory(object):
             'update': {
                 'undo': self._do_history_row_update,
                 'redo': self._do_history_row_update,
+            },
+            'update_text': {
+                'undo': self._do_history_row_update_text,
+                'redo': self._do_history_row_update_text,
             },
             'delete': {
                 'undo': self._do_history_row_insert,
@@ -286,6 +291,16 @@ class DBHistory(object):
         history_update_event.signal(filename=self.filename, id_=itemid,
                         parent=select['I_parent'], oldparent=oldparent,
                         previous=select['I_previous'], text=select['I_text'])
+
+    def _do_history_row_update_text(self, filename, action, jparams, hid,
+                                                                type_, itemid):
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+        cursor.execute(queries.items_update_text, (jparams, itemid))
+        self.connection.give(qconn)
+
+        history_update_text_event.signal(filename=self.filename, id_=itemid,
+                                                                text=jparams)
 
     def _do_history_row_delete(self, filename, action, jparams, hid, type_,
                                                                     itemid):

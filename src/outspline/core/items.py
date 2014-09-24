@@ -99,7 +99,16 @@ class Item(object):
                                         group=group, description=description)
 
     def update_text(self, text, group, event=True, description='Update item'):
-        self._update(group, text=text, description=description)
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+
+        cursor.execute(queries.items_select_id_editor, (self.id_, ))
+        oldtext = cursor.fetchone()["I_text"]
+        cursor.execute(queries.items_update_text, (text, self.id_))
+        self.connection.give(qconn)
+
+        self.dbhistory.insert_history(group, self.id_, 'update_text',
+                                                    description, text, oldtext)
 
         if event:
             item_update_text_event.signal(filename=self.filename, id_=self.id_,
