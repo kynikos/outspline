@@ -42,7 +42,6 @@ menu_view_editors_disable_event = Event()
 menu_view_editors_update_event = Event()
 undo_tree_event = Event()
 redo_tree_event = Event()
-move_item_event = Event()
 delete_items_event = Event()
 
 
@@ -689,8 +688,6 @@ class MenuDatabase(wx.Menu):
                         treedb.select_item(id_)
                         treedb.dbhistory.refresh()
 
-                        move_item_event.signal(filename=filename)
-
             core_api.release_databases()
 
     def move_item_down(self, event):
@@ -710,8 +707,6 @@ class MenuDatabase(wx.Menu):
                         treedb.move_item(id_, item)
                         treedb.select_item(id_)
                         treedb.dbhistory.refresh()
-
-                        move_item_event.signal(filename=filename)
 
             core_api.release_databases()
 
@@ -733,8 +728,6 @@ class MenuDatabase(wx.Menu):
                         treedb.move_item_to_parent(oldpid, id_, item)
                         treedb.select_item(id_)
                         treedb.dbhistory.refresh()
-
-                        move_item_event.signal(filename=filename)
 
             core_api.release_databases()
 

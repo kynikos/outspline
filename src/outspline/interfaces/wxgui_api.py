@@ -266,10 +266,6 @@ def bind_to_redo_tree(handler, bind=True):
     return menubar.redo_tree_event.bind(handler, bind)
 
 
-def bind_to_move_item(handler, bind=True):
-    return menubar.move_item_event.bind(handler, bind)
-
-
 def bind_to_delete_items(handler, bind=True):
     return menubar.delete_items_event.bind(handler, bind)
 
@@ -542,10 +538,6 @@ def update_item_properties(filename, id_, property_bits, property_mask):
     # Test this very well because it was trying-excepting the id_ before *******************
     tree.dbs[filename].update_item_properties(id_, property_bits,
                                                                 property_mask)
-
-
-def update_tree_item(filename, id_):
-    return tree.dbs[filename].update_tree_item(id_)
 
 
 def get_logs_parent(filename):

@@ -368,7 +368,6 @@ class TreeItemIcons(object):
         bits = rbits << self.property_shift
         wxgui_api.update_item_properties(self.filename, id_, bits,
                                                         self.property_mask)
-        wxgui_api.update_tree_item(self.filename, id_)
 
 
 class ViewMenu(object):

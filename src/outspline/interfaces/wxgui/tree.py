@@ -171,6 +171,7 @@ class Database(wx.SplitterWindow):
         # GetColumnType method
         # Show the natively working shortcuts in the menu, or in comments in ********************
         #   the config file (also for the other DataViewCtrl's) *********************************
+        # Can't add more than 256 items!!!!! ************************************************
         self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
                                             dv.DV_ROW_LINES | dv.DV_NO_HEADER)
 
@@ -474,10 +475,6 @@ class Database(wx.SplitterWindow):
         multiline_bits, multiline_mask = \
                     self.base_properties.get_item_multiline_state(text, label)
         self.update_item_properties(id_, multiline_bits, multiline_mask)
-        self.update_tree_item(id_)
-
-    def update_tree_item(self, id_):
-        self.dvmodel.ItemChanged(self.get_tree_item(id_))
 
     @staticmethod
     def _compute_property_bits(old_property_bits, new_property_bits,
@@ -487,6 +484,10 @@ class Database(wx.SplitterWindow):
     def update_item_properties(self, id_, property_bits, property_mask):
         self.data[id_][1] = self._compute_property_bits(self.data[id_][1],
                                                 property_bits, property_mask)
+        self.update_tree_item(id_)
+
+    def update_tree_item(self, id_):
+        self.dvmodel.ItemChanged(self.get_tree_item(id_))
 
     def get_properties(self):
         return self.properties

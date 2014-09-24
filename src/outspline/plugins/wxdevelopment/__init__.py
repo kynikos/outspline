@@ -187,13 +187,9 @@ class MenuDev(wx.Menu):
                     except IndexError:
                         # No items in the database yet
                         itemid = 0
-
-                    mode = random.choice(('child', 'sibling'))
-
-                    if mode == 'sibling' and itemid == 0:
-                        continue
-
-                    i += 1
+                        mode = 'child'
+                    else:
+                        mode = random.choice(('child', 'sibling'))
 
                     text = self._populate_tree_text()
 
@@ -213,6 +209,8 @@ class MenuDev(wx.Menu):
                                     links_api.get_supported_open_databases():
                         self._populate_tree_link(filename, id_, dbitems, group,
                                                                 description)
+
+                    i += 1
 
                 wxgui_api.refresh_history(filename)
             core_api.release_databases()
