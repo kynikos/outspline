@@ -272,7 +272,7 @@ class Database(wx.SplitterWindow):
             else:
                 parent = self.get_root()
 
-            self.insert_item(parent, kwargs['id_'], kwargs['text'])  # ***********************
+            self.insert_item(parent, kwargs['id_'], kwargs['text'])
 
     def _handle_update_item(self, kwargs):
         # Don't update an item label only when editing the text area, as there
@@ -381,26 +381,8 @@ class Database(wx.SplitterWindow):
         dbs[filename]._post_init()
 
     def insert_item(self, parent, id_, text):
-        # See if this can just handle the item insert event from core **********************
         self._init_item_data(id_, text)
         self.dvmodel.ItemAdded(parent, self.get_tree_item(id_))
-
-    def insert_subtree(self, parent, previd=0):
-        # Check ***************************************************************************
-        # See if this can just handle the item insert event from core **********************
-
-        # get_item_id takes a DV item now ***********************************************
-        baseid = self.get_item_id(base)
-        child = core_api.get_tree_item(self.filename, baseid, previd)
-
-        if child:
-            id_ = child['id_']
-
-            self.insert_item(base, id_, child['text'])
-
-            # titem is not returned anymore **********************************************
-            self.insert_subtree(base=titem, previd=0)
-            self.insert_subtree(base=base, previd=id_)
 
     def _init_item_data(self, id_, text):
         label = self._make_item_label(text)
