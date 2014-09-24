@@ -311,6 +311,7 @@ class Database(object):
         return True
 
     def _remove(self):
+        # Is this loop still needed? *******************************************************
         for id_ in self.items.copy():
             item = self.items[id_]
             if item.get_filename() == self.filename:
@@ -322,6 +323,10 @@ class Database(object):
     def delete_items(self, dids, group, description='Delete items'):
         # Emit an event for every cycle and manage it in the interface ********************************
         # The algorithm can be optimized a lot ********************************************************
+        #   Or just delete one item at a time: delete_items_event only restarts ***********************
+        #     the occurrences engine, but now it has a queue of requests ******************************
+        #     limited to one, so it shouldn't be a problem to request a restart ***********************
+        #     for every deletion **********************************************************************
         while dids:
             for id_ in dids[:]:
                 # First delete the items without children
