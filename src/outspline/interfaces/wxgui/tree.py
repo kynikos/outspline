@@ -342,6 +342,7 @@ class Database(wx.SplitterWindow):
 
     def insert_subtree(self, parent, previd=0):
         # Check ***************************************************************************
+        # See if this can just handle the item insert event from core **********************
 
         # get_item_id takes a DV item now ***********************************************
         baseid = self.get_item_id(base)
@@ -386,7 +387,6 @@ class Database(wx.SplitterWindow):
             return selection
 
     def move_item(self, id_, item):
-        # Check ***************************************************************************
         pid = core_api.get_item_parent(self.filename, id_)
 
         if pid > 0:
@@ -395,24 +395,10 @@ class Database(wx.SplitterWindow):
             parent = self.get_root()
 
         self.dvmodel.ItemDeleted(parent, item)
-
-
-
-        # This probably becomes insert_subtree ****************************************
         self.dvmodel.ItemAdded(parent, item)
-
-        def recurse(recid, recitem):
-            childids = core_api.get_item_children(self.filename, recid)
-
-            for childid in childids:
-                child = self.get_tree_item(childid)
-                self.dvmodel.ItemAdded(recitem, child)
-                recurse(childid, child)
-
-        recurse(id_, item)
+        self._move_subtree(id_, item)
 
     def move_item_to_parent(self, oldpid, id_, item):
-        # Check ***************************************************************************
         newpid = core_api.get_item_parent(self.filename, id_)
 
         # oldpid cannot be 0 here because core_api.move_item_to_parent
@@ -425,32 +411,22 @@ class Database(wx.SplitterWindow):
             newparent = self.get_root()
 
         self.dvmodel.ItemDeleted(oldparent, item)
-
-
-
-        # This probably becomes insert_subtree ****************************************
         self.dvmodel.ItemAdded(newparent, item)
-
-        def recurse(recid, recitem):
-            childids = core_api.get_item_children(self.filename, recid)
-
-            for childid in childids:
-                child = self.get_tree_item(childid)
-                self.dvmodel.ItemAdded(recitem, child)
-                recurse(childid, child)
-
-        recurse(id_, item)
-        # ******************************************************************************
-
-
-
-
+        self._move_subtree(id_, item)
 
         if not core_api.has_item_children(self.filename, oldpid):
             # This seems to be the only way to hide the arrow next to a parent
             # that has just lost its last child
             self.dvmodel.ItemDeleted(newparent, oldparent)
             self.dvmodel.ItemAdded(newparent, oldparent)
+
+    def _move_subtree(self, id_, item):
+        childids = core_api.get_item_children(self.filename, id_)
+
+        for childid in childids:
+            child = self.get_tree_item(childid)
+            self.dvmodel.ItemAdded(item, child)
+            self._move_subtree(childid, child)
 
     def remove_items(self, treeitems):
         # Re-implement using the event from core ******************************************************
