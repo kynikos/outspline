@@ -523,24 +523,31 @@ def get_root_tree_item(filename):
     return tree.dbs[filename].get_root()
 
 
-def append_item(filename, baseid, id_, text):
-    base = tree.dbs[filename].find_item(baseid)
-    return tree.dbs[filename].insert_item(base, 'append', id_, text=text)
+def append_item(filename, pid, id_, text):
+    parent = tree.dbs[filename].get_tree_item(pid)
+    # Nothing is returned anymore ******************************************************
+    return tree.dbs[filename].insert_item(parent, id_, text)
 
 
 def insert_item_after(filename, baseid, id_, text):
-    base = tree.dbs[filename].find_item(baseid)
-    return tree.dbs[filename].insert_item(base, 'after', id_, text=text)
+    # This will be the same as append_item *********************************************
+    # Must use the parent DVitem ***********************************************************
+    # Nothing is returned anymore ******************************************************
+    return tree.dbs[filename].insert_item(base, id_, text)
 
 
-def append_tree_item(filename, baseid, id_):
+def append_tree_item(filename, parent, id_):
     text = core_api.get_item_text(filename, id_)
-    return tree.dbs[filename].insert_item(baseid, 'append', id_, text=text)
+    # Nothing is returned anymore ******************************************************
+    return tree.dbs[filename].insert_item(parent, id_, text)
 
 
-def insert_tree_item_after(filename, baseid, id_):
+def insert_tree_item_after(filename, base, id_):
+    # This will be the same as append_tree_item ****************************************
     text = core_api.get_item_text(filename, id_)
-    return tree.dbs[filename].insert_item(baseid, 'after', id_, text=text)
+    # Must use the parent DVitem ***********************************************************
+    # Nothing is returned anymore ******************************************************
+    return tree.dbs[filename].insert_item(base, id_, text)
 
 
 def create_tree(filename, treeroot):

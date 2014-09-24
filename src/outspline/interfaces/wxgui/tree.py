@@ -192,11 +192,12 @@ class Database(wx.SplitterWindow):
             text = kwargs['text']
 
             if previous == 0:
-                par = self.find_item(parent)
-                self.insert_item(par, 0, id_, text=text)
+                pitem = self.get_tree_item(parent)
             else:
-                prev = self.find_item(previous)
-                self.insert_item(prev, 'after', id_, text=text)
+                # Must use parent DVitem *******************************************************
+                pitem = self.get_tree_item(previous)
+
+            self.insert_item(pitem, id_, text)
 
     def _handle_history_update(self, kwargs):
         # Check ***************************************************************************
@@ -246,23 +247,14 @@ class Database(wx.SplitterWindow):
 
         dbs[filename]._post_init()
 
-    def insert_item(self, base, mode, id_, text=None, label=None,
-                                            properties=None, imageindex=None):
+    def insert_item(self, parent, id_, text):
         # Check and simplify ***************************************************************************
         # See if this can just handle the item insert event from core **********************************
-        if label is None or properties is None or imageindex is None:
-            self._init_item_data(id_, text)
-            #label, properties = self.data[id_]
-            # get_image doesn't exist anymore *******************************************
-            #imageindex = self.properties.get_image(properties)
-        else:
-            self.data[id_] = [label, properties]
-
-        # parent id **************************************************************************
-        self.dvmodel.ItemAdded(pid, self.get_tree_item(id_))
-        return False
+        self._init_item_data(id_, text)
+        self.dvmodel.ItemAdded(parent, self.get_tree_item(id_))
 
         # *******************************************************************************
+        return False
         data = wx.TreeItemData((id_, properties))
 
         # If no ImageList is stored, or if it's empty, setting
@@ -296,8 +288,9 @@ class Database(wx.SplitterWindow):
         if child:
             id_ = child['id_']
 
-            titem = self.insert_item(base, 'append', id_, text=child['text'])
+            self.insert_item(base, id_, child['text'])
 
+            # titem is not returned anymore **********************************************
             self.create(base=titem, previd=0)
             self.create(base=base, previd=id_)
 
@@ -338,16 +331,18 @@ class Database(wx.SplitterWindow):
         imageindex = self.treec.GetItemImage(treeitem)
 
         if mode in ('append', 'after', 'before') or isinstance(mode, int):
-            # When moving down, add 1 to the destination index, because the
+            # When moving down, add 1 to the destination index, because the ***************
             # move method first copies the item, and only afterwards deletes it
-            newtreeitem = self.insert_item(base, mode, id_, label=label,
-                                properties=properties, imageindex=imageindex)
+            self.data[id_] = [label, properties]
+            # Must use the parent DVitem ****************************************************
+            self.dvmodel.ItemAdded(base, self.get_tree_item(id_))
         else:
             raise ValueError()
 
         while self.treec.ItemHasChildren(treeitem):
             first = self.treec.GetFirstChild(treeitem)
             # Always use append mode for the descendants
+            # newtreeitem is not returned anymore *****************************************
             self.move_item(first[0], newtreeitem)
 
         # Verify *******************************************************************************
@@ -386,8 +381,7 @@ class Database(wx.SplitterWindow):
         return self.filename
 
     def get_root(self):
-        # Gonna be useless **************************************************************
-        return self.treec.GetRootItem()
+        return dv.NullDataViewItem
 
     def get_item_id(self, item):
         return self.dvmodel.ItemToObject(item)
