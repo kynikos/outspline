@@ -39,10 +39,15 @@ class Model(dv.PyDataViewModel):
         self.filename = filename
 
     def IsContainer(self, item):
-        return True
+        # Always return True regardless? **************************************************
+        if not item:
+            return True
+        else:
+            return core_api.has_item_children(self.filename,
+                                                    self.ItemToObject(item))
 
     def GetParent(self, item):
-        if not item.IsOk():
+        if not item:
             return dv.NullDataViewItem
         else:
             id_ = self.ItemToObject(item)
@@ -54,7 +59,7 @@ class Model(dv.PyDataViewModel):
                 return dv.NullDataViewItem
 
     def GetChildren(self, parent, children):
-        if not parent.IsOk():
+        if not parent:
             ids = core_api.get_root_items(self.filename)
         else:
             pid = self.ItemToObject(parent)
@@ -68,7 +73,8 @@ class Model(dv.PyDataViewModel):
     def GetColumnCount(self):
         return 1
 
-    def GetColumnType(self, col):
+    # Useless? *******************************************************************************
+    '''def GetColumnType(self, col):
         # The native GTK widget used by DataViewCtrl would have an internal
         # "live" search feature which however unfortunately only seems to work
         # if the first column's type is purely string
@@ -77,7 +83,7 @@ class Model(dv.PyDataViewModel):
         # Returning None seems to disable it
         # Are there any unwanted consequences? **********************************************
         #   https://groups.google.com/d/msg/wxpython-users/4nsv7x1DE-s/ljQHl9RTnuEJ *********
-        return None
+        return None'''
 
     def GetValue(self, item, col):
         id_ = self.ItemToObject(item)
