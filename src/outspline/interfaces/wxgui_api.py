@@ -568,9 +568,8 @@ def update_item_properties(filename, id_, property_bits, property_mask):
                                                                 property_mask)
 
 
-def update_item_image(filename, id_):
-    treeitem = tree.dbs[filename].find_item(id_)
-    return tree.dbs[filename].update_item_image(treeitem)
+def update_tree_item(filename, id_):
+    return tree.dbs[filename].update_tree_item(id_)
 
 
 def get_logs_parent(filename):

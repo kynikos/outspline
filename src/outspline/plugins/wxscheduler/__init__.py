@@ -539,7 +539,7 @@ class TreeItemIcons(object):
 
         wxgui_api.update_item_properties(self.filename, id_, bits,
                                                             self.property_mask)
-        wxgui_api.update_item_image(self.filename, id_)
+        wxgui_api.update_tree_item(self.filename, id_)
 
 
 class ViewMenu(object):

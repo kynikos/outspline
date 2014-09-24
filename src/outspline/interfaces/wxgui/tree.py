@@ -187,9 +187,10 @@ class Database(wx.SplitterWindow):
         # kwargs['text'] could be None if the query updated the position of the
         # item and not its text
         if kwargs['filename'] == self.filename and kwargs['text'] is not None:
-            treeitem = self.find_item(kwargs['id_'])
+            id_ = kwargs['id_']
+            treeitem = self.find_item(id_)
             self.set_item_label(treeitem, kwargs['text'])
-            self.update_item_image(treeitem)
+            self.update_tree_item(id_)
 
     def _handle_history_insert(self, kwargs):
         filename = kwargs['filename']
@@ -220,7 +221,7 @@ class Database(wx.SplitterWindow):
             # Reset label and image before moving the item, otherwise the item
             # has to be found again, or the program crashes
             self.set_item_label(item, text)
-            self.update_item_image(item)
+            self.update_tree_item(id_)
 
             if self.get_item_id(self.get_item_parent(item)) != parent or \
                                 (self.get_item_previous(item).IsOk() and \
@@ -452,12 +453,8 @@ class Database(wx.SplitterWindow):
         # Pass id_ **************************************************************************
         self.update_item_properties(treeitem, multiline_bits, multiline_mask)
 
-    def update_item_image(self, treeitem):
-        bits = self.treec.GetItemPyData(treeitem)[1]
-        imageindex = self.properties.get_image(bits)
-        # If no ImageList is stored, or if it's empty, SetItemImage has
-        # no effect
-        self.treec.SetItemImage(treeitem, imageindex)
+    def update_tree_item(self, id_):
+        self.dvmodel.ItemChanged(self.dvmodel.ObjectToItem(id_))
 
     @staticmethod
     def _compute_property_bits(old_property_bits, new_property_bits,
