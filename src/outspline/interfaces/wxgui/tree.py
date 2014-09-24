@@ -96,23 +96,20 @@ class Model(dv.PyDataViewModel):
     def GetColumnCount(self):
         return 1
 
-    # Useless? *******************************************************************************
-    '''def GetColumnType(self, col):
-        # The native GTK widget used by DataViewCtrl would have an internal
-        # "live" search feature which however unfortunately only seems to work
-        # if the first column's type is purely string
-        # https://groups.google.com/d/msg/wxpython-users/QvSesrnD38E/31l8f6AzIhAJ
-        # Track as an upstream bug **********************************************************
-        # Returning None seems to disable it
-        # Are there any unwanted consequences? **********************************************
-        #   https://groups.google.com/d/msg/wxpython-users/4nsv7x1DE-s/ljQHl9RTnuEJ *********
-        return None'''
-
     def GetValue(self, item, col):
         id_ = self.ItemToObject(item).get_id()
         # For some reason Renderer needs a string *******************************************
         #   https://groups.google.com/forum/#!topic/wxpython-users/F9tqqwOcIFw **************
         return str(id_)
+
+    '''def GetColumnType(self, col):
+        # It seems not needed to override this method, it's not done in the
+        # demos either
+        # Besides, returning "string" here would activate the "live" search
+        # feature that belongs to the native GTK widget used by DataViewCtrl
+        # https://groups.google.com/d/msg/wxpython-users/QvSesrnD38E/31l8f6AzIhAJ
+        # https://groups.google.com/d/msg/wxpython-users/4nsv7x1DE-s/ljQHl9RTnuEJ
+        return None'''
 
 
 class Renderer(dv.PyDataViewCustomRenderer):
