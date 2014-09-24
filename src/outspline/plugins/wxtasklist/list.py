@@ -527,7 +527,7 @@ class RefreshEngine(object):
                     wx.CallAfter(self.occview.set_tab_icon_stopped)
                 except RefreshEngineLimit:
                     wx.CallAfter(self.occview.warn_limit_exceeded)
-                except core_api.NoLongerExistingItem:
+                except core_api.NonExistingItemError:
                     self._delay_restart(kwargs=None)
                 else:
                     # Since self._refresh_end (and so

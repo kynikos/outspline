@@ -39,7 +39,7 @@ class CannotMoveItemError(OutsplineError):
     pass
 
 
-class NoLongerExistingItem(OutsplineError):
+class NonExistingItemError(OutsplineError):
     pass
 
 

@@ -19,7 +19,7 @@
 from core import databases, items, history, queries
 from core.exceptions import (AccessDeniedError, DatabaseAlreadyOpenError,
                             DatabaseNotAccessibleError, DatabaseLockedError,
-                            CannotMoveItemError, NoLongerExistingItem)
+                            CannotMoveItemError, NonExistingItemError)
 
 
 def get_memory_connection():
@@ -280,10 +280,10 @@ def get_item_text(filename, id_):
         return databases.dbs[filename].items[id_].get_text()
     except KeyError:
         # KeyError is raised if the items[id_] has already been deleted
-        raise NoLongerExistingItem()
+        raise NonExistingItemError()
     except TypeError:
         # TypeError is raised if the query in get_text returns no values
-        raise NoLongerExistingItem()
+        raise NonExistingItemError()
 
 
 def get_all_items(filename):
