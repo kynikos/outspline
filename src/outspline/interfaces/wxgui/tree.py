@@ -148,6 +148,8 @@ class Database(wx.SplitterWindow):
     # Addresses #260 ********************************************************************
     # Fixes #334 ************************************************************************
     # Addresses #336 ********************************************************************
+    # Check all the upstream bugs now that the new wxPython version has been ************
+    #   released ************************************************************************
     def __init__(self, filename):
         super(Database, self).__init__(wx.GetApp().nb_left,
                                                     style=wx.SP_LIVE_UPDATE)

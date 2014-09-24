@@ -800,6 +800,14 @@ class MenuDatabase(wx.Menu):
                                     parent = treedb.get_root()
 
                                 treedb.dvmodel.ItemDeleted(parent, item)
+
+
+                                core_api.delete_items(filename, [id_, ],
+                                                description='Delete 1 item')
+
+                                treedb.remove_items([id_, ])
+
+
                                 itemscopy.remove(id_)
 
                     # If an item has been left without children, it must be ******************
@@ -807,11 +815,11 @@ class MenuDatabase(wx.Menu):
                     # its arrow **************************************************************
                     # ************************************************************************
 
-                    core_api.delete_items(filename, items,
-                                          description='Delete {} items'
-                                          ''.format(len(items)))
-
-                    treedb.remove_items(items)
+                    #core_api.delete_items(filename, items,
+                    #                      description='Delete {} items'
+                    #                      ''.format(len(items)))
+                    #
+                    #treedb.remove_items(items)
                     treedb.dbhistory.refresh()
                     delete_items_event.signal()
 
