@@ -553,8 +553,8 @@ def insert_subtree(filename, treeroot):
     return tree.dbs[filename].insert_subtree(base=treeroot)
 
 
-def remove_tree_items(filename, treeitems):
-    return tree.dbs[filename].remove_items(treeitems)
+def remove_tree_items(filename, ids):
+    return tree.dbs[filename].remove_items(ids)
 
 
 def get_tree_context_menu(filename):

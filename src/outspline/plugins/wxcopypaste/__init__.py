@@ -75,7 +75,7 @@ def cut_items(event, no_confirm=False):
                 copypaste_api.cut_items(filename, items,
                                 description='Cut {} items'.format(len(items)))
 
-                wxgui_api.remove_tree_items(filename, selection)
+                wxgui_api.remove_tree_items(filename, items)
                 wxgui_api.refresh_history(filename)
                 cut_items_event.signal()
 

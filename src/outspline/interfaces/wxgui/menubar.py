@@ -779,11 +779,39 @@ class MenuDatabase(wx.Menu):
                         id_ = treedb.get_item_id(item)
                         items.append(id_)
 
+                    # ************************************************************************
+                    # Remove *all* the tree items (starting with the leaves)
+                    # *before* deleting any items in the database because
+                    # ItemDeleted probably works asynchronously and it would
+                    # segfault otherwise
+                    itemscopy = items[:]
+
+                    while itemscopy:
+                        for id_ in itemscopy[:]:
+                            item = treedb.get_tree_item(id_)
+                            children = core_api.get_item_children(filename, id_)
+
+                            if not (set(itemscopy) & set(children)):
+                                pid = core_api.get_item_parent(filename, id_)
+
+                                if pid > 0:
+                                    parent = treedb.get_tree_item(pid)
+                                else:
+                                    parent = treedb.get_root()
+
+                                treedb.dvmodel.ItemDeleted(parent, item)
+                                itemscopy.remove(id_)
+
+                    # If an item has been left without children, it must be ******************
+                    # deleted and re-added just like when moving, to remove ******************
+                    # its arrow **************************************************************
+                    # ************************************************************************
+
                     core_api.delete_items(filename, items,
                                           description='Delete {} items'
                                           ''.format(len(items)))
 
-                    treedb.remove_items(selection)
+                    treedb.remove_items(items)
                     treedb.dbhistory.refresh()
                     delete_items_event.signal()
 

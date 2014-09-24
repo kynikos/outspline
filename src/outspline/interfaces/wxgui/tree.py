@@ -324,8 +324,7 @@ class Database(wx.SplitterWindow):
         id_ = kwargs['id_']
 
         if filename == self.filename:
-            item = self.find_item(id_)
-            self.remove_items([item, ])
+            self.remove_items([id_, ])
 
     @classmethod
     def open(cls, filename):
@@ -429,8 +428,15 @@ class Database(wx.SplitterWindow):
             self.dvmodel.ItemAdded(item, child)
             self._move_subtree(childid, child)
 
-    def remove_items(self, treeitems):
-        # Re-implement using the event from core ******************************************************
+    def remove_items(self, ids):
+        # ********************************************************************************
+        # All algorithms calling this method should clear the tree items *****************
+        # *beforehand* now ***************************************************************
+        for id_ in ids:
+            del self.data[id_]
+
+        # ***********************************************************************************
+        return False
         # When deleting items, make sure to delete first those without
         # children, otherwise crashes without exceptions or errors could occur
         while treeitems:
