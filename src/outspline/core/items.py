@@ -306,20 +306,6 @@ class Item(object):
         else:
             return False
 
-    @staticmethod
-    def get_tree_item(filename, parentid, previd):
-        qconn = databases.dbs[filename].connection.get()
-        cursor = qconn.cursor()
-        cursor.execute(queries.items_select_parent_text, (parentid, previd))
-        databases.dbs[filename].connection.give(qconn)
-        row = cursor.fetchone()
-
-        if row:
-            return {'id_': row['I_id'],
-                    'text': row['I_text']}
-        else:
-            return False
-
     def get_ancestors(self):
         ancestors = []
         parent = self._get_parent()
