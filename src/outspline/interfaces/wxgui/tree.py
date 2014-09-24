@@ -365,9 +365,6 @@ class Database(wx.SplitterWindow):
                     del self.data[id_]
 
     def close(self):
-        self.treec.DeleteAllItems()
-        del self.data
-
         global dbs
         del dbs[self.filename]
 
