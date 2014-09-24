@@ -48,8 +48,7 @@ class Model(dv.PyDataViewModel):
             return dv.NullDataViewItem
         else:
             id_ = self.ItemToObject(item)
-            # ******************************************************************
-            pid = core_api.get_item_parent_id(self.filename, id_)
+            pid = core_api.get_item_parent(self.filename, id_)
 
             if pid > 0:
                 return self.ObjectToItem(pid)

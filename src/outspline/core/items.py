@@ -53,7 +53,7 @@ class Item(object):
             previous = children[-1].get_id() if children else 0
             updnext = False
         elif mode == 'sibling':
-            parentt = items[baseid].get_parent()
+            parentt = items[baseid]._get_parent()
             parent = parentt.get_id() if parentt else 0
             previous = items[baseid].get_id()
             updnext = items[baseid].get_next()
@@ -210,9 +210,9 @@ class Item(object):
             else:
                 raise exceptions.CannotMoveItemError()
         elif mode == 'parent':
-            parent = self.get_parent()
+            parent = self._get_parent()
             if parent:
-                parent2 = parent.get_parent()
+                parent2 = parent._get_parent()
                 if parent2:
                     parent2id = parent2.get_id()
                     lastchild = parent2.get_children()[-1]
@@ -287,7 +287,7 @@ class Item(object):
             return False
 
     def get_ancestors(self, ancestors=[]):
-        parent = self.get_parent()
+        parent = self._get_parent()
 
         if parent:
             ancestors.append(parent)
@@ -330,16 +330,21 @@ class Item(object):
         else:
             return None
 
+    def _get_parent(self):
+        pid = self.get_parent()
+
+        try:
+            return self.items[pid]
+        except KeyError:
+            return None
+
     def get_parent(self):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_parent, (self.id_, ))
         self.connection.give(qconn)
         pid = cursor.fetchone()
-        if pid['I_parent']:
-            return self.items[pid['I_parent']]
-        else:
-            return None
+        return pid['I_parent']
 
     def get_text(self):
         qconn = self.connection.get()
