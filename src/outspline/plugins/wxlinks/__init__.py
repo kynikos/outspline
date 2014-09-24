@@ -274,7 +274,11 @@ class TreeItemIcons(object):
             if core_api.is_item(self.filename, id_):
                 self._update_item(id_, rbits)
 
-            self._reset_item(kwargs['oldtarget'])
+            oldtarget = kwargs['oldtarget']
+
+            # oldtarget may not exist anymore
+            if core_api.is_item(self.filename, oldtarget):
+                self._reset_item(oldtarget)
 
     def _handle_break_links(self, kwargs):
         if kwargs['filename'] == self.filename:
@@ -283,7 +287,11 @@ class TreeItemIcons(object):
                 rbits = 5 if len(backlinks) > 0 else 2
                 self._update_item(id_, rbits)
 
-            self._reset_item(kwargs['oldtarget'])
+            oldtarget = kwargs['oldtarget']
+
+            # oldtarget may not exist anymore
+            if core_api.is_item(self.filename, oldtarget):
+                self._reset_item(oldtarget)
 
     def _handle_history(self, kwargs):
         if kwargs['filename'] == self.filename:
