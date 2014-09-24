@@ -410,11 +410,8 @@ class Database(wx.SplitterWindow):
         return (old_property_bits & ~property_mask) | new_property_bits
 
     def update_item_properties(self, id_, property_bits, property_mask):
-        # Simplify? **************************************************************************
-        data = self.data[id_]
-        new_bits = self._compute_property_bits(data[1], property_bits,
-                                                                property_mask)
-        self.data[id_][1] = new_bits
+        self.data[id_][1] = self._compute_property_bits(self.data[id_][1],
+                                                property_bits, property_mask)
 
     def get_properties(self):
         return self.properties
@@ -427,16 +424,13 @@ class Database(wx.SplitterWindow):
         self.treec.Select(self.get_tree_item(id_))
 
     def unselect_all_items(self):
-        # Check ***************************************************************************
         self.treec.UnselectAll()
 
-    def add_item_to_selection(self, treeitem):
-        # Check ***************************************************************************
-        self.treec.SelectItem(treeitem)
+    def add_item_to_selection(self, id_):
+        self.treec.Select(self.get_tree_item(id_))
 
-    def remove_item_from_selection(self, treeitem):
-        # Check ***************************************************************************
-        self.treec.UnselectItem(treeitem)
+    def remove_item_from_selection(self, id_):
+        self.treec.Unselect(self.get_tree_item(id_))
 
     def _popup_item_menu(self, event):
         self.cmenu.update_items()
@@ -560,7 +554,6 @@ class Properties(object):
         pass
 
     def _get_icon_real(self, bits):
-        # Can be simplified *************************************************************
         try:
             imageindex = self.bits_to_image[bits]
         except KeyError:

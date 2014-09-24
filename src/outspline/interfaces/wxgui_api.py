@@ -510,8 +510,7 @@ def unselect_all_items(filename):
 
 
 def add_item_to_selection(filename, id_):
-    treeitem = tree.dbs[filename].find_item(id_)
-    return tree.dbs[filename].add_item_to_selection(treeitem)
+    return tree.dbs[filename].add_item_to_selection(id_)
 
 
 def get_tree_item_id(filename, treeitem):
@@ -616,14 +615,12 @@ def simulate_unselect_all_items(filename):
 
 def simulate_add_items_to_selection(filename, ids):
     for id_ in ids:
-        item = tree.dbs[filename].find_item(id_)
-        tree.dbs[filename].add_item_to_selection(item)
+        tree.dbs[filename].add_item_to_selection(id_)
 
 
 def simulate_remove_items_from_selection(filename, ids):
     for id_ in ids:
-        item = tree.dbs[filename].find_item(id_)
-        tree.dbs[filename].remove_item_from_selection(item)
+        tree.dbs[filename].remove_item_from_selection(id_)
 
 
 ### PROPERTIES ###
