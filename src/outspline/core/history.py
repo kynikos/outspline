@@ -290,6 +290,8 @@ class DBHistory(object):
 
     def _do_history_row_delete(self, filename, action, jparams, hid, type_,
                                                                     itemid):
+        parent, text = json.loads(jparams)
+
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_delete_id, (itemid, ))
@@ -297,7 +299,7 @@ class DBHistory(object):
 
         self.items[itemid].remove()
         history_delete_event.signal(filename=self.filename, id_=itemid,
-                                                        hid=hid, text=jparams)
+                                            hid=hid, parent=parent, text=text)
 
     def clean_history(self):
         # history_clean_event handlers will need a proper connection

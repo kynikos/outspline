@@ -63,8 +63,9 @@ class Item(object):
         # undo queries, because it's needed also when a history action removes
         # an item
         databases.dbs[filename].dbhistory.insert_history(group, id_, 'insert',
-                            description, json.dumps((parent, previous, text),
-                            separators=(',',':')), text)
+                    description,
+                    json.dumps((parent, previous, text), separators=(',',':')),
+                    json.dumps((parent, text), separators=(',',':')))
 
         db = databases.dbs[filename]
         databases.dbs[filename].items[id_] = cls(db.connection, db.dbhistory,
@@ -158,7 +159,7 @@ class Item(object):
         # For the moment it's necessary to pass res['I_text'] for both the redo
         # and undo queries, because it's needed also when a history action
         # removes an item
-        hparams = text
+        hparams = json.dumps((parent, text), separators=(',',':'))
         hunparams = json.dumps((parent, previous, text), separators=(',',':'))
 
         cursor.execute(queries.items_delete_id, (self.id_, ))

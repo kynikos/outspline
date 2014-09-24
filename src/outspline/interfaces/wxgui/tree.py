@@ -284,23 +284,16 @@ class Database(wx.SplitterWindow):
 
     def _handle_deleting_item(self, kwargs):
         if kwargs['filename'] == self.filename:
-            item = self.get_tree_item(kwargs['id_'])
-            pid = kwargs['parent']
-
-            if pid > 0:
-                parent = self.get_tree_item(pid)
-            else:
-                parent = self.get_root()
-
-            self.dvmodel.ItemDeleted(parent, item)
+            self._remove_item(kwargs['parent'], kwargs['id_'])
 
     def _handle_deleted_item(self, kwargs):
         if kwargs['filename'] == self.filename:
-            self._remove_item(kwargs['id_'])
+            self._remove_item_data(kwargs['id_'])
 
     def _handle_history_insert(self, kwargs):
         # Check ***************************************************************************
         filename = kwargs['filename']
+
         if filename == self.filename:
             id_ = kwargs['id_']
             parent = kwargs['parent']
@@ -352,14 +345,10 @@ class Database(wx.SplitterWindow):
                     self.move_item(item, prev, mode='after')
 
     def _handle_history_remove(self, kwargs):
-        # Check ***************************************************************************
-        filename = kwargs['filename']
-        id_ = kwargs['id_']
-
-        if filename == self.filename:
-            # The tree item should be cleared explicitly *beforehand* now, see *************
-            # how it's done in the menubar module ******************************************
-            self._remove_item(id_)
+        if kwargs['filename'] == self.filename:
+            id_ = kwargs['id_']
+            self._remove_item(kwargs['parent'], id_)
+            self._remove_item_data(id_)
 
     def find_item(self, id_):
         # Gonna be useless **************************************************************
@@ -475,7 +464,17 @@ class Database(wx.SplitterWindow):
             self.dvmodel.ItemDeleted(parent, item)
             self.dvmodel.ItemAdded(parent, item)
 
-    def _remove_item(self, id_):
+    def _remove_item(self, pid, id_):
+        item = self.get_tree_item(id_)
+
+        if pid > 0:
+            parent = self.get_tree_item(pid)
+        else:
+            parent = self.get_root()
+
+        self.dvmodel.ItemDeleted(parent, item)
+
+    def _remove_item_data(self, id_):
         del self.data[id_]
 
     def close(self):
