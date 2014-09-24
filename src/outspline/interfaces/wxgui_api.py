@@ -540,6 +540,10 @@ def update_item_properties(filename, id_, property_bits, property_mask):
                                                                 property_mask)
 
 
+def queue_history_handler(filename, handler, args):
+    return tree.dbs[filename].queue_history_handler(handler, args)
+
+
 def get_logs_parent(filename):
     return tree.dbs[filename].get_logs_panel().get_panel()
 

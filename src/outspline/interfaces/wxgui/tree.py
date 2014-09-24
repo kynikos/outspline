@@ -243,6 +243,8 @@ class Database(wx.SplitterWindow):
         if wx.GetApp().logs_configuration.is_shown():
             self.show_logs()
 
+        self.history_actions = []
+
         self.treec.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
                                                         self._popup_item_menu)
 
@@ -256,6 +258,7 @@ class Database(wx.SplitterWindow):
         core_api.bind_to_history_update_deep(self._handle_history_update_deep)
         core_api.bind_to_history_update_text(self._handle_history_update_text)
         core_api.bind_to_history_remove(self._handle_history_remove)
+        core_api.bind_to_history(self._handle_history)
 
         # Check how this bug is currently tracked ****************************************************
         """self.treec.Bind(wx.EVT_LEFT_DOWN, self._unselect_on_empty_areas)
@@ -289,47 +292,98 @@ class Database(wx.SplitterWindow):
             self._remove_item_data(kwargs['id_'])
 
     def _handle_history_insert(self, kwargs):
+        # Check ***************************************************************************
         if kwargs['filename'] == self.filename:
-            id_ = kwargs['id_']
-            parent = self.get_tree_item_safe(kwargs['parent'])
-            self.insert_item(parent, id_, kwargs['text'])
+            #self.queue_history_handler(self._do_history_insert,
+            #                (kwargs["parent"], kwargs["id_"], kwargs["text"]))
+            # Check ***************************************************************************
+            self._do_history_insert(kwargs["parent"], kwargs["id_"],
+                                                                kwargs["text"])
+
+    def _do_history_insert(self, pid, id_, text):
+        # Check ***************************************************************************
+        parent = self.get_tree_item_safe(pid)
+        self.insert_item(parent, id_, text)
 
     def _handle_history_update_simple(self, kwargs):
         # Check ***************************************************************************
         if kwargs['filename'] == self.filename:
-            id_ = kwargs['id_']
-            pid = kwargs['parent']
-            oldpid = kwargs['oldparent']
+            #self.queue_history_handler(self._do_history_update_simple,
+            #                                (kwargs["parent"], kwargs["id_"]))
+            # Check ***************************************************************************
+            self._do_history_update_simple(kwargs["parent"], kwargs["id_"])
 
-            item = self.get_tree_item(id_)
-            oldparent = self.get_tree_item_safe(oldpid)
-            parent = self.get_tree_item_safe(pid)
-
-            self.dvmodel.ItemDeleted(oldparent, item)
-            self.dvmodel.ItemAdded(parent, item)
-            self._move_subtree(id_, item)
-
-            if pid != oldpid:
-                oldpid2 = core_api.get_item_parent(self.filename, oldpid)
-
-                if oldpid2 > 0:
-                    oldparent2 = self.get_tree_item(oldpid2)
-                    self._refresh_item(oldparent2, oldpid, oldparent)
+    def _do_history_update_simple(self, pid, id_):
+        # Check ***************************************************************************
+        parent = self.get_tree_item_safe(pid)
+        item = self.get_tree_item(id_)
+        self.dvmodel.ItemDeleted(parent, item)
+        self.dvmodel.ItemAdded(parent, item)
+        self._move_subtree(id_, item)
 
     def _handle_history_update_deep(self, kwargs):
-        # Implement ***************************************************************************
+        # Check ***************************************************************************
         if kwargs['filename'] == self.filename:
-            pass
+            #self.queue_history_handler(self._do_history_update_deep,
+            #        (kwargs["oldparent"], kwargs["newparent"], kwargs["id_"]))
+            # Check ***************************************************************************
+            self._do_history_update_deep(kwargs["oldparent"],
+                                            kwargs["newparent"], kwargs["id_"])
+
+    def _do_history_update_deep(self, oldpid, newpid, id_):
+        # Check ***************************************************************************
+        # This handler must work for any possible update of the item
+        # position (i.e. also moving from one parent to another
+        # completely unrelated one)
+        oldparent = self.get_tree_item_safe(oldpid)
+        newparent = self.get_tree_item_safe(newpid)
+        item = self.get_tree_item(id_)
+        self.dvmodel.ItemDeleted(oldparent, item)
+        self.dvmodel.ItemAdded(newparent, item)
+        self._move_subtree(id_, item)
+
+        if oldpid > 0:
+            oldpid2 = core_api.get_item_parent(self.filename, oldpid)
+            oldparent2 = self.get_tree_item_safe(oldpid2)
+            self._refresh_item_arrow(oldparent2, oldpid, oldparent)
 
     def _handle_history_update_text(self, kwargs):
+        # Check ***************************************************************************
         if kwargs['filename'] == self.filename:
-            self.set_item_label(kwargs['id_'], kwargs['text'])
+            #self.queue_history_handler(self._do_history_update_text,
+            #                                (kwargs['id_'], kwargs['text']))
+            # Check ***************************************************************************
+            self._do_history_update_text(kwargs['id_'], kwargs['text'])
+
+    def _do_history_update_text(self, id_, text):
+        # Check ***************************************************************************
+        self.set_item_label(id_, text)
 
     def _handle_history_remove(self, kwargs):
+        # Check ***************************************************************************
         if kwargs['filename'] == self.filename:
-            id_ = kwargs['id_']
-            self._remove_item(kwargs['parent'], id_)
-            self._remove_item_data(id_)
+            # In case of item deletion, the tree must be updated immediately
+            self._remove_item(kwargs['parent'], kwargs['id_'])
+            self._remove_item_data(kwargs['id_'])
+
+    def _handle_history(self, kwargs):
+        # When handling history actions, the DV tree items must be updated only
+        # when the database is back to a stable state, or errors like segfaults
+        # will happen
+        # Also note that in this way a lot more tree item updates than what
+        # would be necessary are done (e.g. changing the previous id of an item
+        # after inserting a sibling before it), but filtering them would be
+        # kind of hard
+        print("ACTIONS", self.history_actions)  # ****************************************
+        if kwargs['filename'] == self.filename:
+            for handler, args in self.history_actions:
+                print("HANDLER", handler, args)  # ****************************************
+                handler(*args)
+
+            del self.history_actions[:]
+
+    def queue_history_handler(self, handler, args):
+        self.history_actions.append((handler, args))
 
     @classmethod
     def open(cls, filename):

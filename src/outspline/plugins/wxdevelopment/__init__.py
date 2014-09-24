@@ -295,7 +295,8 @@ class MenuDev(wx.Menu):
 
             rules.append(rule)
 
-        organism_api.update_item_rules(filename, id_, rules, group,
+        if rules:
+            organism_api.update_item_rules(filename, id_, rules, group,
                                                     description=description)
 
     def _populate_tree_link(self, filename, id_, dbitems, group, description):

@@ -77,7 +77,7 @@ class Item(object):
             items[updnext.get_id()].update_previous(id_, group,
                                                     description=description)
 
-        # Signal the even *after* updating the next item
+        # Signal the event *after* updating the next item
         item_insert_event.signal(filename=filename, id_=id_, parent=parent,
                             text=text, group=group,  description=description)
 

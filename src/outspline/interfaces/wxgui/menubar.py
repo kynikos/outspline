@@ -595,7 +595,7 @@ class MenuDatabase(wx.Menu):
                         filename = tab.get_filename()
                         core_api.undo_tree(filename)
                         tab.dbhistory.refresh()
-                        undo_tree_event.signal(filename=filename, items=read)
+                        undo_tree_event.signal(filename=filename)
 
             core_api.release_databases()
 
@@ -615,7 +615,7 @@ class MenuDatabase(wx.Menu):
                         filename = tab.get_filename()
                         core_api.redo_tree(filename)
                         tab.dbhistory.refresh()
-                        redo_tree_event.signal(filename=filename, items=read)
+                        redo_tree_event.signal(filename=filename)
 
             core_api.release_databases()
 

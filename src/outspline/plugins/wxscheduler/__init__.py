@@ -480,11 +480,10 @@ class TreeItemIcons(object):
 
             organism_api.bind_to_update_item_rules_conditional(
                                                     self._handle_update_rules)
+            organism_api.bind_to_history_update(self._handle_history)
 
             wxgui_api.bind_to_open_database(self._handle_open_database)
             wxgui_api.bind_to_close_database(self._handle_close_database)
-            wxgui_api.bind_to_undo_tree(self._handle_history)
-            wxgui_api.bind_to_redo_tree(self._handle_history)
 
             if wxcopypaste_api:
                 wxcopypaste_api.bind_to_items_pasted(self._handle_paste)
@@ -497,12 +496,11 @@ class TreeItemIcons(object):
         if kwargs['filename'] == self.filename:
             organism_api.bind_to_update_item_rules_conditional(
                                             self._handle_update_rules, False)
+            organism_api.bind_to_history_update(self._handle_history, False)
 
             wxgui_api.bind_to_open_database(self._handle_open_database, False)
             wxgui_api.bind_to_close_database(self._handle_close_database,
                                                                         False)
-            wxgui_api.bind_to_undo_tree(self._handle_history, False)
-            wxgui_api.bind_to_redo_tree(self._handle_history, False)
 
             if wxcopypaste_api:
                 wxcopypaste_api.bind_to_items_pasted(self._handle_paste, False)
@@ -513,11 +511,17 @@ class TreeItemIcons(object):
 
     def _handle_history(self, kwargs):
         if kwargs['filename'] == self.filename:
-            for id_ in kwargs['items']:
-                # The history action may have deleted the item
-                if core_api.is_item(self.filename, id_):
-                    rules = organism_api.get_item_rules(self.filename, id_)
-                    self._update_item(id_, rules)
+            #wxgui_api.queue_history_handler(self.filename, self._do_history,
+            #                                (kwargs['id_'], kwargs['rules']))
+            # Check ************************************************************************
+            self._do_history(kwargs['id_'], kwargs['rules'])
+
+    def _do_history(self, id_, rules):
+        # The history action may have deleted the item; don't do this test
+        # in self._handle_history, because there the item is still in the
+        # database in any case
+        if core_api.is_item(self.filename, id_):
+            self._update_item(id_, rules)
 
     def _handle_paste(self, kwargs):
         if kwargs['filename'] == self.filename:
