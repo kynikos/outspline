@@ -190,24 +190,28 @@ def break_links(filename, id_, group, description='Break links'):
     cursor.execute(queries.links_select_target, (id_, ))
 
     ids = set()
+    rows = cursor.fetchall()
 
-    for row in cursor.fetchall():
-        linkid = row['L_id']
-        ids.add(linkid)
+    if rows:
+        for row in rows:
+            linkid = row['L_id']
+            ids.add(linkid)
 
-        do_update_link(filename, cursor, None, linkid)
+            do_update_link(filename, cursor, None, linkid)
+
+            core_api.give_connection(filename, qconn)
+
+            core_api.insert_history(filename, group, linkid, 'link_update',
+                                                description, None, str(id_))
+
+            qconn = core_api.get_connection(filename)
+            cursor = qconn.cursor()
 
         core_api.give_connection(filename, qconn)
 
-        core_api.insert_history(filename, group, linkid, 'link_update',
-                                                description, None, str(id_))
-
-        qconn = core_api.get_connection(filename)
-        cursor = qconn.cursor()
-
-    core_api.give_connection(filename, qconn)
-
-    break_link_event.signal(filename=filename, ids=ids, oldtarget=id_)
+        break_link_event.signal(filename=filename, ids=ids, oldtarget=id_)
+    else:
+        core_api.give_connection(filename, qconn)
 
 
 def break_copied_links(filename, id_):
