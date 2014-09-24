@@ -38,20 +38,6 @@ class Model(dv.PyDataViewModel):
         super(Model, self).__init__()
         self.database = database
         self.filename = filename
-        self.labels = {}
-        self.properties = {}
-
-        for row in core_api.get_all_items_text(self.filename):
-            text = row["I_text"]
-            label = self.database.make_item_label(text)
-            self.labels[row["I_id"]] = label
-            multiline_bits, multiline_mask = \
-                                        self.database.get_base_properties(
-                                        ).get_item_multiline_state(text, label)
-            # Initialize the plugin properties here ****************************************
-            self.properties[row["I_id"]] = \
-                                        self.database.compute_property_bits(
-                                        0, multiline_bits, multiline_mask)
 
     def IsContainer(self, item):
         return True
@@ -93,8 +79,8 @@ class Model(dv.PyDataViewModel):
 
     def GetValue(self, item, col):
         id_ = self.ItemToObject(item)
-        label = self.labels[id_]
-        icon = self.database.get_properties().get_image(self.properties[id_])
+        label = self.database.get_item_label(id_)
+        icon = self.database.get_item_icon(id_)
         return dv.DataViewIconText(label, icon)
 
 
@@ -127,6 +113,7 @@ class Database(wx.SplitterWindow):
         data = wx.TreeItemData((0, 0))
         self.root = self.treec.AddRoot(text='root', data=data)
         self.titems = {0: data}
+        self.data = {}
 
         self.cmenu = ContextMenu(self)
         self.ctabmenu = TabContextMenu(self.filename)
@@ -279,15 +266,16 @@ class Database(wx.SplitterWindow):
     def insert_item(self, base, mode, id_, text=None, label=None,
                                             properties=None, imageindex=None):
         if label is None or properties is None or imageindex is None:
-            label = self.make_item_label(text)
+            label = self._make_item_label(text)
             multiline_bits, multiline_mask = \
                     self.base_properties.get_item_multiline_state(text, label)
-            properties = self.compute_property_bits(0, multiline_bits,
+            properties = self._compute_property_bits(0, multiline_bits,
                                                                 multiline_mask)
             imageindex = self.properties.get_image(properties)
 
         data = wx.TreeItemData((id_, properties))
         self.titems[id_] = data
+        self.data[id_] = [label, properties]
 
         # If no ImageList is assigned, or if it's empty, setting
         # image=imageindex has no effect
@@ -301,11 +289,10 @@ class Database(wx.SplitterWindow):
             return self.treec.InsertItemBefore(self.get_item_parent(base),
                                         self.get_item_index(base), text=label,
                                         image=imageindex, data=data)
-        elif isinstance(mode, int):
+        else:
+            # mode is an integer
             return self.treec.InsertItemBefore(base, mode, text=label,
                                                 image=imageindex, data=data)
-        else:
-            return False
 
     def create(self, base=None, previd=0):
         if not base:
@@ -397,10 +384,12 @@ class Database(wx.SplitterWindow):
                     id_ = self.treec.GetItemPyData(item)[0]
                     self.treec.Delete(item)
                     del self.titems[id_]
+                    del self.data[id_]
 
     def close(self):
         self.treec.DeleteAllItems()
         self.titems = {}
+        del self.data
 
         global dbs
         del dbs[self.filename]
@@ -470,11 +459,19 @@ class Database(wx.SplitterWindow):
         return descendants
 
     @staticmethod
-    def make_item_label(text):
+    def _make_item_label(text):
         return text.partition('\n')[0]
 
+    def get_item_label(self, id_):
+        return self.data[id_][0]
+
+    def get_item_icon(self, id_):
+        # *********************************************************************************
+        return self.data[id_][1]
+
     def set_item_label(self, treeitem, text):
-        label = self.make_item_label(text)
+        label = self._make_item_label(text)
+        self.data[self.get_item_id(treeitem)][0] = label
         self.treec.SetItemText(treeitem, label)
         multiline_bits, multiline_mask = \
                     self.base_properties.get_item_multiline_state(text, label)
@@ -488,21 +485,19 @@ class Database(wx.SplitterWindow):
         self.treec.SetItemImage(treeitem, imageindex)
 
     @staticmethod
-    def compute_property_bits(old_property_bits, new_property_bits,
+    def _compute_property_bits(old_property_bits, new_property_bits,
                                                                 property_mask):
         return (old_property_bits & ~property_mask) | new_property_bits
 
     def update_item_properties(self, treeitem, property_bits, property_mask):
         data = self.treec.GetItemPyData(treeitem)
-        new_bits = self.compute_property_bits(data[1], property_bits,
+        new_bits = self._compute_property_bits(data[1], property_bits,
                                                                 property_mask)
         self.treec.SetItemPyData(treeitem, (data[0], new_bits))
+        self.data[self.get_item_id(treeitem)][1] = new_bits
 
     def get_properties(self):
         return self.properties
-
-    def get_base_properties(self):
-        return self.base_properties
 
     def get_logs_panel(self):
         return self.logspanel
@@ -673,11 +668,29 @@ class Properties(object):
         # required_size is 0 if no properties have been added, or if they've
         # been added with empty strings
         if self.required_size == (0, 0):
+            self.get_icon = self._get_icon_dummy
             self.get_image = self._get_image_dummy
         else:
+            self.get_icon = self._get_icon_real
             self.get_image = self._get_image_real
 
         return wx.ImageList(*self.required_size)
+
+    def get_icon(self, bits):
+        # This method is re-assigned dynamically
+        pass
+
+    def _get_icon_real(self, bits):
+        # Can be simplified *************************************************************
+        try:
+            imageindex = self.bits_to_image[bits]
+        except KeyError:
+            bitmap = self._make_image(bits)
+            imagelist = self.widget.GetImageList()
+            imageindex = imagelist.Add(bitmap)
+            self.bits_to_image[bits] = imageindex
+
+        return imagelist.GetIcon(imageindex)
 
     def _get_image_real(self, bits):
         try:
@@ -689,6 +702,11 @@ class Properties(object):
             self.bits_to_image[bits] = imageindex
 
         return imageindex
+
+    def _get_icon_dummy(self, bits):
+        # Used if no properties have been added
+        # Test ****************************************************************************
+        return wx.NullIcon
 
     def _get_image_dummy(self, bits):
         # If no properties have been added, use the default image index (-1)
