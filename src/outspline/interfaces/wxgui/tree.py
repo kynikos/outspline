@@ -296,67 +296,40 @@ class Database(wx.SplitterWindow):
 
     def _handle_history_update_previous(self, kwargs):
         # Check ***************************************************************************
-        filename = kwargs['filename']
-
-        if filename == self.filename:
-            pass
-
-    def _handle_history_update_parent(self, kwargs):
-        # Check ***************************************************************************
-        filename = kwargs['filename']
-
-        if filename == self.filename:
-            pass
-
-    def _handle_history_update_text(self, kwargs):
-        # Check ***************************************************************************
-        filename = kwargs['filename']
-
-        if filename == self.filename:
+        if kwargs['filename'] == self.filename:
             id_ = kwargs['id_']
             pid = kwargs['parent']
             oldpid = kwargs['oldparent']
-            text = kwargs['text']
 
-            # Verify *******************************************************************************
-            # Reset label and image before moving the item, otherwise the item
-            # has to be found again, or the program crashes
-            if text is not None:
-                self.set_item_label(id_, text)
+            item = self.get_tree_item(id_)
+            oldparent = self.get_tree_item_safe(oldpid)
+            parent = self.get_tree_item_safe(pid)
 
-            if oldpid is not None:
-                item = self.get_tree_item(id_)
-                oldparent = self.get_tree_item_safe(oldpid)
-                parent = self.get_tree_item_safe(pid)
+            self.dvmodel.ItemDeleted(oldparent, item)
+            self.dvmodel.ItemAdded(parent, item)
+            self._move_subtree(id_, item)
 
-                self.dvmodel.ItemDeleted(oldparent, item)
-                self.dvmodel.ItemAdded(parent, item)
-                self._move_subtree(id_, item)
+            if pid != oldpid:
+                oldpid2 = core_api.get_item_parent(self.filename, oldpid)
 
-                if pid != oldpid:
-                    oldpid2 = core_api.get_item_parent(self.filename, oldpid)
+                if oldpid2 > 0:
+                    oldparent2 = self.get_tree_item(oldpid2)
+                    self._refresh_item(oldparent2, oldpid, oldparent)
 
-                    if oldpid2 > 0:
-                        oldparent2 = self.get_tree_item(oldpid2)
-                        self._refresh_item(oldparent2, oldpid, oldparent)
+    def _handle_history_update_parent(self, kwargs):
+        # Implement ***************************************************************************
+        if kwargs['filename'] == self.filename:
+            pass
+
+    def _handle_history_update_text(self, kwargs):
+        if kwargs['filename'] == self.filename:
+            self.set_item_label(kwargs['id_'], kwargs['text'])
 
     def _handle_history_remove(self, kwargs):
         if kwargs['filename'] == self.filename:
             id_ = kwargs['id_']
             self._remove_item(kwargs['parent'], id_)
             self._remove_item_data(id_)
-
-    def find_item(self, id_):
-        # Gonna be useless **************************************************************
-        return self.titems[id_].GetId()
-
-    def get_item_previous(self, treeitem):
-        # Gonna be useless **************************************************************
-        return self.treec.GetPrevSibling(treeitem)
-
-    def get_item_parent(self, treeitem):
-        # Gonna be useless **************************************************************
-        return self.treec.GetItemParent(treeitem)
 
     @classmethod
     def open(cls, filename):
