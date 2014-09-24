@@ -238,7 +238,7 @@ class MenuDev(wx.Menu):
     def _populate_tree_rules(self, filename, id_, group, description):
         rules = []
 
-        for n in random.randint(0, 8)):
+        for n in xrange(random.randint(0, 8)):
             r = random.randint(0, 16)
 
             if r == 0:
