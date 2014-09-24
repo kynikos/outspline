@@ -311,9 +311,11 @@ class Database(wx.SplitterWindow):
                                 previous != 0):
                 if previous == 0:
                     par = self.find_item(parent)
+                    # move_item has changed *********************************************
                     self.move_item(item, par, mode=0)
                 else:
                     prev = self.find_item(previous)
+                    # move_item has changed *********************************************
                     self.move_item(item, prev, mode='after')
 
     def _handle_history_remove(self, kwargs):
@@ -338,12 +340,8 @@ class Database(wx.SplitterWindow):
         self._init_item_data(id_, text)
         self.dvmodel.ItemAdded(parent, self.get_tree_item(id_))
 
-    def create(self, base=None, previd=0):
-        # Rename to create_subtree if still needed ****************************************
+    def insert_subtree(self, parent, previd=0):
         # Check ***************************************************************************
-        # See if this can just handle an event from core **********************************
-        if not base:
-            base = self.treec.GetRootItem()
 
         # get_item_id takes a DV item now ***********************************************
         baseid = self.get_item_id(base)
@@ -355,8 +353,8 @@ class Database(wx.SplitterWindow):
             self.insert_item(base, id_, child['text'])
 
             # titem is not returned anymore **********************************************
-            self.create(base=titem, previd=0)
-            self.create(base=base, previd=id_)
+            self.insert_subtree(base=titem, previd=0)
+            self.insert_subtree(base=base, previd=id_)
 
     def _init_item_data(self, id_, text):
         label = self._make_item_label(text)
@@ -387,35 +385,72 @@ class Database(wx.SplitterWindow):
         else:
             return selection
 
-    def move_item(self, treeitem, base, mode='append'):
+    def move_item(self, id_, item):
         # Check ***************************************************************************
-        # See if this can just handle the item update event from core *********************
-        label = self.treec.GetItemText(treeitem)
-        id_, properties = self.treec.GetItemPyData(treeitem)
-        imageindex = self.treec.GetItemImage(treeitem)
+        pid = core_api.get_item_parent(self.filename, id_)
 
-        if mode in ('append', 'after', 'before') or isinstance(mode, int):
-            # When moving down, add 1 to the destination index, because the ***************
-            # move method first copies the item, and only afterwards deletes it
-            self.data[id_] = [label, properties]
-            # Must use the parent DVitem ****************************************************
-            self.dvmodel.ItemAdded(base, self.get_tree_item(id_))
+        if pid > 0:
+            parent = self.get_tree_item(pid)
         else:
-            raise ValueError()
+            parent = self.get_root()
 
-        while self.treec.ItemHasChildren(treeitem):
-            first = self.treec.GetFirstChild(treeitem)
-            # Always use append mode for the descendants
-            # newtreeitem is not returned anymore *****************************************
-            self.move_item(first[0], newtreeitem)
+        self.dvmodel.ItemDeleted(parent, item)
 
-        # Verify *******************************************************************************
-        # Do not use remove_items, as self.titems has already been updated
-        # here, and using remove_items would remove the moved item from
-        # self.titems
-        self.treec.Delete(treeitem)
 
-        return newtreeitem
+
+        # This probably becomes insert_subtree ****************************************
+        self.dvmodel.ItemAdded(parent, item)
+
+        def recurse(recid, recitem):
+            childids = core_api.get_item_children(self.filename, recid)
+
+            for childid in childids:
+                child = self.get_tree_item(childid)
+                self.dvmodel.ItemAdded(recitem, child)
+                recurse(childid, child)
+
+        recurse(id_, item)
+
+    def move_item_to_parent(self, oldpid, id_, item):
+        # Check ***************************************************************************
+        newpid = core_api.get_item_parent(self.filename, id_)
+
+        # oldpid cannot be 0 here because core_api.move_item_to_parent
+        # succeded, which means that it wasn't the root item
+        oldparent = self.get_tree_item(oldpid)
+
+        if newpid > 0:
+            newparent = self.get_tree_item(newpid)
+        else:
+            newparent = self.get_root()
+
+        self.dvmodel.ItemDeleted(oldparent, item)
+
+
+
+        # This probably becomes insert_subtree ****************************************
+        self.dvmodel.ItemAdded(newparent, item)
+
+        def recurse(recid, recitem):
+            childids = core_api.get_item_children(self.filename, recid)
+
+            for childid in childids:
+                child = self.get_tree_item(childid)
+                self.dvmodel.ItemAdded(recitem, child)
+                recurse(childid, child)
+
+        recurse(id_, item)
+        # ******************************************************************************
+
+
+
+
+
+        if not core_api.has_item_children(self.filename, oldpid):
+            # This seems to be the only way to hide the arrow next to a parent
+            # that has just lost its last child
+            self.dvmodel.ItemDeleted(newparent, oldparent)
+            self.dvmodel.ItemAdded(newparent, oldparent)
 
     def remove_items(self, treeitems):
         # Re-implement using the event from core ******************************************************

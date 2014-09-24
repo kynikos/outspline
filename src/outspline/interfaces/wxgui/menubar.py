@@ -695,31 +695,7 @@ class MenuDatabase(wx.Menu):
 
                     if core_api.move_item_up(filename, id_,
                                                 description='Move item up'):
-                        # ***************************************************************
-                        #newitem = treedb.move_item(item,
-                        #                treedb.get_item_parent(item),
-                        #                mode=treedb.get_item_index(item) - 1)
-
-
-
-
-                        # ***************************************************************
-                        pid = core_api.get_item_parent(filename, id_)
-
-                        if pid > 0:
-                            parent = treedb.get_tree_item(pid)
-                        else:
-                            parent = treedb.get_root()
-
-                        # If item had children, they must all be re-added ***************
-                        # recursively ***************************************************
-                        treedb.dvmodel.ItemDeleted(parent, item)
-                        treedb.dvmodel.ItemAdded(parent, item)
-                        # ***************************************************************
-
-
-
-
+                        treedb.move_item(id_, item)
                         treedb.select_item(id_)
                         treedb.dbhistory.refresh()
 
@@ -741,35 +717,7 @@ class MenuDatabase(wx.Menu):
 
                     if core_api.move_item_down(filename, id_,
                                                 description='Move item down'):
-                        # ***************************************************************
-                        # When moving down, increase the index by 2, because
-                        # the move method first copies the item, and only
-                        # afterwards deletes it
-                        #newitem = treedb.move_item(item,
-                        #                treedb.get_item_parent(item),
-                        #                mode=treedb.get_item_index(item) + 2)
-
-
-
-
-                        # ***************************************************************
-                        pid = core_api.get_item_parent(filename, id_)
-
-                        if pid > 0:
-                            parent = treedb.get_tree_item(pid)
-                        else:
-                            parent = treedb.get_root()
-
-                        # If item had children, they must all be re-added ***************
-                        # recursively ***************************************************
-                        treedb.dvmodel.ItemDeleted(parent, item)
-                        treedb.dvmodel.ItemAdded(parent, item)
-                        # ***************************************************************
-
-
-
-
-
+                        treedb.move_item(id_, item)
                         treedb.select_item(id_)
                         treedb.dbhistory.refresh()
 
@@ -792,44 +740,7 @@ class MenuDatabase(wx.Menu):
 
                     if core_api.move_item_to_parent(filename, id_,
                                             description='Move item to parent'):
-                        # ***************************************************************
-                        #newitem = treedb.move_item(item,
-                        #                        treedb.get_item_parent(
-                        #                        treedb.get_item_parent(item)))
-
-
-
-
-                        # ***************************************************************
-                        newpid = core_api.get_item_parent(filename, id_)
-
-                        # oldpid cannot be 0 here because
-                        #  core_api.move_item_to_parent succeded, which means
-                        #  that it wasn't the root item
-                        oldparent = treedb.get_tree_item(oldpid)
-
-                        if newpid > 0:
-                            newparent = treedb.get_tree_item(newpid)
-                        else:
-                            newparent = treedb.get_root()
-
-                        # If item had children, they must all be re-added ***************
-                        # recursively ***************************************************
-                        treedb.dvmodel.ItemDeleted(oldparent, item)
-                        treedb.dvmodel.ItemAdded(newparent, item)
-
-                        if not core_api.has_item_children(filename, oldpid):
-                            # This seems to be the only way to hide the arrow
-                            # next to a parent that has just lost its last
-                            # child
-                            treedb.dvmodel.ItemDeleted(newparent, oldparent)
-                            treedb.dvmodel.ItemAdded(newparent, oldparent)
-                        # ***************************************************************
-
-
-
-
-
+                        treedb.move_item_to_parent(oldpid, id_, item)
                         treedb.select_item(id_)
                         treedb.dbhistory.refresh()
 

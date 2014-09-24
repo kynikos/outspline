@@ -294,6 +294,7 @@ class Item(object):
             return False
 
     def get_ancestors(self, ancestors=[]):
+        # Simplify ***********************************************************************
         parent = self._get_parent()
 
         if parent:

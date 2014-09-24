@@ -549,8 +549,8 @@ def insert_tree_item_after(filename, base, id_):
     return tree.dbs[filename].insert_item(base, id_, text)
 
 
-def create_tree(filename, treeroot):
-    return tree.dbs[filename].create(base=treeroot)
+def insert_subtree(filename, treeroot):
+    return tree.dbs[filename].insert_subtree(base=treeroot)
 
 
 def remove_tree_items(filename, treeitems):
