@@ -47,6 +47,7 @@ cpaste_label_2 = None
 
 
 def cut_items(event, no_confirm=False):
+    # See how delete items in wxgui's menubar has changed **************************************
     if core_api.block_databases():
         filename = wxgui_api.get_selected_database_filename()
 
@@ -75,6 +76,11 @@ def cut_items(event, no_confirm=False):
                 copypaste_api.cut_items(filename, items,
                                 description='Cut {} items'.format(len(items)))
 
+                # If an item has been left without children, it must be ******************
+                # deleted and re-added just like when moving, to remove ******************
+                # its arrow **************************************************************
+
+                # remove_tree_items has changed ****************************************************
                 wxgui_api.remove_tree_items(filename, items)
                 wxgui_api.refresh_history(filename)
                 cut_items_event.signal()

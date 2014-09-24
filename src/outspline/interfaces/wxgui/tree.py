@@ -272,7 +272,6 @@ class Database(wx.SplitterWindow):
             self.set_item_label(kwargs['id_'], kwargs['text'])
 
     def _handle_deleting_item(self, kwargs):
-        # Check ***************************************************************************
         if kwargs['filename'] == self.filename:
             item = self.get_tree_item(kwargs['id_'])
             pid = kwargs['parent']
@@ -285,7 +284,6 @@ class Database(wx.SplitterWindow):
             self.dvmodel.ItemDeleted(parent, item)
 
     def _handle_deleted_item(self, kwargs):
-        # Check ***************************************************************************
         if kwargs['filename'] == self.filename:
             self.remove_items([kwargs['id_'], ])
 
@@ -346,6 +344,7 @@ class Database(wx.SplitterWindow):
         id_ = kwargs['id_']
 
         if filename == self.filename:
+            # remove_items has changed ****************************************************
             self.remove_items([id_, ])
 
     @classmethod
