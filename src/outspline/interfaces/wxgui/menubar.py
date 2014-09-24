@@ -666,16 +666,16 @@ class MenuDatabase(wx.Menu):
             if treedb:
                 selection = treedb.get_selections(none=False, many=False)
                 if selection:
-                    base = selection[0]
+                    parent = selection[0]
                     filename = treedb.get_filename()
-                    baseid = treedb.get_item_id(base)
+                    pid = treedb.get_item_id(parent)
                     text = 'New item'
 
                     id_ = core_api.create_child(filename=filename,
-                                                baseid=baseid, text=text,
+                                                baseid=pid, text=text,
                                                 description='Insert sub-item')
 
-                    treedb.insert_item(base, id_, text)
+                    treedb.insert_item(parent, id_, text)
 
                     treedb.select_item(id_)
 
