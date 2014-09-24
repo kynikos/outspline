@@ -75,6 +75,7 @@ class AlarmsLog(object):
     def __init__(self, parent, filename, mainmenu):
         self.filename = filename
 
+        # The native "live" search is still enabled here, see bug #351
         self.view = wx.dataview.DataViewListCtrl(parent,
                         style=wx.dataview.DV_MULTIPLE |
                         wx.dataview.DV_ROW_LINES | wx.dataview.DV_NO_HEADER)
