@@ -180,10 +180,7 @@ class Database(wx.SplitterWindow):
         # kwargs['text'] could be None if the query updated the position of the
         # item and not its text
         if kwargs['filename'] == self.filename and kwargs['text'] is not None:
-            id_ = kwargs['id_']
-            treeitem = self.find_item(id_)
-            self.set_item_label(treeitem, kwargs['text'])
-            self.update_tree_item(id_)
+            self.set_item_label(kwargs['id_'], kwargs['text'])
 
     def _handle_history_insert(self, kwargs):
         # Check ***************************************************************************
@@ -215,6 +212,7 @@ class Database(wx.SplitterWindow):
             # Verify *******************************************************************************
             # Reset label and image before moving the item, otherwise the item
             # has to be found again, or the program crashes
+            # set_item_label now takes an id_ *********************************************
             self.set_item_label(item, text)
             self.update_tree_item(id_)
 
@@ -414,16 +412,13 @@ class Database(wx.SplitterWindow):
     def get_item_icon(self, id_):
         return self.properties.get_icon(self.data[id_][1])
 
-    def set_item_label(self, treeitem, text):
-        # Check ***************************************************************************
+    def set_item_label(self, id_, text):
         label = self._make_item_label(text)
-        # get_item_id takes a DV item now ***********************************************
-        self.data[self.get_item_id(treeitem)][0] = label
-        self.treec.SetItemText(treeitem, label)
+        self.data[id_][0] = label
         multiline_bits, multiline_mask = \
                     self.base_properties.get_item_multiline_state(text, label)
-        # Pass id_ **************************************************************************
-        self.update_item_properties(treeitem, multiline_bits, multiline_mask)
+        self.update_item_properties(id_, multiline_bits, multiline_mask)
+        self.update_tree_item(id_)
 
     def update_tree_item(self, id_):
         self.dvmodel.ItemChanged(self.get_tree_item(id_))
