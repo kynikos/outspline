@@ -98,15 +98,8 @@ class Database(wx.SplitterWindow):
 
         self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
                                             dv.DV_ROW_LINES | dv.DV_NO_HEADER)
-        self.dvmodel = Model(self, filename)
-        self.treec.AssociateModel(self.dvmodel)  # *****************************************
-        # DataViewModel is reference counted (derives from RefCounter), the
-        # count needs to be decreased explicitly here to avoid memory leaks
-        # This is bullshit, it crashes if closing all databases *****************************
-        #self.dvmodel.DecRef()
 
         self.data = {}
-        self.treec.AppendIconTextColumn('Item', 0)
 
         self.cmenu = ContextMenu(self)
         self.ctabmenu = TabContextMenu(self.filename)
@@ -120,6 +113,47 @@ class Database(wx.SplitterWindow):
         self.base_properties = DBProperties(self.properties)
 
         self.Initialize(self.treec)
+
+    def post_init(self):
+        creating_tree_event.signal(filename=self.filename)
+
+        # Store an ImageList only *after* instantiating the class, because its
+        # size must be calculated after the various plugins have added their
+        # properties, which requires the filename to be in the dictionary
+        # Use a separate ImageList for each database, as they may support a
+        # different subset of the installed plugins
+        # Move somewhere else? ************************************************************
+        imagelist = self.properties.get_empty_image_list()
+
+        # Initialize the tree only *after* instantiating the class (and storing
+        # an ImageList), because actions like the creation of item images rely
+        # on the filename to be in the dictionary
+        # Initialize self.data (it was self.create originally) *****************************************
+        #   Also maybe initialize the properties from the plugins directly here ************************
+        #     instead of handling the open_database_event **********************************************
+        self.dvmodel = Model(self, self.filename)
+        self.treec.AssociateModel(self.dvmodel)
+        # DataViewModel is reference counted (derives from RefCounter), the
+        # count needs to be decreased explicitly here to avoid memory leaks
+        # This is bullshit, it crashes if closing all databases *****************************
+        #self.dvmodel.DecRef()
+
+        self.treec.AppendIconTextColumn('Item', 0)
+
+        # Initialize the logs panel *after* signalling creating_tree_event,
+        # which is used to add plugin logs
+        self.logspanel.initialize()
+
+        nb_left = wx.GetApp().nb_left
+        nb_left.add_page(self, os.path.basename(self.filename), select=True)
+
+        # The logs panel must be shown only *after* adding the page to the
+        # notebook, otherwise *for*some*reason* the databases opened
+        # automatically by the sessions manager (those opened manually aren't
+        # affected) will have the sash of the SplitterWindow not correctly
+        # positioned (only if using SetSashGravity)
+        if wx.GetApp().logs_configuration.is_shown():
+            self.show_logs()
 
         # Test *******************************************************************************
         #self.treec.Bind(dv.EVT_DATAVIEW_ITEM_START_EDITING,
@@ -142,38 +176,8 @@ class Database(wx.SplitterWindow):
         # Skipping the event ensures correct left click behaviour
         event.Skip()"""
 
-    def post_init(self):
-        creating_tree_event.signal(filename=self.filename)
-
-        # Store an ImageList only *after* instantiating the class, because its
-        # size must be calculated after the various plugins have added their
-        # properties, which requires the filename to be in the dictionary
-        # Use a separate ImageList for each database, as they may support a
-        # different subset of the installed plugins
-        # Move somewhere else? ************************************************************
-        imagelist = self.properties.get_empty_image_list()
-
-        # Create the tree only *after* instantiating the class (and storing
-        # an ImageList), because actions like the creation of item images rely
-        # on the filename to be in the dictionary
-        self.create()
-
-        # Initialize the logs panel *after* signalling creating_tree_event,
-        # which is used to add plugin logs
-        self.logspanel.initialize()
-
-        nb_left = wx.GetApp().nb_left
-        nb_left.add_page(self, os.path.basename(self.filename), select=True)
-
-        # The logs panel must be shown only *after* adding the page to the
-        # notebook, otherwise *for*some*reason* the databases opened
-        # automatically by the sessions manager (those opened manually aren't
-        # affected) will have the sash of the SplitterWindow not correctly
-        # positioned (only if using SetSashGravity)
-        if wx.GetApp().logs_configuration.is_shown():
-            self.show_logs()
-
     def veto_label_edit(self, event):
+        # No longer used? ****************************************************************
         event.Veto()
 
     def handle_update_item(self, kwargs):
