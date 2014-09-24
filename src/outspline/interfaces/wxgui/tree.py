@@ -177,10 +177,6 @@ class Renderer(dv.PyDataViewCustomRenderer):
 
 class Database(wx.SplitterWindow):
     def __init__(self, filename):
-        # Addresses #260 #336 ***************************************************************
-        # Fixes #269 #311 #320 #334 *********************************************************
-        # Check all the upstream bugs now that the new wxPython version has been ************
-        #   released ************************************************************************
         super(Database, self).__init__(wx.GetApp().nb_left,
                                                     style=wx.SP_LIVE_UPDATE)
 
@@ -202,22 +198,6 @@ class Database(wx.SplitterWindow):
         # See bug #260 for generic issues about DataViewCtrl
         self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
                                                             dv.DV_NO_HEADER)
-
-        # *****************************************************************************
-        def test(event):
-            print("TEEEEEEEEST")  # ***************************************************
-
-        id_ = wx.NewId()
-        accels = [
-            (wx.ACCEL_NORMAL, ord("f"), id_),
-            (wx.ACCEL_CTRL, ord("f"), id_),
-            (wx.ACCEL_CTRL, ord("n"), id_),
-            (wx.ACCEL_CTRL, ord("p"), id_),
-        ]
-        self.treec.Bind(wx.EVT_BUTTON, test, id=id_)
-        acctable = wx.AcceleratorTable(accels)
-        self.treec.SetAcceleratorTable(acctable)
-        # *****************************************************************************
 
         self.cmenu = ContextMenu(self)
         self.ctabmenu = TabContextMenu(self.filename)

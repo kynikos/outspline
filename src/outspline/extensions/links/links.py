@@ -339,7 +339,6 @@ def paste_link(filename, id_, oldid, group, description):
                 # way of retrieving its new id
                 target = None
 
-            # Check it's still necessary to suppress the event *****************************
             # Do not emit an update event when pasting links (affects only
             # pasting in the same database), otherwise the interface will react
             # trying to update the text and icon of the item in the tree, but

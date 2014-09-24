@@ -530,7 +530,6 @@ def add_item_property(filename, bitsn, character, bits_to_colour):
 
 
 def update_item_properties(filename, id_, property_bits, property_mask):
-    # Test this very well because it was trying-excepting the id_ before *******************
     tree.dbs[filename].update_item_properties(id_, property_bits,
                                                                 property_mask)
 

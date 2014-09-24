@@ -75,8 +75,6 @@ class AlarmsLog(object):
     def __init__(self, parent, filename, mainmenu):
         self.filename = filename
 
-        # "Disable" the "live" search feature ********************************************
-        #   Also reduce the top/bottom margins *******************************************
         self.view = wx.dataview.DataViewListCtrl(parent,
                         style=wx.dataview.DV_MULTIPLE |
                         wx.dataview.DV_ROW_LINES | wx.dataview.DV_NO_HEADER)
