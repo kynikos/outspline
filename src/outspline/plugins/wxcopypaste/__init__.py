@@ -117,8 +117,8 @@ def paste_items_as_siblings(event, no_confirm=False):
             # database
             selection = wxgui_api.get_tree_selections(filename, many=False)
 
-            # If multiple items are selected, selection will be bool (False)
-            if isinstance(selection, list):
+            # If multiple items are selected, selection will be False
+            if selection is not False:
                 if len(selection) > 0:
                     base = selection[0]
                     baseid = wxgui_api.get_tree_item_id(filename, base)

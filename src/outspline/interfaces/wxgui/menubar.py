@@ -628,9 +628,8 @@ class MenuDatabase(wx.Menu):
                 # first item
                 selection = treedb.get_selections(many=False)
 
-                # If multiple items are selected, selection will be bool
-                # (False)
-                if isinstance(selection, list):
+                # If multiple items are selected, selection will be False
+                if selection is not False:
                     text = 'New item'
 
                     if len(selection) > 0:

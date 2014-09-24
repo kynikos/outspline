@@ -249,6 +249,7 @@ class Database(wx.SplitterWindow):
     def insert_item(self, base, mode, id_, text=None, label=None,
                                             properties=None, imageindex=None):
         # Check and simplify ***************************************************************************
+        # See if this can just handle the item insert event from core **********************************
         if label is None or properties is None or imageindex is None:
             self._init_item_data(id_, text)
             #label, properties = self.data[id_]
@@ -257,7 +258,8 @@ class Database(wx.SplitterWindow):
         else:
             self.data[id_] = [label, properties]
 
-        self.dvmodel.ItemAdded(self.get_tree_item(id_))
+        # parent id **************************************************************************
+        self.dvmodel.ItemAdded(pid, self.get_tree_item(id_))
         return False
 
         # *******************************************************************************
@@ -283,6 +285,7 @@ class Database(wx.SplitterWindow):
     def create(self, base=None, previd=0):
         # Rename to create_subtree if still needed ****************************************
         # Check ***************************************************************************
+        # See if this can just handle an event from core **********************************
         if not base:
             base = self.treec.GetRootItem()
 
@@ -314,7 +317,7 @@ class Database(wx.SplitterWindow):
         selection = self.treec.GetSelections()
 
         if (not none and len(selection) == 0) or (not many and
-                                                  len(selection) > 1):
+                                                        len(selection) > 1):
             return False
         elif descendants == True:
             for item in selection:
@@ -329,6 +332,7 @@ class Database(wx.SplitterWindow):
 
     def move_item(self, treeitem, base, mode='append'):
         # Check ***************************************************************************
+        # See if this can just handle the item update event from core *********************
         label = self.treec.GetItemText(treeitem)
         id_, properties = self.treec.GetItemPyData(treeitem)
         imageindex = self.treec.GetItemImage(treeitem)
