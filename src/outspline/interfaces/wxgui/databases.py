@@ -153,10 +153,6 @@ def close_database(filename, no_confirm=False, exit_=False):
     # Do not use nb_left.select_tab() to get the tree, use tree.dbs
     nbl = wx.GetApp().nb_left
 
-    # Temporary fix for bug #270
-    sashposs = {filename: tree.dbs[filename].GetSashPosition() \
-                                                    for filename in tree.dbs}
-
     for item in tuple(editor.tabs.keys()):
         if editor.tabs[item].get_filename() == filename:
             if editor.tabs[item].close(ask='quiet' if no_confirm else 'apply'
@@ -183,10 +179,6 @@ def close_database(filename, no_confirm=False, exit_=False):
     # Note that this event is also bound directly by the sessions and dbprops
     # modules
     close_database_event.signal(filename=filename, exit_=exit_)
-
-    # Temporary fix for bug #270
-    for filename in tree.dbs:
-        tree.dbs[filename].SetSashPosition(sashposs[filename])
 
     return True
 
