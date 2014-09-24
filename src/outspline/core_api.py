@@ -99,7 +99,7 @@ def insert_item_after(filename, baseid, group=None, text='New item',
 def move_item_up(filename, id_, description='Move item up'):
     group = databases.dbs[filename].dbhistory.get_next_history_group()
     try:
-        return databases.dbs[filename].items[id_].shift(mode='up', group=group,
+        return databases.dbs[filename].items[id_].shift_up(group=group,
                                                     description=description)
     except CannotMoveItemError:
         return False
@@ -108,8 +108,8 @@ def move_item_up(filename, id_, description='Move item up'):
 def move_item_down(filename, id_, description='Move item down'):
     group = databases.dbs[filename].dbhistory.get_next_history_group()
     try:
-        return databases.dbs[filename].items[id_].shift(mode='down',
-                                        group=group, description=description)
+        return databases.dbs[filename].items[id_].shift_down(group=group,
+                                                    description=description)
     except CannotMoveItemError:
         return False
 
@@ -117,8 +117,8 @@ def move_item_down(filename, id_, description='Move item down'):
 def move_item_to_parent(filename, id_, description='Move item to parent'):
     group = databases.dbs[filename].dbhistory.get_next_history_group()
     try:
-        return databases.dbs[filename].items[id_].shift(mode='parent',
-                                        group=group, description=description)
+        return databases.dbs[filename].items[id_].move_to_parent(group=group,
+                                                    description=description)
     except CannotMoveItemError:
         return False
 

@@ -167,62 +167,81 @@ class Item(object):
     def remove(self):
         del self.items[self.id_]
 
-    def shift(self, mode, group, description='Shift item'):
+    def shift_up(self, group, description='Shift item up'):
         items = self.items
         filename = self.filename
         id_ = self.id_
-        if mode == 'up':
-            prev = self._get_previous()
-            if prev:
-                previd = prev.get_id()
-                prev2 = prev._get_previous()
-                prev2id = prev2.get_id() if prev2 else 0
-                next_ = self._get_next()
-                # Keep all items[id_].get_{next,previous,...} _before_ updates!
-                self.update(group, previous=prev2id, description=description)
-                prev.update(group, previous=id_, description=description)
-                if next_:
-                    next_.update(group, previous=previd,
-                                                    description=description)
-            else:
-                raise exceptions.CannotMoveItemError()
-        elif mode == 'down':
+        prev = self._get_previous()
+
+        if prev:
+            previd = prev.get_id()
+            prev2 = prev._get_previous()
+            prev2id = prev2.get_id() if prev2 else 0
             next_ = self._get_next()
+            # Keep all items[id_].get_{next,previous,...} _before_ updates!
+            self.update(group, previous=prev2id, description=description)
+            prev.update(group, previous=id_, description=description)
+
             if next_:
-                nextid = next_.get_id()
+                next_.update(group, previous=previd, description=description)
+        else:
+            raise exceptions.CannotMoveItemError()
+
+        return True
+
+    def shift_down(self, group, description='Shift item down'):
+        items = self.items
+        filename = self.filename
+        id_ = self.id_
+        next_ = self._get_next()
+
+        if next_:
+            nextid = next_.get_id()
+            prev = self._get_previous()
+            previd = prev.get_id() if prev else 0
+            next2 = next_._get_next()
+            # Keep all items[id_].get_{next,previous,...} _before_ updates!
+            self.update(group, previous=nextid, description=description)
+            next_.update(group, previous=previd, description=description)
+
+            if next2:
+                next2.update(group, previous=id_, description=description)
+        else:
+            raise exceptions.CannotMoveItemError()
+
+        return True
+
+    def move_to_parent(self, group, description='Move item to parent'):
+        items = self.items
+        filename = self.filename
+        id_ = self.id_
+        parent = self._get_parent()
+
+        if parent:
+            parent2 = parent._get_parent()
+
+            if parent2:
+                parent2id = parent2.get_id()
+                lastchild = parent2._get_children()[-1]
+                lastchildid = lastchild.get_id()
+            else:
+                parent2id = 0
+                lastchildid = self.get_last_child(filename, 0)
+
+            next_ = self._get_next()
+
+            if next_:
                 prev = self._get_previous()
                 previd = prev.get_id() if prev else 0
-                next2 = next_._get_next()
-                # Keep all items[id_].get_{next,previous,...} _before_ updates!
-                self.update(group, previous=nextid, description=description)
-                next_.update(group, previous=previd, description=description)
-                if next2:
-                    next2.update(group, previous=id_, description=description)
-            else:
-                raise exceptions.CannotMoveItemError()
-        elif mode == 'parent':
-            parent = self._get_parent()
-            if parent:
-                parent2 = parent._get_parent()
-                if parent2:
-                    parent2id = parent2.get_id()
-                    lastchild = parent2._get_children()[-1]
-                    lastchildid = lastchild.get_id()
-                else:
-                    parent2id = 0
-                    lastchildid = self.get_last_child(filename, 0)
-                next_ = self._get_next()
-                if next_:
-                    prev = self._get_previous()
-                    previd = prev.get_id() if prev else 0
-                # Keep all items[id_].get_{next,previous,...} _before_ updates!
-                self.update(group, parent=parent2id, previous=lastchildid,
-                            description=description)
-                if next_:
-                    next_.update(group, previous=previd,
+
+            # Keep all items[id_].get_{next,previous,...} _before_ updates!
+            self.update(group, parent=parent2id, previous=lastchildid,
                                                     description=description)
-            else:
-                raise exceptions.CannotMoveItemError()
+
+            if next_:
+                next_.update(group, previous=previd, description=description)
+        else:
+            raise exceptions.CannotMoveItemError()
 
         return True
 
