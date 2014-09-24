@@ -284,7 +284,7 @@ class Database(wx.SplitterWindow):
 
     def _handle_deleted_item(self, kwargs):
         if kwargs['filename'] == self.filename:
-            self.remove_items([kwargs['id_'], ])
+            self._remove_item(kwargs['id_'])
 
     def _handle_history_insert(self, kwargs):
         # Check ***************************************************************************
@@ -343,8 +343,9 @@ class Database(wx.SplitterWindow):
         id_ = kwargs['id_']
 
         if filename == self.filename:
-            # remove_items has changed ****************************************************
-            self.remove_items([id_, ])
+            # The tree item should be cleared explicitly *beforehand* now, see *************
+            # how it's done in the menubar module ******************************************
+            self._remove_item(id_)
 
     @classmethod
     def open(cls, filename):
@@ -384,7 +385,7 @@ class Database(wx.SplitterWindow):
         self.data[id_] = [label, properties]
 
     def find_item(self, id_):
-        # Re-implement if still needed ************************************************************
+        # Gonna be useless **************************************************************
         return self.titems[id_].GetId()
 
     def get_selections(self, none=True, many=True, descendants=None):
@@ -470,14 +471,8 @@ class Database(wx.SplitterWindow):
             self.dvmodel.ItemDeleted(parent, item)
             self.dvmodel.ItemAdded(parent, item)
 
-    def remove_items(self, ids):
-        # ********************************************************************************
-        # All algorithms calling this method should clear the tree items *****************
-        #   *beforehand* now, see how it's done in the menubar module ********************
-        # Remove only 1 item? ************************************************************
-        # Make private? ******************************************************************
-        for id_ in ids:
-            del self.data[id_]
+    def _remove_item(self, id_):
+        del self.data[id_]
 
     def close(self):
         global dbs
@@ -502,13 +497,6 @@ class Database(wx.SplitterWindow):
 
     def get_tree_item(self, id_):
         return self.dvmodel.ObjectToItem(id_)
-
-    def get_item_index(self, treeitem):
-        # Gonna be useless **************************************************************
-        parent = self.get_item_parent(treeitem)
-        siblings = self.get_item_children(parent)
-        index = siblings.index(treeitem)
-        return index
 
     def get_item_previous(self, treeitem):
         # Gonna be useless **************************************************************
