@@ -320,6 +320,8 @@ class Database(object):
         del dbs[self.filename]
 
     def delete_items(self, dids, group, description='Delete items'):
+        # Emit an event for every cycle and manage it in the interface ********************************
+        # The algorithm can be optimized a lot ********************************************************
         while dids:
             for id_ in dids[:]:
                 # First delete the items without children

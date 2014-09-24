@@ -56,7 +56,7 @@ class Item(object):
             parentt = items[baseid]._get_parent()
             parent = parentt.get_id() if parentt else 0
             previous = items[baseid].get_id()
-            updnext = items[baseid].get_next()
+            updnext = items[baseid]._get_next()
 
         qconn = databases.dbs[filename].connection.get()
         cursor = qconn.cursor()
@@ -135,8 +135,8 @@ class Item(object):
                                             description, jhparams, jhunparams)
 
     def delete(self, group, description='Delete item'):
-        prev = self.get_previous()
-        next = self.get_next()
+        prev = self._get_previous()
+        next = self._get_next()
 
         if next:
             if prev:
@@ -181,12 +181,12 @@ class Item(object):
         filename = self.filename
         id_ = self.id_
         if mode == 'up':
-            prev = self.get_previous()
+            prev = self._get_previous()
             if prev:
                 previd = prev.get_id()
-                prev2 = prev.get_previous()
+                prev2 = prev._get_previous()
                 prev2id = prev2.get_id() if prev2 else 0
-                next_ = self.get_next()
+                next_ = self._get_next()
                 # Keep all items[id_].get_{next,previous,...} _before_ updates!
                 self.update(group, previous=prev2id, description=description)
                 prev.update(group, previous=id_, description=description)
@@ -196,12 +196,12 @@ class Item(object):
             else:
                 raise exceptions.CannotMoveItemError()
         elif mode == 'down':
-            next_ = self.get_next()
+            next_ = self._get_next()
             if next_:
                 nextid = next_.get_id()
-                prev = self.get_previous()
+                prev = self._get_previous()
                 previd = prev.get_id() if prev else 0
-                next2 = next_.get_next()
+                next2 = next_._get_next()
                 # Keep all items[id_].get_{next,previous,...} _before_ updates!
                 self.update(group, previous=nextid, description=description)
                 next_.update(group, previous=previd, description=description)
@@ -220,9 +220,9 @@ class Item(object):
                 else:
                     parent2id = 0
                     lastchildid = self._get_last_base_item_id(filename)
-                next_ = self.get_next()
+                next_ = self._get_next()
                 if next_:
-                    prev = self.get_previous()
+                    prev = self._get_previous()
                     previd = prev.get_id() if prev else 0
                 # Keep all items[id_].get_{next,previous,...} _before_ updates!
                 self.update(group, parent=parent2id, previous=lastchildid,
@@ -253,6 +253,8 @@ class Item(object):
         cursor.execute(queries.items_select_id, (self.id_, ))
         self.connection.give(qconn)
         row = cursor.fetchone()
+
+        # Try except *********************************************************************
         if row:
             return {'id_': self.id_,
                     'parent': row['I_parent'],
@@ -268,6 +270,8 @@ class Item(object):
         cursor.execute(queries.items_select_parent_text, (parentid, previd))
         databases.dbs[filename].connection.give(qconn)
         row = cursor.fetchone()
+
+        # Try except *********************************************************************
         if row:
             return {'id_': row['I_id'],
                     'text': row['I_text']}
@@ -275,6 +279,7 @@ class Item(object):
             return False
 
     def get_ancestors(self, ancestors=[]):
+        # Simplify *********************************************************************
         parent = self._get_parent()
 
         if parent:
@@ -284,6 +289,7 @@ class Item(object):
         return ancestors
 
     def get_descendants(self):
+        # Simplify *********************************************************************
         items = self.items
         descendants = []
 
@@ -296,23 +302,27 @@ class Item(object):
         recurse(self.id_)
         return descendants
 
-    def get_previous(self):
+    def _get_previous(self):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_previous, (self.id_, ))
         self.connection.give(qconn)
         pid = cursor.fetchone()
+
+        # Try except *********************************************************************
         if pid['I_previous'] != 0:
             return self.items[pid['I_previous']]
         else:
             return None
 
-    def get_next(self):
+    def _get_next(self):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_next, (self.id_, ))
         self.connection.give(qconn)
         nid = cursor.fetchone()
+
+        # Try except *********************************************************************
         if nid:
             return self.items[nid['I_id']]
         else:
@@ -347,6 +357,7 @@ class Item(object):
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_haschildren, (self.id_, ))
         self.connection.give(qconn)
+
         if cursor.fetchone():
             return True
         else:
@@ -354,6 +365,7 @@ class Item(object):
 
     @staticmethod
     def _get_last_base_item_id(filename):
+        # Simplify *********************************************************************
         qconn =  databases.dbs[filename].connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_id_children, (0, ))
@@ -361,6 +373,7 @@ class Item(object):
 
         ids = set()
         prevs = set()
+
         for row in cursor:
             ids.add(row['I_id'])
             prevs.add(row['I_previous'])
