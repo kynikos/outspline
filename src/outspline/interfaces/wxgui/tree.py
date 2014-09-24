@@ -246,6 +246,8 @@ class Database(wx.SplitterWindow):
                                                         self._popup_item_menu)
 
         core_api.bind_to_update_item(self._handle_update_item)
+        core_api.bind_to_deleting_item(self._handle_deleting_item)
+        core_api.bind_to_deleted_item_2(self._handle_deleted_item)
         core_api.bind_to_history_insert(self._handle_history_insert)
         core_api.bind_to_history_update(self._handle_history_update)
         core_api.bind_to_history_remove(self._handle_history_remove)
@@ -268,6 +270,24 @@ class Database(wx.SplitterWindow):
         # item and not its text
         if kwargs['filename'] == self.filename and kwargs['text'] is not None:
             self.set_item_label(kwargs['id_'], kwargs['text'])
+
+    def _handle_deleting_item(self, kwargs):
+        # Check ***************************************************************************
+        if kwargs['filename'] == self.filename:
+            item = self.get_tree_item(kwargs['id_'])
+            pid = kwargs['parent']
+
+            if pid > 0:
+                parent = self.get_tree_item(pid)
+            else:
+                parent = self.get_root()
+
+            self.dvmodel.ItemDeleted(parent, item)
+
+    def _handle_deleted_item(self, kwargs):
+        # Check ***************************************************************************
+        if kwargs['filename'] == self.filename:
+            self.remove_items([kwargs['id_'], ])
 
     def _handle_history_insert(self, kwargs):
         # Check ***************************************************************************
@@ -433,7 +453,8 @@ class Database(wx.SplitterWindow):
     def remove_items(self, ids):
         # ********************************************************************************
         # All algorithms calling this method should clear the tree items *****************
-        # *beforehand* now ***************************************************************
+        #   *beforehand* now, see how it's done in the menubar module ********************
+        # Remove only 1 item? ************************************************************
         for id_ in ids:
             del self.data[id_]
 

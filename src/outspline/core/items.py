@@ -26,7 +26,9 @@ import exceptions
 
 item_insert_event = Event()
 item_update_event = Event()
+item_deleting_event = Event()
 item_deleted_event = Event()
+item_deleted_2_event = Event()
 
 
 class Item(object):
@@ -126,29 +128,34 @@ class Item(object):
                                             description, jhparams, jhunparams)
 
     def delete(self, group, description='Delete item'):
-        prev = self._get_previous()
-        next = self._get_next()
-
-        if next:
-            if prev:
-                previd = prev.get_id()
-            else:
-                previd = 0
-            next.update(group, previous=previd, description=description)
-
         qconn = self.connection.get()
         cursor = qconn.cursor()
 
         cursor.execute(queries.items_select_id, (self.id_, ))
-        current_values = cursor.fetchone()
+        res = cursor.fetchone()
+        parent = res['I_parent']
+        previous = res['I_previous']
+        text = res['I_text']
 
-        # For the moment it's necessary to pass current_values['I_text'] for
-        # both the redo and undo queries, because it's needed also when a
-        # history action removes an item
-        hparams = current_values['I_text']
-        hunparams = json.dumps((current_values['I_parent'],
-                    current_values['I_previous'], current_values['I_text']),
-                    separators=(',',':'))
+        self.connection.give(qconn)
+
+        # This event must be signalled *before* updating the next item
+        item_deleting_event.signal(filename=self.filename, parent=parent,
+                                                                id_=self.id_)
+
+        next = self._get_next()
+
+        if next:
+            next.update(group, previous=previous, description=description)
+
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+
+        # For the moment it's necessary to pass res['I_text'] for both the redo
+        # and undo queries, because it's needed also when a history action
+        # removes an item
+        hparams = text
+        hunparams = json.dumps((parent, previous, text), separators=(',',':'))
 
         cursor.execute(queries.items_delete_id, (self.id_, ))
 
@@ -161,8 +168,10 @@ class Item(object):
 
         # This event is designed to be signalled _after_ self.remove()
         item_deleted_event.signal(filename=self.filename, id_=self.id_,
-                         hid=cursor.lastrowid, text=current_values['I_text'],
-                         group=group, description=description)
+                                         hid=cursor.lastrowid, text=text,
+                                         group=group, description=description)
+
+        item_deleted_2_event.signal(filename=self.filename, id_=self.id_)
 
     def remove(self):
         del self.items[self.id_]
