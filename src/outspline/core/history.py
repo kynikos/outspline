@@ -249,24 +249,18 @@ class DBHistory(object):
 
     def _do_history_row_insert(self, filename, action, jparams, hid, type_,
                                                                     itemid):
-        params = [itemid, ]
-        params.extend(json.loads(jparams))
+        parent, previous, text = json.loads(jparams)
 
         qconn = self.connection.get()
         cursor = qconn.cursor()
-        cursor.execute(queries.items_insert, params)
-        # Useless query? ***************************************************************
-        cursor.execute(queries.items_select_id, (itemid, ))
-        select = cursor.fetchone()
+        cursor.execute(queries.items_insert, (itemid, parent, previous, text))
         self.connection.give(qconn)
 
         self.items[itemid] = items.Item(self.connection, self, self.items,
                                                         self.filename, itemid)
 
         history_insert_event.signal(filename=self.filename, id_=itemid,
-                                                parent=select['I_parent'],
-                                                previous=select['I_previous'],
-                                                text=select['I_text'], hid=hid)
+                        parent=parent, previous=previous, text=text, hid=hid)
 
     def _do_history_row_update_previous(self, filename, action, jparams, hid,
                                                                 type_, itemid):
