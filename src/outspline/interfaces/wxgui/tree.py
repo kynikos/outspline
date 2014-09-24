@@ -252,6 +252,7 @@ class Database(wx.SplitterWindow):
         if label is None or properties is None or imageindex is None:
             self._init_item_data(id_, text)
             label, properties = self.data[id_]
+            # get_image doesn't exist anymore *******************************************
             imageindex = self.properties.get_image(properties)
         else:
             self.data[id_] = [label, properties]
@@ -570,17 +571,10 @@ class Properties(object):
         # been added with empty strings
         if self.required_size == (0, 0):
             self.get_icon = self._get_icon_dummy
-            self.get_image = self._get_image_dummy
         else:
             self.get_icon = self._get_icon_real
-            self.get_image = self._get_image_real
 
         self.imagelist = wx.ImageList(*self.required_size)
-
-    def get_image(self, bits):
-        # Will become useless ********************************************************
-        # This method is re-assigned dynamically
-        pass
 
     def get_icon(self, bits):
         # This method is re-assigned dynamically
@@ -597,26 +591,10 @@ class Properties(object):
 
         return self.imagelist.GetIcon(imageindex)
 
-    def _get_image_real(self, bits):
-        # Will become useless ********************************************************
-        try:
-            imageindex = self.bits_to_image[bits]
-        except KeyError:
-            bitmap = self._make_image(bits)
-            imageindex = self.imagelist.Add(bitmap)
-            self.bits_to_image[bits] = imageindex
-
-        return imageindex
-
     def _get_icon_dummy(self, bits):
         # Used if no properties have been added
         # Test ****************************************************************************
         return wx.NullIcon
-
-    def _get_image_dummy(self, bits):
-        # Will become useless ********************************************************
-        # If no properties have been added, use the default image index (-1)
-        return -1
 
     def _make_image(self, item_bits):
         bitmap = wx.EmptyBitmap(*self.required_size, depth=32)
