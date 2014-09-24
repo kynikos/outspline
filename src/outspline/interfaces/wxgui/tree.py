@@ -33,28 +33,51 @@ popup_context_menu_event = Event()
 dbs = {}
 
 
+class Item(object):
+    # The DataViewModel needs proper objects; to *not* store simple integers
+    # (e.g. the items' id's) or strings as items' objects
+    def __init__(self, id_, label, properties):
+        self.id_ = id_
+        self.label = label
+        self.properties = properties
+
+    def get_id(self):
+        return self.id_
+
+    def get_label(self):
+        return self.label
+
+    def get_properties(self):
+        return self.properties
+
+    def set_label(self, label):
+        self.label = label
+
+    def set_properties(self, properties):
+        self.properties = properties
+
+
 class Model(dv.PyDataViewModel):
-    def __init__(self, filename):
+    def __init__(self, data, filename):
         super(Model, self).__init__()
+        self.data = data
         self.filename = filename
 
     def IsContainer(self, item):
-        # Always return True regardless? **************************************************
-        if not item:
-            return True
-        else:
-            return core_api.has_item_children(self.filename,
-                                                    self.ItemToObject(item))
+        # Do not test and return core_api.has_item_children because if a child
+        # is added to a previously non-container item, that item should be
+        # updated too
+        return True
 
     def GetParent(self, item):
         if not item:
             return dv.NullDataViewItem
         else:
-            id_ = self.ItemToObject(item)
+            id_ = self.ItemToObject(item).get_id()
             pid = core_api.get_item_parent(self.filename, id_)
 
             if pid > 0:
-                return self.ObjectToItem(pid)
+                return self.ObjectToItem(self.data[pid])
             else:
                 return dv.NullDataViewItem
 
@@ -62,11 +85,11 @@ class Model(dv.PyDataViewModel):
         if not parent:
             ids = core_api.get_root_items(self.filename)
         else:
-            pid = self.ItemToObject(parent)
+            pid = self.ItemToObject(parent).get_id()
             ids = core_api.get_item_children(self.filename, pid)
 
         for id_ in ids:
-            children.append(self.ObjectToItem(id_))
+            children.append(self.ObjectToItem(self.data[id_]))
 
         return len(ids)
 
@@ -86,7 +109,7 @@ class Model(dv.PyDataViewModel):
         return None'''
 
     def GetValue(self, item, col):
-        id_ = self.ItemToObject(item)
+        id_ = self.ItemToObject(item).get_id()
         # For some reason Renderer needs a string *******************************************
         #   https://groups.google.com/forum/#!topic/wxpython-users/F9tqqwOcIFw **************
         return str(id_)
@@ -177,7 +200,6 @@ class Database(wx.SplitterWindow):
         # GetColumnType method
         # Show the natively working shortcuts in the menu, or in comments in ********************
         #   the config file (also for the other DataViewCtrl's) *********************************
-        # Can't add more than 256 items!!!!! ************************************************
         self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
                                             dv.DV_ROW_LINES | dv.DV_NO_HEADER)
 
@@ -220,7 +242,7 @@ class Database(wx.SplitterWindow):
         for row in core_api.get_all_items(self.filename):
             self._init_item_data(row["I_id"], row["I_text"])
 
-        self.dvmodel = Model(self.filename)
+        self.dvmodel = Model(self.data, self.filename)
         self.treec.AssociateModel(self.dvmodel)
         # DataViewModel is reference counted (derives from RefCounter), the
         # count needs to be decreased explicitly here to avoid memory leaks
@@ -373,7 +395,7 @@ class Database(wx.SplitterWindow):
                     self.base_properties.get_item_multiline_state(text, label)
         properties = self._compute_property_bits(0, multiline_bits,
                                                                 multiline_mask)
-        self.data[id_] = [label, properties]
+        self.data[id_] = Item(id_, label, properties)
 
     def get_selections(self, none=True, many=True, descendants=None):
         selection = self.treec.GetSelections()
@@ -474,10 +496,10 @@ class Database(wx.SplitterWindow):
         return dv.NullDataViewItem
 
     def get_item_id(self, item):
-        return self.dvmodel.ItemToObject(item)
+        return self.dvmodel.ItemToObject(item).get_id()
 
     def get_tree_item(self, id_):
-        return self.dvmodel.ObjectToItem(id_)
+        return self.dvmodel.ObjectToItem(self.data[id_])
 
     def get_tree_item_safe(self, id_):
         if id_ > 0:
@@ -490,14 +512,14 @@ class Database(wx.SplitterWindow):
         return text.partition('\n')[0]
 
     def get_item_label(self, id_):
-        return self.data[id_][0]
+        return self.data[id_].get_label()
 
     def get_item_properties(self, id_):
-        return self.properties.get(self.data[id_][1])
+        return self.properties.get(self.data[id_].get_properties())
 
     def set_item_label(self, id_, text):
         label = self._make_item_label(text)
-        self.data[id_][0] = label
+        self.data[id_].set_label(label)
         multiline_bits, multiline_mask = \
                     self.base_properties.get_item_multiline_state(text, label)
         self.update_item_properties(id_, multiline_bits, multiline_mask)
@@ -508,8 +530,8 @@ class Database(wx.SplitterWindow):
         return (old_property_bits & ~property_mask) | new_property_bits
 
     def update_item_properties(self, id_, property_bits, property_mask):
-        self.data[id_][1] = self._compute_property_bits(self.data[id_][1],
-                                                property_bits, property_mask)
+        self.data[id_].set_properties(self._compute_property_bits(
+                self.data[id_].get_properties(), property_bits, property_mask))
 
     def update_tree_item(self, id_):
         self.dvmodel.ItemChanged(self.get_tree_item(id_))
