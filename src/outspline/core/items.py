@@ -298,13 +298,10 @@ class Item(object):
         self.connection.give(qconn)
         row = cursor.fetchone()
 
-        if row:
-            return {'id_': self.id_,
-                    'parent': row['I_parent'],
-                    'previous': row['I_previous'],
-                    'text': row['I_text']}
-        else:
-            return False
+        return {'id_': self.id_,
+                'parent': row['I_parent'],
+                'previous': row['I_previous'],
+                'text': row['I_text']}
 
     def get_ancestors(self):
         ancestors = []
