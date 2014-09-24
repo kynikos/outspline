@@ -161,7 +161,8 @@ class Renderer(dv.PyDataViewCustomRenderer):
             dc.DrawText(data[0], xoffset, rect.GetY() + self.VMARGIN)
             xoffset += self.GetTextExtent(data[0])[0] + self.GAP
 
-        xoffset += self.ADDITIONAL_GAP
+        if self.strdata:
+            xoffset += self.ADDITIONAL_GAP
 
         # Don't use self.RenderText as the official docs would suggest, because
         # it aligns vertically in a weird way
@@ -177,7 +178,6 @@ class Database(wx.SplitterWindow):
     # Addresses #260 ********************************************************************
     # Fixes #334 ************************************************************************
     # Addresses #336 ********************************************************************
-    # Test SetExpanderColumn ************************************************************
     # Check all the upstream bugs now that the new wxPython version has been ************
     #   released ************************************************************************
     def __init__(self, filename):
@@ -202,7 +202,7 @@ class Database(wx.SplitterWindow):
         # Show the natively working shortcuts in the menu, or in comments in ********************
         #   the config file (also for the other DataViewCtrl's) *********************************
         self.treec = dv.DataViewCtrl(self, style=dv.DV_MULTIPLE |
-                                            dv.DV_ROW_LINES | dv.DV_NO_HEADER)
+                                                            dv.DV_NO_HEADER)
 
         # *****************************************************************************
         def test(event):
