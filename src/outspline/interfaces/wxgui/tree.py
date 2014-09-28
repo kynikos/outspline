@@ -538,6 +538,9 @@ class Database(wx.SplitterWindow):
     def remove_item_from_selection(self, id_):
         self.treec.Unselect(self.get_tree_item(id_))
 
+    def focus_database(self):
+        self.treec.SetFocus()
+
     def _popup_item_menu(self, event):
         self.cmenu.update_items()
         popup_context_menu_event.signal(filename=self.filename)

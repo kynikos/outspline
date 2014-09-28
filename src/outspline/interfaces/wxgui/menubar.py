@@ -1137,7 +1137,9 @@ class MenuViewDatabases(wx.Menu):
         tab = wx.GetApp().nb_left.get_selected_tab()
 
         if tab:
-            tab.SetFocus()
+            # Explicitly focus the database, not the whole notebook tab,
+            # otherwise it won't have effect if the logs are focused
+            tab.focus_database()
 
     def _focus1(self, event):
         tab = wx.GetApp().nb_left.select_page(0)
