@@ -128,6 +128,37 @@ class LogsPanel(object):
         self.select_log(newsel)
 
 
+class DatabaseHistoryModel(wx.dataview.PyDataViewIndexListModel):
+    def __init__(self, data):
+        # Using a model is necessary to disable the native "live" search
+        # See bugs #349 and #351
+        super(DatabaseHistoryModel, self).__init__()
+        self.data = data
+
+        # The wxPython demo uses weak references for the item objects: see if
+        # it can be used also in this case (bug #348)
+        #self.objmapper.UseWeakRefs(True)
+
+    def GetValueByRow(self, row, col):
+        return self.data[row][col]
+
+    def GetColumnCount(self):
+        return 4
+
+    def GetCount(self):
+        return len(self.data)
+
+    '''def GetColumnType(self, col):
+        # It seems not needed to override this method, it's not done in the
+        # demos either
+        # Besides, returning "string" here would activate the "live" search
+        # feature that belongs to the native GTK widget used by DataViewCtrl
+        # See also bug #349
+        # https://groups.google.com/d/msg/wxpython-users/QvSesrnD38E/31l8f6AzIhAJ
+        # https://groups.google.com/d/msg/wxpython-users/4nsv7x1DE-s/ljQHl9RTnuEJ
+        return None'''
+
+
 class DatabaseHistory(object):
     def __init__(self, logspanel, parent, filename, bgcolor):
         self.logspanel = logspanel
@@ -137,17 +168,25 @@ class DatabaseHistory(object):
         statusflags = 0 if self.config('History').get_bool('debug') else \
                                                 wx.dataview.DATAVIEW_COL_HIDDEN
 
-        # The native "live" search is still enabled here, see bug #351
-        self.view = wx.dataview.DataViewListCtrl(parent,
+        self.view = wx.dataview.DataViewCtrl(parent,
                         style=wx.dataview.DV_SINGLE |
                         wx.dataview.DV_ROW_LINES | wx.dataview.DV_NO_HEADER)
-        # Note how AppendBitmapColumn requires a second argument, while
-        # AppendTextColumn doesn't
+
+        self.data = []
+        self.dvmodel = DatabaseHistoryModel(self.data)
+        self.view.AssociateModel(self.dvmodel)
+        # According to DataViewModel's documentation (as of September 2014)
+        # its reference count must be decreased explicitly to avoid memory
+        # leaks; the wxPython demo, however, doesn't do it, and if done here,
+        # the application crashes with a segfault when closing all databases
+        # See also bug #104
+        #self.dvmodel.DecRef()
+
         self.view.AppendBitmapColumn('Icon', 0, width=wx.COL_WIDTH_AUTOSIZE)
-        self.view.AppendTextColumn('Status', width=wx.COL_WIDTH_AUTOSIZE,
+        self.view.AppendTextColumn('Status', 1, width=wx.COL_WIDTH_AUTOSIZE,
                                                             flags=statusflags)
-        self.view.AppendTextColumn('Timestamp', width=wx.COL_WIDTH_AUTOSIZE)
-        self.view.AppendTextColumn('Description')
+        self.view.AppendTextColumn('Timestamp', 2, width=wx.COL_WIDTH_AUTOSIZE)
+        self.view.AppendTextColumn('Description', 3)
 
         self._make_icons(bgcolor)
 
@@ -161,8 +200,6 @@ class DatabaseHistory(object):
         self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, popup_cmenu)
         self.view.Bind(wx.dataview.EVT_DATAVIEW_SELECTION_CHANGED,
                                                         self._handle_selection)
-        self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_START_EDITING,
-                                                    self._handle_item_editing)
 
         self.refresh()
 
@@ -235,20 +272,18 @@ class DatabaseHistory(object):
     def _handle_selection(self, event):
         self.view.UnselectAll()
 
-    def _handle_item_editing(self, event):
-        event.Veto()
-
     def refresh(self):
-        self.view.DeleteAllItems()
-
+        del self.data[:]
         descriptions = core_api.get_history_descriptions(self.filename)
 
         for row in descriptions:
             tstamp = time_.strftime('%Y-%m-%d %H:%M', time_.localtime(
                                                             row['H_tstamp']))
-            item = self.view.AppendItem((self.icons[row['H_status']],
+            self.data.append((self.icons[row['H_status']],
                                     "".join(("[", str(row['H_status']), "]")),
                                     tstamp, row['H_description']))
+
+        self.dvmodel.Reset(len(self.data))
 
     def select(self):
         self.logspanel.select_log(self.tool_id)
@@ -279,8 +314,9 @@ class ContextMenu(wx.Menu):
         self._update()
         self.view.PopupMenu(self)
 
-        # Skipping the event lets right clicks behave correctly
-        event.Skip()
+        # Skipping the event would change the current selection after the
+        # click and only select the item under the cursor
+        #event.Skip()
 
     def get_items_and_popup(self):
         return (self.added_items, self._popup)
