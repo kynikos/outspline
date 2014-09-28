@@ -57,6 +57,7 @@ class ArtProvider(wx.ArtProvider):
                     '@edit': ('text-editor', 'accessories-text-editor'),
                     '@edit-filter': ('document-properties', ),
                     '@editortab': ('text-x-generic', ),
+                    '@exit': ('application-exit', ),
                     '@exporttxt': ('document-export', 'gnome-stock-export',
                                    'document-save-as', 'gtk-save-as',
                                    'filesaveas', 'stock_save-as'),

@@ -185,13 +185,19 @@ class TrayMenu(wx.Menu):
     def __init__(self, parent, ID_RESTORE):
         wx.Menu.__init__(self)
 
-        config = coreaux_api.get_plugin_configuration('wxtrayicon')(
-                                                                'Shortcuts')
+        # Don't use wx.ID_EXIT because it assigns a Ctrl+q accelerator
+        # automatically
+        ID_EXIT = wx.NewId()
 
-        self.restore = self.AppendCheckItem(ID_RESTORE, "&Show Outspline")
+        self.restore = wx.MenuItem(self, ID_RESTORE, "&Show Outspline",
+                                                            kind=wx.ITEM_CHECK)
+        self.exit_ = wx.MenuItem(self, ID_EXIT, "E&xit")
+
+        self.exit_.SetBitmap(wx.ArtProvider.GetBitmap('@exit', wx.ART_MENU))
+
+        self.AppendItem(self.restore)
         self.AppendSeparator()
-        self.exit_ = self.Append(wx.ID_EXIT,
-                                            "E&xit\t{}".format(config['exit']))
+        self.AppendItem(self.exit_)
 
         parent.Bind(wx.EVT_MENU, self.toggle_main_window, self.restore)
         parent.Bind(wx.EVT_MENU, self.exit_application, self.exit_)
