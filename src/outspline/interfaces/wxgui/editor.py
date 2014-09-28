@@ -147,6 +147,7 @@ class Editor():
             self.fpbar = FoldPanelBar(self.panel,
                                             agwStyle=foldpanelbar.FPB_VERTICAL)
             self.pbox.Prepend(self.fpbar, flag=wx.EXPAND)
+            self.fpbar.MoveBeforeInTabOrder(self.area.area)
 
             self.cbstyle = CaptionBarStyle(self.panel)
 
