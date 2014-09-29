@@ -68,10 +68,14 @@ class LogsPanel(object):
     def select_log(self, selection):
         old_view = self.logviews[self.selection]
         view = self.logviews[selection]
+        has_focus = old_view.HasFocus()
 
         old_view.Show(False)
         self.box.Replace(old_view, view)
         view.Show()
+
+        if has_focus:
+            view.SetFocus()
 
         self.selection = selection
 
