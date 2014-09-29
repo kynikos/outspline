@@ -30,9 +30,9 @@ class TextHistory(object):
         self.areas = {}
         Menu(self)
 
-        wxgui_api.bind_to_open_textctrl(self._handle_open_textctrl)
+        wxgui_api.bind_to_open_editor(self._handle_open_editor)
 
-    def _handle_open_textctrl(self, kwargs):
+    def _handle_open_editor(self, kwargs):
         self.areas[kwargs['item']] = texthistory.WxTextHistory(
                     wxgui_api.get_textctrl(kwargs['filename'], kwargs['id_']),
                     kwargs['text'], self.config.get_int('max_undos'),

@@ -32,7 +32,6 @@ open_editor_event = Event()
 apply_editor_event = Event()
 check_modified_state_event = Event()
 close_editor_event = Event()
-open_textctrl_event = Event()
 
 config = coreaux_api.get_interface_configuration('wxgui')
 
@@ -113,17 +112,14 @@ class Editor():
         self.panel.SetSizer(self.pbox)
 
     def _post_init(self):
-        filename = self.filename
-        id_ = self.id_
-
-        text = core_api.get_item_text(filename, id_)
+        text = core_api.get_item_text(self.filename, self.id_)
         title = self.make_title(text)
 
         self.area = textarea.TextArea(self.filename, self.id_, self.item, text)
         self.pbox.Add(self.area.area, proportion=1, flag=wx.EXPAND)
 
-        open_textctrl_event.signal(filename=filename, id_=id_, item=self.item,
-                                   text=text)
+        open_editor_event.signal(filename=self.filename, id_=self.id_,
+                                                    item=self.item, text=text)
 
         nb = wx.GetApp().nb_right
         nb.add_page(self.panel, title, self.close, select=True,
@@ -137,7 +133,6 @@ class Editor():
         if item not in tabs:
             tabs[item] = cls(filename, id_, item)
             tabs[item]._post_init()
-            open_editor_event.signal(filename=filename, id_=id_, item=item)
         else:
             tabid = wx.GetApp().nb_right.GetPageIndex(tabs[item].panel)
             wx.GetApp().nb_right.SetSelection(tabid)

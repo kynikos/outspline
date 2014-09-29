@@ -106,10 +106,6 @@ def bind_to_close_editor(handler, bind=True):
     return editor.close_editor_event.bind(handler, bind)
 
 
-def bind_to_open_textctrl(handler, bind=True):
-    return editor.open_textctrl_event.bind(handler, bind)
-
-
 def simulate_replace_editor_text(text):
     tab = wx.GetApp().nb_right.get_selected_editor()
     if tab:
