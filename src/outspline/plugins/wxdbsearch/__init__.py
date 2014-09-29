@@ -52,15 +52,7 @@ class SearchViewPanel(wx.Panel):
         return self.ctabmenu
 
 
-class SearchView():
-    panel = None
-    box = None
-    filters = None
-    results = None
-    threads = None
-    search_threaded_action = None
-    finish_search_action = None
-
+class SearchView(object):
     def __init__(self, parent):
         self.panel = SearchViewPanel(parent)
         self.box = wx.BoxSizer(wx.VERTICAL)
@@ -78,8 +70,8 @@ class SearchView():
         self.box.Add(self.filters.box, flag=wx.EXPAND | wx.BOTTOM, border=4)
         self.box.Add(self.results.listview, 1, flag=wx.EXPAND)
 
-        wxgui_api.bind_to_close_database(self.handle_close_database)
-        wxgui_api.bind_to_plugin_close_event(self.handle_tab_hide)
+        wxgui_api.bind_to_close_database(self._handle_close_database)
+        wxgui_api.bind_to_plugin_close_event(self._handle_tab_hide)
 
     @classmethod
     def open_(cls):
@@ -94,33 +86,33 @@ class SearchView():
 
     def close_(self):
         self.finish_search_action = self._finish_search_close
-        self.stop_search()
+        self._stop_search()
 
-    def handle_tab_hide(self, kwargs):
+    def _handle_tab_hide(self, kwargs):
         if kwargs['page'] is self.panel:
             self.close_()
 
-    def handle_close_database(self, kwargs):
+    def _handle_close_database(self, kwargs):
         if core_api.get_databases_count() < 1:
             self.close_()
 
-    def set_title(self, title):
+    def _set_title(self, title):
         if len(title) > 20:
             title = title[:17] + '...'
 
         wxgui_api.set_right_nb_page_title(self.panel, title)
 
-    def set_tab_icon_stopped(self):
+    def _set_tab_icon_stopped(self):
         wxgui_api.set_right_nb_page_image(self.panel, nb_icon_index)
 
-    def set_tab_icon_ongoing(self):
+    def _set_tab_icon_ongoing(self):
         wxgui_api.set_right_nb_page_image(self.panel, nb_icon_refresh_index)
 
     def search(self):
         self.finish_search_action = self._finish_search_restart
-        self.stop_search()
+        self._stop_search()
 
-    def stop_search(self):
+    def _stop_search(self):
         if self.threads > 0:
             self.search_threaded_action = self._search_threaded_stop
         else:
@@ -135,7 +127,7 @@ class SearchView():
         if self.threads < 1:
             # Reset the icon *before* calling finish_search_action, which
             # could be set to restart, thus setting the icon ongoing again
-            self.set_tab_icon_stopped()
+            self._set_tab_icon_stopped()
             self.finish_search_action()
 
     def _finish_search_dummy(self):
@@ -151,16 +143,16 @@ class SearchView():
         # searches when closing all databases (e.g. when quitting the
         # application) raising an exception when trying to remove self from
         # the searches list
-        wxgui_api.bind_to_close_database(self.handle_close_database, False)
-        wxgui_api.bind_to_plugin_close_event(self.handle_tab_hide, False)
+        wxgui_api.bind_to_close_database(self._handle_close_database, False)
+        wxgui_api.bind_to_plugin_close_event(self._handle_tab_hide, False)
 
         self.finish_search_action = self._finish_search_dummy
 
     def _finish_search_restart(self):
-        self.set_tab_icon_ongoing()
+        self._set_tab_icon_ongoing()
 
         string = self.filters.text.GetValue()
-        self.set_title(string)
+        self._set_title(string)
 
         if not self.filters.option4.GetValue():
             string = re.escape(string)
@@ -333,18 +325,7 @@ class SearchView():
         return (line, line_end)
 
 
-class SearchFilters():
-    mainview = None
-    box = None
-    text = None
-    search = None
-    ogrid = None
-    option1 = None
-    option2 = None
-    option3 = None
-    option4 = None
-    option5 = None
-
+class SearchFilters(object):
     def __init__(self, mainview):
         self.mainview = mainview
 
@@ -423,13 +404,7 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
                                             self.imagemap['small']['sortdown'])
 
 
-class SearchResults():
-    mainview = None
-    listview = None
-    cmenu = None
-    datamap = None
-    itemdatamap = None
-
+class SearchResults(object):
     def __init__(self, mainview):
         self.mainview = mainview
         self.listview = ListView(mainview.panel, 3)
@@ -440,9 +415,9 @@ class SearchResults():
 
         self.cmenu = ContextMenu()
 
-        self.listview.Bind(wx.EVT_CONTEXT_MENU, self.popup_context_menu)
+        self.listview.Bind(wx.EVT_CONTEXT_MENU, self._popup_context_menu)
 
-    def popup_context_menu(self, event):
+    def _popup_context_menu(self, event):
         self.listview.PopupMenu(self.cmenu)
 
     def reset(self):
