@@ -49,6 +49,8 @@ class MainMenu(wx.Menu):
         self.ID_EXPORT = wx.NewId()
 
         self.navigator_submenu = NavigatorMenu(tasklist)
+        self.snooze_selected_submenu = SnoozeSelectedConfigMenu(tasklist)
+        self.snooze_all_submenu = SnoozeAllConfigMenu(tasklist)
         self.export_submenu = ExportMenu(tasklist)
 
         config = coreaux_api.get_plugin_configuration('wxtasklist')(
@@ -69,11 +71,11 @@ class MainMenu(wx.Menu):
                 "to the selected events")
 
         self.snooze = wx.MenuItem(self, self.ID_SNOOZE, "&Snooze selected",
-                            "Snooze the selected alarms",
-                            subMenu=SnoozeSelectedConfigMenu(self.tasklist))
+                                        "Snooze the selected alarms",
+                                        subMenu=self.snooze_selected_submenu)
         self.snooze_all = wx.MenuItem(self, self.ID_SNOOZE_ALL,
                                 "S&nooze all", "Snooze all the active alarms",
-                                subMenu=SnoozeAllConfigMenu(self.tasklist))
+                                subMenu=self.snooze_all_submenu)
 
         self.dismiss = wx.MenuItem(self, self.ID_DISMISS,
                                         "&Dismiss selected\t{}".format(
@@ -628,6 +630,7 @@ class TabContextMenu(wx.Menu):
 
         self.navigator_submenu = TabContextNavigatorMenu(tasklist)
         self.alarms_submenu = TabContextAlarmsMenu(tasklist)
+        self.snooze_all_submenu = SnoozeAllConfigMenu(tasklist)
         self.export_submenu = TabContextExportMenu(tasklist)
 
         self.show = wx.MenuItem(self, self.tasklist.viewmenu.ID_SHOW,
@@ -648,8 +651,8 @@ class TabContextMenu(wx.Menu):
                                         "Enable a&uto-scroll",
                                         kind=wx.ITEM_CHECK)
         self.snooze_all = wx.MenuItem(self,
-                        self.tasklist.mainmenu.ID_SNOOZE_ALL, "S&nooze all",
-                        subMenu=SnoozeAllConfigMenu(self.tasklist))
+                                self.tasklist.mainmenu.ID_SNOOZE_ALL,
+                                "S&nooze all", subMenu=self.snooze_all_submenu)
         self.dismiss_all = wx.MenuItem(self,
                         self.tasklist.mainmenu.ID_DISMISS_ALL, "Dis&miss all")
         self.export = wx.MenuItem(self, self.tasklist.mainmenu.ID_EXPORT,
@@ -801,13 +804,15 @@ class ListContextMenu(wx.Menu):
         self.occview = tasklist.list_
         self.mainmenu = mainmenu
 
+        self.snooze_selected_submenu = SnoozeSelectedConfigMenu(tasklist,
+                                                            accelerator=False)
+
         self.find = wx.MenuItem(self, self.mainmenu.ID_FIND,
                                                         "&Find in database")
         self.edit = wx.MenuItem(self, self.mainmenu.ID_EDIT, "&Edit selected")
         self.snooze = wx.MenuItem(self, self.mainmenu.ID_SNOOZE,
-                                            "&Snooze selected",
-                                            subMenu=SnoozeSelectedConfigMenu(
-                                            self.tasklist, accelerator=False))
+                                        "&Snooze selected",
+                                        subMenu=self.snooze_selected_submenu)
         self.dismiss = wx.MenuItem(self, self.mainmenu.ID_DISMISS,
                                                            "&Dismiss selected")
 
@@ -858,6 +863,7 @@ class _SnoozeConfigMenu(wx.Menu):
         wx.Menu.__init__(self)
         self.tasklist = tasklist
         self.snoozetimes = {}
+        self.ID_SNOOZE_FOR = wx.NewId()
 
         # Using a set here to remove any duplicates would lose the order of
         # the times
@@ -865,17 +871,18 @@ class _SnoozeConfigMenu(wx.Menu):
                                                      'snooze_times'].split(' ')
 
         for stime in snooze_times:
+            ID_SNOOZE_FOR_N = wx.NewId()
             time = int(stime) * 60
             number, unit = TimeSpanCtrl.compute_widget_values(time)
             # Duplicate time values are not supported, just make sure they
             # don't crash the application
-            self.snoozetimes[time] = self.Append(wx.NewId(), "For " +
+            self.snoozetimes[time] = self.Append(ID_SNOOZE_FOR_N, "For " +
                                                       str(number) + ' ' + unit)
             wxgui_api.bind_to_menu(self._snooze_for_loop(time),
                                                         self.snoozetimes[time])
 
         self.AppendSeparator()
-        self.snoozefor = self.Append(wx.NewId(), "&For...")
+        self.snoozefor = self.Append(self.ID_SNOOZE_FOR, "&For...")
 
         wxgui_api.bind_to_menu(self._snooze_for_custom, self.snoozefor)
 
