@@ -1021,7 +1021,7 @@ class MenuViewDatabases(wx.Menu):
         self.ID_FOCUS_7 = wx.NewId()
         self.ID_FOCUS_8 = wx.NewId()
         self.ID_FOCUS_9 = wx.NewId()
-        self.ID_FOCUS_10 = wx.NewId()
+        self.ID_FOCUS_LAST = wx.NewId()
 
         config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
                                                     'View')('Databases')
@@ -1063,10 +1063,10 @@ class MenuViewDatabases(wx.Menu):
             wx.MenuItem(self, self.ID_FOCUS_9,
                         "Focus &9th database\t{}".format(config['focus_9']),
                         "Set focus on the ninth database"),
-            wx.MenuItem(self, self.ID_FOCUS_10,
-                        "Focus 1&0th database\t{}".format(config['focus_10']),
-                        "Set focus on the tenth database"),
         )
+        self.focus_last = wx.MenuItem(self, self.ID_FOCUS_LAST,
+                        "Focus last database\t{}".format(config['focus_last']),
+                        "Set focus on the last database")
 
         self.cycle.SetBitmap(wx.ArtProvider.GetBitmap('@right', wx.ART_MENU))
         self.rcycle.SetBitmap(wx.ArtProvider.GetBitmap('@left', wx.ART_MENU))
@@ -1080,6 +1080,8 @@ class MenuViewDatabases(wx.Menu):
         for focus in self.focusN:
             self.AppendItem(focus)
 
+        self.AppendItem(self.focus_last)
+
         wx.GetApp().Bind(wx.EVT_MENU, self._cycle, self.cycle)
         wx.GetApp().Bind(wx.EVT_MENU, self._rcycle, self.rcycle)
         wx.GetApp().Bind(wx.EVT_MENU, self._focus, self.focus)
@@ -1092,7 +1094,7 @@ class MenuViewDatabases(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self._focus7, self.focusN[6])
         wx.GetApp().Bind(wx.EVT_MENU, self._focus8, self.focusN[7])
         wx.GetApp().Bind(wx.EVT_MENU, self._focus9, self.focusN[8])
-        wx.GetApp().Bind(wx.EVT_MENU, self._focus10, self.focusN[9])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus_last, self.focus_last)
 
     def update_items(self):
         ndb = len(databases.get_open_databases())
@@ -1101,10 +1103,11 @@ class MenuViewDatabases(wx.Menu):
             self.cycle.Enable(False)
             self.rcycle.Enable(False)
             self.focus.Enable(False)
+            self.focus_last.Enable(False)
 
-        # If there are more than 9 open databases, xrange will always be an
+        # If there are more than 8 open databases, xrange will always be an
         # empty iterator
-        for N in xrange(ndb, 10):
+        for N in xrange(ndb, 9):
             self.focusN[N].Enable(False)
 
     def reset_items(self):
@@ -1113,6 +1116,7 @@ class MenuViewDatabases(wx.Menu):
         self.cycle.Enable()
         self.rcycle.Enable()
         self.focus.Enable()
+        self.focus_last.Enable()
 
         for focus in self.focusN:
             focus.Enable()
@@ -1158,8 +1162,8 @@ class MenuViewDatabases(wx.Menu):
     def _focus9(self, event):
         tab = wx.GetApp().nb_left.select_page(8)
 
-    def _focus10(self, event):
-        tab = wx.GetApp().nb_left.select_page(9)
+    def _focus_last(self, event):
+        tab = wx.GetApp().nb_left.select_last_page()
 
 
 class MenuViewLogs(wx.Menu):
@@ -1307,7 +1311,7 @@ class MenuViewRightNB(wx.Menu):
         self.ID_FOCUS_7 = wx.NewId()
         self.ID_FOCUS_8 = wx.NewId()
         self.ID_FOCUS_9 = wx.NewId()
-        self.ID_FOCUS_10 = wx.NewId()
+        self.ID_FOCUS_LAST = wx.NewId()
 
         config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
                                                 'View')('RightNotebook')
@@ -1352,10 +1356,10 @@ class MenuViewRightNB(wx.Menu):
             wx.MenuItem(self, self.ID_FOCUS_9,
                             "Focus &9th tab\t{}".format(config['focus_9']),
                             "Set focus on the ninth right-pane tab"),
-            wx.MenuItem(self, self.ID_FOCUS_10,
-                            "Focus 1&0th tab\t{}".format(config['focus_10']),
-                            "Set focus on the tenth right-pane tab"),
         )
+        self.focus_last = wx.MenuItem(self, self.ID_FOCUS_LAST,
+                            "Focus last tab\t{}".format(config['focus_last']),
+                            "Set focus on the last right-pane tab")
 
         self.cycle.SetBitmap(wx.ArtProvider.GetBitmap('@right', wx.ART_MENU))
         self.rcycle.SetBitmap(wx.ArtProvider.GetBitmap('@left', wx.ART_MENU))
@@ -1371,6 +1375,8 @@ class MenuViewRightNB(wx.Menu):
         for focus in self.focusN:
             self.AppendItem(focus)
 
+        self.AppendItem(self.focus_last)
+
         wx.GetApp().Bind(wx.EVT_MENU, self._cycle, self.cycle)
         wx.GetApp().Bind(wx.EVT_MENU, self._rcycle, self.rcycle)
         wx.GetApp().Bind(wx.EVT_MENU, self._focus, self.focus)
@@ -1384,7 +1390,7 @@ class MenuViewRightNB(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self._focus7, self.focusN[6])
         wx.GetApp().Bind(wx.EVT_MENU, self._focus8, self.focusN[7])
         wx.GetApp().Bind(wx.EVT_MENU, self._focus9, self.focusN[8])
-        wx.GetApp().Bind(wx.EVT_MENU, self._focus10, self.focusN[9])
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus_last, self.focus_last)
 
     def update_items(self):
         ntabs = wx.GetApp().nb_right.get_page_count()
@@ -1394,10 +1400,11 @@ class MenuViewRightNB(wx.Menu):
             self.rcycle.Enable(False)
             self.focus.Enable(False)
             self.close.Enable(False)
+            self.focus_last.Enable(False)
 
-        # If there are more than 9 open tabs, xrange will always be an empty
+        # If there are more than 8 open tabs, xrange will always be an empty
         # iterator
-        for N in xrange(ntabs, 10):
+        for N in xrange(ntabs, 9):
             self.focusN[N].Enable(False)
 
     def reset_items(self):
@@ -1407,6 +1414,7 @@ class MenuViewRightNB(wx.Menu):
         self.rcycle.Enable()
         self.focus.Enable()
         self.close.Enable()
+        self.focus_last.Enable()
 
         for focus in self.focusN:
             focus.Enable()
@@ -1456,8 +1464,8 @@ class MenuViewRightNB(wx.Menu):
     def _focus9(self, event):
         tab = wx.GetApp().nb_right.select_page(8)
 
-    def _focus10(self, event):
-        tab = wx.GetApp().nb_right.select_page(9)
+    def _focus_last(self, event):
+        tab = wx.GetApp().nb_right.select_last_page()
 
 
 class MenuViewEditors(wx.Menu):

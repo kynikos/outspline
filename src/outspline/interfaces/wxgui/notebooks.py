@@ -94,6 +94,9 @@ class Notebook(FlatNotebook):
     def select_page(self, index):
         self.SetSelection(index)
 
+    def select_last_page(self):
+        self.SetSelection(self.GetPageCount() - 1)
+
     def get_selected_tab_index(self):
         # Returns -1 if there's no tab
         return self.GetSelection()
