@@ -39,7 +39,6 @@ menu_view_update_event = Event()
 menu_view_logs_disable_event = Event()
 menu_view_logs_update_event = Event()
 menu_view_editors_disable_event = Event()
-menu_view_editors_update_event = Event()
 undo_tree_event = Event()
 redo_tree_event = Event()
 delete_items_event = Event()
@@ -73,8 +72,6 @@ class RootMenu(wx.MenuBar):
 
     def post_init(self):
         config = coreaux_api.get_interface_configuration('wxgui')
-
-        self.view.post_init()
 
         if config.get_bool('autohide_menubar'):
             self._configure_autohide()
@@ -965,7 +962,7 @@ class MenuView(wx.Menu):
                         "&Right notebook", "Right notebook navigation actions",
                         subMenu=self.rightnb_submenu)
         self.editors = wx.MenuItem(self, self.ID_EDITORS,
-                        "&Editor plugins", "Editor plugins navigation actions",
+                        "&Editor", "Selected editor navigation actions",
                         subMenu=self.editors_submenu)
 
         self.databases.SetBitmap(wx.ArtProvider.GetBitmap('@left',
@@ -981,19 +978,11 @@ class MenuView(wx.Menu):
         self.AppendItem(self.rightnb)
         self.AppendItem(self.editors)
 
-    def post_init(self):
-        if self.editors_submenu.GetMenuItemCount() < 1:
-            self.DestroyItem(self.editors)
-            self.editors = None
-            self.editors_submenu = None
-
     def update_items(self):
         self.databases_submenu.update_items()
         self.logs_submenu.update_items()
         self.rightnb_submenu.update_items()
-
-        if self.editors:
-            self.editors_submenu.update_items()
+        self.editors_submenu.update_items()
 
         menu_view_update_event.signal()
 
@@ -1003,6 +992,7 @@ class MenuView(wx.Menu):
         self.databases_submenu.reset_items()
         self.logs_submenu.reset_items()
         self.rightnb_submenu.reset_items()
+        self.editors_submenu.reset_items()
 
     def insert_tab_group(self, menu):
         self.InsertItem(5, menu)
@@ -1474,14 +1464,45 @@ class MenuViewEditors(wx.Menu):
     def __init__(self):
         wx.Menu.__init__(self)
 
+        self.has_plugin_items = False
+
+        self.ID_FOCUS_TEXT = wx.NewId()
+
+        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
+                                                            'View')('Editors')
+
+        self.text = wx.MenuItem(self, self.ID_FOCUS_TEXT,
+                    "Focus &text area\t{}".format(config['focus_text_area']),
+                    "Focus the editor's text area")
+
+        self.text.SetBitmap(wx.ArtProvider.GetBitmap('@focus', wx.ART_MENU))
+
+        self.AppendItem(self.text)
+
+        wx.GetApp().Bind(wx.EVT_MENU, self._focus_text_area, self.text)
+
     def update_items(self):
-        if editor.tabs:
-            menu_view_editors_update_event.signal()
-        else:
+        if not wx.GetApp().nb_right.get_selected_editor():
+            self.text.Enable(False)
             menu_view_editors_disable_event.signal()
 
+    def reset_items(self):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.text.Enable()
+
     def append_plugin_item(self, item):
+        if not self.has_plugin_items:
+            self.AppendSeparator()
+            self.has_plugin_items = True
+
         self.AppendItem(item)
+
+    def _focus_text_area(self, event):
+        tab = wx.GetApp().nb_right.get_selected_editor()
+
+        if tab:
+            editor.tabs[tab].focus_text()
 
 
 class MenuHelp(wx.Menu):

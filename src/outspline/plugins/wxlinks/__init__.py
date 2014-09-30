@@ -99,8 +99,7 @@ class LinkManager(object):
         wxgui_api.expand_panel(self.filename, self.id_, self.fpanel)
 
         if not self.target:
-            wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel,
-                                                            focus_text=False)
+            wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel)
 
         wxgui_api.bind_to_apply_editor(self._handle_apply)
         wxgui_api.bind_to_check_editor_modified_state(

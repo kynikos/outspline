@@ -65,13 +65,10 @@ def add_window_to_plugin(filename, id_, fpanel, window):
                        ].add_plugin_window(fpanel, window)
 
 
-def collapse_panel(filename, id_, fpanel, focus_text=True):
+def collapse_panel(filename, id_, fpanel):
     tab = editor.tabs[editor.Editor.make_tabid(filename, id_)]
     tab.collapse_panel(fpanel)
     tab.resize_fpb()
-
-    if focus_text:
-        tab.focus_text()
 
 
 def expand_panel(filename, id_, fpanel):
@@ -80,9 +77,9 @@ def expand_panel(filename, id_, fpanel):
     tab.resize_fpb()
 
 
-def toggle_panel(filename, id_, fpanel, focus_text=True):
+def toggle_panel(filename, id_, fpanel):
     if fpanel.IsExpanded():
-        collapse_panel(filename, id_, fpanel, focus_text=focus_text)
+        collapse_panel(filename, id_, fpanel)
         return False
     else:
         expand_panel(filename, id_, fpanel)
@@ -244,10 +241,6 @@ def bind_to_menu_view_logs_update(handler, bind=True):
 
 def bind_to_menu_view_editors_disable(handler, bind=True):
     return menubar.menu_view_editors_disable_event.bind(handler, bind)
-
-
-def bind_to_menu_view_editors_update(handler, bind=True):
-    return menubar.menu_view_editors_update_event.bind(handler, bind)
 
 
 def bind_to_open_database(handler, bind=True):

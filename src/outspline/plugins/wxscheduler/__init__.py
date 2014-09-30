@@ -98,7 +98,7 @@ class Scheduler():
         self.id_ = id_
 
         self.fpanel = wxgui_api.add_plugin_to_editor(filename, id_,
-                                                            'Schedule rules')
+                                                                'Scheduler')
 
     def post_init(self):
         self.panel = wx.Panel(self.fpanel)
@@ -119,8 +119,7 @@ class Scheduler():
 
         # Must be done *after* resizing
         if not self.rule_list.rules:
-            wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel,
-                                                            focus_text=False)
+            wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel)
 
     def resize(self):
         # This is necessary for letting the fold panel adapt to the variable
@@ -560,13 +559,15 @@ class ViewMenu(object):
                                                                 'Shortcuts')
 
         self.main = wx.MenuItem(wxgui_api.get_menu_view_editors(),
-                        self.ID_MAIN,
-                        '&Rules editor', 'Rules editor navigation actions',
-                        subMenu=submenu)
+                                self.ID_MAIN,
+                                '&Scheduler', 'Scheduler navigation actions',
+                                subMenu=submenu)
         self.focus = wx.MenuItem(submenu, self.ID_FOCUS,
-                    "&Focus\t{}".format(config['focus']), "Focus rules panel")
+                                        "&Focus\t{}".format(config['focus']),
+                                        "Focus scheduler panel")
         self.toggle = wx.MenuItem(submenu, self.ID_TOGGLE,
-                "&Toggle\t{}".format(config['toggle']), "Toggle rules panel")
+                                        "&Toggle\t{}".format(config['toggle']),
+                                        "Toggle scheduler panel")
 
         self.main.SetBitmap(wx.ArtProvider.GetBitmap('@tasklist', wx.ART_MENU))
         self.focus.SetBitmap(wx.ArtProvider.GetBitmap('@focus', wx.ART_MENU))
