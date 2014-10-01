@@ -36,7 +36,7 @@ class TextArea(object):
         self.mtimer = None
         self.tmrunning = False
         config = coreaux_api.get_interface_configuration('wxgui')
-        self.DELAY = config.get_int('min_text_upd_time')
+        self.DELAY = config.get_int('text_min_upd_time')
 
         # Do not set the text now, otherwise for example URLs won't be
         # highlighted in blue
@@ -53,13 +53,13 @@ class TextArea(object):
         # correctly highlighted in blue
         self.area.SetValue(text)
 
-        self.area.Bind(wx.EVT_TEXT, self._on_text)
+        self.area.Bind(wx.EVT_TEXT, self._handle_text)
         editor.apply_editor_event.bind(self._handle_apply)
         editor.check_modified_state_event.bind(
                                             self._handle_check_editor_modified)
         editor.close_editor_event.bind(self._handle_close)
 
-    def _on_text(self, event):
+    def _handle_text(self, event):
         if not (self.tmrunning):
             # Always set modified when (re)starting the timer, in fact it's not
             # possible that the textarea can be unmodified, except for the
