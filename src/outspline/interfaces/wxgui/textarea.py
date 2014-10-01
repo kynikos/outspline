@@ -40,9 +40,9 @@ class TextArea(object):
 
         # Do not set the text now, otherwise for example URLs won't be
         # highlighted in blue
+        # wx.TE_PROCESS_TAB seems to have no effect...
         self.area = TextUrlCtrl(editor.tabs[item].panel, value='',
-                                    style=wx.TE_PROCESS_TAB | wx.TE_MULTILINE |
-                                    wx.TE_NOHIDESEL | wx.TE_DONTWRAP)
+                    style=wx.TE_MULTILINE | wx.TE_DONTWRAP | wx.TE_NOHIDESEL)
 
         font = self.area.GetFont()
         font = wx.Font(font.GetPointSize(), wx.FONTFAMILY_TELETYPE,
@@ -53,11 +53,39 @@ class TextArea(object):
         # correctly highlighted in blue
         self.area.SetValue(text)
 
+        self.area.Bind(wx.EVT_KEY_DOWN, self._handle_esc_down)
+
+        # wx.TE_PROCESS_TAB seems to have no effect...
+        if not config.get_bool('text_process_tab'):
+            # Note that this natively still lets Ctrl+(Shift+)Tab navigate as
+            # expected
+            self.area.Bind(wx.EVT_KEY_DOWN, self._handle_tab_down)
+
         self.area.Bind(wx.EVT_TEXT, self._handle_text)
         editor.apply_editor_event.bind(self._handle_apply)
         editor.check_modified_state_event.bind(
                                             self._handle_check_editor_modified)
         editor.close_editor_event.bind(self._handle_close)
+
+    def _handle_esc_down(self, event):
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self.area.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
+            # Don't skip the event
+        else:
+            event.Skip()
+
+    def _handle_tab_down(self, event):
+        # Note that this natively still lets Ctrl+(Shift+)Tab navigate as
+        # expected
+        if event.GetKeyCode() == wx.WXK_TAB:
+            if event.ShiftDown():
+                self.area.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
+                # Don't skip the event
+            else:
+                self.area.Navigate(flags=wx.NavigationKeyEvent.IsForward)
+                # Don't skip the event
+        else:
+            event.Skip()
 
     def _handle_text(self, event):
         if not (self.tmrunning):
