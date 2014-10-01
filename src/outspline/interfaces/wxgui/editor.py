@@ -57,9 +57,9 @@ class EditorPanel(wx.Panel):
 
 
 class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
-    def __init__(self, panel):
-        foldpanelbar.CaptionBarStyle.__init__(self)
-
+    @staticmethod
+    def compute_colors(panel):
+        fgcolour = panel.GetForegroundColour()
         bgcolour = panel.GetBackgroundColour()
 
         avg = (bgcolour.Red() + bgcolour.Green() + bgcolour.Blue()) // 3
@@ -83,10 +83,26 @@ class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
                                         min((bgcolour.Green() + DIFF1, 255)),
                                         min((bgcolour.Blue() + DIFF1, 255)))
 
-        self.SetCaptionStyle(foldpanelbar.CAPTIONBAR_GRADIENT_V)
+        colourfocused = wx.Colour()
+        colourfocused.SetFromString(config["plugin_focus_color"])
+
+        return (colourtop, colourbottom, colourfocused, fgcolour)
+
+    def __init__(self, style, colourtop, colourbottom, fgcolour):
+        super(CaptionBarStyle, self).__init__()
+        self.SetCaptionStyle(style)
         self.SetFirstColour(colourtop)
         self.SetSecondColour(colourbottom)
-        self.SetCaptionColour(panel.GetForegroundColour())
+        self.SetCaptionColour(fgcolour)
+
+    @classmethod
+    def create_normal(cls, colourtop, colourbottom, fgcolour):
+        return cls(foldpanelbar.CAPTIONBAR_GRADIENT_V, colourtop, colourbottom,
+                                                                    fgcolour)
+
+    @classmethod
+    def create_focused(cls, colour, fgcolour):
+        return cls(foldpanelbar.CAPTIONBAR_SINGLE, colour, colour, fgcolour)
 
 
 class Editor():
@@ -144,14 +160,21 @@ class Editor():
             self.pbox.Prepend(self.fpbar, flag=wx.EXPAND)
             self.fpbar.MoveBeforeInTabOrder(self.area.area)
 
-            self.cbstyle = CaptionBarStyle(self.panel)
+            colourtop, colourbottom, colourfocused, fgcolour = \
+                                    CaptionBarStyle.compute_colors(self.panel)
+            self.cbstyles = (
+                CaptionBarStyle.create_normal(colourtop, colourbottom,
+                                                                    fgcolour),
+                CaptionBarStyle.create_focused(colourfocused, fgcolour),
+            )
 
             self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED,
                             self.handle_collapsiblepane)
             self.fpbar.Bind(foldpanelbar.EVT_CAPTIONBAR,
                             self.handle_captionbar)
 
-        fpanel = self.fpbar.AddFoldPanel(caption=caption, cbstyle=self.cbstyle)
+        fpanel = self.fpbar.AddFoldPanel(caption=caption,
+                                                    cbstyle=self.cbstyles[0])
 
         captionbar = self.get_captionbar(fpanel)
         self.captionbars.append(captionbar)
@@ -160,6 +183,8 @@ class Editor():
                                         self.void_default_captionbar_behaviour)
         captionbar.Bind(wx.EVT_LEFT_DOWN, self.handle_mouse_click)
         captionbar.Bind(wx.EVT_KEY_DOWN, self._handle_key_down)
+        captionbar.Bind(wx.EVT_SET_FOCUS, self._handle_set_focus)
+        captionbar.Bind(wx.EVT_KILL_FOCUS, self._handle_kill_focus)
 
         return fpanel
 
@@ -193,6 +218,14 @@ class Editor():
             # Don't skip the event
         else:
             event.Skip()
+
+    def _handle_set_focus(self, event):
+        event.GetEventObject().SetCaptionStyle(self.cbstyles[1])
+        event.Skip()
+
+    def _handle_kill_focus(self, event):
+        event.GetEventObject().SetCaptionStyle(self.cbstyles[0])
+        event.Skip()
 
     def get_captionbar(self, fpanel):
         try:
