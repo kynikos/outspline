@@ -127,9 +127,33 @@ class DatabaseProperties(object):
 
         self.onchange_actions = {}
 
+        # Temporary fix for bug #331
+        self.propgrid.Bind(wx.EVT_KEY_DOWN, self._handle_esc_down)
+        # Temporary fix for bug #331
+        self.propgrid.Bind(wx.EVT_KEY_DOWN, self._handle_tab_down)
         self.propgrid.Bind(wxpg.EVT_PG_CHANGED, self._handle_property_changed)
 
         notebooks.plugin_close_event.bind(self._handle_close_tab)
+
+    def _handle_esc_down(self, event):
+        # Temporary fix for bug #331
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self.propgrid.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
+            # Don't skip the event
+        else:
+            event.Skip()
+
+    def _handle_tab_down(self, event):
+        # Temporary fix for bug #331
+        if event.GetKeyCode() == wx.WXK_TAB and event.ControlDown():
+            if event.ShiftDown():
+                self.propgrid.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
+                # Don't skip the event
+            else:
+                self.propgrid.Navigate(flags=wx.NavigationKeyEvent.IsForward)
+                # Don't skip the event
+        else:
+            event.Skip()
 
     def _handle_property_changed(self, event):
         property_ = event.GetProperty()
