@@ -400,8 +400,12 @@ class RuleEditor():
         button_cancel = wx.Button(self.panel, label='&Cancel')
         mbox2.Add(button_cancel, flag=wx.LEFT | wx.RIGHT, border=4)
 
-        button_ok = wx.Button(self.panel, label='&OK')
-        mbox2.Add(button_ok)
+        # Temporary workaround for bug #332
+        #button_ok = wx.Button(self.panel, label='&OK')
+        self.button_ok = wx.Button(self.panel, label='&OK')
+        # Temporary workaround for bug #332
+        #mbox2.Add(button_ok)
+        mbox2.Add(self.button_ok)
 
         self.scwindow = wx.ScrolledWindow(self.panel, style=wx.BORDER_NONE)
         self.scwindow.SetScrollRate(20, 20)
@@ -411,7 +415,9 @@ class RuleEditor():
 
         self.panel.Bind(wx.EVT_CHOICE, self.choose_rule, self.choice)
         self.panel.Bind(wx.EVT_BUTTON, self.cancel, button_cancel)
-        self.panel.Bind(wx.EVT_BUTTON, self.check, button_ok)
+        # Temporary workaround for bug #332
+        #self.panel.Bind(wx.EVT_BUTTON, self.check, button_ok)
+        self.panel.Bind(wx.EVT_BUTTON, self.check, self.button_ok)
 
     def post_init(self):
         self.choice.SetSelection(0)

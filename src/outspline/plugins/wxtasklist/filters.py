@@ -135,7 +135,10 @@ class Navigator(object):
         choice = self._set_filter_selection(config)
 
         self.sfilter = self.choice.GetClientData(choice)(self.panel,
-                                                        self.limits, config)
+                                                        self.limits, config,
+                            # Temporary workaround for bug #332
+                            bug332choice=self.choice,
+                            bug332list=lambda: self.tasklist.list_.listview)
         self.fbox.Add(self.sfilter.panel, flag=wx.BOTTOM, border=4)
         self.parent.Layout()
 
@@ -147,7 +150,10 @@ class Navigator(object):
 
     def _show_filter(self, choice, config):
         fpanel = self.choice.GetClientData(choice)(self.panel, self.limits,
-                                                                        config)
+                                                                        config,
+                                    # Temporary workaround for bug #332
+                                    bug332choice=self.choice,
+                                    bug332list=self.tasklist.list_.listview)
         self.fbox.Replace(self.sfilter.panel, fpanel.panel)
         self.sfilter.panel.Destroy()
         self.sfilter = fpanel
@@ -754,7 +760,9 @@ class FilterConfigurationMonth(object):
 
 
 class FilterInterfaceRelative(object):
-    def __init__(self, parent, limits, config):
+    def __init__(self, parent, limits, config,
+                                        # Temporary workaround for bug #332
+                                        bug332choice=None, bug332list=None):
         self.limits = limits
         self.units = ('minutes', 'hours', 'days', 'weeks', 'months', 'years')
         self.config = config
@@ -836,9 +844,14 @@ class FilterInterfaceRelative(object):
 
 
 class FilterInterfaceDate(object):
-    def __init__(self, parent, limits, config):
+    def __init__(self, parent, limits, config,
+                                        # Temporary workaround for bug #332
+                                        bug332choice=None, bug332list=None):
         self.limits = limits
         self.config = config
+
+        # Temporary workaround for bug #332
+        self.bug332list = bug332list
 
         self.panel = wx.Panel(parent)
         self.fbox = wx.BoxSizer(wx.HORIZONTAL)
@@ -848,7 +861,6 @@ class FilterInterfaceDate(object):
         self.fbox.Add(lowlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
-        # DatePickerCtrl doesn't release TAB (bug #332)
         self.lowdate = wx.DatePickerCtrl(self.panel)
         sdate = wx.DateTime()
         lowdate = self.config['lowdate']
@@ -874,6 +886,10 @@ class FilterInterfaceDate(object):
         self.fbox.Add(self.highchoice.get_main_panel(),
                                                 flag=wx.ALIGN_CENTER_VERTICAL)
 
+        # Temporary workaround for bug #332
+        wxgui_api.Bug332Workaround(self.lowdate, bug332choice,
+                                                    self.highchoice.choicectrl)
+
     def _create_for_widget(self):
         panel = wx.Panel(self.highchoice.get_main_panel())
         box = wx.BoxSizer(wx.HORIZONTAL)
@@ -893,7 +909,6 @@ class FilterInterfaceDate(object):
         return panel
 
     def _create_to_widget(self):
-        # DatePickerCtrl doesn't release TAB (bug #332)
         self.highdate = wx.DatePickerCtrl(self.highchoice.get_main_panel())
         sdate = wx.DateTime()
         highdate = self.config['highdate']
@@ -905,6 +920,10 @@ class FilterInterfaceDate(object):
         ldate.Set(year=self.limits[0], month=0, day=1)
         hdate.Set(year=self.limits[1], month=11, day=31)
         self.highdate.SetRange(ldate, hdate)
+
+        # Temporary workaround for bug #332
+        wxgui_api.Bug332Workaround(self.highdate, self.highchoice.choicectrl,
+                                                            self.bug332list)
 
         return self.highdate
 
@@ -937,7 +956,9 @@ class FilterInterfaceDate(object):
 
 
 class FilterInterfaceMonth(object):
-    def __init__(self, parent, limits, config):
+    def __init__(self, parent, limits, config,
+                                        # Temporary workaround for bug #332
+                                        bug332choice=None, bug332list=None):
         self.limits = limits
         self.config = config
 

@@ -170,6 +170,10 @@ class TaskList(object):
         wxgui_api.set_right_nb_page_title(self.panel,
                                                 "Events ({})".format(nalarms))
 
+    def work_around_bug332(self):
+        # Temporary workaround for bug #332
+        return self.list_.listview
+
 
 class WarningsBar(object):
     def __init__(self, parent):

@@ -584,3 +584,57 @@ def add_property_option(filename, property_, action):
 
 def bind_to_load_property_options(handler, bind=True):
     return dbprops.load_options_event.bind(handler, bind)
+
+
+### TEMPORARY CODE ###
+
+class Bug332Workaround(object):
+    # Temporary workaround for bug #332
+    # Note that simply using the Window.Navigate or Window.NavigateIn methods
+    #  doesn't work :(
+    # Also note that DatePickerCtrl doesn't seem to respond to EVT_KEY_DOWN
+    #  nor EVT_CHAR, so an AcceleratorTable must be used :((
+    def __init__(self, datepicker, previous, next_):
+        self.previous = previous
+        self.datepicker = datepicker
+        self.next = next_
+
+        ID_PREVIOUS = wx.NewId()
+        ID_NEXT = wx.NewId()
+        datepicker.Bind(wx.EVT_BUTTON, self._focus_previous, id=ID_PREVIOUS)
+        datepicker.Bind(wx.EVT_BUTTON, self._focus_next, id=ID_NEXT)
+
+        accels = [
+            wx.AcceleratorEntry(wx.ACCEL_SHIFT, wx.WXK_TAB, ID_PREVIOUS),
+            wx.AcceleratorEntry(wx.ACCEL_CTRL | wx.ACCEL_SHIFT, wx.WXK_TAB,
+                                                                ID_PREVIOUS),
+            wx.AcceleratorEntry(wx.ACCEL_NORMAL, wx.WXK_TAB, ID_NEXT),
+            wx.AcceleratorEntry(wx.ACCEL_CTRL, wx.WXK_TAB, ID_NEXT),
+        ]
+
+        acctable = wx.AcceleratorTable(accels)
+        datepicker.SetAcceleratorTable(acctable)
+
+    def _focus_previous(self, event):
+        try:
+            self.previous.SetFocus()
+        except AttributeError:
+            # self.previous could be a callable
+            self.previous().SetFocus()
+        except wx.PyAssertionError:
+            # PyAssertionError is raised if, when Tab is pressed, the
+            # DatePickerCtrl has been cleared with e.g. Del (it has no content)
+            pass
+        # Do not Skip the event, or the focus will be moved 2 widgets ahead
+
+    def _focus_next(self, event):
+        try:
+            self.next.SetFocus()
+        except AttributeError:
+            # self.previous could be a callable
+            self.next().SetFocus()
+        except wx.PyAssertionError:
+            # PyAssertionError is raised if, when Tab is pressed, the
+            # DatePickerCtrl has been cleared with e.g. Del (it has no content)
+            pass
+        # Do not Skip the event, or the focus will be moved 2 widgets ahead

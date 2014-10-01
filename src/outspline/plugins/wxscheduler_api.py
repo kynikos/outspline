@@ -51,6 +51,11 @@ def apply_rule(filename, id_, ruled, label):
                                                                 ruled, label)
 
 
+def work_around_bug332(filename, id_):
+    # Temporary workaround for bug #332
+    return wxscheduler.base.get_scheduler(filename, id_).rule_editor.button_ok
+
+
 def bind_to_init_rules_list(handler, bind=True):
     return wxscheduler.init_rules_list_event.bind(handler, bind)
 

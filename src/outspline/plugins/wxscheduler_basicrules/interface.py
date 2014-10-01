@@ -27,6 +27,9 @@ from outspline.static.wxclasses.timectrls import (HourCtrl, DateHourCtrl,
 from outspline.static.wxclasses.misc import NarrowSpinCtrl
 import outspline.plugins.wxscheduler_api as wxscheduler_api
 
+# Temporary workaround for bug #332
+import outspline.interfaces.wxgui_api as wxgui_api
+
 
 class Interface(object):
     def __init__(self, parent, filename, id_, Widgets, input_values):
@@ -39,7 +42,10 @@ class Interface(object):
         self.widgets = []
 
         for Widget in Widgets:
-            widget = Widget(self.mpanel, self.input_values)
+            widget = Widget(self.mpanel, self.input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_)
+
             self.widgets.append(widget)
             self.pbox.Add(widget.get_main_window(), flag=wx.BOTTOM, border=4)
 
@@ -70,7 +76,9 @@ class Interface(object):
 
 
 class WeekDays(object):
-    def __init__(self, parent, input_values):
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         self.box = wx.BoxSizer(wx.HORIZONTAL)
 
         self.dlabel = wx.StaticText(parent, label='Days:')
@@ -96,7 +104,9 @@ class WeekDays(object):
 
 
 class Months(object):
-    def __init__(self, parent, input_values):
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         self.box = wx.BoxSizer(wx.HORIZONTAL)
 
         self.mlabel = wx.StaticText(parent, label='Months:')
@@ -122,7 +132,9 @@ class Months(object):
 
 
 class _StartDate(object):
-    def __init__(self, parent, label, input_values):
+    def __init__(self, parent, label, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         self.box = wx.BoxSizer(wx.HORIZONTAL)
 
         self.slabel = wx.StaticText(parent, label=label)
@@ -136,6 +148,13 @@ class _StartDate(object):
                                input_values['start_hour'],
                                input_values['start_minute'])
         self.box.Add(self.startw.get_main_panel())
+
+        # Temporary workaround for bug #332
+        # This widget is always placed at the top, so the previous
+        #  Tab-traversal element is always the OK button
+        wxgui_api.Bug332Workaround(self.startw.datectrl,
+                            wxscheduler_api.work_around_bug332(filename, id_),
+                            self.startw.hourctrl.hourctrl)
 
     def get_main_window(self):
         return self.box
@@ -163,18 +182,28 @@ class _StartDate(object):
 
 
 class StartDate(_StartDate):
-    def __init__(self, parent, input_values):
-        super(StartDate, self).__init__(parent, 'Start date:', input_values)
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
+        super(StartDate, self).__init__(parent, 'Start date:', input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_)
 
 
 class StartDateSample(_StartDate):
-    def __init__(self, parent, input_values):
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         super(StartDateSample, self).__init__(parent, 'Sample start:',
-                                                                input_values)
+                                                                input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_)
 
 
 class StartTime(object):
-    def __init__(self, parent, input_values):
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         self.box = wx.BoxSizer(wx.HORIZONTAL)
 
         self.slabel = wx.StaticText(parent, label='Start time:')
@@ -203,7 +232,9 @@ class StartTime(object):
 
 
 class StartWeekDay(object):
-    def __init__(self, parent, input_values):
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         self.box = wx.BoxSizer(wx.HORIZONTAL)
 
         self.slabel = wx.StaticText(parent, label='Start day:')
@@ -269,13 +300,17 @@ class _StartMonthDay(object):
 
 
 class StartMonthDay(_StartMonthDay):
-    def __init__(self, parent, input_values):
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         super(StartMonthDay, self).__init__(parent, MonthDayHourCtrl,
                                                                 input_values)
 
 
 class StartMonthDayInverse(_StartMonthDay):
-    def __init__(self, parent, input_values):
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         super(StartMonthDayInverse, self).__init__(parent,
                                         MonthInverseDayHourCtrl, input_values)
 
@@ -320,19 +355,25 @@ class _StartNthWeekDay(object):
 
 
 class StartNthWeekDay(_StartNthWeekDay):
-    def __init__(self, parent, input_values):
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         super(StartNthWeekDay, self).__init__(parent, MonthWeekdayHourCtrl,
                                                                 input_values)
 
 
 class StartNthWeekDayInverse(_StartNthWeekDay):
-    def __init__(self, parent, input_values):
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         super(StartNthWeekDayInverse, self).__init__(parent,
                                     MonthInverseWeekdayHourCtrl, input_values)
 
 
 class _End(object):
-    def __init__(self, parent, mode, input_values):
+    def __init__(self, parent, mode, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         widgets = {0: (('No duration', None),
                        ('Duration:', self._create_duration_widget),
                        ('End date:', self._create_end_date_widget)),
@@ -385,6 +426,11 @@ class _End(object):
                              self.input_values['end_day'],
                              self.input_values['end_hour'],
                              self.input_values['end_minute'])
+
+        # Temporary workaround for bug #332
+        wxgui_api.Bug332Workaround(self.endw.datectrl,
+                                                self.endchoicew.choicectrl,
+                                                self.endw.hourctrl.hourctrl)
 
         return self.endw.get_main_panel()
 
@@ -472,32 +518,54 @@ class _End(object):
 
 
 class EndDate(_End):
-    def __init__(self, parent, input_values):
-        super(EndDate, self).__init__(parent, 0, input_values)
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
+        super(EndDate, self).__init__(parent, 0, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_)
 
 
 class EndDate2(_End):
-    def __init__(self, parent, input_values):
-        super(EndDate2, self).__init__(parent, 1, input_values)
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
+        super(EndDate2, self).__init__(parent, 1, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_)
 
 
 class EndDateSample(_End):
-    def __init__(self, parent, input_values):
-        super(EndDateSample, self).__init__(parent, 2, input_values)
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
+        super(EndDateSample, self).__init__(parent, 2, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_)
 
 
 class EndDateSample2(_End):
-    def __init__(self, parent, input_values):
-        super(EndDateSample2, self).__init__(parent, 3, input_values)
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
+        super(EndDateSample2, self).__init__(parent, 3, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_)
 
 
 class EndTime(_End):
-    def __init__(self, parent, input_values):
-        super(EndTime, self).__init__(parent, 4, input_values)
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
+        super(EndTime, self).__init__(parent, 4, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_)
 
 
 class _Alarm(object):
-    def __init__(self, parent, mode, input_values):
+    def __init__(self, parent, mode, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         widgets = {0: (('No alarm', None),
                        ('Alarm advance:', self._create_alarm_advance_widget),
                        ('Alarm date:', self._create_alarm_date_widget)),
@@ -542,6 +610,11 @@ class _Alarm(object):
                                self.input_values['alarm_day'],
                                self.input_values['alarm_hour'],
                                self.input_values['alarm_minute'])
+
+        # Temporary workaround for bug #332
+        wxgui_api.Bug332Workaround(self.alarmw.datectrl,
+                                                self.alarmchoicew.choicectrl,
+                                                self.alarmw.hourctrl.hourctrl)
 
         return self.alarmw.get_main_panel()
 
@@ -629,22 +702,36 @@ class _Alarm(object):
 
 
 class AlarmDate(_Alarm):
-    def __init__(self, parent, input_values):
-        super(AlarmDate, self).__init__(parent, 0, input_values)
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
+        super(AlarmDate, self).__init__(parent, 0, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_)
 
 
 class AlarmDateSample(_Alarm):
-    def __init__(self, parent, input_values):
-        super(AlarmDateSample, self).__init__(parent, 1, input_values)
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
+        super(AlarmDateSample, self).__init__(parent, 1, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_)
 
 
 class AlarmTime(_Alarm):
-    def __init__(self, parent, input_values):
-        super(AlarmTime, self).__init__(parent, 2, input_values)
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
+        super(AlarmTime, self).__init__(parent, 2, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_)
 
 
 class Interval(object):
-    def __init__(self, parent, input_values):
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         self.box = wx.BoxSizer(wx.HORIZONTAL)
 
         self.ilabel = wx.StaticText(parent, label='Interval time:')
@@ -673,7 +760,9 @@ class Interval(object):
 
 
 class IntervalYears(object):
-    def __init__(self, parent, input_values):
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         self.box = wx.BoxSizer(wx.HORIZONTAL)
 
         self.ilabel = wx.StaticText(parent, label='Interval (years):')
@@ -700,7 +789,9 @@ class IntervalYears(object):
 
 
 class Inclusive(object):
-    def __init__(self, parent, input_values):
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         self.inclusivew = wx.CheckBox(parent, label='Inclusive')
         self.inclusivew.SetValue(input_values['inclusive'])
 
@@ -718,7 +809,9 @@ class Inclusive(object):
 
 
 class Standard(object):
-    def __init__(self, parent, input_values):
+    def __init__(self, parent, input_values,
+                                            # Temporary workaround for bug #332
+                                            filename, id_):
         self.box = wx.BoxSizer(wx.HORIZONTAL)
 
         self.zlabel = wx.StaticText(parent, label='Time standard:')
