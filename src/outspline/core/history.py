@@ -65,6 +65,8 @@ class DBHistory(object):
             },
         }
 
+        self.status_updates = {0: 1, 1: 0, 2: 3, 3: 2, 4: 5, 5: 4}
+
     def set_limits(self, soft, time, hard):
         self.historylimits = [soft, time, hard]
 
@@ -121,18 +123,7 @@ class DBHistory(object):
         return cursor
 
     def _update_history_id(self, id_, status):
-        if status == 0:
-            newstatus = 1
-        elif status == 1:
-            newstatus = 0
-        elif status == 2:
-            newstatus = 3
-        elif status == 3:
-            newstatus = 2
-        elif status == 4:
-            newstatus = 5
-        elif status == 5:
-            newstatus = 4
+        newstatus = self.status_updates[status]
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.history_update_id, (newstatus, id_))
