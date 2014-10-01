@@ -106,6 +106,7 @@ class Editor():
         self.id_ = id_
         self.item = item
         self.modstate = False
+        self.captionbars = []
 
         self.panel = EditorPanel(wx.GetApp().nb_right, item)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
@@ -154,12 +155,38 @@ class Editor():
         fpanel = self.fpbar.AddFoldPanel(caption=caption, cbstyle=self.cbstyle)
 
         captionbar = self.get_captionbar(fpanel)
+        self.captionbars.append(captionbar)
         captionbar.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
         captionbar.Bind(wx.EVT_MOUSE_EVENTS,
                                         self.void_default_captionbar_behaviour)
         captionbar.Bind(wx.EVT_LEFT_DOWN, self.handle_mouse_click)
+        captionbar.Bind(wx.EVT_KEY_DOWN, self._handle_tab_down)
 
         return fpanel
+
+    def _handle_tab_down(self, event):
+        captionbar = event.GetEventObject()
+
+        if event.GetKeyCode() == wx.WXK_TAB:
+            index = self.captionbars.index(captionbar)
+
+            if event.ShiftDown():
+                if index > 0 and self.captionbars[index - 1].IsCollapsed():
+                    self.captionbars[index - 1].SetFocus()
+                else:
+                    captionbar.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
+            else:
+                if captionbar.IsCollapsed():
+                    if index < len(self.captionbars) - 1:
+                        self.captionbars[index + 1].SetFocus()
+                    else:
+                        self.area.area.SetFocus()
+                else:
+                    captionbar.Navigate(flags=wx.NavigationKeyEvent.IsForward)
+
+            # Don't skip the event
+        else:
+            event.Skip()
 
     def get_captionbar(self, fpanel):
         try:
@@ -282,6 +309,9 @@ class Editor():
 
     def get_id(self):
         return self.id_
+
+    def get_plugin_captionbars(self):
+        return self.captionbars
 
     @staticmethod
     def make_title(text):

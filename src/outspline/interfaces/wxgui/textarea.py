@@ -79,11 +79,22 @@ class TextArea(object):
         # expected
         if event.GetKeyCode() == wx.WXK_TAB:
             if event.ShiftDown():
-                self.area.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
-                # Don't skip the event
+                try:
+                    captionbar = editor.tabs[self.item
+                                                ].get_plugin_captionbars()[-1]
+                except IndexError:
+                    # No plugins installed/enabled
+                    self.area.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
+                else:
+                    if captionbar.IsCollapsed():
+                        captionbar.SetFocus()
+                    else:
+                        self.area.Navigate(
+                                        flags=wx.NavigationKeyEvent.IsBackward)
             else:
                 self.area.Navigate(flags=wx.NavigationKeyEvent.IsForward)
-                # Don't skip the event
+
+            # Don't skip the event
         else:
             event.Skip()
 
