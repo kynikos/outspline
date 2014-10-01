@@ -78,15 +78,14 @@ class RootMenu(wx.MenuBar):
 
     def _configure_autohide(self):
         self.HIDE_DELAY = 10
-        frame = self.GetFrame()
 
-        id_ = wx.NewId()
         # Note that for F10 to work, a window (any) must be focused: this
         # wouldn't happen naturally after opening a database, so the tree
         # is given focus (with SetFocus) explicitly in order to make F10
         # work
-        accels = [(wx.ACCEL_NORMAL, wx.WXK_F10, id_), ]
-        frame.Bind(wx.EVT_BUTTON, self._handle_F10, id=id_)
+        self.GetFrame().Bind(wx.EVT_CHAR_HOOK, self._handle_F10)
+
+        databases.open_database_event.bind(self._enable_autohide)
 
         # This would preserve the native Alt+char behaviour to open the main
         #  menu items (thanks to their & shortcuts), however this way such
@@ -124,11 +123,6 @@ class RootMenu(wx.MenuBar):
         self.uisim.Char(ord(char))
         event.Skip()'''
 
-        acctable = wx.AcceleratorTable(accels)
-        frame.SetAcceleratorTable(acctable)
-
-        databases.open_database_event.bind(self._enable_autohide)
-
     def _enable_autohide(self, kwargs):
         databases.open_database_event.bind(self._enable_autohide, False)
 
@@ -161,7 +155,9 @@ class RootMenu(wx.MenuBar):
         databases.open_database_event.bind(self._enable_autohide)
 
     def _handle_F10(self, event):
-        self.Show()
+        if event.GetKeyCode() == wx.WXK_F10:
+            self.Show()
+
         event.Skip()
 
     def _handle_enter_frame(self, event):
