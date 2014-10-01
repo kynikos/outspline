@@ -53,13 +53,17 @@ class TextArea(object):
         # correctly highlighted in blue
         self.area.SetValue(text)
 
-        self.area.Bind(wx.EVT_KEY_DOWN, self._handle_esc_down)
+        self.textctrl_nav_keys = {
+            wx.WXK_ESCAPE: self._navigate_textctrl_backward,
+        }
 
         # wx.TE_PROCESS_TAB seems to have no effect...
         if not config.get_bool('text_process_tab'):
             # Note that this natively still lets Ctrl+(Shift+)Tab navigate as
-            # expected
-            self.area.Bind(wx.EVT_KEY_DOWN, self._handle_tab_down)
+            #  expected
+            self.textctrl_nav_keys[wx.WXK_TAB] = self._handle_tab_on_textctrl
+
+        self.area.Bind(wx.EVT_KEY_DOWN, self._handle_key_down)
 
         self.area.Bind(wx.EVT_TEXT, self._handle_text)
         editor.apply_editor_event.bind(self._handle_apply)
@@ -67,36 +71,36 @@ class TextArea(object):
                                             self._handle_check_editor_modified)
         editor.close_editor_event.bind(self._handle_close)
 
-    def _handle_esc_down(self, event):
-        if event.GetKeyCode() == wx.WXK_ESCAPE:
-            self.area.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
-            # Don't skip the event
-        else:
+    def _handle_key_down(self, event):
+        try:
+            self.textctrl_nav_keys[event.GetKeyCode()](event)
+        except KeyError:
             event.Skip()
+        # Don't skip the event if the navigation is done
+        #event.Skip()
 
-    def _handle_tab_down(self, event):
+    def _handle_tab_on_textctrl(self, event):
+        # This method must get the same arguments as
+        #  _navigate_textctrl_backward
         # Note that this natively still lets Ctrl+(Shift+)Tab navigate as
-        # expected
-        if event.GetKeyCode() == wx.WXK_TAB:
-            if event.ShiftDown():
-                try:
-                    captionbar = editor.tabs[self.item
-                                                ].get_plugin_captionbars()[-1]
-                except IndexError:
-                    # No plugins installed/enabled
-                    self.area.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
-                else:
-                    if captionbar.IsCollapsed():
-                        captionbar.SetFocus()
-                    else:
-                        self.area.Navigate(
-                                        flags=wx.NavigationKeyEvent.IsBackward)
-            else:
-                self.area.Navigate(flags=wx.NavigationKeyEvent.IsForward)
-
-            # Don't skip the event
+        #  expected
+        if event.ShiftDown():
+            self._navigate_textctrl_backward(event)
         else:
-            event.Skip()
+            self.area.Navigate(flags=wx.NavigationKeyEvent.IsForward)
+
+    def _navigate_textctrl_backward(self, event):
+        # This method must get the same arguments as _handle_tab_on_textctrl
+        try:
+            captionbar = editor.tabs[self.item].get_plugin_captionbars()[-1]
+        except IndexError:
+            # No plugins installed/enabled
+            self.area.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
+        else:
+            if captionbar.IsCollapsed():
+                captionbar.SetFocus()
+            else:
+                self.area.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
 
     def _handle_text(self, event):
         if not (self.tmrunning):
