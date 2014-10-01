@@ -64,6 +64,13 @@ class RootMenu(wx.MenuBar):
         self.Append(self.view, "&View")
         self.Append(self.help, "&Help")
 
+        self.menu_updaters = {
+            self.file: self.file.update_items,
+            self.database: self.database.update_items,
+            self.edit: self.edit.update_items,
+            self.view: self.view.update_items,
+        }
+
         # self.hide_timer must be initialized even if autohide is not set
         self.hide_timer = wx.CallLater(0, int)
 
@@ -175,16 +182,12 @@ class RootMenu(wx.MenuBar):
 
         menu = event.GetMenu()
 
-        if menu is self.file:
-            self.file.update_items()
-        elif menu is self.database:
-            self.database.update_items()
-        elif menu is self.edit:
-            self.edit.update_items()
-        elif menu is self.view:
-            self.view.update_items()
-        else:
+        try:
+            updmenu = self.menu_updaters[menu]
+        except KeyError:
             update_menu_items_event.signal(menu=menu)
+        else:
+            updmenu()
 
     def reset_menus(self, event):
         # Reset the menus only if the closed menu is a top-level one, in fact
