@@ -122,6 +122,11 @@ class Editor():
         self.item = item
         self.modstate = False
         self.captionbars = []
+        self.captionbar_keys = {
+            wx.WXK_TAB: self._handle_tab_on_captionbar,
+            wx.WXK_RETURN: self._handle_captionbar_key_toggle,
+            wx.WXK_SPACE: self._handle_captionbar_key_toggle,
+        }
 
         self.panel = EditorPanel(wx.GetApp().nb_right, item)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
@@ -189,35 +194,41 @@ class Editor():
         return fpanel
 
     def _handle_key_down(self, event):
+        try:
+            self.captionbar_keys[event.GetKeyCode()](event)
+        except KeyError:
+            event.Skip()
+        # Don't skip the event if the key action is done
+        #event.Skip()
+
+    def _handle_tab_on_captionbar(self, event):
+        # This method must get the same arguments as
+        #  _handle_captionbar_key_toggle
+        captionbar = event.GetEventObject()
+        index = self.captionbars.index(captionbar)
+
+        if event.ShiftDown():
+            if index > 0 and self.captionbars[index - 1].IsCollapsed():
+                self.captionbars[index - 1].SetFocus()
+            else:
+                captionbar.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
+        else:
+            if captionbar.IsCollapsed():
+                if index < len(self.captionbars) - 1:
+                    self.captionbars[index + 1].SetFocus()
+                else:
+                    self.area.area.SetFocus()
+            else:
+                captionbar.Navigate(flags=wx.NavigationKeyEvent.IsForward)
+
+    def _handle_captionbar_key_toggle(self, event):
+        # This method must get the same arguments as _handle_tab_on_captionbar
         captionbar = event.GetEventObject()
 
-        if event.GetKeyCode() == wx.WXK_TAB:
-            index = self.captionbars.index(captionbar)
-
-            if event.ShiftDown():
-                if index > 0 and self.captionbars[index - 1].IsCollapsed():
-                    self.captionbars[index - 1].SetFocus()
-                else:
-                    captionbar.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
-            else:
-                if captionbar.IsCollapsed():
-                    if index < len(self.captionbars) - 1:
-                        self.captionbars[index + 1].SetFocus()
-                    else:
-                        self.area.area.SetFocus()
-                else:
-                    captionbar.Navigate(flags=wx.NavigationKeyEvent.IsForward)
-
-            # Don't skip the event
-        elif event.GetKeyCode() in (wx.WXK_RETURN, wx.WXK_SPACE):
-            if captionbar.IsCollapsed():
-                self.expand_panel(captionbar.GetParent())
-            else:
-                self.collapse_panel(captionbar.GetParent())
-
-            # Don't skip the event
+        if captionbar.IsCollapsed():
+            self.expand_panel(captionbar.GetParent())
         else:
-            event.Skip()
+            self.collapse_panel(captionbar.GetParent())
 
     def _handle_set_focus(self, event):
         event.GetEventObject().SetCaptionStyle(self.cbstyles[1])
