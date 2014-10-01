@@ -58,7 +58,6 @@ class EditorPanel(wx.Panel):
 
 class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
     def __init__(self, panel):
-        # Caption bars don't support TAB traversal (bug #333)
         foldpanelbar.CaptionBarStyle.__init__(self)
 
         bgcolour = panel.GetBackgroundColour()
@@ -160,11 +159,11 @@ class Editor():
         captionbar.Bind(wx.EVT_MOUSE_EVENTS,
                                         self.void_default_captionbar_behaviour)
         captionbar.Bind(wx.EVT_LEFT_DOWN, self.handle_mouse_click)
-        captionbar.Bind(wx.EVT_KEY_DOWN, self._handle_tab_down)
+        captionbar.Bind(wx.EVT_KEY_DOWN, self._handle_key_down)
 
         return fpanel
 
-    def _handle_tab_down(self, event):
+    def _handle_key_down(self, event):
         captionbar = event.GetEventObject()
 
         if event.GetKeyCode() == wx.WXK_TAB:
@@ -183,6 +182,13 @@ class Editor():
                         self.area.area.SetFocus()
                 else:
                     captionbar.Navigate(flags=wx.NavigationKeyEvent.IsForward)
+
+            # Don't skip the event
+        elif event.GetKeyCode() in (wx.WXK_RETURN, wx.WXK_SPACE):
+            if captionbar.IsCollapsed():
+                self.expand_panel(captionbar.GetParent())
+            else:
+                self.collapse_panel(captionbar.GetParent())
 
             # Don't skip the event
         else:
@@ -236,9 +242,11 @@ class Editor():
 
     def collapse_panel(self, fpanel):
         self.fpbar.Collapse(fpanel)
+        self.resize_fpb()
 
     def expand_panel(self, fpanel):
         self.fpbar.Expand(fpanel)
+        self.resize_fpb()
 
     def focus_text(self):
         self.area.area.SetFocus()

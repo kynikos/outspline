@@ -66,15 +66,13 @@ def add_window_to_plugin(filename, id_, fpanel, window):
 
 
 def collapse_panel(filename, id_, fpanel):
-    tab = editor.tabs[editor.Editor.make_tabid(filename, id_)]
-    tab.collapse_panel(fpanel)
-    tab.resize_fpb()
+    return editor.tabs[editor.Editor.make_tabid(filename, id_)].collapse_panel(
+                                                                        fpanel)
 
 
 def expand_panel(filename, id_, fpanel):
-    tab = editor.tabs[editor.Editor.make_tabid(filename, id_)]
-    tab.expand_panel(fpanel)
-    tab.resize_fpb()
+    return editor.tabs[editor.Editor.make_tabid(filename, id_)].expand_panel(
+                                                                        fpanel)
 
 
 def toggle_panel(filename, id_, fpanel):
