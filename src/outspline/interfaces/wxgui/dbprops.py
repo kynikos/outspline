@@ -494,8 +494,6 @@ class TabContextMenu(wx.Menu):
         # tab is shown when righ-clicking the tab
         wx.Menu.__init__(self)
 
-        self.ID_CLOSE = wx.NewId()
-
         self.close = wx.MenuItem(self,
                 wx.GetApp().menu.view.rightnb_submenu.ID_CLOSE, "&Close")
 

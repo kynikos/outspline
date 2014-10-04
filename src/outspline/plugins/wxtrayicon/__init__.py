@@ -42,6 +42,9 @@ class TrayIcon(wx.TaskBarIcon):
         # Let self.restore have a different ID from menumin in the main menu,
         # in fact this is a check item, while the other is a normal item
         self.ID_RESTORE = wx.NewId()
+        # Don't use wx.ID_EXIT because it assigns a Ctrl+q accelerator
+        # automatically
+        self.ID_EXIT = wx.NewId()
 
         config = coreaux_api.get_plugin_configuration('wxtrayicon')(
                                                                 'Shortcuts')
@@ -82,7 +85,7 @@ class TrayIcon(wx.TaskBarIcon):
     def CreatePopupMenu(self):
         # TrayMenu must be instantiated here, everytime CreatePopupMenu is
         # called
-        self.menu = TrayMenu(self, self.ID_RESTORE)
+        self.menu = TrayMenu(self, self.ID_RESTORE, self.ID_EXIT)
 
         create_menu_event.signal(menu=self.menu)
 
@@ -182,12 +185,8 @@ class TrayMenu(wx.Menu):
     restore = None
     exit_ = None
 
-    def __init__(self, parent, ID_RESTORE):
+    def __init__(self, parent, ID_RESTORE, ID_EXIT):
         wx.Menu.__init__(self)
-
-        # Don't use wx.ID_EXIT because it assigns a Ctrl+q accelerator
-        # automatically
-        ID_EXIT = wx.NewId()
 
         self.restore = wx.MenuItem(self, ID_RESTORE, "&Show Outspline",
                                                             kind=wx.ITEM_CHECK)

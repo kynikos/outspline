@@ -50,6 +50,10 @@ class MenuDev(wx.Menu):
         # Initialize self.ID_PRINT so it can be destroyed at the beginning of
         # self.reset_print_menu
         self.ID_PRINT = wx.NewId()
+        self.ID_PRINT_ALL = wx.NewId()
+        self.ID_PRINT_MEMORY = wx.NewId()
+        self.ID_PRINT_MEMORY_ALL = wx.NewId()
+
         self.PrependItem(wx.MenuItem(self, self.ID_PRINT, "INIT"))
 
         self.inspection = self.Append(wx.NewId(), "&Inspection tool")
@@ -76,7 +80,7 @@ class MenuDev(wx.Menu):
         self.printtb = wx.Menu()
         self.PrependMenu(self.ID_PRINT, "Print &databases", self.printtb)
 
-        self.all_ = self.printtb.Append(wx.NewId(), 'All databases')
+        self.all_ = self.printtb.Append(self.ID_PRINT_ALL, 'All databases')
         wxgui_api.bind_to_menu(self.print_all_databases, self.all_)
 
         self.printtb.AppendSeparator()
@@ -84,26 +88,36 @@ class MenuDev(wx.Menu):
         self.databases = {}
 
         for filename in core_api.get_open_databases():
+            # Note that these IDs will grow progressively every time this menu
+            # is reset, UNTIL THE INTERNAL ID LIMIT FOR MENU ITEMS!!!
+            # (Then, crash...)
+            TEMP_ID_MENU = wx.NewId()
+            TEMP_ID_ALL = wx.NewId()
+
             self.databases[filename] = {
                 'menu': wx.Menu(),
                 'all_': None,
                 'tables': {}
             }
 
-            self.printtb.AppendMenu(wx.NewId(), _os.path.basename(filename),
+            self.printtb.AppendMenu(TEMP_ID_MENU, _os.path.basename(filename),
                                     self.databases[filename]['menu'])
 
             self.databases[filename]['all_'] = self.databases[filename][
-                                    'menu'].Append(wx.NewId(), 'All tables')
+                                    'menu'].Append(TEMP_ID_ALL, 'All tables')
             wxgui_api.bind_to_menu(self.print_all_tables_loop(filename),
                                    self.databases[filename]['all_'])
 
             self.databases[filename]['menu'].AppendSeparator()
 
             for table in core_api.select_all_table_names(filename):
+                # Note that these IDs will grow progressively every time this
+                # menu is reset, UNTIL THE INTERNAL ID LIMIT FOR MENU ITEMS!!!
+                # (Then, crash...)
+                TEMP_ID = wx.NewId()
                 self.databases[filename]['tables'][table[0]] = \
                                     self.databases[filename]['menu'].Append(
-                                    wx.NewId(), table[0])
+                                    TEMP_ID, table[0])
                 wxgui_api.bind_to_menu(self.print_table_loop(filename,
                                 table[0]),
                                 self.databases[filename]['tables'][table[0]])
@@ -117,18 +131,23 @@ class MenuDev(wx.Menu):
             'tables': {}
         }
 
-        self.printtb.AppendMenu(wx.NewId(), ':memory:', self.memory['menu'])
+        self.printtb.AppendMenu(self.ID_PRINT_MEMORY, ':memory:',
+                                                        self.memory['menu'])
 
-        self.memory['all_'] = self.memory['menu'].Append(wx.NewId(),
-                                                                'All tables')
+        self.memory['all_'] = self.memory['menu'].Append(
+                                        self.ID_PRINT_MEMORY_ALL, 'All tables')
         wxgui_api.bind_to_menu(self.print_all_memory_tables,
                                                         self.memory['all_'])
 
         self.memory['menu'].AppendSeparator()
 
         for table in core_api.select_all_memory_table_names():
+            # Note that these IDs will grow progressively every time this menu
+            # is reset, UNTIL THE INTERNAL ID LIMIT FOR MENU ITEMS!!!
+            # (Then, crash...)
+            TEMP_ID = wx.NewId()
             self.memory['tables'][table[0]] = self.memory['menu'].Append(
-                                                        wx.NewId(), table[0])
+                                                            TEMP_ID, table[0])
             wxgui_api.bind_to_menu(self.print_memory_table_loop(table[0]),
                                    self.memory['tables'][table[0]])
 
