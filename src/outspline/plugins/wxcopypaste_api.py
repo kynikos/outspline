@@ -28,16 +28,18 @@ def bind_to_items_pasted(handler, bind=True):
 
 
 def simulate_cut_items(no_confirm=False):
-    return wxcopypaste.cut_items(None, no_confirm=no_confirm)
+    return wxcopypaste.plugin.mainmenu.cut_items(None, no_confirm=no_confirm)
 
 
 def simulate_copy_items():
-    return wxcopypaste.copy_items(None)
+    return wxcopypaste.plugin.mainmenu.copy_items(None)
 
 
 def simulate_paste_items_as_siblings(no_confirm=False):
-    return wxcopypaste.paste_items_as_siblings(None, no_confirm=no_confirm)
+    return wxcopypaste.plugin.mainmenu.paste_items_as_siblings(None,
+                                                        no_confirm=no_confirm)
 
 
 def simulate_paste_items_as_children(no_confirm=False):
-    return wxcopypaste.paste_items_as_children(None, no_confirm=no_confirm)
+    return wxcopypaste.plugin.mainmenu.paste_items_as_children(None,
+                                                        no_confirm=no_confirm)
