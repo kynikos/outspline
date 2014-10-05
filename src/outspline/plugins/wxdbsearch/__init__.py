@@ -56,7 +56,12 @@ class SearchViewPanel(wx.Panel):
 
 class SearchView(object):
     def __init__(self, parent):
+        config = coreaux_api.get_plugin_configuration('wxdbsearch')(
+                                                        'ExtendedShortcuts')
         accelerators = {
+            config["search"]: lambda event: self.search(),
+            config["find"]: lambda event: self.results.find_in_tree(),
+            config["edit"]: lambda event: self.results.edit_items(),
         }
         accelerators.update(wxgui_api.get_right_nb_generic_accelerators())
         acctable = wxgui_api.generate_right_nb_accelerators(accelerators)
@@ -345,6 +350,7 @@ class SearchFilters(object):
         self.text = wx.TextCtrl(mainview.panel, style=wx.TE_PROCESS_ENTER)
         sbox.Add(self.text, 1, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
+        wxgui_api.register_text_ctrl(self.text)
 
         self.search = wx.Button(mainview.panel, label='&Search')
         sbox.Add(self.search, flag=wx.ALIGN_CENTER_VERTICAL)
@@ -470,6 +476,82 @@ class SearchResults(object):
 
         self.mainview.finish_search()
 
+    def find_in_tree(self):
+        sel = self.listview.GetFirstSelected()
+
+        if sel > -1:
+            for filename in core_api.get_open_databases():
+                wxgui_api.unselect_all_items(filename)
+
+            seldb = None
+            warning = False
+
+            # [1]: line repeated in the loop because of
+            # wxgui_api.select_database_tab
+            filename, id_ = self.itemdatamap[self.listview.GetItemData(sel)]
+
+            while True:
+                # It's necessary to repeat this line (see [1]) because
+                # wxgui_api.select_database_tab must be executed only once
+                # for the first selected item
+                filename, id_ = self.itemdatamap[self.listview.GetItemData(
+                                                                        sel)]
+
+                # Check whether the database is still open and the item
+                # still exists because the search results are retrieved in
+                # a separate thread and are not updated together with the
+                # database
+                if core_api.is_database_open(filename) and \
+                                        core_api.is_item(filename, id_):
+                    wxgui_api.add_item_to_selection(filename, id_)
+
+                    if seldb is None:
+                        seldb = filename
+                else:
+                    warning = True
+
+                sel = self.listview.GetNextSelected(sel)
+
+                if sel < 0:
+                    break
+
+            if seldb:
+                wxgui_api.select_database_tab(seldb)
+
+                if warning:
+                    msgboxes.some_items_not_found().ShowModal()
+            elif warning:
+                msgboxes.all_items_not_found().ShowModal()
+
+    def edit_items(self):
+        sel = self.listview.GetFirstSelected()
+
+        exists = False
+        warning = False
+
+        while sel > -1:
+            filename, id_ = self.itemdatamap[self.listview.GetItemData(sel)]
+
+            # Check whether the database is still open and the item
+            # still exists because the search results are retrieved in
+            # a separate thread and are not updated together with the
+            # database
+            if core_api.is_database_open(filename) and \
+                                        core_api.is_item(filename, id_):
+                wxgui_api.open_editor(filename, id_)
+
+                exists = True
+            else:
+                warning = True
+
+            sel = self.listview.GetNextSelected(sel)
+
+        if warning:
+            if exists:
+                msgboxes.some_items_not_found().ShowModal()
+            else:
+                msgboxes.all_items_not_found().ShowModal()
+
 
 class MainMenu(wx.Menu):
     ID_NEW_SEARCH = None
@@ -583,89 +665,13 @@ class MainMenu(wx.Menu):
         mainview = self.get_selected_search()
 
         if mainview:
-            results = mainview.results
-            listview = results.listview
-
-            sel = listview.GetFirstSelected()
-
-            if sel > -1:
-                for filename in core_api.get_open_databases():
-                    wxgui_api.unselect_all_items(filename)
-
-                seldb = None
-                warning = False
-
-                # [1]: line repeated in the loop because of
-                # wxgui_api.select_database_tab
-                filename, id_ = results.itemdatamap[listview.GetItemData(sel)]
-
-                while True:
-                    # It's necessary to repeat this line (see [1]) because
-                    # wxgui_api.select_database_tab must be executed only once
-                    # for the first selected item
-                    filename, id_ = results.itemdatamap[listview.GetItemData(
-                                                                        sel)]
-
-                    # Check whether the database is still open and the item
-                    # still exists because the search results are retrieved in
-                    # a separate thread and are not updated together with the
-                    # database
-                    if core_api.is_database_open(filename) and \
-                                            core_api.is_item(filename, id_):
-                        wxgui_api.add_item_to_selection(filename, id_)
-
-                        if seldb is None:
-                            seldb = filename
-                    else:
-                        warning = True
-
-                    sel = listview.GetNextSelected(sel)
-
-                    if sel < 0:
-                        break
-
-                if seldb:
-                    wxgui_api.select_database_tab(seldb)
-
-                    if warning:
-                        msgboxes.some_items_not_found().ShowModal()
-                elif warning:
-                    msgboxes.all_items_not_found().ShowModal()
+            mainview.results.find_in_tree()
 
     def edit_items(self, event):
         mainview = self.get_selected_search()
 
         if mainview:
-            results = mainview.results
-            listview = results.listview
-
-            sel = listview.GetFirstSelected()
-
-            exists = False
-            warning = False
-
-            while sel > -1:
-                filename, id_ = results.itemdatamap[listview.GetItemData(sel)]
-
-                # Check whether the database is still open and the item
-                # still exists because the search results are retrieved in
-                # a separate thread and are not updated together with the
-                # database
-                if core_api.is_database_open(filename) and \
-                                            core_api.is_item(filename, id_):
-                    wxgui_api.open_editor(filename, id_)
-
-                    exists = True
-                else:
-                    warning = True
-
-                sel = listview.GetNextSelected(sel)
-
-            if warning:
-                if exists:
-                    msgboxes.some_items_not_found().ShowModal()
-                else:
-                    msgboxes.all_items_not_found().ShowModal()
+            mainview.results.edit_items()
 
 
 class ContextMenu(wx.Menu):
