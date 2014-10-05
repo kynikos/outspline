@@ -161,7 +161,7 @@ class MainFrame(wx.Frame):
 
         self._init_accelerators()
 
-        self.mainpanes = MainPanes(self)
+        self.mainpanes = MainPanes(self, self.menu)
 
         self.close_handler = False
 
@@ -262,7 +262,7 @@ class MainFrame(wx.Frame):
 
 
 class MainPanes(wx.SplitterWindow):
-    def __init__(self, parent):
+    def __init__(self, parent, menu):
         wx.SplitterWindow.__init__(self, parent, style=wx.SP_LIVE_UPDATE)
 
         # Prevent the window from unsplitting when dragging the sash to the
@@ -270,8 +270,8 @@ class MainPanes(wx.SplitterWindow):
         self.SetMinimumPaneSize(20)
 
         self.parent = parent
-        self.nb_left = notebooks.LeftNotebook(self)
-        self.nb_right = notebooks.RightNotebook(self)
+        self.nb_left = notebooks.LeftNotebook(self, parent, menu)
+        self.nb_right = notebooks.RightNotebook(self, parent, menu)
 
         self.Initialize(self.nb_left)
 

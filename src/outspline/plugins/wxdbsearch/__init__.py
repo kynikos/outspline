@@ -40,10 +40,9 @@ nb_icon_refresh_index = None
 
 
 class SearchViewPanel(wx.Panel):
-    ctabmenu = None
-
-    def __init__(self, parent):
+    def __init__(self, parent, acctable):
         wx.Panel.__init__(self, parent)
+        self.acctable = acctable
 
     def _init_tab_menu(self):
         self.ctabmenu = TabContextMenu()
@@ -51,10 +50,18 @@ class SearchViewPanel(wx.Panel):
     def get_tab_context_menu(self):
         return self.ctabmenu
 
+    def get_accelerators_table(self):
+        return self.acctable
+
 
 class SearchView(object):
     def __init__(self, parent):
-        self.panel = SearchViewPanel(parent)
+        accelerators = {
+        }
+        accelerators.update(wxgui_api.get_right_nb_generic_accelerators())
+        acctable = wxgui_api.generate_right_nb_accelerators(accelerators)
+
+        self.panel = SearchViewPanel(parent, acctable)
         self.box = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.box)
 

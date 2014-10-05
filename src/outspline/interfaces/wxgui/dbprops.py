@@ -97,12 +97,16 @@ class DatabasePropertyManager(object):
 
 
 class DatabasePropertiesPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, acctable):
         wx.Panel.__init__(self, parent)
         self.ctabmenu = TabContextMenu()
+        self.acctable = acctable
 
     def get_tab_context_menu(self):
         return self.ctabmenu
+
+    def get_accelerators_table(self):
+        return self.acctable
 
 
 class DatabaseProperties(object):
@@ -111,7 +115,11 @@ class DatabaseProperties(object):
         self.filename = filename
         nb = wx.GetApp().nb_right
 
-        self.panel = DatabasePropertiesPanel(nb)
+        accelerators = nb.get_generic_accelerators()
+        acctable = wx.GetApp().root.accmanager.generate_table(nb,
+                                                                accelerators)
+
+        self.panel = DatabasePropertiesPanel(nb, acctable)
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(sizer)
 

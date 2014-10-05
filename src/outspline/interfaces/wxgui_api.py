@@ -347,6 +347,10 @@ def get_right_nb():
     return wx.GetApp().nb_right
 
 
+def get_right_nb_generic_accelerators():
+    return wx.GetApp().nb_right.get_generic_accelerators()
+
+
 def select_right_nb_tab(window):
     nb = wx.GetApp().nb_right
     return nb.SetSelection(nb.GetPageIndex(window))

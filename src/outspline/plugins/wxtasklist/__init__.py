@@ -29,8 +29,9 @@ import menus
 
 
 class TaskListPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, acctable):
         wx.Panel.__init__(self, parent)
+        self.acctable = acctable
 
     def init_tab_menu(self, tasklist):
         self.ctabmenu = menus.TabContextMenu(tasklist)
@@ -39,14 +40,22 @@ class TaskListPanel(wx.Panel):
         self.ctabmenu.update()
         return self.ctabmenu
 
+    def get_accelerators_table(self):
+        return self.acctable
+
 
 class TaskList(object):
     def __init__(self, parent):
+        accelerators = {
+        }
+        accelerators.update(wxgui_api.get_right_nb_generic_accelerators())
+        acctable = wxgui_api.generate_right_nb_accelerators(accelerators)
+
         # Note that the remaining border is due to the SplitterWindow, whose
         # border cannot be removed because it's used to highlight the sash
         # See also http://trac.wxwidgets.org/ticket/12413
         # and http://trac.wxwidgets.org/changeset/66230
-        self.panel = TaskListPanel(parent)
+        self.panel = TaskListPanel(parent, acctable)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
 

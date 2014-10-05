@@ -45,15 +45,19 @@ class Editors(object):
 
 
 class EditorPanel(wx.Panel):
-    ctabmenu = None
-
     def __init__(self, parent, item):
         wx.Panel.__init__(self, parent)
         self.ctabmenu = TabContextMenu(item)
 
+    def store_accelerators_table(self, acctable):
+        self.acctable = acctable
+
     def get_tab_context_menu(self):
         self.ctabmenu.update()
         return self.ctabmenu
+
+    def get_accelerators_table(self):
+        return self.acctable
 
 
 class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
@@ -122,6 +126,7 @@ class Editor():
         self.item = item
         self.modstate = False
         self.captionbars = []
+
         self.captionbar_keys = {
             wx.WXK_TAB: self._handle_tab_on_captionbar,
             wx.WXK_RETURN: self._handle_captionbar_key_toggle,
@@ -139,8 +144,18 @@ class Editor():
         self.area = textarea.TextArea(self.filename, self.id_, self.item, text)
         self.pbox.Add(self.area.area, proportion=1, flag=wx.EXPAND)
 
+        self.accelerators = {}
+
         open_editor_event.signal(filename=self.filename, id_=self.id_,
                                                     item=self.item, text=text)
+
+        self.accelerators.update({
+        })
+        self.accelerators.update(
+                            wx.GetApp().nb_right.get_generic_accelerators())
+        acctable = wx.GetApp().root.accmanager.generate_table(
+                                    wx.GetApp().nb_right, self.accelerators)
+        self.panel.store_accelerators_table(acctable)
 
         nb = wx.GetApp().nb_right
         nb.add_page(self.panel, title, self.close, select=True,
