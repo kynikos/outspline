@@ -771,7 +771,7 @@ class FilterInterfaceRelative(object):
         self.fbox = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(self.fbox)
 
-        lowlabel = wx.StaticText(self.panel, label='From')
+        lowlabel = wx.StaticText(self.panel, label='&From')
         self.fbox.Add(lowlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
@@ -857,7 +857,7 @@ class FilterInterfaceDate(object):
         self.fbox = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(self.fbox)
 
-        lowlabel = wx.StaticText(self.panel, label='From')
+        lowlabel = wx.StaticText(self.panel, label='&From')
         self.fbox.Add(lowlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
@@ -966,7 +966,7 @@ class FilterInterfaceMonth(object):
         self.fbox = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(self.fbox)
 
-        lowlabel = wx.StaticText(self.panel, label='From')
+        lowlabel = wx.StaticText(self.panel, label='&From')
         self.fbox.Add(lowlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
