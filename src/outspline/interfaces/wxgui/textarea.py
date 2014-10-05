@@ -53,6 +53,8 @@ class TextArea(object):
         # correctly highlighted in blue
         self.area.SetValue(text)
 
+        wx.GetApp().root.accmanager.register_text_ctrl(self.area)
+
         self.textctrl_nav_keys = {
             wx.WXK_ESCAPE: self._navigate_textctrl_backward,
         }
