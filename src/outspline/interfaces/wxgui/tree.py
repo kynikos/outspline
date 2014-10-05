@@ -311,6 +311,9 @@ class Database(wx.SplitterWindow):
         wx.GetApp().root.accmanager.create_manager(self.treec,
                                                             self.accelerators)
 
+    def install_additional_accelerators(self, accelsconf):
+        self.accelerators.update(accelsconf)
+
     def _handle_insert_item(self, kwargs):
         if kwargs['filename'] == self.filename:
             parent = self.get_tree_item_safe(kwargs['parent'])

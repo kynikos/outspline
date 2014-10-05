@@ -488,6 +488,10 @@ def bind_to_close_window(handler):
 
 ### TREE ###
 
+def install_database_accelerators(filename, accelsconf):
+    return tree.dbs[filename].install_additional_accelerators(accelsconf)
+
+
 def get_tree_selections(filename, none=True, many=True, descendants=None):
     return tree.dbs[filename].get_selections(none=none, many=many,
                                              descendants=descendants)
