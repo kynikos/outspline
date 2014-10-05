@@ -60,9 +60,9 @@ def add_plugin_to_editor(filename, id_, caption):
                        ].add_plugin_panel(caption)
 
 
-def add_window_to_plugin(filename, id_, fpanel, window):
+def add_window_to_plugin(filename, id_, fpanel, window, accelerators):
     return editor.tabs[editor.Editor.make_tabid(filename, id_)
-                       ].add_plugin_window(fpanel, window)
+                            ].add_plugin_window(fpanel, window, accelerators)
 
 
 def collapse_panel(filename, id_, fpanel):

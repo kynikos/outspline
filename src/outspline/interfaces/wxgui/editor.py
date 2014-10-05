@@ -294,9 +294,11 @@ class Editor():
         event.Skip()
         wx.CallAfter(self.resize_fpb)
 
-    def add_plugin_window(self, fpanel, window):
+    def add_plugin_window(self, fpanel, window, accelerators):
         self.fpbar.AddFoldPanelWindow(fpanel, window)
         self.panel.Layout()
+
+        self.accelerators.update(accelerators)
 
     def resize_fpb(self):
         sizeNeeded = self.fpbar.GetPanelsLength(0, 0)[2]
