@@ -173,7 +173,33 @@ class MainFrame(wx.Frame):
         self.Show(True)
 
     def _init_accelerators(self):
+        aconfig = self.config("ExtendedShortcuts")
         self.accmanager = AcceleratorsManagers()
+        altmovkeys = AlternativeMovementKeys()
+        self.accmanager.create_manager(self, {
+            aconfig["up"]: altmovkeys.simulate_up,
+            aconfig["down"]: altmovkeys.simulate_down,
+            aconfig["left"]: altmovkeys.simulate_left,
+            aconfig["right"]: altmovkeys.simulate_right,
+            "Shift+{}".format(aconfig["up"]): altmovkeys.simulate_shift_up,
+            "Shift+{}".format(aconfig["down"]): altmovkeys.simulate_shift_down,
+            "Shift+{}".format(aconfig["left"]): altmovkeys.simulate_shift_left,
+            "Shift+{}".format(aconfig["right"]):
+                                            altmovkeys.simulate_shift_right,
+            "Ctrl+{}".format(aconfig["up"]): altmovkeys.simulate_ctrl_up,
+            "Ctrl+{}".format(aconfig["down"]): altmovkeys.simulate_ctrl_down,
+            "Ctrl+{}".format(aconfig["left"]): altmovkeys.simulate_ctrl_left,
+            "Ctrl+{}".format(aconfig["right"]): altmovkeys.simulate_ctrl_right,
+            "Ctrl+Shift+{}".format(aconfig["up"]):
+                                            altmovkeys.simulate_ctrl_shift_up,
+            "Ctrl+Shift+{}".format(aconfig["down"]):
+                                        altmovkeys.simulate_ctrl_shift_down,
+            "Ctrl+Shift+{}".format(aconfig["left"]):
+                                        altmovkeys.simulate_ctrl_shift_left,
+            "Ctrl+Shift+{}".format(aconfig["right"]):
+                                        altmovkeys.simulate_ctrl_shift_right,
+        })
+
     def _handle_creation(self, event):
         self.Unbind(wx.EVT_WINDOW_CREATE, handler=self._handle_creation)
 
@@ -378,4 +404,73 @@ class _WindowAccelerators(object):
 
     def _handle_disable_accelerators(self, event):
         self.window.SetAcceleratorTable(self.tablenoop)
+        event.Skip()
+
+
+class AlternativeMovementKeys(object):
+    def __init__(self):
+        self.uisim = wx.UIActionSimulator()
+
+    def simulate_up(self, event):
+        self.uisim.Char(wx.WXK_UP)
+        event.Skip()
+
+    def simulate_down(self, event):
+        self.uisim.Char(wx.WXK_DOWN)
+        event.Skip()
+
+    def simulate_left(self, event):
+        self.uisim.Char(wx.WXK_LEFT)
+        event.Skip()
+
+    def simulate_right(self, event):
+        self.uisim.Char(wx.WXK_RIGHT)
+        event.Skip()
+
+    def simulate_shift_up(self, event):
+        self.uisim.Char(wx.WXK_UP, modifiers=wx.MOD_SHIFT)
+        event.Skip()
+
+    def simulate_shift_down(self, event):
+        self.uisim.Char(wx.WXK_DOWN, modifiers=wx.MOD_SHIFT)
+        event.Skip()
+
+    def simulate_shift_left(self, event):
+        self.uisim.Char(wx.WXK_LEFT, modifiers=wx.MOD_SHIFT)
+        event.Skip()
+
+    def simulate_shift_right(self, event):
+        self.uisim.Char(wx.WXK_RIGHT, modifiers=wx.MOD_SHIFT)
+        event.Skip()
+
+    def simulate_ctrl_up(self, event):
+        self.uisim.Char(wx.WXK_UP, modifiers=wx.MOD_CONTROL)
+        event.Skip()
+
+    def simulate_ctrl_down(self, event):
+        self.uisim.Char(wx.WXK_DOWN, modifiers=wx.MOD_CONTROL)
+        event.Skip()
+
+    def simulate_ctrl_left(self, event):
+        self.uisim.Char(wx.WXK_LEFT, modifiers=wx.MOD_CONTROL)
+        event.Skip()
+
+    def simulate_ctrl_right(self, event):
+        self.uisim.Char(wx.WXK_RIGHT, modifiers=wx.MOD_CONTROL)
+        event.Skip()
+
+    def simulate_ctrl_shift_up(self, event):
+        self.uisim.Char(wx.WXK_UP, modifiers=wx.MOD_CONTROL | wx.MOD_SHIFT)
+        event.Skip()
+
+    def simulate_ctrl_shift_down(self, event):
+        self.uisim.Char(wx.WXK_DOWN, modifiers=wx.MOD_CONTROL | wx.MOD_SHIFT)
+        event.Skip()
+
+    def simulate_ctrl_shift_left(self, event):
+        self.uisim.Char(wx.WXK_LEFT, modifiers=wx.MOD_CONTROL | wx.MOD_SHIFT)
+        event.Skip()
+
+    def simulate_ctrl_shift_right(self, event):
+        self.uisim.Char(wx.WXK_RIGHT, modifiers=wx.MOD_CONTROL | wx.MOD_SHIFT)
         event.Skip()
