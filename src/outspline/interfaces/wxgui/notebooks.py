@@ -267,6 +267,7 @@ class RightNotebook(Notebook):
     # wx.NO_IMAGE, which is used in the docs, seems not to exist...
     def add_page(self, window, caption, select=True, imageId=wx.NOT_FOUND):
         self.AddPage(window, text=caption, select=select, imageId=imageId)
+        window.SetFocus()
         self._split()
 
     # wx.NO_IMAGE, which is used in the docs, seems not to exist...
