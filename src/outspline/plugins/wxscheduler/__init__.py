@@ -138,11 +138,13 @@ class Scheduler():
     def show_list(self):
         self.rule_editor.panel.Show(False)
         self.rule_list.panel.Show()
+        self.rule_list.panel.SetFocus()
         self.resize()
 
     def show_editor(self):
         self.rule_list.panel.Show(False)
         self.rule_editor.panel.Show()
+        self.rule_editor.panel.SetFocus()
         self.resize()
 
     def set_focus(self):
