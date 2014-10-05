@@ -40,8 +40,9 @@ nb_icon_refresh_index = None
 
 
 class SearchViewPanel(wx.Panel):
-    def __init__(self, parent, acctable):
+    def __init__(self, parent, searchview, acctable):
         wx.Panel.__init__(self, parent)
+        self.searchview = searchview
         self.acctable = acctable
 
     def _init_tab_menu(self):
@@ -52,6 +53,9 @@ class SearchViewPanel(wx.Panel):
 
     def get_accelerators_table(self):
         return self.acctable
+
+    def close_tab(self):
+        self.searchview.close_()
 
 
 class SearchView(object):
@@ -66,7 +70,7 @@ class SearchView(object):
         accelerators.update(wxgui_api.get_right_nb_generic_accelerators())
         acctable = wxgui_api.generate_right_nb_accelerators(accelerators)
 
-        self.panel = SearchViewPanel(parent, acctable)
+        self.panel = SearchViewPanel(parent, self, acctable)
         self.box = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.box)
 
@@ -94,7 +98,7 @@ class SearchView(object):
         searches.append(searchview)
 
         wxgui_api.add_page_to_right_nb(searchview.panel, 'Search',
-                                    searchview.close_, imageId=nb_icon_index)
+                                                        imageId=nb_icon_index)
 
     def close_(self):
         self.finish_search_action = self._finish_search_close

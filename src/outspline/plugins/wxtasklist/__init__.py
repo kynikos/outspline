@@ -29,8 +29,9 @@ import menus
 
 
 class TaskListPanel(wx.Panel):
-    def __init__(self, parent, acctable):
+    def __init__(self, parent, tasklist, acctable):
         wx.Panel.__init__(self, parent)
+        self.tasklist = tasklist
         self.acctable = acctable
 
     def init_tab_menu(self, tasklist):
@@ -42,6 +43,9 @@ class TaskListPanel(wx.Panel):
 
     def get_accelerators_table(self):
         return self.acctable
+
+    def close_tab(self):
+        self.tasklist._hide()
 
 
 class TaskList(object):
@@ -84,7 +88,7 @@ class TaskList(object):
         # border cannot be removed because it's used to highlight the sash
         # See also http://trac.wxwidgets.org/ticket/12413
         # and http://trac.wxwidgets.org/changeset/66230
-        self.panel = TaskListPanel(parent, acctable)
+        self.panel = TaskListPanel(parent, self, acctable)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
 
@@ -148,7 +152,7 @@ class TaskList(object):
             self._show()
 
     def _show(self):
-        wxgui_api.add_plugin_to_right_nb(self.panel, "", self._hide,
+        wxgui_api.add_plugin_to_right_nb(self.panel, "",
                                                     imageId=self.nb_icon_index)
         self._enable()
 

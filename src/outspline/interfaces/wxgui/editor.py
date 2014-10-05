@@ -45,8 +45,9 @@ class Editors(object):
 
 
 class EditorPanel(wx.Panel):
-    def __init__(self, parent, item):
+    def __init__(self, parent, editor, item):
         wx.Panel.__init__(self, parent)
+        self.editor = editor
         self.ctabmenu = TabContextMenu(item)
 
     def store_accelerators_table(self, acctable):
@@ -58,6 +59,9 @@ class EditorPanel(wx.Panel):
 
     def get_accelerators_table(self):
         return self.acctable
+
+    def close_tab(self):
+        self.editor.close()
 
 
 class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
@@ -133,7 +137,7 @@ class Editor():
             wx.WXK_SPACE: self._handle_captionbar_key_toggle,
         }
 
-        self.panel = EditorPanel(wx.GetApp().nb_right, item)
+        self.panel = EditorPanel(wx.GetApp().nb_right, self, item)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
 
@@ -162,7 +166,7 @@ class Editor():
         self.panel.store_accelerators_table(acctable)
 
         nb = wx.GetApp().nb_right
-        nb.add_page(self.panel, title, self.close, select=True,
+        nb.add_page(self.panel, title, select=True,
                                                 imageId=nb.editors.icon_index)
 
     @classmethod

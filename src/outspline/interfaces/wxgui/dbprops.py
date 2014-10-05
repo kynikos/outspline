@@ -97,8 +97,9 @@ class DatabasePropertyManager(object):
 
 
 class DatabasePropertiesPanel(wx.Panel):
-    def __init__(self, parent, acctable):
+    def __init__(self, parent, props, acctable):
         wx.Panel.__init__(self, parent)
+        self.props = props
         self.ctabmenu = TabContextMenu()
         self.acctable = acctable
 
@@ -107,6 +108,9 @@ class DatabasePropertiesPanel(wx.Panel):
 
     def get_accelerators_table(self):
         return self.acctable
+
+    def close_tab(self):
+        self.props.manager.close(self.props.filename)
 
 
 class DatabaseProperties(object):
@@ -119,7 +123,7 @@ class DatabaseProperties(object):
         acctable = wx.GetApp().root.accmanager.generate_table(nb,
                                                                 accelerators)
 
-        self.panel = DatabasePropertiesPanel(nb, acctable)
+        self.panel = DatabasePropertiesPanel(nb, self, acctable)
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(sizer)
 
@@ -130,8 +134,7 @@ class DatabaseProperties(object):
         sizer.Add(self.propgrid, 1, flag=wx.EXPAND)
 
         nb.add_page(self.panel, os.path.basename(self.filename),
-                            self.manager.close, closeArgs=(self.filename, ),
-                            imageId=self.manager.get_notebook_icon_index())
+                                imageId=self.manager.get_notebook_icon_index())
 
         self.onchange_actions = {}
 

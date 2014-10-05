@@ -386,17 +386,15 @@ def add_right_nb_image(image):
 
 
 # wx.NO_IMAGE, which is used in the docs, seems not to exist...
-def add_plugin_to_right_nb(window, caption, close, closeArgs=(), select=True,
-                                                        imageId=wx.NOT_FOUND):
+def add_plugin_to_right_nb(window, caption, select=True, imageId=wx.NOT_FOUND):
     return wx.GetApp().nb_right.add_plugin(window, caption=caption,
-            close=close, closeArgs=closeArgs, select=select, imageId=imageId)
+                                                select=select, imageId=imageId)
 
 
 # wx.NO_IMAGE, which is used in the docs, seems not to exist...
-def add_page_to_right_nb(window, caption, close, closeArgs=(), select=True,
-                                                        imageId=wx.NOT_FOUND):
-    return wx.GetApp().nb_right.add_page(window, caption=caption, close=close,
-                        closeArgs=closeArgs, select=select, imageId=imageId)
+def add_page_to_right_nb(window, caption, select=True, imageId=wx.NOT_FOUND):
+    return wx.GetApp().nb_right.add_page(window, caption=caption,
+                                                select=select, imageId=imageId)
 
 
 def hide_right_nb_page(window):
