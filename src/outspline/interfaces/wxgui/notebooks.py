@@ -83,7 +83,7 @@ class Notebook(FlatNotebook):
         # "selected" tab, which may not be the "right-clicked" one
         # Of course the selection must be set *before* enabling/disabling the
         # actions in the context menu
-        self.SetSelection(event.GetSelection())
+        self.select_page(event.GetSelection())
 
         try:
             cmenu = self.GetCurrentPage().get_tab_context_menu()
@@ -93,10 +93,17 @@ class Notebook(FlatNotebook):
             self.SetRightClickMenu(cmenu)
 
     def select_page(self, index):
+        # FlatNotebook's SetSelection method doesn't send page change events,
+        #  so always make sure to call this select_page method instead, so
+        #  that, in case some action needs to be done before or after the page
+        #  change, it can be done explicitly here
+        #  Note that there would also be a FlatNotebookCompatible class which
+        #  would instead send those page change events, but it looks buggy when
+        #  closing the tabs...
         self.SetSelection(index)
 
     def select_last_page(self):
-        self.SetSelection(self.GetPageCount() - 1)
+        self.select_page(self.GetPageCount() - 1)
 
     def get_selected_tab_index(self):
         # Returns -1 if there's no tab
@@ -149,6 +156,16 @@ class LeftNotebook(Notebook):
             # Note that this event is bound directly by the menubar module
             last_database_closed_event.signal()
 
+    def select_page(self, index):
+        # FlatNotebook's SetSelection method doesn't send page change events,
+        #  so always make sure to call this select_page method instead, so
+        #  that, in case some action needs to be done before or after the page
+        #  change, it can be done explicitly here
+        #  Note that there would also be a FlatNotebookCompatible class which
+        #  would instead send those page change events, but it looks buggy when
+        #  closing the tabs...
+        self.SetSelection(index)
+
     def add_page(self, window, caption, select=True):
         self.AddPage(window, caption, select=select)
         self.parent.split_window()
@@ -193,11 +210,7 @@ class RightNotebook(Notebook):
                                                     self._handle_page_closed)
 
     def _handle_page_changed(self, event):
-        # Do not store the accelerators for each notebook page, otherwise they
-        # should be deleted when the page is closed; calling a predefined
-        # method is much safer
-        self.accmanager.set_table(
-                                self.GetCurrentPage().get_accelerators_table())
+        self._change_accelerators()
         event.Skip()
 
     def _handle_page_closing(self, event):
@@ -229,6 +242,24 @@ class RightNotebook(Notebook):
     def _unsplit(self):
         if self.GetPageCount() == 0:
             self.parent.unsplit_window()
+
+    def _change_accelerators(self):
+        # Do not store the accelerators for each notebook page, otherwise they
+        # should be deleted when the page is closed; calling a predefined
+        # method is much safer
+        self.accmanager.set_table(
+                                self.GetCurrentPage().get_accelerators_table())
+
+    def select_page(self, index):
+        # FlatNotebook's SetSelection method doesn't send page change events,
+        #  so always make sure to call this select_page method instead, so
+        #  that, in case some action needs to be done before or after the page
+        #  change, it can be done explicitly here
+        #  Note that there would also be a FlatNotebookCompatible class which
+        #  would instead send those page change events, but it looks buggy when
+        #  closing the tabs...
+        self.SetSelection(index)
+        self._change_accelerators()
 
     def get_generic_accelerators(self):
         return self.genaccels

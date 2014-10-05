@@ -60,7 +60,7 @@ class DatabasePropertyManager(object):
             self.open_panels[filename].configure()
         else:
             nb = wx.GetApp().nb_right
-            nb.SetSelection(nb.GetPageIndex(self.open_panels[filename].panel))
+            nb.select_page(nb.GetPageIndex(self.open_panels[filename].panel))
 
     def _handle_save_database(self, kwargs):
         try:

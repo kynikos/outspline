@@ -179,7 +179,7 @@ class Editor():
             tabs[item]._post_init()
         else:
             tabid = wx.GetApp().nb_right.GetPageIndex(tabs[item].panel)
-            wx.GetApp().nb_right.SetSelection(tabid)
+            wx.GetApp().nb_right.select_page(tabid)
 
     def add_plugin_panel(self, caption):
         if self.fpbar == None:
@@ -344,7 +344,7 @@ class Editor():
     def close(self, ask='apply'):
         nb = wx.GetApp().nb_right
         tabid = nb.GetPageIndex(self.panel)
-        nb.SetSelection(tabid)
+        nb.select_page(tabid)
         item = self.item
 
         if ask != 'quiet' and self.is_modified():

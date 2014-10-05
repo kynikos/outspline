@@ -341,7 +341,7 @@ def get_right_nb_generic_accelerators():
 
 def select_right_nb_tab(window):
     nb = wx.GetApp().nb_right
-    return nb.SetSelection(nb.GetPageIndex(window))
+    return nb.select_page(nb.GetPageIndex(window))
 
 
 def is_page_in_right_nb(window):
