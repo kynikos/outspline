@@ -304,6 +304,9 @@ class MainPanes(wx.SplitterWindow):
         if self.IsSplit():
             self.Unsplit(self.nb_right)
 
+        # Explicitly reset the focus, which in some cases would be lost
+        self.parent.SetFocus()
+
 
 class AcceleratorsManagers(object):
     def __init__(self):

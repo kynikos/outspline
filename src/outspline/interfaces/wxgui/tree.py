@@ -247,14 +247,6 @@ class Database(wx.SplitterWindow):
 
         self.Initialize(self.treec)
 
-        # Explicitly set focus on the tree, otherwise after opening a database
-        # no window has focus, and this e.g. prevents F10 from showing the menu
-        # if set on autohide, until a window is manually focused (note that
-        # this would happen only when opening a database manually, it wouldn't
-        # happen when a database is opened automatically by the session
-        # manager)
-        self.treec.SetFocus()
-
         # Initialize the logs panel *after* signalling creating_tree_event,
         # which is used to add plugin logs
         self.logspanel.initialize()
@@ -272,6 +264,14 @@ class Database(wx.SplitterWindow):
 
         self.history_item_update_requests = []
         self.history_tree_reset_request = False
+
+        # Explicitly set focus on the tree, otherwise after opening a database
+        # no window has focus, and this e.g. prevents F10 from showing the menu
+        # if set on autohide, until a window is manually focused (note that
+        # this would happen only when opening a database manually, it wouldn't
+        # happen when a database is opened automatically by the session
+        # manager)
+        self.treec.SetFocus()
 
         self.treec.Bind(dv.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
                                                         self._popup_item_menu)
