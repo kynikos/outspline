@@ -88,7 +88,15 @@ class LinkManager(object):
 
         self.lpanel = wx.Panel(self.fpanel)
 
-        wxgui_api.add_window_to_plugin(filename, id_, self.fpanel, self.lpanel)
+        config = coreaux_api.get_plugin_configuration('wxlinks')(
+                                                        'ExtendedShortcuts')
+        accelerators = {
+            config["focus"]: lambda event: self.set_focus(),
+            config["toggle"]: lambda event: self.toggle_focus(),
+        }
+
+        wxgui_api.add_window_to_plugin(filename, id_, self.fpanel, self.lpanel,
+                                                                accelerators)
 
     def post_init(self):
         self.target = links_api.find_link_target(self.filename, self.id_)
