@@ -66,9 +66,9 @@ class Main(object):
         filename = wxgui_api.get_selected_database_filename()
 
         try:
-            return (self.alarmlogs[filename], filename)
+            return self.alarmlogs[filename]
         except KeyError:
-            return (False, False)
+            return False
 
 
 class AlarmsLogModel(wx.dataview.PyDataViewIndexListModel):
@@ -126,6 +126,12 @@ class AlarmsLog(object):
         self.view.AppendTextColumn('Timestamp', 0, width=wx.COL_WIDTH_AUTOSIZE)
         self.view.AppendTextColumn('Action', 1, width=wx.COL_WIDTH_AUTOSIZE)
         self.view.AppendTextColumn('Item', 2)
+
+        config = coreaux_api.get_plugin_configuration('wxalarmslog')(
+                                                        'ExtendedShortcuts')
+        wxgui_api.install_accelerators(self.view, {
+            config["find"]: lambda event: self.find_in_tree(),
+        })
 
         self.reasons = {0: '[snoozed]',
                         1: '[dismissed]',
@@ -192,6 +198,22 @@ class AlarmsLog(object):
             organism_alarms_api.update_alarms_log_limit(self.filename, value)
             core_api.release_databases()
 
+    def find_in_tree(self):
+        sel = self.get_selections()
+
+        if len(sel) > 0:
+            wxgui_api.unselect_all_items(self.filename)
+
+            # Do not loop directly on view.GetSelections(), e.g.
+            #   for s in view.GetSelections():
+            # because it doesn't work as expected!
+            for item in sel:
+                id_ = self.get_item_id(item)
+
+                # The logged item may not exist anymore
+                if core_api.is_item(self.filename, id_):
+                    wxgui_api.add_item_to_selection(self.filename, id_)
+
 
 class LogsMenu(object):
     def __init__(self, plugin):
@@ -233,7 +255,7 @@ class LogsMenu(object):
     def _update_items(self, kwargs):
         self.find.Enable(False)
 
-        log, filename = self.plugin.get_selected_log()
+        log = self.plugin.get_selected_log()
 
         if log and log.is_shown() and log.has_selection():
             self.find.Enable()
@@ -248,29 +270,16 @@ class LogsMenu(object):
         self.find.Enable()
 
     def _select(self, event):
-        log, filename = self.plugin.get_selected_log()
+        log = self.plugin.get_selected_log()
 
         if log:
             wxgui_api.select_log(log.get_tool_id())
 
     def _find_in_tree(self, event):
-        log, filename = self.plugin.get_selected_log()
+        log = self.plugin.get_selected_log()
 
         if log and log.is_shown():
-            sel = log.get_selections()
-
-            if len(sel) > 0:
-                wxgui_api.unselect_all_items(filename)
-
-                # Do not loop directly on view.GetSelections(), e.g.
-                #   for s in view.GetSelections():
-                # because it doesn't work as expected!
-                for item in sel:
-                    id_ = log.get_item_id(item)
-
-                    # The logged item may not exist anymore
-                    if core_api.is_item(filename, id_):
-                        wxgui_api.add_item_to_selection(filename, id_)
+            log.find_in_tree()
 
 
 class ContextMenu(object):
