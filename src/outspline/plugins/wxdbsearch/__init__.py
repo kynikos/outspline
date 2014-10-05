@@ -332,7 +332,7 @@ class SearchFilters(object):
         self.box = wx.BoxSizer(wx.VERTICAL)
         sbox = wx.BoxSizer(wx.HORIZONTAL)
 
-        label = wx.StaticText(mainview.panel, label='Search for:')
+        label = wx.StaticText(mainview.panel, label='Search &for:')
         sbox.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
         self.text = wx.TextCtrl(mainview.panel, style=wx.TE_PROCESS_ENTER)
