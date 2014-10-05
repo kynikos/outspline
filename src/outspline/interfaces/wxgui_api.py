@@ -245,18 +245,6 @@ def bind_to_close_database(handler, bind=True):
     return databases.close_database_event.bind(handler, bind)
 
 
-def bind_to_undo_tree(handler, bind=True):
-    return menubar.undo_tree_event.bind(handler, bind)
-
-
-def bind_to_redo_tree(handler, bind=True):
-    return menubar.redo_tree_event.bind(handler, bind)
-
-
-def bind_to_delete_items(handler, bind=True):
-    return menubar.delete_items_event.bind(handler, bind)
-
-
 def simulate_create_database(filename):
     return wx.GetApp().menu.file.new_database(None, filename)
 
@@ -574,6 +562,18 @@ def bind_to_reset_tree_context_menu(handler, bind=True):
 
 def bind_to_popup_tree_context_menu(handler, bind=True):
     return tree.popup_context_menu_event.bind(handler, bind)
+
+
+def bind_to_undo_tree(handler, bind=True):
+    return tree.undo_tree_event.bind(handler, bind)
+
+
+def bind_to_redo_tree(handler, bind=True):
+    return tree.redo_tree_event.bind(handler, bind)
+
+
+def bind_to_delete_items(handler, bind=True):
+    return tree.delete_items_event.bind(handler, bind)
 
 
 def simulate_unselect_all_items(filename):
