@@ -45,15 +45,19 @@ class Editors(object):
 
 
 class EditorPanel(wx.Panel):
-    ctabmenu = None
-
     def __init__(self, parent, item):
         wx.Panel.__init__(self, parent)
         self.ctabmenu = TabContextMenu(item)
 
+    def store_accelerators_table(self, acctable):
+        self.acctable = acctable
+
     def get_tab_context_menu(self):
         self.ctabmenu.update()
         return self.ctabmenu
+
+    def get_accelerators_table(self):
+        return self.acctable
 
 
 class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
@@ -122,6 +126,7 @@ class Editor():
         self.item = item
         self.modstate = False
         self.captionbars = []
+
         self.captionbar_keys = {
             wx.WXK_TAB: self._handle_tab_on_captionbar,
             wx.WXK_RETURN: self._handle_captionbar_key_toggle,
@@ -139,8 +144,22 @@ class Editor():
         self.area = textarea.TextArea(self.filename, self.id_, self.item, text)
         self.pbox.Add(self.area.area, proportion=1, flag=wx.EXPAND)
 
+        self.accelerators = {}
+
         open_editor_event.signal(filename=self.filename, id_=self.id_,
                                                     item=self.item, text=text)
+
+        aconfig = config("ExtendedShortcuts")("RightNotebook")("Editor")
+        self.accelerators.update({
+            aconfig["apply"]: lambda event: self.apply(),
+            aconfig["find"]: lambda event: self.find_in_tree(),
+            aconfig["focus_text"]: lambda event: self.focus_text(),
+        })
+        self.accelerators.update(
+                            wx.GetApp().nb_right.get_generic_accelerators())
+        acctable = wx.GetApp().root.accmanager.generate_table(
+                                    wx.GetApp().nb_right, self.accelerators)
+        self.panel.store_accelerators_table(acctable)
 
         nb = wx.GetApp().nb_right
         nb.add_page(self.panel, title, self.close, select=True,
@@ -275,9 +294,11 @@ class Editor():
         event.Skip()
         wx.CallAfter(self.resize_fpb)
 
-    def add_plugin_window(self, fpanel, window):
+    def add_plugin_window(self, fpanel, window, accelerators):
         self.fpbar.AddFoldPanelWindow(fpanel, window)
         self.panel.Layout()
+
+        self.accelerators.update(accelerators)
 
     def resize_fpb(self):
         sizeNeeded = self.fpbar.GetPanelsLength(0, 0)[2]

@@ -39,14 +39,10 @@ menu_view_update_event = Event()
 menu_view_logs_disable_event = Event()
 menu_view_logs_update_event = Event()
 menu_view_editors_disable_event = Event()
-undo_tree_event = Event()
-redo_tree_event = Event()
-delete_items_event = Event()
 
 
 class RootMenu(wx.MenuBar):
     def __init__(self, frame):
-
         # Note that the menu can be accessed through F10, which is an
         # accelerator that doesn't seem to be overridable neither through
         # menu shortcuts nor through accelerators
@@ -349,28 +345,14 @@ class MenuFile(wx.Menu):
             treedb = wx.GetApp().nb_left.get_selected_tab()
 
             if treedb:
-                filename = treedb.get_filename()
-
-                if core_api.check_pending_changes(filename):
-                    try:
-                        core_api.save_database(filename)
-                    except OutsplineError as err:
-                        databases.warn_aborted_save(err)
-                    else:
-                        treedb.dbhistory.refresh()
+                treedb.save()
 
             core_api.release_databases()
 
     def save_all_databases(self, event):
         if core_api.block_databases():
             for filename in tuple(tree.dbs.keys()):
-                if core_api.check_pending_changes(filename):
-                    try:
-                        core_api.save_database(filename)
-                    except OutsplineError as err:
-                        databases.warn_aborted_save(err)
-                    else:
-                        tree.dbs[filename].dbhistory.refresh()
+                tree.dbs[filename].save()
 
             core_api.release_databases()
 
@@ -578,196 +560,58 @@ class MenuDatabase(wx.Menu):
         self.delete.Enable()
 
     def undo_tree(self, event, no_confirm=False):
-        if core_api.block_databases():
-            tab = wx.GetApp().nb_left.get_selected_tab()
-            if tab:
-                read = core_api.preview_undo_tree(tab.get_filename())
-                if read:
-                    for id_ in read:
-                        item = editor.Editor.make_tabid(tab.get_filename(),
-                                                                        id_)
-                        if item in editor.tabs and not editor.tabs[item].close(
-                                    ask='quiet' if no_confirm else 'discard'):
-                            break
-                    else:
-                        filename = tab.get_filename()
-                        core_api.undo_tree(filename)
-                        tab.dbhistory.refresh()
-                        undo_tree_event.signal(filename=filename)
+        tab = wx.GetApp().nb_left.get_selected_tab()
 
-            core_api.release_databases()
+        if tab:
+            tab.undo(no_confirm=no_confirm)
 
     def redo_tree(self, event, no_confirm=False):
-        if core_api.block_databases():
-            tab = wx.GetApp().nb_left.get_selected_tab()
-            if tab:
-                read = core_api.preview_redo_tree(tab.get_filename())
-                if read:
-                    for id_ in read:
-                        item = editor.Editor.make_tabid(tab.get_filename(),
-                                                                        id_)
-                        if item in editor.tabs and not editor.tabs[item].close(
-                                    ask='quiet' if no_confirm else 'discard'):
-                            break
-                    else:
-                        filename = tab.get_filename()
-                        core_api.redo_tree(filename)
-                        tab.dbhistory.refresh()
-                        redo_tree_event.signal(filename=filename)
+        tab = wx.GetApp().nb_left.get_selected_tab()
 
-            core_api.release_databases()
+        if tab:
+            tab.redo(no_confirm=no_confirm)
 
     def create_sibling(self, event):
-        if core_api.block_databases():
-            treedb = wx.GetApp().nb_left.get_selected_tab()
+        treedb = wx.GetApp().nb_left.get_selected_tab()
 
-            if treedb:
-                filename = treedb.get_filename()
-
-                # Do not use none=False in order to allow the creation of the
-                # first item
-                selection = treedb.get_selections(many=False)
-
-                # If multiple items are selected, selection will be False
-                if selection is not False:
-                    text = 'New item'
-
-                    if len(selection) > 0:
-                        previd = treedb.get_item_id(selection[0])
-                        parid = core_api.get_item_parent(filename, previd)
-
-                        id_ = core_api.create_sibling(filename=filename,
-                                    parent=parid, previous=previd,
-                                    text=text, description='Insert item')
-                    else:
-                        id_ = core_api.create_child(filename=filename,
-                                                    parent=0, text=text,
-                                                    description='Insert item')
-
-                    treedb.select_item(id_)
-                    treedb.dbhistory.refresh()
-
-            core_api.release_databases()
+        if treedb:
+            treedb.create_sibling()
 
     def create_child(self, event):
-        if core_api.block_databases():
-            treedb = wx.GetApp().nb_left.get_selected_tab()
+        treedb = wx.GetApp().nb_left.get_selected_tab()
 
-            if treedb:
-                selection = treedb.get_selections(none=False, many=False)
-
-                if selection:
-                    pid = treedb.get_item_id(selection[0])
-
-                    id_ = core_api.create_child(filename=treedb.get_filename(),
-                                                parent=pid, text='New item',
-                                                description='Insert sub-item')
-
-                    treedb.select_item(id_)
-                    treedb.dbhistory.refresh()
-
-            core_api.release_databases()
+        if treedb:
+            treedb.create_child()
 
     def move_item_up(self, event):
-        if core_api.block_databases():
-            treedb = wx.GetApp().nb_left.get_selected_tab()
+        treedb = wx.GetApp().nb_left.get_selected_tab()
 
-            if treedb:
-                selection = treedb.get_selections(none=False, many=False)
-
-                if selection:
-                    item = selection[0]
-                    filename = treedb.get_filename()
-                    id_ = treedb.get_item_id(item)
-
-                    if core_api.move_item_up(filename, id_,
-                                                description='Move item up'):
-                        treedb.move_item(id_, item)
-                        treedb.select_item(id_)
-                        treedb.dbhistory.refresh()
-
-            core_api.release_databases()
+        if treedb:
+            treedb.move_item_up()
 
     def move_item_down(self, event):
-        if core_api.block_databases():
-            treedb = wx.GetApp().nb_left.get_selected_tab()
+        treedb = wx.GetApp().nb_left.get_selected_tab()
 
-            if treedb:
-                selection = treedb.get_selections(none=False, many=False)
-
-                if selection:
-                    item = selection[0]
-                    filename = treedb.get_filename()
-                    id_ = treedb.get_item_id(item)
-
-                    if core_api.move_item_down(filename, id_,
-                                                description='Move item down'):
-                        treedb.move_item(id_, item)
-                        treedb.select_item(id_)
-                        treedb.dbhistory.refresh()
-
-            core_api.release_databases()
+        if treedb:
+            treedb.move_item_down()
 
     def move_item_to_parent(self, event):
-        if core_api.block_databases():
-            treedb = wx.GetApp().nb_left.get_selected_tab()
+        treedb = wx.GetApp().nb_left.get_selected_tab()
 
-            if treedb:
-                selection = treedb.get_selections(none=False, many=False)
-
-                if selection:
-                    item = selection[0]
-                    filename = treedb.get_filename()
-                    id_ = treedb.get_item_id(item)
-                    oldpid = core_api.get_item_parent(filename, id_)
-
-                    if core_api.move_item_to_parent(filename, id_,
-                                            description='Move item to parent'):
-                        treedb.move_item_to_parent(oldpid, id_, item)
-                        treedb.select_item(id_)
-                        treedb.dbhistory.refresh()
-
-            core_api.release_databases()
+        if treedb:
+            treedb.move_item_to_parent()
 
     def edit_item(self, event):
         treedb = wx.GetApp().nb_left.get_selected_tab()
-        if treedb:
-            selection = treedb.get_selections(none=False)
-            if selection:
-                filename = treedb.get_filename()
 
-                for sel in selection:
-                    id_ = treedb.get_item_id(sel)
-                    editor.Editor.open(filename, id_)
+        if treedb:
+            treedb.edit_item()
 
     def delete_items(self, event, no_confirm=False):
-        if core_api.block_databases():
-            treedb = wx.GetApp().nb_left.get_selected_tab()
+        treedb = wx.GetApp().nb_left.get_selected_tab()
 
-            if treedb:
-                selection = treedb.get_selections(none=False, descendants=True)
-
-                if selection:
-                    filename = treedb.get_filename()
-                    items = []
-
-                    for item in selection:
-                        id_ = treedb.get_item_id(item)
-                        tab = editor.Editor.make_tabid(filename, id_)
-
-                        if tab in editor.tabs and not editor.tabs[tab].close(
-                                        'quiet' if no_confirm else 'discard'):
-                            core_api.release_databases()
-                            return False
-
-                        items.append(id_)
-
-                    treedb.delete_items(items,
-                            description='Delete {} items'.format(len(items)))
-                    treedb.dbhistory.refresh()
-                    delete_items_event.signal()
-
-            core_api.release_databases()
+        if treedb:
+            treedb.delete_selected_items(no_confirm=no_confirm)
 
 
 class MenuEdit(wx.Menu):

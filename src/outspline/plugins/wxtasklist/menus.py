@@ -19,7 +19,6 @@
 import wx
 
 from outspline.static.wxclasses.timectrls import TimeSpanCtrl
-from outspline.static.wxclasses.misc import NarrowSpinCtrl
 
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
@@ -228,78 +227,25 @@ class MainMenu(wx.Menu):
         tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.tasklist.panel:
-            sel = self.occview.listview.GetFirstSelected()
-
-            if sel > -1:
-                for filename in core_api.get_open_databases():
-                    wxgui_api.unselect_all_items(filename)
-
-                # Loop that selects a database tab (but doesn't select items)
-                while sel > -1:
-                    item = self.occview.occs[self.occview.listview.GetItemData(
-                                                                        sel)]
-
-                    if item.get_filename() is not None:
-                        wxgui_api.select_database_tab(item.get_filename())
-                        # The item is selected in the loop below
-                        break
-                    else:
-                        sel = self.occview.listview.GetNextSelected(sel)
-
-                # Loop that doesn't select a database tab but selects items,
-                # including the one found in the loop above
-                while sel > -1:
-                    item = self.occview.occs[self.occview.listview.GetItemData(
-                                                                        sel)]
-
-                    if item.get_filename() is not None:
-                        wxgui_api.add_item_to_selection(item.get_filename(),
-                                                                item.get_id())
-
-                    sel = self.occview.listview.GetNextSelected(sel)
+            self.occview.find_in_tree()
 
     def _edit_items(self, event):
         tab = wxgui_api.get_selected_right_nb_tab()
 
         if tab is self.tasklist.panel:
-            sel = self.occview.listview.GetFirstSelected()
-
-            while sel > -1:
-                item = self.occview.occs[self.occview.listview.GetItemData(
-                                                                        sel)]
-
-                if item.get_filename() is not None:
-                    wxgui_api.open_editor(item.get_filename(), item.get_id())
-
-                sel = self.occview.listview.GetNextSelected(sel)
+            self.occview.edit_items()
 
     def _dismiss_selected_alarms(self, event):
-        if core_api.block_databases():
-            tab = wxgui_api.get_selected_right_nb_tab()
+        tab = wxgui_api.get_selected_right_nb_tab()
 
-            if tab is self.tasklist.panel:
-                alarmsd = self.occview.get_selected_active_alarms()
-
-                if len(alarmsd) > 0:
-                    organism_alarms_api.dismiss_alarms(alarmsd)
-                    # Let the alarm off event update the tasklist
-
-            core_api.release_databases()
+        if tab is self.tasklist.panel:
+            self.occview.dismiss_selected_alarms()
 
     def _dismiss_all_alarms(self, event):
-        # Note that "all" means all the visible active alarms; some may be
-        # hidden in the current view
-        if core_api.block_databases():
-            tab = wxgui_api.get_selected_right_nb_tab()
+        tab = wxgui_api.get_selected_right_nb_tab()
 
-            if tab is self.tasklist.panel:
-                alarmsd = self.occview.get_active_alarms()
-
-                if len(alarmsd) > 0:
-                    organism_alarms_api.dismiss_alarms(alarmsd)
-                    # Let the alarm off event update the tasklist
-
-            core_api.release_databases()
+        if tab is self.tasklist.panel:
+            self.occview.dismiss_all_alarms()
 
 
 class NavigatorMenu(wx.Menu):
@@ -570,19 +516,14 @@ class ViewMenu(object):
 
     def _show_gaps(self, event):
         if self.tasklist.is_shown():
-            self.occview.show_gaps = not self.occview.show_gaps
-            self.occview.refresh()
+            self.occview.toggle_gaps()
 
     def _show_overlappings(self, event):
         if self.tasklist.is_shown():
-            self.occview.show_overlappings = not self.occview.show_overlappings
-            self.occview.refresh()
+            self.occview.toggle_overlappings()
 
     def _enable_autoscroll(self, event):
-        if self.occview.autoscroll.is_enabled():
-            self.occview.autoscroll.disable()
-        else:
-            self.occview.autoscroll.enable()
+        self.occview.autoscroll.toggle()
 
 
 class AlarmsMenu(wx.Menu):
@@ -878,10 +819,8 @@ class ListContextMenu(wx.Menu):
 
 
 class _SnoozeConfigMenu(wx.Menu):
-    def __init__(self, tasklist, mainmenu, ID_SNOOZE_FOR,
-                                                        ID_SNOOZE_FOR_N_index):
+    def __init__(self, mainmenu, ID_SNOOZE_FOR, ID_SNOOZE_FOR_N_index):
         wx.Menu.__init__(self)
-        self.tasklist = tasklist
         self.snoozetimes = {}
 
         for ID_SNOOZE_FOR_Ns, time, number, unit in mainmenu.snoozetimesconf:
@@ -894,118 +833,55 @@ class _SnoozeConfigMenu(wx.Menu):
         self.AppendSeparator()
         self.snoozefor = self.Append(ID_SNOOZE_FOR, "&For...")
 
-        wxgui_api.bind_to_menu(self._snooze_for_custom, self.snoozefor)
+        wxgui_api.bind_to_menu(self.snooze_for_custom, self.snoozefor)
 
     def _snooze_for_loop(self, time):
-        return lambda event: self._snooze_for(time)
-
-    def _snooze_for(self, time):
-        if core_api.block_databases():
-            tab = wxgui_api.get_selected_right_nb_tab()
-
-            if tab is self.tasklist.panel:
-                alarmsd = self.get_alarms()
-
-                if len(alarmsd) > 0:
-                    organism_alarms_api.snooze_alarms(alarmsd, time)
-                    # Let the alarm off event update the tasklist
-
-            core_api.release_databases()
-
-    def _snooze_for_custom(self, event):
-        if core_api.block_databases():
-            tab = wxgui_api.get_selected_right_nb_tab()
-
-            if tab is self.tasklist.panel:
-                alarmsd = self.get_alarms()
-
-                if len(alarmsd) > 0:
-                    dlg = SnoozeDialog()
-
-                    if dlg.ShowModal() == wx.ID_OK:
-                        organism_alarms_api.snooze_alarms(alarmsd,
-                                                                dlg.get_time())
-                        # Let the alarm off event update the tasklist
-
-                    # Unlike MessageDialog, a Dialog needs to be destroyed
-                    # explicitly
-                    dlg.Destroy()
-
-            core_api.release_databases()
-
-
-class SnoozeDialog(wx.Dialog):
-    def __init__(self):
-        wx.Dialog.__init__(self, parent=wxgui_api.get_main_frame(),
-                                                title="Snooze configuration")
-
-        vsizer = wx.BoxSizer(wx.VERTICAL)
-        self.SetSizer(vsizer)
-
-        hsizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        icon = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
-                                                '@alarms', wx.ART_CMN_DIALOG))
-        hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
-
-        ssizer = wx.BoxSizer(wx.HORIZONTAL)
-
-        label = wx.StaticText(self, label='Snooze for:')
-        ssizer.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
-
-        self.number = NarrowSpinCtrl(self, min=1, max=999,
-                                                        style=wx.SP_ARROW_KEYS)
-        self.number.SetValue(5)
-        ssizer.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
-                                                                    border=4)
-
-        self.unit = wx.ComboBox(self, value='minutes',
-                                choices=('minutes', 'hours', 'days', 'weeks'),
-                                style=wx.CB_READONLY)
-        ssizer.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL)
-
-        hsizer.Add(ssizer, flag=wx.ALIGN_TOP)
-
-        vsizer.Add(hsizer, flag=wx.ALIGN_CENTER | wx.ALL, border=12)
-
-        buttons = self.CreateButtonSizer(wx.OK | wx.CANCEL)
-        vsizer.Add(buttons,
-                        flag=wx.ALIGN_RIGHT | wx.LEFT | wx.RIGHT | wx.BOTTOM,
-                        border=12)
-
-        self.Fit()
-
-    def get_time(self):
-        mult = {'minutes': 60,
-                'hours': 3600,
-                'days': 86400,
-                'weeks': 604800}
-        return self.number.GetValue() * mult[self.unit.GetValue()]
+        return lambda event: self.snooze_for(time)
 
 
 class SnoozeSelectedConfigMenu(_SnoozeConfigMenu):
     def __init__(self, tasklist, mainmenu, accelerator=True):
-        _SnoozeConfigMenu.__init__(self, tasklist, mainmenu,
+        _SnoozeConfigMenu.__init__(self, mainmenu,
                                                 mainmenu.ID_SNOOZE_FOR_SEL, 0)
+        self.tasklist = tasklist
         config = coreaux_api.get_plugin_configuration('wxtasklist')(
                                                         'Shortcuts')('Items')
         accel = "\t{}".format(config['snooze_selected']) if accelerator else ""
         self.snoozefor.SetText(self.snoozefor.GetText() + accel)
 
-    def get_alarms(self):
-        return self.tasklist.list_.get_selected_active_alarms()
+    def snooze_for(self, time):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.tasklist.list_.snooze_selected_alarms_for(time)
+
+    def snooze_for_custom(self, event):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.tasklist.list_.snooze_selected_alarms_for_custom()
 
 
 class SnoozeAllConfigMenu(_SnoozeConfigMenu):
     def __init__(self, tasklist, mainmenu, accelerator=True):
-        _SnoozeConfigMenu.__init__(self, tasklist, mainmenu,
+        # Note that "all" means all the visible active alarms; some may be
+        # hidden in the current view
+        _SnoozeConfigMenu.__init__(self, mainmenu,
                                                 mainmenu.ID_SNOOZE_FOR_ALL, 1)
+        self.tasklist = tasklist
         config = coreaux_api.get_plugin_configuration('wxtasklist')(
                                                         'Shortcuts')('Items')
         accel = "\t{}".format(config['snooze_all']) if accelerator else ""
         self.snoozefor.SetText(self.snoozefor.GetText() + accel)
 
-    def get_alarms(self):
-        # Note that "all" means all the visible active alarms; some may be
-        # hidden in the current view
-        return self.tasklist.list_.get_active_alarms()
+    def snooze_for(self, time):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.tasklist.list_.snooze_all_alarms_for(time)
+
+    def snooze_for_custom(self, event):
+        tab = wxgui_api.get_selected_right_nb_tab()
+
+        if tab is self.tasklist.panel:
+            self.tasklist.list_.snooze_all_alarms_for_custom()

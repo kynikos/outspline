@@ -24,11 +24,16 @@ from outspline.coreaux_api import Event
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 
+import databases
+import editor
 import logs
 
 creating_tree_event = Event()
 reset_context_menu_event = Event()
 popup_context_menu_event = Event()
+undo_tree_event = Event()
+redo_tree_event = Event()
+delete_items_event = Event()
 
 dbs = {}
 
@@ -203,12 +208,14 @@ class Database(wx.SplitterWindow):
         self.ctabmenu = TabContextMenu(self.filename)
 
         self.logspanel = logs.LogsPanel(self, self.filename)
-        self.dbhistory = logs.DatabaseHistory(self.logspanel,
+        self.dbhistory = logs.DatabaseHistory(self, self.logspanel,
                                     self.logspanel.get_panel(), self.filename,
                                     self.treec.GetBackgroundColour())
 
         self.properties = Properties(self.treec)
         self.base_properties = DBProperties(self.properties)
+
+        self.accelerators = {}
 
         creating_tree_event.signal(filename=self.filename)
 
@@ -235,6 +242,8 @@ class Database(wx.SplitterWindow):
         dvcolumn = dv.DataViewColumn("Item", dvrenderer, 0,
                                                         align=wx.ALIGN_LEFT)
         self.treec.AppendColumn(dvcolumn)
+
+        self._init_accelerators()
 
         self.Initialize(self.treec)
 
@@ -278,6 +287,32 @@ class Database(wx.SplitterWindow):
         core_api.bind_to_history_update_text(self._handle_history_update_text)
         core_api.bind_to_history_remove(self._handle_history_remove)
         core_api.bind_to_history(self._handle_history)
+
+    def _init_accelerators(self):
+        config = coreaux_api.get_interface_configuration("wxgui")(
+                            "ExtendedShortcuts")("LeftNotebook")("Database")
+        self.accelerators.update({
+            config["expand"]: lambda event: self.expand_focused_item(),
+            config["collapse"]: lambda event: self.collapse_focused_item(),
+            config["select"]: lambda event:
+                                        self.add_focused_item_to_selection(),
+            config["unselect"]: lambda event:
+                                    self.remove_focused_item_from_selection(),
+            config["undo"]: lambda event: self.undo(),
+            config["redo"]: lambda event: self.redo(),
+            config["create_sibling"]: lambda event: self.create_sibling(),
+            config["create_child"]: lambda event: self.create_child(),
+            config["move_up"]: lambda event: self.move_item_up(),
+            config["move_down"]: lambda event: self.move_item_down(),
+            config["move_to_parent"]: lambda event: self.move_item_to_parent(),
+            config["edit"]: lambda event: self.edit_item(),
+            config["delete"]: lambda event: self.delete_selected_items(),
+        })
+        wx.GetApp().root.accmanager.create_manager(self.treec,
+                                                            self.accelerators)
+
+    def install_additional_accelerators(self, accelsconf):
+        self.accelerators.update(accelsconf)
 
     def _handle_insert_item(self, kwargs):
         if kwargs['filename'] == self.filename:
@@ -368,6 +403,94 @@ class Database(wx.SplitterWindow):
 
         dbs[filename]._post_init()
 
+    def save(self):
+        if core_api.check_pending_changes(self.filename):
+            try:
+                core_api.save_database(self.filename)
+            except OutsplineError as err:
+                databases.warn_aborted_save(err)
+            else:
+                self.dbhistory.refresh()
+
+    def undo(self, no_confirm=False):
+        if core_api.block_databases():
+            read = core_api.preview_undo_tree(self.filename)
+
+            if read:
+                for id_ in read:
+                    item = editor.Editor.make_tabid(self.filename, id_)
+
+                    if item in editor.tabs and not editor.tabs[item].close(
+                                    ask='quiet' if no_confirm else 'discard'):
+                        break
+                else:
+                    core_api.undo_tree(self.filename)
+                    self.dbhistory.refresh()
+                    undo_tree_event.signal(filename=self.filename)
+
+            core_api.release_databases()
+
+    def redo(self, no_confirm=False):
+        if core_api.block_databases():
+            read = core_api.preview_redo_tree(self.filename)
+
+            if read:
+                for id_ in read:
+                    item = editor.Editor.make_tabid(self.filename, id_)
+
+                    if item in editor.tabs and not editor.tabs[item].close(
+                                    ask='quiet' if no_confirm else 'discard'):
+                        break
+                else:
+                    core_api.redo_tree(self.filename)
+                    self.dbhistory.refresh()
+                    redo_tree_event.signal(filename=self.filename)
+
+            core_api.release_databases()
+
+    def create_sibling(self):
+        if core_api.block_databases():
+            # Do not use none=False in order to allow the creation of the
+            # first item
+            selection = self.get_selections(many=False)
+
+            # If multiple items are selected, selection will be False
+            if selection is not False:
+                text = 'New item'
+
+                if len(selection) > 0:
+                    previd = self.get_item_id(selection[0])
+                    parid = core_api.get_item_parent(self.filename, previd)
+
+                    id_ = core_api.create_sibling(filename=self.filename,
+                                parent=parid, previous=previd,
+                                text=text, description='Insert item')
+                else:
+                    id_ = core_api.create_child(filename=self.filename,
+                                                parent=0, text=text,
+                                                description='Insert item')
+
+                self.select_item(id_)
+                self.dbhistory.refresh()
+
+            core_api.release_databases()
+
+    def create_child(self):
+        if core_api.block_databases():
+            selection = self.get_selections(none=False, many=False)
+
+            if selection:
+                pid = self.get_item_id(selection[0])
+
+                id_ = core_api.create_child(filename=self.filename,
+                                            parent=pid, text='New item',
+                                            description='Insert sub-item')
+
+                self.select_item(id_)
+                self.dbhistory.refresh()
+
+            core_api.release_databases()
+
     def _insert_item(self, parent, id_, text):
         self._init_item_data(id_, text)
         self.dvmodel.ItemAdded(parent, self.get_tree_item(id_))
@@ -398,7 +521,39 @@ class Database(wx.SplitterWindow):
         else:
             return selection
 
-    def move_item(self, id_, item):
+    def move_item_up(self):
+        if core_api.block_databases():
+            selection = self.get_selections(none=False, many=False)
+
+            if selection:
+                item = selection[0]
+                id_ = self.get_item_id(item)
+
+                if core_api.move_item_up(self.filename, id_,
+                                            description='Move item up'):
+                    self._move_item(id_, item)
+                    self.select_item(id_)
+                    self.dbhistory.refresh()
+
+            core_api.release_databases()
+
+    def move_item_down(self):
+        if core_api.block_databases():
+            selection = self.get_selections(none=False, many=False)
+
+            if selection:
+                item = selection[0]
+                id_ = self.get_item_id(item)
+
+                if core_api.move_item_down(self.filename, id_,
+                                            description='Move item down'):
+                    self._move_item(id_, item)
+                    self.select_item(id_)
+                    self.dbhistory.refresh()
+
+            core_api.release_databases()
+
+    def _move_item(self, id_, item):
         pid = core_api.get_item_parent(self.filename, id_)
         parent = self.get_tree_item_safe(pid)
 
@@ -406,19 +561,34 @@ class Database(wx.SplitterWindow):
         self.dvmodel.ItemAdded(parent, item)
         self._reset_subtree(id_, item)
 
-    def move_item_to_parent(self, oldpid, id_, item):
-        newpid = core_api.get_item_parent(self.filename, id_)
+    def move_item_to_parent(self):
+        if core_api.block_databases():
+            selection = self.get_selections(none=False, many=False)
 
-        # oldpid cannot be 0 here because core_api.move_item_to_parent
-        # succeded, which means that it wasn't the root item
-        oldparent = self.get_tree_item(oldpid)
-        newparent = self.get_tree_item_safe(newpid)
+            if selection:
+                item = selection[0]
+                id_ = self.get_item_id(item)
+                oldpid = core_api.get_item_parent(self.filename, id_)
 
-        self.dvmodel.ItemDeleted(oldparent, item)
-        self.dvmodel.ItemAdded(newparent, item)
-        self._reset_subtree(id_, item)
+                if core_api.move_item_to_parent(self.filename, id_,
+                                        description='Move item to parent'):
 
-        self._refresh_item_arrow(newparent, oldpid, oldparent)
+                    newpid = core_api.get_item_parent(self.filename, id_)
+
+                    # oldpid cannot be 0 here because
+                    # core_api.move_item_to_parent succeded, which means that
+                    # it wasn't the root item
+                    oldparent = self.get_tree_item(oldpid)
+                    newparent = self.get_tree_item_safe(newpid)
+
+                    self.dvmodel.ItemDeleted(oldparent, item)
+                    self.dvmodel.ItemAdded(newparent, item)
+                    self._reset_subtree(id_, item)
+                    self._refresh_item_arrow(newparent, oldpid, oldparent)
+                    self.select_item(id_)
+                    self.dbhistory.refresh()
+
+            core_api.release_databases()
 
     def _reset_subtree(self, id_, item):
         childids = core_api.get_item_children(self.filename, id_)
@@ -427,6 +597,39 @@ class Database(wx.SplitterWindow):
             child = self.get_tree_item(childid)
             self.dvmodel.ItemAdded(item, child)
             self._reset_subtree(childid, child)
+
+    def edit_item(self):
+        selection = self.get_selections(none=False)
+
+        if selection:
+            for sel in selection:
+                id_ = self.get_item_id(sel)
+                editor.Editor.open(self.filename, id_)
+
+    def delete_selected_items(self, no_confirm=False):
+        if core_api.block_databases():
+            selection = self.get_selections(none=False, descendants=True)
+
+            if selection:
+                items = []
+
+                for item in selection:
+                    id_ = self.get_item_id(item)
+                    tab = editor.Editor.make_tabid(self.filename, id_)
+
+                    if tab in editor.tabs and not editor.tabs[tab].close(
+                                    'quiet' if no_confirm else 'discard'):
+                        core_api.release_databases()
+                        return False
+
+                    items.append(id_)
+
+                self.delete_items(items,
+                        description='Delete {} items'.format(len(items)))
+                self.dbhistory.refresh()
+                delete_items_event.signal()
+
+            core_api.release_databases()
 
     def delete_items(self, ids, description="Delete items"):
         group = core_api.get_next_history_group(self.filename)
@@ -535,8 +738,20 @@ class Database(wx.SplitterWindow):
     def add_item_to_selection(self, id_):
         self.treec.Select(self.get_tree_item(id_))
 
+    def add_focused_item_to_selection(self):
+        self.treec.Select(self.treec.GetCurrentItem())
+
     def remove_item_from_selection(self, id_):
         self.treec.Unselect(self.get_tree_item(id_))
+
+    def remove_focused_item_from_selection(self):
+        self.treec.Unselect(self.treec.GetCurrentItem())
+
+    def expand_focused_item(self):
+        self.treec.Expand(self.treec.GetCurrentItem())
+
+    def collapse_focused_item(self):
+        self.treec.Collapse(self.treec.GetCurrentItem())
 
     def focus_database(self):
         self.treec.SetFocus()

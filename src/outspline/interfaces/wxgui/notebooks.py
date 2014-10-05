@@ -20,6 +20,7 @@ import wx
 import wx.lib.agw.flatnotebook as flatnotebook
 from wx.lib.agw.flatnotebook import FlatNotebook
 
+import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import Event
 import outspline.core_api as core_api
 
@@ -109,8 +110,22 @@ class Notebook(FlatNotebook):
 
 
 class LeftNotebook(Notebook):
-    def __init__(self, parent):
+    def __init__(self, parent, frame, menu):
         Notebook.__init__(self, parent)
+
+        config = coreaux_api.get_interface_configuration('wxgui')(
+                                        "ExtendedShortcuts")("LeftNotebook")
+        frame.accmanager.create_manager(self, {
+            config["cycle"]: menu.view.databases_submenu.ID_CYCLE,
+            config["cycle_reverse"]: menu.view.databases_submenu.ID_RCYCLE,
+            config["focus_first"]: menu.view.databases_submenu.ID_FOCUS_1,
+            config["focus_last"]: menu.view.databases_submenu.ID_FOCUS_LAST,
+            config["show_logs"]: menu.view.logs_submenu.ID_SHOW,
+            config["save"]: menu.file.ID_SAVE,
+            config["save_all"]: menu.file.ID_SAVE_ALL,
+            config["close"]: menu.file.ID_CLOSE_DB,
+            config["close_all"]: menu.file.ID_CLOSE_DB_ALL,
+        })
 
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
                                                     self._handle_page_closing)
@@ -150,7 +165,7 @@ class LeftNotebook(Notebook):
 
 
 class RightNotebook(Notebook):
-    def __init__(self, parent):
+    def __init__(self, parent, frame, menu):
         Notebook.__init__(self, parent)
         self.close_functions = {}
 
@@ -159,10 +174,32 @@ class RightNotebook(Notebook):
 
         self.editors = editor.Editors(self)
 
+        config = coreaux_api.get_interface_configuration('wxgui')(
+                                        "ExtendedShortcuts")("RightNotebook")
+        self.genaccels = {
+            config["cycle"]: menu.view.rightnb_submenu.ID_CYCLE,
+            config["cycle_reverse"]: menu.view.rightnb_submenu.ID_RCYCLE,
+            config["focus_first"]: menu.view.rightnb_submenu.ID_FOCUS_1,
+            config["focus_last"]: menu.view.rightnb_submenu.ID_FOCUS_LAST,
+            config["close"]: menu.view.rightnb_submenu.ID_CLOSE,
+        }
+
+        self.accmanager = frame.accmanager.create_manager(self, {})
+
+        self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CHANGED,
+                                                    self._handle_page_changed)
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSING,
                                                     self._handle_page_closing)
         self.Bind(flatnotebook.EVT_FLATNOTEBOOK_PAGE_CLOSED,
                                                     self._handle_page_closed)
+
+    def _handle_page_changed(self, event):
+        # Do not store the accelerators for each notebook page, otherwise they
+        # should be deleted when the page is closed; calling a predefined
+        # method is much safer
+        self.accmanager.set_table(
+                                self.GetCurrentPage().get_accelerators_table())
+        event.Skip()
 
     def _handle_page_closing(self, event):
         # Veto the event, page deletion is managed explicitly later
@@ -193,6 +230,9 @@ class RightNotebook(Notebook):
     def _unsplit(self):
         if self.GetPageCount() == 0:
             self.parent.unsplit_window()
+
+    def get_generic_accelerators(self):
+        return self.genaccels
 
     # wx.NO_IMAGE, which is used in the docs, seems not to exist...
     def add_page(self, window, caption, close, closeArgs=(), select=True,

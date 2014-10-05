@@ -56,6 +56,13 @@ class LogsPanel(object):
 
         self.logviews = []
 
+        config = coreaux_api.get_interface_configuration('wxgui')(
+                                "ExtendedShortcuts")("LeftNotebook")("Logs")
+        wx.GetApp().root.accmanager.create_manager(self.panel, {
+            config["cycle"]: lambda event: self.advance_selection(),
+            config["cycle_reverse"]: lambda event: self.reverse_selection(),
+        })
+
         # Hide, otherwise the children windows will be shown even if panel is
         # hidden in the configuration
         self.panel.Show(False)
@@ -164,7 +171,8 @@ class DatabaseHistoryModel(wx.dataview.PyDataViewIndexListModel):
 
 
 class DatabaseHistory(object):
-    def __init__(self, logspanel, parent, filename, bgcolor):
+    def __init__(self, tree, logspanel, parent, filename, bgcolor):
+        self.tree = tree
         self.logspanel = logspanel
         self.filename = filename
         self.config = coreaux_api.get_interface_configuration('wxgui')
@@ -193,6 +201,13 @@ class DatabaseHistory(object):
         self.view.AppendTextColumn('Description', 3)
 
         self._make_icons(bgcolor)
+
+        aconfig = self.config("ExtendedShortcuts")("LeftNotebook")("Logs")(
+                                                                    "History")
+        wx.GetApp().root.accmanager.create_manager(self.view, {
+            aconfig["undo"]: lambda event: self.tree.undo(),
+            aconfig["redo"]: lambda event: self.tree.redo(),
+        })
 
         self.tool_id, menu_items, popup_cmenu = self.logspanel.add_log(
                                 self.view, "Items",

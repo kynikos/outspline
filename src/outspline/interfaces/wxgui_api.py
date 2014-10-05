@@ -60,9 +60,9 @@ def add_plugin_to_editor(filename, id_, caption):
                        ].add_plugin_panel(caption)
 
 
-def add_window_to_plugin(filename, id_, fpanel, window):
+def add_window_to_plugin(filename, id_, fpanel, window, accelerators):
     return editor.tabs[editor.Editor.make_tabid(filename, id_)
-                       ].add_plugin_window(fpanel, window)
+                            ].add_plugin_window(fpanel, window, accelerators)
 
 
 def collapse_panel(filename, id_, fpanel):
@@ -245,18 +245,6 @@ def bind_to_close_database(handler, bind=True):
     return databases.close_database_event.bind(handler, bind)
 
 
-def bind_to_undo_tree(handler, bind=True):
-    return menubar.undo_tree_event.bind(handler, bind)
-
-
-def bind_to_redo_tree(handler, bind=True):
-    return menubar.redo_tree_event.bind(handler, bind)
-
-
-def bind_to_delete_items(handler, bind=True):
-    return menubar.delete_items_event.bind(handler, bind)
-
-
 def simulate_create_database(filename):
     return wx.GetApp().menu.file.new_database(None, filename)
 
@@ -345,6 +333,10 @@ def get_selected_database_filename():
 
 def get_right_nb():
     return wx.GetApp().nb_right
+
+
+def get_right_nb_generic_accelerators():
+    return wx.GetApp().nb_right.get_generic_accelerators()
 
 
 def select_right_nb_tab(window):
@@ -457,6 +449,19 @@ def is_shown():
     return wx.GetApp().root.IsShown()
 
 
+def generate_right_nb_accelerators(accelsconf):
+    return wx.GetApp().root.accmanager.generate_table(wx.GetApp().nb_right,
+                                                                    accelsconf)
+
+
+def install_accelerators(window, accelsconf):
+    return wx.GetApp().root.accmanager.create_manager(window, accelsconf)
+
+
+def register_text_ctrl(window):
+    return wx.GetApp().root.accmanager.register_text_ctrl(window)
+
+
 def exit_application(event):
     return wx.GetApp().exit_app(event)
 
@@ -482,6 +487,10 @@ def bind_to_close_window(handler):
 
 
 ### TREE ###
+
+def install_database_accelerators(filename, accelsconf):
+    return tree.dbs[filename].install_additional_accelerators(accelsconf)
+
 
 def get_tree_selections(filename, none=True, many=True, descendants=None):
     return tree.dbs[filename].get_selections(none=none, many=many,
@@ -557,6 +566,18 @@ def bind_to_reset_tree_context_menu(handler, bind=True):
 
 def bind_to_popup_tree_context_menu(handler, bind=True):
     return tree.popup_context_menu_event.bind(handler, bind)
+
+
+def bind_to_undo_tree(handler, bind=True):
+    return tree.undo_tree_event.bind(handler, bind)
+
+
+def bind_to_redo_tree(handler, bind=True):
+    return tree.redo_tree_event.bind(handler, bind)
+
+
+def bind_to_delete_items(handler, bind=True):
+    return tree.delete_items_event.bind(handler, bind)
 
 
 def simulate_unselect_all_items(filename):

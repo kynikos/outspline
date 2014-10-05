@@ -34,22 +34,138 @@ plugin = None
 
 class Main(object):
     def __init__(self):
-        self.mainmenu = MainMenu()
-        self.cmenus = {}
+        self.dbs = {}
+        self.mainmenu = MainMenu(self.dbs)
 
-        wxgui_api.bind_to_open_database(self._handle_open_database)
+        wxgui_api.bind_to_creating_tree(self._handle_creating_tree)
         wxgui_api.bind_to_close_database(self._handle_close_database)
 
-    def _handle_open_database(self, kwargs):
+    def _handle_creating_tree(self, kwargs):
         filename = kwargs['filename']
-        self.cmenus[filename] = TreeContextMenu(filename, self.mainmenu)
+        self.dbs[filename] = Database(filename, self.mainmenu)
 
     def _handle_close_database(self, kwargs):
-        del self.cmenus[kwargs['filename']]
+        del self.dbs[kwargs['filename']]
+
+
+class Database(object):
+    def __init__(self, filename, mainmenu):
+        self.filename = filename
+
+        config = coreaux_api.get_plugin_configuration('wxcopypaste')(
+                                                        'ExtendedShortcuts')
+        wxgui_api.install_database_accelerators(filename, {
+            config["cut"]: lambda event: self.cut_items(),
+            config["copy"]: lambda event: self.copy_items(),
+            config["paste_siblings"]:
+                                lambda event: self.paste_items_as_siblings(),
+            config["paste_children"]:
+                                lambda event: self.paste_items_as_children(),
+        })
+
+        TreeContextMenu(filename, mainmenu)
+
+    def cut_items(self, no_confirm=False):
+        if core_api.block_databases():
+            # get_tree_selections() arguments must be compatible with the
+            # ones used in self.delete_items()
+            selection = wxgui_api.get_tree_selections(self.filename,
+                                                none=False, descendants=True)
+
+            if selection:
+                items = []
+
+                for item in selection:
+                    id_ = wxgui_api.get_tree_item_id(self.filename, item)
+
+                    if not wxgui_api.close_editor(self.filename, id_,
+                                    ask='quiet' if no_confirm else 'discard'):
+                        core_api.release_databases()
+                        return False
+
+                    items.append(id_)
+
+                copypaste_api.copy_items(self.filename, items)
+
+                wxgui_api.delete_items(self.filename, items,
+                                description='Cut {} items'.format(len(items)))
+                wxgui_api.refresh_history(self.filename)
+                cut_items_event.signal()
+
+            core_api.release_databases()
+
+    def copy_items(self):
+        if core_api.block_databases():
+            # get_tree_selections() arguments must be compatible with the
+            # ones used in self.delete_items()
+            selection = wxgui_api.get_tree_selections(self.filename,
+                                                none=False, descendants=True)
+
+            if selection:
+                items = []
+
+                for item in selection:
+                    items.append(wxgui_api.get_tree_item_id(self.filename,
+                                                                        item))
+
+                copypaste_api.copy_items(self.filename, items)
+
+            core_api.release_databases()
+
+    def paste_items_as_siblings(self, no_confirm=False):
+        if core_api.block_databases():
+            if no_confirm or copypaste_api.can_paste_safely(self.filename) or \
+                    msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK:
+                # Do not use none=False in order to allow pasting in an empty
+                # database
+                selection = wxgui_api.get_tree_selections(self.filename,
+                                                                    many=False)
+
+                # If multiple items are selected, selection will be False
+                if selection is not False:
+                    if len(selection) > 0:
+                        baseid = wxgui_api.get_tree_item_id(self.filename,
+                                                                selection[0])
+
+                        roots, ids = copypaste_api.paste_items_as_siblings(
+                            self.filename, baseid, description='Paste items')
+                    else:
+                        roots, ids = copypaste_api.paste_items_as_children(
+                                self.filename, 0, description='Paste items')
+
+                    wxgui_api.refresh_history(self.filename)
+
+                    items_pasted_event.signal(filename=self.filename,
+                                                        roots=roots, ids=ids)
+
+            core_api.release_databases()
+
+    def paste_items_as_children(self, no_confirm=False):
+        if core_api.block_databases():
+            selection = wxgui_api.get_tree_selections(self.filename,
+                                                        none=False, many=False)
+
+            if selection and (no_confirm or
+                    copypaste_api.can_paste_safely(self.filename) or
+                    msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK):
+                baseid = wxgui_api.get_tree_item_id(self.filename,
+                                                                selection[0])
+
+                roots, ids = copypaste_api.paste_items_as_children(
+                        self.filename, baseid, description='Paste sub-items')
+
+                wxgui_api.refresh_history(self.filename)
+
+                items_pasted_event.signal(filename=self.filename, roots=roots,
+                                                                    ids=ids)
+
+            core_api.release_databases()
 
 
 class MainMenu(object):
-    def __init__(self):
+    def __init__(self, dbs):
+        self.dbs = dbs
+
         self.ID_CUT = wx.NewId()
         self.ID_COPY = wx.NewId()
         self.ID_PASTE = wx.NewId()
@@ -140,119 +256,36 @@ class MainMenu(object):
                 self.mpaste.Enable()
 
     def cut_items(self, event, no_confirm=False):
-        if core_api.block_databases():
-            filename = wxgui_api.get_selected_database_filename()
+        filename = wxgui_api.get_selected_database_filename()
 
-            # This method may be launched by the menu accelerator, but no
-            # database may be open
-            if filename:
-                # get_tree_selections() arguments must be compatible with the
-                # ones used in self.delete_items()
-                selection = wxgui_api.get_tree_selections(filename, none=False,
-                                                            descendants=True)
-
-                if selection:
-                    items = []
-
-                    for item in selection:
-                        id_ = wxgui_api.get_tree_item_id(filename, item)
-
-                        if not wxgui_api.close_editor(filename, id_,
-                                    ask='quiet' if no_confirm else 'discard'):
-                            core_api.release_databases()
-                            return False
-
-                        items.append(id_)
-
-                    copypaste_api.copy_items(filename, items)
-
-                    wxgui_api.delete_items(filename, items,
-                                description='Cut {} items'.format(len(items)))
-                    wxgui_api.refresh_history(filename)
-                    cut_items_event.signal()
-
-            core_api.release_databases()
+        # This method may be launched by the menu accelerator, but the database
+        # database may not be open
+        if filename:
+            self.dbs[filename].cut_items(no_confirm=no_confirm)
 
     def copy_items(self, event):
-        if core_api.block_databases():
-            filename = wxgui_api.get_selected_database_filename()
+        filename = wxgui_api.get_selected_database_filename()
 
-            # This method may be launched by the menu accelerator, but not
-            # database may be open
-            if filename:
-                # get_tree_selections() arguments must be compatible with the
-                # ones used in self.delete_items()
-                selection = wxgui_api.get_tree_selections(filename, none=False,
-                                                            descendants=True)
-
-                if selection:
-                    items = []
-
-                    for item in selection:
-                        items.append(wxgui_api.get_tree_item_id(filename,
-                                                                        item))
-
-                    copypaste_api.copy_items(filename, items)
-
-            core_api.release_databases()
+        # This method may be launched by the menu accelerator, but the database
+        # database may not be open
+        if filename:
+            self.dbs[filename].copy_items()
 
     def paste_items_as_siblings(self, event, no_confirm=False):
-        if core_api.block_databases():
-            filename = wxgui_api.get_selected_database_filename()
+        filename = wxgui_api.get_selected_database_filename()
 
-            # This method may be launched by the menu accelerator, but not
-            # database may be open
-            if filename and \
-                    (no_confirm or copypaste_api.can_paste_safely(filename) or
-                    msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK):
-                # Do not use none=False in order to allow pasting in an empty
-                # database
-                selection = wxgui_api.get_tree_selections(filename, many=False)
-
-                # If multiple items are selected, selection will be False
-                if selection is not False:
-                    if len(selection) > 0:
-                        baseid = wxgui_api.get_tree_item_id(filename,
-                                                                selection[0])
-
-                        roots, ids = copypaste_api.paste_items_as_siblings(
-                                filename, baseid, description='Paste items')
-                    else:
-                        roots, ids = copypaste_api.paste_items_as_children(
-                                        filename, 0, description='Paste items')
-
-                    wxgui_api.refresh_history(filename)
-
-                    items_pasted_event.signal(filename=filename, roots=roots,
-                                                                    ids=ids)
-
-            core_api.release_databases()
+        # This method may be launched by the menu accelerator, but the database
+        # database may not be open
+        if filename:
+            self.dbs[filename].paste_items_as_siblings(no_confirm=no_confirm)
 
     def paste_items_as_children(self, event, no_confirm=False):
-        if core_api.block_databases():
-            filename = wxgui_api.get_selected_database_filename()
+        filename = wxgui_api.get_selected_database_filename()
 
-            # This method may be launched by the menu accelerator, but not
-            # database may be open
-            if filename:
-                selection = wxgui_api.get_tree_selections(filename, none=False,
-                                                                    many=False)
-
-                if selection and (no_confirm or
-                                    copypaste_api.can_paste_safely(filename) or
-                                    msgboxes.unsafe_paste_confirm().ShowModal(
-                                    ) == wx.ID_OK):
-                    baseid = wxgui_api.get_tree_item_id(filename, selection[0])
-
-                    roots, ids = copypaste_api.paste_items_as_children(
-                            filename, baseid, description='Paste sub-items')
-
-                    wxgui_api.refresh_history(filename)
-
-                    items_pasted_event.signal(filename=filename, roots=roots,
-                                                                    ids=ids)
-
-            core_api.release_databases()
+        # This method may be launched by the menu accelerator, but the database
+        # database may not be open
+        if filename:
+            self.dbs[filename].paste_items_as_children(no_confirm=no_confirm)
 
 
 class TreeContextMenu(object):
