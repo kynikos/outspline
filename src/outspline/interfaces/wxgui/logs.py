@@ -56,6 +56,13 @@ class LogsPanel(object):
 
         self.logviews = []
 
+        config = coreaux_api.get_interface_configuration('wxgui')(
+                                "ExtendedShortcuts")("LeftNotebook")("Logs")
+        wx.GetApp().root.accmanager.create_manager(self.panel, {
+            config["cycle"]: lambda event: self.advance_selection(),
+            config["cycle_reverse"]: lambda event: self.reverse_selection(),
+        })
+
         # Hide, otherwise the children windows will be shown even if panel is
         # hidden in the configuration
         self.panel.Show(False)
