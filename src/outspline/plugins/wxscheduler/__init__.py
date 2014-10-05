@@ -113,8 +113,15 @@ class Scheduler():
         box.Add(self.rule_list.panel, flag=wx.EXPAND | wx.BOTTOM, border=4)
         box.Add(self.rule_editor.panel, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
+        config = coreaux_api.get_plugin_configuration('wxscheduler')(
+                                                        'ExtendedShortcuts')
+        accelerators = {
+            config["focus"]: lambda event: self.set_focus(),
+            config["toggle"]: lambda event: self.toggle_focus(),
+        }
+
         wxgui_api.add_window_to_plugin(self.filename, self.id_, self.fpanel,
-                                                                    self.panel)
+                                                    self.panel, accelerators)
         self.resize()
 
         # Must be done *after* resizing
