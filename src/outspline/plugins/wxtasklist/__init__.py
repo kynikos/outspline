@@ -46,7 +46,36 @@ class TaskListPanel(wx.Panel):
 
 class TaskList(object):
     def __init__(self, parent):
+        self.config = coreaux_api.get_plugin_configuration('wxtasklist')
+
+        aconfig = self.config("ExtendedShortcuts")
         accelerators = {
+            aconfig["prev_page"]:
+                            lambda event: self.navigator.show_previous_page(),
+            aconfig["next_page"]:
+                                lambda event: self.navigator.show_next_page(),
+            aconfig["apply"]: lambda event: self.navigator.apply(),
+            aconfig["set"]: lambda event: self.navigator.set(),
+            aconfig["reset"]: lambda event: self.navigator.reset(),
+            aconfig["autoscroll"]:
+                        lambda event: self.list_.autoscroll.execute_force(),
+            aconfig["toggle_autoscroll"]:
+                                lambda event: self.list_.autoscroll.toggle(),
+            aconfig["find"]: lambda event: self.list_.find_in_tree(),
+            aconfig["edit"]: lambda event: self.list_.edit_items(),
+            aconfig["snooze"]:
+                lambda event: self.list_.snooze_selected_alarms_for_custom(),
+            aconfig["snooze_all"]:
+                    lambda event: self.list_.snooze_all_alarms_for_custom(),
+            aconfig["dismiss"]:
+                            lambda event: self.list_.dismiss_selected_alarms(),
+            aconfig["dismiss_all"]:
+                                lambda event: self.list_.dismiss_all_alarms(),
+            aconfig["toggle_navigator"]:
+                                lambda event: self.navigator.toggle_shown(),
+            aconfig["toggle_gaps"]: lambda event: self.list_.toggle_gaps(),
+            aconfig["toggle_overlappings"]:
+                                lambda event: self.list_.toggle_overlappings(),
         }
         accelerators.update(wxgui_api.get_right_nb_generic_accelerators())
         acctable = wxgui_api.generate_right_nb_accelerators(accelerators)
@@ -58,8 +87,6 @@ class TaskList(object):
         self.panel = TaskListPanel(parent, acctable)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
-
-        self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
         self.nb_icon_index = wxgui_api.add_right_nb_image(
                                         wx.ArtProvider.GetBitmap('@tasklist',

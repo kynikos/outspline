@@ -25,6 +25,8 @@ import os
 import string as string_
 import threading
 
+from outspline.static.wxclasses.misc import NarrowSpinCtrl
+
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import log
 import outspline.core_api as core_api
@@ -344,6 +346,164 @@ class OccurrencesView(object):
         config['show_gaps'] = 'yes' if self.show_gaps else 'no'
         config['show_overlappings'] = 'yes' if self.show_overlappings else 'no'
         config['autoscroll'] = 'on' if self.autoscroll.is_enabled() else 'off'
+
+    def find_in_tree(self):
+        sel = self.listview.GetFirstSelected()
+
+        if sel > -1:
+            for filename in core_api.get_open_databases():
+                wxgui_api.unselect_all_items(filename)
+
+            # Loop that selects a database tab (but doesn't select items)
+            while sel > -1:
+                item = self.occs[self.listview.GetItemData(sel)]
+
+                if item.get_filename() is not None:
+                    wxgui_api.select_database_tab(item.get_filename())
+                    # The item is selected in the loop below
+                    break
+                else:
+                    sel = self.listview.GetNextSelected(sel)
+
+            # Loop that doesn't select a database tab but selects items,
+            # including the one found in the loop above
+            while sel > -1:
+                item = self.occs[self.listview.GetItemData(sel)]
+
+                if item.get_filename() is not None:
+                    wxgui_api.add_item_to_selection(item.get_filename(),
+                                                            item.get_id())
+
+                sel = self.listview.GetNextSelected(sel)
+
+    def edit_items(self):
+        sel = self.listview.GetFirstSelected()
+
+        while sel > -1:
+            item = self.occs[self.listview.GetItemData(sel)]
+
+            if item.get_filename() is not None:
+                wxgui_api.open_editor(item.get_filename(), item.get_id())
+
+            sel = self.listview.GetNextSelected(sel)
+
+    def snooze_selected_alarms_for(self, time):
+        self._snooze_alarms_for(time, self.get_selected_active_alarms)
+
+    def snooze_selected_alarms_for_custom(self):
+        self._snooze_alarms_for_custom(self.get_selected_active_alarms)
+
+    def snooze_all_alarms_for(self, time):
+        self._snooze_alarms_for(time, self.get_active_alarms)
+
+    def snooze_all_alarms_for_custom(self):
+        self._snooze_alarms_for_custom(self.get_active_alarms)
+
+    def _snooze_alarms_for(self, time, alarmscall):
+        if core_api.block_databases():
+            alarmsd = alarmscall()
+
+            if len(alarmsd) > 0:
+                organism_alarms_api.snooze_alarms(alarmsd, time)
+                # Let the alarm off event update the tasklist
+
+            core_api.release_databases()
+
+    def _snooze_alarms_for_custom(self, alarmscall):
+        if core_api.block_databases():
+            alarmsd = alarmscall()
+
+            if len(alarmsd) > 0:
+                dlg = SnoozeDialog()
+
+                if dlg.ShowModal() == wx.ID_OK:
+                    organism_alarms_api.snooze_alarms(alarmsd, dlg.get_time())
+                    # Let the alarm off event update the tasklist
+
+                # Unlike MessageDialog, a Dialog needs to be destroyed
+                # explicitly
+                dlg.Destroy()
+
+            core_api.release_databases()
+
+    def dismiss_selected_alarms(self):
+        if core_api.block_databases():
+            alarmsd = self.get_selected_active_alarms()
+
+            if len(alarmsd) > 0:
+                organism_alarms_api.dismiss_alarms(alarmsd)
+                # Let the alarm off event update the tasklist
+
+            core_api.release_databases()
+
+    def dismiss_all_alarms(self):
+        # Note that "all" means all the visible active alarms; some may be
+        # hidden in the current view
+        if core_api.block_databases():
+            alarmsd = self.get_active_alarms()
+
+            if len(alarmsd) > 0:
+                organism_alarms_api.dismiss_alarms(alarmsd)
+                # Let the alarm off event update the tasklist
+
+            core_api.release_databases()
+
+    def toggle_gaps(self):
+        self.show_gaps = not self.show_gaps
+        self.refresh()
+
+    def toggle_overlappings(self):
+        self.show_overlappings = not self.show_overlappings
+        self.refresh()
+
+
+class SnoozeDialog(wx.Dialog):
+    def __init__(self):
+        wx.Dialog.__init__(self, parent=wxgui_api.get_main_frame(),
+                                                title="Snooze configuration")
+
+        vsizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(vsizer)
+
+        hsizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        icon = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
+                                                '@alarms', wx.ART_CMN_DIALOG))
+        hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
+
+        ssizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        label = wx.StaticText(self, label='Snooze for:')
+        ssizer.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
+
+        self.number = NarrowSpinCtrl(self, min=1, max=999,
+                                                        style=wx.SP_ARROW_KEYS)
+        self.number.SetValue(5)
+        ssizer.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                    border=4)
+
+        self.unit = wx.ComboBox(self, value='minutes',
+                                choices=('minutes', 'hours', 'days', 'weeks'),
+                                style=wx.CB_READONLY)
+        ssizer.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL)
+
+        hsizer.Add(ssizer, flag=wx.ALIGN_TOP)
+
+        vsizer.Add(hsizer, flag=wx.ALIGN_CENTER | wx.ALL, border=12)
+
+        buttons = self.CreateButtonSizer(wx.OK | wx.CANCEL)
+        vsizer.Add(buttons,
+                        flag=wx.ALIGN_RIGHT | wx.LEFT | wx.RIGHT | wx.BOTTOM,
+                        border=12)
+
+        self.Fit()
+
+    def get_time(self):
+        mult = {'minutes': 60,
+                'hours': 3600,
+                'days': 86400,
+                'weeks': 604800}
+        return self.number.GetValue() * mult[self.unit.GetValue()]
 
 
 class RefreshEngineStop(UserWarning):
@@ -885,6 +1045,12 @@ class Autoscroll(object):
         self.enabled = False
         self.execute = self._execute_maintain
         self.set_scrolled(True)
+
+    def toggle(self):
+        if self.enabled:
+            self.disable()
+        else:
+            self.enable()
 
     def is_enabled(self):
         return self.enabled
