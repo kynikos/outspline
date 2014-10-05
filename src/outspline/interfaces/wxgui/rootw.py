@@ -198,6 +198,10 @@ class MainFrame(wx.Frame):
                                         altmovkeys.simulate_ctrl_shift_left,
             "Ctrl+Shift+{}".format(aconfig["right"]):
                                         altmovkeys.simulate_ctrl_shift_right,
+            aconfig["focus_database"]:
+                                    self.menu.view.databases_submenu.ID_FOCUS,
+            aconfig["focus_rightnb"]: self.menu.view.rightnb_submenu.ID_FOCUS,
+            aconfig["focus_logs"]: self.menu.view.logs_submenu.ID_FOCUS,
         })
 
     def _handle_creation(self, event):
