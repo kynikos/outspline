@@ -457,6 +457,19 @@ def is_shown():
     return wx.GetApp().root.IsShown()
 
 
+def generate_right_nb_accelerators(accelsconf):
+    return wx.GetApp().root.accmanager.generate_table(wx.GetApp().nb_right,
+                                                                    accelsconf)
+
+
+def install_accelerators(window, accelsconf):
+    return wx.GetApp().root.accmanager.create_manager(window, accelsconf)
+
+
+def register_text_ctrl(window):
+    return wx.GetApp().root.accmanager.register_text_ctrl(window)
+
+
 def exit_application(event):
     return wx.GetApp().exit_app(event)
 

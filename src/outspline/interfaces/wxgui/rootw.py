@@ -18,6 +18,7 @@
 
 import threading
 import wx
+import wx.lib.newevent
 
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import Event
@@ -158,6 +159,8 @@ class MainFrame(wx.Frame):
         self.menu = menubar.RootMenu(self)
         self.SetMenuBar(self.menu)
 
+        self._init_accelerators()
+
         self.mainpanes = MainPanes(self)
 
         self.close_handler = False
@@ -169,6 +172,8 @@ class MainFrame(wx.Frame):
         self.Centre()
         self.Show(True)
 
+    def _init_accelerators(self):
+        self.accmanager = AcceleratorsManagers()
     def _handle_creation(self, event):
         self.Unbind(wx.EVT_WINDOW_CREATE, handler=self._handle_creation)
 
@@ -268,3 +273,109 @@ class MainPanes(wx.SplitterWindow):
     def unsplit_window(self):
         if self.IsSplit():
             self.Unsplit(self.nb_right)
+
+
+class AcceleratorsManagers(object):
+    def __init__(self):
+        # This object shouldn't store any references to windows or tables,
+        # otherwise it will prevent them from being garbage-collected when
+        # destroyed
+        config = coreaux_api.get_interface_configuration('wxgui')
+
+        if config.get_bool('extended_shortcuts'):
+            self.generate_table = self._generate_table
+            self.accelclass = _WindowAccelerators
+        else:
+            self.generate_table = self._noop
+            self.accelclass = _WindowAcceleratorsNoOp
+
+        self.EnableAcceleratorsEvent, self.EVT_ENABLE_ACCELERATORS = \
+                                            wx.lib.newevent.NewCommandEvent()
+        self.DisableAcceleratorsEvent, self.EVT_DISABLE_ACCELERATORS = \
+                                            wx.lib.newevent.NewCommandEvent()
+
+    def generate_table(self, window, accelsconf):
+        # This method is defined dynamically
+        pass
+
+    def create_manager(self, window, accelsconf):
+        table = self.generate_table(window, accelsconf)
+        return self.accelclass(self, window, table)
+
+    def register_text_ctrl(self, window):
+        window.Bind(wx.EVT_SET_FOCUS, self._disable_accelerators)
+        window.Bind(wx.EVT_KILL_FOCUS, self._enable_accelerators)
+
+    def _noop(self, *args, **kwargs):
+        pass
+
+    def _generate_table(self, window, accelsconf):
+        accels = []
+
+        for accstr in accelsconf:
+            # An empty string should disable the accelerator
+            if accstr:
+                action = accelsconf[accstr]
+
+                # action can be either a real ID (integer) or a function
+                if isinstance(action, int):
+                    id_ = action
+                else:
+                    id_ = wx.NewId()
+                    window.Bind(wx.EVT_BUTTON, action, id=id_)
+
+                accel = wx.AcceleratorEntry(0, 0, id_)
+                accel.FromString(accstr)
+                accels.append(accel)
+
+        return wx.AcceleratorTable(accels)
+
+    def _enable_accelerators(self, event):
+        window = event.GetEventObject()
+        enable_accelerators_event = self.EnableAcceleratorsEvent(
+                                                                window.GetId())
+        wx.PostEvent(window, enable_accelerators_event)
+
+    def _disable_accelerators(self, event):
+        window = event.GetEventObject()
+        disable_accelerators_event = self.DisableAcceleratorsEvent(
+                                                                window.GetId())
+        wx.PostEvent(window, disable_accelerators_event)
+
+
+class _WindowAcceleratorsNoOp(object):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def set_table(self, *args, **kwargs):
+        pass
+
+
+class _WindowAccelerators(object):
+    def __init__(self, mainmanager, window, table):
+        self.mainmanager = mainmanager
+        self.window = window
+        self.table = table
+        self.tablenoop = wx.AcceleratorTable([])
+
+        self._enable()
+
+        self.window.Bind(self.mainmanager.EVT_ENABLE_ACCELERATORS,
+                                            self._handle_enable_accelerators)
+        self.window.Bind(self.mainmanager.EVT_DISABLE_ACCELERATORS,
+                                            self._handle_disable_accelerators)
+
+    def set_table(self, table):
+        self.table = table
+        self._enable()
+
+    def _enable(self):
+        self.window.SetAcceleratorTable(self.table)
+
+    def _handle_enable_accelerators(self, event):
+        self._enable()
+        event.Skip()
+
+    def _handle_disable_accelerators(self, event):
+        self.window.SetAcceleratorTable(self.tablenoop)
+        event.Skip()
