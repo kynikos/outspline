@@ -102,9 +102,6 @@ class ArtProvider(wx.ArtProvider):
                                 'filesaveas', 'stock_save-as'),
                     '@selectall': ('edit-select-all', 'gtk-select-all',
                                    'stock_select-all'),
-                    '@sortdown': ('go-down', 'gtk-go-down', 'down',
-                                  'stock_down'),
-                    '@sortup': ('go-up', 'gtk-go-up', 'up', 'stock_up'),
                     '@tasklist': ('x-office-calendar', ),
                     '@textsearch': ('edit-find-replace',
                                     'gtk-find-and-replace',
@@ -120,7 +117,46 @@ class ArtProvider(wx.ArtProvider):
                                 'stock_undo'),
                     '@warning': ('dialog-warning', )}
 
+        fg = wx.SystemSettings.GetColour(wx.SYS_COLOUR_CAPTIONTEXT
+                                            ).GetAsString(wx.C2S_HTML_SYNTAX)
+        header = ["16 16 2 1",
+                  ". m {}".format(fg),
+                  "m m none"]
         self.xpm = {
+                    '@sortdown': header +
+                        ["mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmm.........mmmm",
+                        "mmmm.......mmmmm",
+                        "mmmmm.....mmmmmm",
+                        "mmmmmm...mmmmmmm",
+                        "mmmmmmm.mmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm"],
+                    '@sortup': header +
+                        ["mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmm.mmmmmmmm",
+                        "mmmmmm...mmmmmmm",
+                        "mmmmm.....mmmmmm",
+                        "mmmm.......mmmmm",
+                        "mmm.........mmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm",
+                        "mmmmmmmmmmmmmmmm"],
                     }
 
     def CreateBitmap(self, artid, client, size):
