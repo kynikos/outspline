@@ -24,8 +24,9 @@ class ArtProvider(wx.ArtProvider):
         wx.ArtProvider.__init__(self)
 
         # Find standard icon names at http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
-        # Use ids prefixed with '@' so that they're not mistaken as GTK icons
-        self.gtk = {'@add-filter': ('list-add', ),
+        # Use ids prefixed with '@' so that they're not mistaken as freedesktop
+        #  icons
+        self.xdg = {'@add-filter': ('list-add', ),
                     '@alarms': ('appointment-soon', 'appointment',
                                 'appointment-new', 'stock_new-appointment'),
                     '@alarmoff': ('appointment-missed', 'appointment-soon',
@@ -161,7 +162,7 @@ class ArtProvider(wx.ArtProvider):
 
     def CreateBitmap(self, artid, client, size):
         try:
-            gtkids = self.gtk[artid]
+            xdgids = self.xdg[artid]
         except KeyError:
             try:
                 xpmid = self.xpm[artid]
@@ -171,8 +172,8 @@ class ArtProvider(wx.ArtProvider):
             else:
                 bmp = wx.BitmapFromXPMData(xpmid)
         else:
-            for gtkid in gtkids:
-                bmp = wx.ArtProvider.GetBitmap(gtkid, client, size)
+            for xdgid in xdgids:
+                bmp = wx.ArtProvider.GetBitmap(xdgid, client, size)
 
                 if bmp.IsOk():
                     break
