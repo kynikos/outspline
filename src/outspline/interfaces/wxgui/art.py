@@ -20,9 +20,6 @@ import wx
 
 
 class ArtProvider(wx.ArtProvider):
-    gtk = None
-    bundled = None
-
     def __init__(self):
         wx.ArtProvider.__init__(self)
 
@@ -123,17 +120,25 @@ class ArtProvider(wx.ArtProvider):
                                 'stock_undo'),
                     '@warning': ('dialog-warning', )}
 
-        # Bundled images (currently empty)
-        self.bundled = {}
+        self.xpm = {
+                    }
 
     def CreateBitmap(self, artid, client, size):
-        if artid in self.gtk:
-            for gtkid in self.gtk[artid]:
+        try:
+            gtkids = self.gtk[artid]
+        except KeyError:
+            try:
+                xpmid = self.xpm[artid]
+            except KeyError:
+                # The default art provider will take care of the else case
+                bmp = wx.ArtProvider.GetBitmap(artid, client, size)
+            else:
+                bmp = wx.BitmapFromXPMData(xpmid)
+        else:
+            for gtkid in gtkids:
                 bmp = wx.ArtProvider.GetBitmap(gtkid, client, size)
+
                 if bmp.IsOk():
                     break
-        # The default art provider will take care of the else case
-        else:
-            bmp = wx.ArtProvider.GetBitmap(artid, client, size)
 
         return bmp
