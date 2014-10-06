@@ -91,8 +91,13 @@ class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
                                         min((bgcolour.Green() + DIFF1, 255)),
                                         min((bgcolour.Blue() + DIFF1, 255)))
 
-        colourfocused = wx.Colour()
-        colourfocused.SetFromString(config["plugin_focus_color"])
+        focuscolour = config["plugin_focus_color"]
+
+        if focuscolour == "system":
+            colourfocused = wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+        else:
+            colourfocused = wx.Colour()
+            colourfocused.SetFromString(config["plugin_focus_color"])
 
         return (colourtop, colourbottom, colourfocused, fgcolour)
 
