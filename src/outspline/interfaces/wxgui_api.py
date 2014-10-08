@@ -503,6 +503,10 @@ def add_item_to_selection(filename, id_):
     return tree.dbs[filename].add_item_to_selection(id_)
 
 
+def expand_item_ancestors(filename, id_):
+    return tree.dbs[filename].expand_item_ancestors(id_)
+
+
 def get_tree_item_id(filename, item):
     return tree.dbs[filename].get_item_id(item)
 

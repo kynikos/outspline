@@ -210,6 +210,11 @@ class MenuDev(wx.Menu):
                     else:
                         mode = random.choice(('child', 'sibling'))
 
+                        # See the comment in wxgui.tree.expand_item_ancestors
+                        #  for the reason why calling this method is necessary
+                        wxgui_api.expand_item_ancestors(filename, itemid)
+
+
                     text = self._populate_tree_text()
 
                     id_ = self._populate_tree_item(mode, filename, itemid,

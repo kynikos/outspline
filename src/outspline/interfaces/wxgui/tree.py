@@ -753,6 +753,26 @@ class Database(wx.SplitterWindow):
     def collapse_focused_item(self):
         self.treec.Collapse(self.treec.GetCurrentItem())
 
+    def expand_item_ancestors(self, id_):
+        # Not all items in the tree are created immediately: only the visible
+        #  ones and their direct children are, but all the others are only
+        #  added on request, i.e. when their grandparent is expanded. This
+        #  means that if some plugins (e.g. wxdevelopment) try to create a
+        #  child of an item whose parent hasn't been expanded yet, an exception
+        #  will be raised, complaining that the parent item doesn't exist in
+        #  the tree. Calling this method before adding an item programmatically
+        #  ensures that this exception won't be raised.
+        #  For example, take the following database that was saved during a
+        #  previous Outspline session and has *never* been expanded before,
+        #  during this session:
+        #  > A
+        #    > B
+        #      * C
+        #  Now, if wxdevelopment's populate_tree tried to create a child of C,
+        #  it would crash, because C has never been added to the tree, since
+        # the children of B have  never been requested
+        self.treec.ExpandAncestors(self.get_tree_item(id_))
+
     def focus_database(self):
         self.treec.SetFocus()
 
