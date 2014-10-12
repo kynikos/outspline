@@ -40,8 +40,8 @@ tabs = {}
 
 class Editors(object):
     def __init__(self, nb):
-        self.icon_index = nb.add_image(wx.ArtProvider.GetBitmap(
-                                    '@editortab', wx.ART_TOOLBAR, (16, 16)))
+        self.icon_index = nb.add_image(
+                    wx.GetApp().artprovider.get_notebook_icon('@editortab'))
 
 
 class EditorPanel(wx.Panel):
@@ -425,9 +425,9 @@ class TabContextMenu(wx.Menu):
         self.close = wx.MenuItem(self,
                 wx.GetApp().menu.view.rightnb_submenu.ID_CLOSE, "Cl&ose")
 
-        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
-        self.apply_.SetBitmap(wx.ArtProvider.GetBitmap('@apply', wx.ART_MENU))
-        self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+        self.find.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@find'))
+        self.apply_.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@apply'))
+        self.close.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@close'))
 
         self.AppendItem(self.find)
         self.AppendSeparator()

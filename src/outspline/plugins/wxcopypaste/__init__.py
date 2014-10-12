@@ -192,11 +192,10 @@ class MainMenu(object):
                     'P&aste as children\t{}'.format(config['paste_children']),
                     'Paste items as children of the selected item')
 
-        self.mcut.SetBitmap(wx.ArtProvider.GetBitmap('@cut', wx.ART_MENU))
-        self.mcopy.SetBitmap(wx.ArtProvider.GetBitmap('@copy', wx.ART_MENU))
-        self.mpaste.SetBitmap(wx.ArtProvider.GetBitmap('@paste', wx.ART_MENU))
-        self.mpastesub.SetBitmap(wx.ArtProvider.GetBitmap('@paste',
-                                                                wx.ART_MENU))
+        self.mcut.SetBitmap(wxgui_api.get_menu_icon('@cut'))
+        self.mcopy.SetBitmap(wxgui_api.get_menu_icon('@copy'))
+        self.mpaste.SetBitmap(wxgui_api.get_menu_icon('@paste'))
+        self.mpastesub.SetBitmap(wxgui_api.get_menu_icon('@paste'))
 
         separator = wx.MenuItem(wxgui_api.get_menu_database(),
                                                         kind=wx.ITEM_SEPARATOR)
@@ -302,11 +301,10 @@ class TreeContextMenu(object):
         self.pastesub = wx.MenuItem(wxgui_api.get_tree_context_menu(filename),
                                 mainmenu.ID_PASTE_SUB, 'P&aste as children')
 
-        self.cut.SetBitmap(wx.ArtProvider.GetBitmap('@cut', wx.ART_MENU))
-        self.copy.SetBitmap(wx.ArtProvider.GetBitmap('@copy', wx.ART_MENU))
-        self.paste.SetBitmap(wx.ArtProvider.GetBitmap('@paste', wx.ART_MENU))
-        self.pastesub.SetBitmap(wx.ArtProvider.GetBitmap('@paste',
-                                                                wx.ART_MENU))
+        self.cut.SetBitmap(wxgui_api.get_menu_icon('@cut'))
+        self.copy.SetBitmap(wxgui_api.get_menu_icon('@copy'))
+        self.paste.SetBitmap(wxgui_api.get_menu_icon('@paste'))
+        self.pastesub.SetBitmap(wxgui_api.get_menu_icon('@paste'))
 
         separator = wx.MenuItem(wxgui_api.get_tree_context_menu(filename),
                                                         kind=wx.ITEM_SEPARATOR)

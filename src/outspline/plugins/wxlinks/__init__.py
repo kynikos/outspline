@@ -417,9 +417,9 @@ class ViewMenu(object):
                 "&Toggle\t{}".format(config['toggle']),
                 "Toggle links manager panel")
 
-        self.main.SetBitmap(wx.ArtProvider.GetBitmap('@links', wx.ART_MENU))
-        self.focus.SetBitmap(wx.ArtProvider.GetBitmap('@focus', wx.ART_MENU))
-        self.toggle.SetBitmap(wx.ArtProvider.GetBitmap('@toggle', wx.ART_MENU))
+        self.main.SetBitmap(wxgui_api.get_menu_icon('@links'))
+        self.focus.SetBitmap(wxgui_api.get_menu_icon('@focus'))
+        self.toggle.SetBitmap(wxgui_api.get_menu_icon('@toggle'))
 
         wxgui_api.add_menu_editor_plugin(self.main)
         submenu.AppendItem(self.focus)

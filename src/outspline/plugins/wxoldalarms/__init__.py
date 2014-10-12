@@ -152,8 +152,8 @@ class DialogSearch(object):
         hsizer1 = wx.BoxSizer(wx.HORIZONTAL)
         vsizer.Add(hsizer1, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        icon = wx.StaticBitmap(self.dialog, bitmap=wx.ArtProvider.GetBitmap(
-                                                '@alarms', wx.ART_CMN_DIALOG))
+        icon = wx.StaticBitmap(self.dialog, bitmap=wxgui_api.get_dialog_icon(
+                                                                    '@alarms'))
         hsizer1.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         self.labeltext = ("{} was last saved {} days ago: searching the "
@@ -257,8 +257,8 @@ class DialogActivate(object):
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
         self.vsizer.Add(hsizer, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        icon = wx.StaticBitmap(self.dialog, bitmap=wx.ArtProvider.GetBitmap(
-                                                '@alarms', wx.ART_CMN_DIALOG))
+        icon = wx.StaticBitmap(self.dialog, bitmap=wxgui_api.get_dialog_icon(
+                                                                    '@alarms'))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         self.label = wx.StaticText(self.dialog, label="Filtering the old "

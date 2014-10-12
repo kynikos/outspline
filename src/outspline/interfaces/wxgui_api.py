@@ -23,6 +23,40 @@ import outspline.core_api as core_api
 from wxgui import rootw, notebooks, editor, menubar, tree, databases, dbprops
 
 
+### ART ###
+
+def get_frame_icon_bundle(artid):
+    return wx.GetApp().artprovider.get_frame_icon_bundle(artid)
+
+
+def get_notebook_icon(artid):
+    return wx.GetApp().artprovider.get_notebook_icon(artid)
+
+
+def get_log_icon(artid):
+    return wx.GetApp().artprovider.get_log_icon(artid)
+
+
+def get_menu_icon(artid):
+    return wx.GetApp().artprovider.get_menu_icon(artid)
+
+
+def get_dialog_icon(artid):
+    return wx.GetApp().artprovider.get_dialog_icon(artid)
+
+
+def get_button_icon(artid):
+    return wx.GetApp().artprovider.get_button_icon(artid)
+
+
+def get_tray_icon(artid):
+    return wx.GetApp().artprovider.get_tray_icon(artid)
+
+
+def get_list_sort_icons():
+    return wx.GetApp().artprovider.get_list_sort_icons()
+
+
 ### DATABASE ###
 
 def get_open_databases():

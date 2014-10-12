@@ -105,20 +105,15 @@ class MainMenu(wx.Menu):
                                         'Export the current view to a file',
                                         subMenu=self.export_submenu)
 
-        self.navigator.SetBitmap(wx.ArtProvider.GetBitmap('@navigator',
-                                                                wx.ART_MENU))
-        self.scroll.SetBitmap(wx.ArtProvider.GetBitmap('@movedown',
-                                                                wx.ART_MENU))
-        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
-        self.edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
-        self.snooze.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
-        self.snooze_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarms',
-                                                                  wx.ART_MENU))
-        self.dismiss.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
-                                                                  wx.ART_MENU))
-        self.dismiss_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
-                                                                  wx.ART_MENU))
-        self.export.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
+        self.navigator.SetBitmap(wxgui_api.get_menu_icon('@navigator'))
+        self.scroll.SetBitmap(wxgui_api.get_menu_icon('@scroll'))
+        self.find.SetBitmap(wxgui_api.get_menu_icon('@find'))
+        self.edit.SetBitmap(wxgui_api.get_menu_icon('@edit'))
+        self.snooze.SetBitmap(wxgui_api.get_menu_icon('@alarms'))
+        self.snooze_all.SetBitmap(wxgui_api.get_menu_icon('@alarms'))
+        self.dismiss.SetBitmap(wxgui_api.get_menu_icon('@alarmoff'))
+        self.dismiss_all.SetBitmap(wxgui_api.get_menu_icon('@alarmoff'))
+        self.export.SetBitmap(wxgui_api.get_menu_icon('@saveas'))
 
         self.AppendItem(self.navigator)
         self.AppendItem(self.scroll)
@@ -278,12 +273,11 @@ class NavigatorMenu(wx.Menu):
                                 "&Reset filters\t{}".format(config['reset']),
                                 "Reset the filters to the saved ones")
 
-        self.previous.SetBitmap(wx.ArtProvider.GetBitmap('@previous',
-                                                                  wx.ART_MENU))
-        self.next.SetBitmap(wx.ArtProvider.GetBitmap('@next', wx.ART_MENU))
-        self.apply.SetBitmap(wx.ArtProvider.GetBitmap('@apply',  wx.ART_MENU))
-        self.set.SetBitmap(wx.ArtProvider.GetBitmap('@save', wx.ART_MENU))
-        self.reset.SetBitmap(wx.ArtProvider.GetBitmap('@undo', wx.ART_MENU))
+        self.previous.SetBitmap(wxgui_api.get_menu_icon('@previous'))
+        self.next.SetBitmap(wxgui_api.get_menu_icon('@next'))
+        self.apply.SetBitmap(wxgui_api.get_menu_icon('@apply'))
+        self.set.SetBitmap(wxgui_api.get_menu_icon('@save'))
+        self.reset.SetBitmap(wxgui_api.get_menu_icon('@undo'))
 
         self.AppendSeparator()
         self.AppendItem(self.previous)
@@ -370,12 +364,9 @@ class ExportMenu(wx.Menu):
         self.xml = wx.MenuItem(self, self.ID_XML,
                             "&XML...", "Export to XML format")
 
-        self.json.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
-                                                                wx.ART_MENU))
-        self.tsv.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
-                                                                wx.ART_MENU))
-        self.xml.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
-                                                                wx.ART_MENU))
+        self.json.SetBitmap(wxgui_api.get_menu_icon('@exporttype'))
+        self.tsv.SetBitmap(wxgui_api.get_menu_icon('@exporttype'))
+        self.xml.SetBitmap(wxgui_api.get_menu_icon('@exporttype'))
 
         self.AppendItem(self.json)
         self.AppendItem(self.tsv)
@@ -447,10 +438,9 @@ class ViewMenu(object):
                                             "event when refreshing",
                                             kind=wx.ITEM_CHECK)
 
-        self.events.SetBitmap(wx.ArtProvider.GetBitmap('@tasklist',
-                                                                wx.ART_MENU))
-        self.focus.SetBitmap(wx.ArtProvider.GetBitmap('@focus', wx.ART_MENU))
-        self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
+        self.events.SetBitmap(wxgui_api.get_menu_icon('@tasklist'))
+        self.focus.SetBitmap(wxgui_api.get_menu_icon('@focus'))
+        self.alarms.SetBitmap(wxgui_api.get_menu_icon('@alarms'))
 
         wxgui_api.insert_menu_right_tab_group(self.events)
         submenu.AppendItem(self.show)
@@ -618,17 +608,13 @@ class TabContextMenu(wx.Menu):
         self.export = wx.MenuItem(self, self.tasklist.mainmenu.ID_EXPORT,
                                 'E&xport view', subMenu=self.export_submenu)
 
-        self.show.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
-        self.navigator.SetBitmap(wx.ArtProvider.GetBitmap('@navigator',
-                                                                wx.ART_MENU))
-        self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
-        self.scroll.SetBitmap(wx.ArtProvider.GetBitmap('@movedown',
-                                                                wx.ART_MENU))
-        self.snooze_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarms',
-                                                                  wx.ART_MENU))
-        self.dismiss_all.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
-                                                                  wx.ART_MENU))
-        self.export.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
+        self.show.SetBitmap(wxgui_api.get_menu_icon('@close'))
+        self.navigator.SetBitmap(wxgui_api.get_menu_icon('@navigator'))
+        self.alarms.SetBitmap(wxgui_api.get_menu_icon('@alarms'))
+        self.scroll.SetBitmap(wxgui_api.get_menu_icon('@scroll'))
+        self.snooze_all.SetBitmap(wxgui_api.get_menu_icon('@alarms'))
+        self.dismiss_all.SetBitmap(wxgui_api.get_menu_icon('@alarmoff'))
+        self.export.SetBitmap(wxgui_api.get_menu_icon('@saveas'))
 
         self.AppendItem(self.show)
         self.AppendSeparator()
@@ -686,12 +672,11 @@ class TabContextNavigatorMenu(wx.Menu):
                             self.tasklist.mainmenu.navigator_submenu.ID_RESET,
                             "&Reset filters")
 
-        self.previous.SetBitmap(wx.ArtProvider.GetBitmap('@previous',
-                                                                  wx.ART_MENU))
-        self.next.SetBitmap(wx.ArtProvider.GetBitmap('@next', wx.ART_MENU))
-        self.apply.SetBitmap(wx.ArtProvider.GetBitmap('@apply',  wx.ART_MENU))
-        self.set.SetBitmap(wx.ArtProvider.GetBitmap('@save', wx.ART_MENU))
-        self.reset.SetBitmap(wx.ArtProvider.GetBitmap('@undo', wx.ART_MENU))
+        self.previous.SetBitmap(wxgui_api.get_menu_icon('@previous'))
+        self.next.SetBitmap(wxgui_api.get_menu_icon('@next'))
+        self.apply.SetBitmap(wxgui_api.get_menu_icon('@apply'))
+        self.set.SetBitmap(wxgui_api.get_menu_icon('@save'))
+        self.reset.SetBitmap(wxgui_api.get_menu_icon('@undo'))
 
         self.AppendItem(self.navigator)
         self.AppendSeparator()
@@ -745,12 +730,9 @@ class TabContextExportMenu(wx.Menu):
         self.xml = wx.MenuItem(self, tasklist.mainmenu.export_submenu.ID_XML,
                                                                     "&XML...")
 
-        self.json.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
-                                                                wx.ART_MENU))
-        self.tsv.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
-                                                                wx.ART_MENU))
-        self.xml.SetBitmap(wx.ArtProvider.GetBitmap('@exporttype',
-                                                                wx.ART_MENU))
+        self.json.SetBitmap(wxgui_api.get_menu_icon('@exporttype'))
+        self.tsv.SetBitmap(wxgui_api.get_menu_icon('@exporttype'))
+        self.xml.SetBitmap(wxgui_api.get_menu_icon('@exporttype'))
 
         self.AppendItem(self.json)
         self.AppendItem(self.tsv)
@@ -776,11 +758,10 @@ class ListContextMenu(wx.Menu):
         self.dismiss = wx.MenuItem(self, self.mainmenu.ID_DISMISS,
                                                            "&Dismiss selected")
 
-        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
-        self.edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
-        self.snooze.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
-        self.dismiss.SetBitmap(wx.ArtProvider.GetBitmap('@alarmoff',
-                                                                  wx.ART_MENU))
+        self.find.SetBitmap(wxgui_api.get_menu_icon('@find'))
+        self.edit.SetBitmap(wxgui_api.get_menu_icon('@edit'))
+        self.snooze.SetBitmap(wxgui_api.get_menu_icon('@alarms'))
+        self.dismiss.SetBitmap(wxgui_api.get_menu_icon('@alarmoff'))
 
         self.AppendItem(self.find)
         self.AppendItem(self.edit)

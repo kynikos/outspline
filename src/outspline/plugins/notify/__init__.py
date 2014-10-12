@@ -88,7 +88,7 @@ class BlinkingTrayIcon():
 
     def __init__(self):
         self.ref_id = wx.NewId()
-        self.icon = wx.ArtProvider.GetIcon('@alarms', wx.ART_OTHER)
+        self.icon = wxgui_api.get_tray_icon('@alarms')
         self.DELAY = 50
         # Set SDELAY shorter than DELAY, so that if an alarm is activated at
         # the same time an alarm is dismissed, there's a better chance that

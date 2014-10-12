@@ -211,7 +211,7 @@ class DatabaseHistory(object):
 
         self.tool_id, menu_items, popup_cmenu = self.logspanel.add_log(
                                 self.view, "Items",
-                                wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU),
+                                wx.GetApp().artprovider.get_log_icon('@edit'),
                                 self._init_context_menu_items(),
                                 self._update_context_menu)
         self._store_context_menu_items(menu_items)
@@ -271,9 +271,9 @@ class DatabaseHistory(object):
 
     def _init_context_menu_items(self):
         return ((wx.GetApp().menu.database.ID_UNDO, "&Undo",
-                            wx.ArtProvider.GetBitmap('@undo', wx.ART_MENU)),
+                            wx.GetApp().artprovider.get_menu_icon('@undo')),
                 (wx.GetApp().menu.database.ID_REDO, "&Redo",
-                            wx.ArtProvider.GetBitmap('@redo', wx.ART_MENU)))
+                            wx.GetApp().artprovider.get_menu_icon('@redo')))
 
     def _update_context_menu(self):
         self.undo.Enable(False)
@@ -318,7 +318,7 @@ class ContextMenu(wx.Menu):
 
         self.hide = wx.MenuItem(self,
                     wx.GetApp().menu.view.logs_submenu.ID_SHOW, "&Hide logs")
-        self.hide.SetBitmap(wx.ArtProvider.GetBitmap('@hide', wx.ART_MENU))
+        self.hide.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@hide'))
 
         self.AppendItem(self.hide)
         self.AppendSeparator()

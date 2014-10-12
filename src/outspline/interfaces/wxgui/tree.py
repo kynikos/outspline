@@ -896,17 +896,17 @@ class ContextMenu(wx.Menu):
         self.delete = wx.MenuItem(self, wx.GetApp().menu.database.ID_DELETE,
                                                             "&Delete items")
 
-        self.sibling.SetBitmap(wx.ArtProvider.GetBitmap('@newitem',
-                                                        wx.ART_MENU))
-        self.child.SetBitmap(wx.ArtProvider.GetBitmap('@newsubitem',
-                                                      wx.ART_MENU))
-        self.moveup.SetBitmap(wx.ArtProvider.GetBitmap('@moveup', wx.ART_MENU))
-        self.movedn.SetBitmap(wx.ArtProvider.GetBitmap('@movedown',
-                                                       wx.ART_MENU))
-        self.movept.SetBitmap(wx.ArtProvider.GetBitmap('@movetoparent',
-                                                       wx.ART_MENU))
-        self.edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
-        self.delete.SetBitmap(wx.ArtProvider.GetBitmap('@delete', wx.ART_MENU))
+        self.sibling.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
+                                                                '@newitem'))
+        self.child.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
+                                                                '@newsubitem'))
+        self.moveup.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@moveup'))
+        self.movedn.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
+                                                                '@movedown'))
+        self.movept.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
+                                                            '@movetoparent'))
+        self.edit.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@edit'))
+        self.delete.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@delete'))
 
         self.AppendItem(self.sibling)
         self.AppendItem(self.child)
@@ -982,14 +982,14 @@ class TabContextMenu(wx.Menu):
         self.close = wx.MenuItem(self, wx.GetApp().menu.file.ID_CLOSE_DB,
                                                                       "&Close")
 
-        self.undo.SetBitmap(wx.ArtProvider.GetBitmap('@undodb', wx.ART_MENU))
-        self.redo.SetBitmap(wx.ArtProvider.GetBitmap('@redodb', wx.ART_MENU))
-        self.save.SetBitmap(wx.ArtProvider.GetBitmap('@save', wx.ART_MENU))
-        self.saveas.SetBitmap(wx.ArtProvider.GetBitmap('@saveas', wx.ART_MENU))
-        self.backup.SetBitmap(wx.ArtProvider.GetBitmap('@backup', wx.ART_MENU))
-        self.properties.SetBitmap(wx.ArtProvider.GetBitmap('@properties',
-                                                                wx.ART_MENU))
-        self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+        self.undo.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@undodb'))
+        self.redo.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@redodb'))
+        self.save.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@save'))
+        self.saveas.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@saveas'))
+        self.backup.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@backup'))
+        self.properties.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
+                                                                '@properties'))
+        self.close.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@close'))
 
         self.AppendItem(self.undo)
         self.AppendItem(self.redo)

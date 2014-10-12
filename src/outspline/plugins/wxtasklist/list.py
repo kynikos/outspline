@@ -52,21 +52,15 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
         return self
 
     def _set_image_lists(self):
-        self.imagelistsmall = wx.ImageList(16, 16)
-        self.imagemap = {
-            'small': {}
-        }
-
-        self.imagemap['small']['sortup'] = self.imagelistsmall.Add(
-                 wx.ArtProvider.GetBitmap('@sortup', wx.ART_TOOLBAR, (16, 16)))
-        self.imagemap['small']['sortdown'] = self.imagelistsmall.Add(
-               wx.ArtProvider.GetBitmap('@sortdown', wx.ART_TOOLBAR, (16, 16)))
-
-        self.AssignImageList(self.imagelistsmall, wx.IMAGE_LIST_SMALL)
+        self.sortindices = []
+        sortup, sortdown = wxgui_api.get_list_sort_icons()
+        imagelist = wx.ImageList(16, 16)
+        self.sortindices.append(imagelist.Add(sortup))
+        self.sortindices.append(imagelist.Add(sortdown))
+        self.AssignImageList(imagelist, wx.IMAGE_LIST_SMALL)
 
     def GetSortImages(self):
-        return (self.imagemap['small']['sortup'],
-                                            self.imagemap['small']['sortdown'])
+        return self.sortindices
 
 
 class OccurrencesView(object):
@@ -467,8 +461,8 @@ class SnoozeDialog(wx.Dialog):
 
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        icon = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
-                                                '@alarms', wx.ART_CMN_DIALOG))
+        icon = wx.StaticBitmap(self, bitmap=wxgui_api.get_dialog_icon(
+                                                                    '@alarms'))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         ssizer = wx.BoxSizer(wx.HORIZONTAL)

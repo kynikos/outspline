@@ -140,9 +140,9 @@ class AlarmsLog(object):
         cmenu = ContextMenu(mainmenu, self)
 
         self.tool_id, menu_items, popup_cmenu = wxgui_api.add_log(filename,
-                            self.view, "Alarms",
-                            wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU),
-                            cmenu.get_items(), cmenu.update)
+                                self.view, "Alarms",
+                                wxgui_api.get_log_icon('@alarms'),
+                                cmenu.get_items(), cmenu.update)
         cmenu.store_items(menu_items)
 
         self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
@@ -237,9 +237,9 @@ class LogsMenu(object):
                 "Find in &database\t{}".format(config['find']),
                 "Select the database items associated to the selected entries")
 
-        self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
-        self.select.SetBitmap(wx.ArtProvider.GetBitmap('@focus', wx.ART_MENU))
-        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
+        self.alarms.SetBitmap(wxgui_api.get_menu_icon('@alarms'))
+        self.select.SetBitmap(wxgui_api.get_menu_icon('@focus'))
+        self.find.SetBitmap(wxgui_api.get_menu_icon('@find'))
 
         wxgui_api.add_menu_logs_item(self.alarms)
         submenu.AppendItem(self.select)
@@ -287,7 +287,7 @@ class ContextMenu(object):
         self.log = log
 
         self.find_paramaters = (mainmenu.ID_FIND, "&Find in database",
-                                wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
+                                wxgui_api.get_menu_icon('@find'))
 
     def get_items(self):
         return (self.find_paramaters, )

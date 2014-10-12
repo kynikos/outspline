@@ -51,8 +51,8 @@ class DatabaseUpdaterAdd(object):
 
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        icon = wx.StaticBitmap(self.dialog, bitmap=wx.ArtProvider.GetBitmap(
-                                            '@question', wx.ART_CMN_DIALOG))
+        icon = wx.StaticBitmap(self.dialog,
+                bitmap=wx.GetApp().artprovider.get_dialog_icon('@question'))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         hvsizer = wx.BoxSizer(wx.VERTICAL)
@@ -184,8 +184,8 @@ class DatabaseUpdaterUpdate(object):
 
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        icon = wx.StaticBitmap(self.dialog, bitmap=wx.ArtProvider.GetBitmap(
-                                            '@question', wx.ART_CMN_DIALOG))
+        icon = wx.StaticBitmap(self.dialog,
+                bitmap=wx.GetApp().artprovider.get_dialog_icon('@question'))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         hvsizer = wx.BoxSizer(wx.VERTICAL)
@@ -299,8 +299,8 @@ class DatabaseUpdaterAbort(object):
 
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        icon = wx.StaticBitmap(self.dialog, bitmap=wx.ArtProvider.GetBitmap(
-                                            '@warning', wx.ART_CMN_DIALOG))
+        icon = wx.StaticBitmap(self.dialog,
+                    bitmap=wx.GetApp().artprovider.get_dialog_icon('@warning'))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         hvsizer = wx.BoxSizer(wx.VERTICAL)

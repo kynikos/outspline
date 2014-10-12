@@ -55,7 +55,7 @@ class TrayIcon(wx.TaskBarIcon):
                             '&Minimize to tray\t{}'.format(config['minimize']),
                             'Minimize the main window to tray icon')
 
-        menumin.SetBitmap(wx.ArtProvider.GetBitmap('@tray', wx.ART_MENU))
+        menumin.SetBitmap(wxgui_api.get_menu_icon('@tray'))
 
         wxgui_api.add_menu_file_item(menumin)
 
@@ -116,9 +116,8 @@ class BlinkingIcon():
 
         self.trayicon = trayicon
 
-        self.main_icon = wx.ArtProvider.GetIcon('@outspline', wx.ART_OTHER)
-        self.default_alternative_icon = wx.ArtProvider.GetIcon('@blinkicon',
-                                                                wx.ART_OTHER)
+        self.main_icon = wxgui_api.get_tray_icon('@outspline')
+        self.default_alternative_icon = wxgui_api.get_tray_icon('@blinkicon')
 
         self.current_tooltip = 'Outspline'
         self.tooltips = {}
@@ -192,7 +191,7 @@ class TrayMenu(wx.Menu):
                                                             kind=wx.ITEM_CHECK)
         self.exit_ = wx.MenuItem(self, ID_EXIT, "E&xit")
 
-        self.exit_.SetBitmap(wx.ArtProvider.GetBitmap('@exit', wx.ART_MENU))
+        self.exit_.SetBitmap(wxgui_api.get_menu_icon('@exit'))
 
         self.AppendItem(self.restore)
         self.AppendSeparator()

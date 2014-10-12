@@ -93,11 +93,9 @@ class TaskList(object):
         self.panel.SetSizer(self.pbox)
 
         self.nb_icon_index = wxgui_api.add_right_nb_image(
-                                        wx.ArtProvider.GetBitmap('@tasklist',
-                                        wx.ART_TOOLBAR, (16, 16)))
+                                    wxgui_api.get_notebook_icon('@tasklist'))
         self.nb_icon_refresh_index = wxgui_api.add_right_nb_image(
-                                        wx.ArtProvider.GetBitmap('@refresh',
-                                        wx.ART_TOOLBAR, (16, 16)))
+                                    wxgui_api.get_notebook_icon('@refresh'))
 
         # filters.Navigator must be instantiated *before*
         # list_.OccurrencesView, because the former sets the filter for the
@@ -225,8 +223,8 @@ class WarningsBar(object):
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
 
-        icon = wx.StaticBitmap(self.panel, bitmap=wx.ArtProvider.GetBitmap(
-                                                    '@warning', wx.ART_BUTTON))
+        icon = wx.StaticBitmap(self.panel, bitmap=wxgui_api.get_button_icon(
+                                                                '@warning'))
         box.Add(icon, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=4)
 
         self.message = wx.StaticText(self.panel, label="")

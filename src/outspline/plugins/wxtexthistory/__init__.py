@@ -73,8 +73,8 @@ class Menu(object):
         separator = wx.MenuItem(wxgui_api.get_menu_editor(),
                                                         kind=wx.ITEM_SEPARATOR)
 
-        self.mundo.SetBitmap(wx.ArtProvider.GetBitmap('@undo', wx.ART_MENU))
-        self.mredo.SetBitmap(wx.ArtProvider.GetBitmap('@redo', wx.ART_MENU))
+        self.mundo.SetBitmap(wxgui_api.get_menu_icon('@undo'))
+        self.mredo.SetBitmap(wxgui_api.get_menu_icon('@redo'))
 
         # Add in reverse order
         wxgui_api.add_menu_editor_item(separator)

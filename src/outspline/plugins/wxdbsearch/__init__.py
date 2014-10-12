@@ -404,21 +404,15 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
         return self
 
     def set_image_lists(self):
-        self.imagelistsmall = wx.ImageList(16, 16)
-        self.imagemap = {
-            'small': {}
-        }
-
-        self.imagemap['small']['sortup'] = self.imagelistsmall.Add(
-                 wx.ArtProvider.GetBitmap('@sortup', wx.ART_TOOLBAR, (16, 16)))
-        self.imagemap['small']['sortdown'] = self.imagelistsmall.Add(
-               wx.ArtProvider.GetBitmap('@sortdown', wx.ART_TOOLBAR, (16, 16)))
-
-        self.AssignImageList(self.imagelistsmall, wx.IMAGE_LIST_SMALL)
+        self.sortindices = []
+        sortup, sortdown = wxgui_api.get_list_sort_icons()
+        imagelist = wx.ImageList(16, 16)
+        self.sortindices.append(imagelist.Add(sortup))
+        self.sortindices.append(imagelist.Add(sortdown))
+        self.AssignImageList(imagelist, wx.IMAGE_LIST_SMALL)
 
     def GetSortImages(self):
-        return (self.imagemap['small']['sortup'],
-                                            self.imagemap['small']['sortdown'])
+        return self.sortindices
 
 
 class SearchResults(object):
@@ -592,12 +586,10 @@ class MainMenu(wx.Menu):
                             "Open in the editor the database items associated "
                             "to the selected results")
 
-        self.search.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch',
-                                                                wx.ART_MENU))
-        self.refresh.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch',
-                                                                wx.ART_MENU))
-        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
-        self.edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
+        self.search.SetBitmap(wxgui_api.get_menu_icon('@dbsearch'))
+        self.refresh.SetBitmap(wxgui_api.get_menu_icon('@dbsearch'))
+        self.find.SetBitmap(wxgui_api.get_menu_icon('@find'))
+        self.edit.SetBitmap(wxgui_api.get_menu_icon('@edit'))
 
         self.AppendItem(self.search)
         self.AppendItem(self.refresh)
@@ -685,8 +677,8 @@ class ContextMenu(wx.Menu):
         find = wx.MenuItem(self, mainmenu.ID_FIND, "&Find in database")
         edit = wx.MenuItem(self, mainmenu.ID_EDIT, "&Edit selected")
 
-        find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
-        edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
+        find.SetBitmap(wxgui_api.get_menu_icon('@find'))
+        edit.SetBitmap(wxgui_api.get_menu_icon('@edit'))
 
         self.AppendItem(find)
         self.AppendItem(edit)
@@ -703,8 +695,8 @@ class TabContextMenu(wx.Menu):
                                 wxgui_api.get_menu_view_close_tab_id(),
                                 "Cl&ose", "Close the selected search")
 
-        refresh.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch', wx.ART_MENU))
-        close_.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+        refresh.SetBitmap(wxgui_api.get_menu_icon('@dbsearch'))
+        close_.SetBitmap(wxgui_api.get_menu_icon('@close'))
 
         self.AppendItem(refresh)
         self.AppendItem(close_)
@@ -716,9 +708,7 @@ def main():
 
     global nb_icon_index
     nb_icon_index = wxgui_api.add_right_nb_image(
-                                    wx.ArtProvider.GetBitmap('@find',
-                                    wx.ART_TOOLBAR, (16, 16)))
+                                    wxgui_api.get_notebook_icon('@find'))
     global nb_icon_refresh_index
     nb_icon_refresh_index = wxgui_api.add_right_nb_image(
-                                    wx.ArtProvider.GetBitmap('@refresh',
-                                    wx.ART_TOOLBAR, (16, 16)))
+                                    wxgui_api.get_notebook_icon('@refresh'))

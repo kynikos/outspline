@@ -51,8 +51,7 @@ class DatabasePropertyManager(object):
 
     def post_init(self):
         self.nb_icon_index = wx.GetApp().nb_right.add_image(
-                                        wx.ArtProvider.GetBitmap('@properties',
-                                        wx.ART_TOOLBAR, (16, 16)))
+                    wx.GetApp().artprovider.get_notebook_icon('@properties'))
 
     def open(self, filename):
         if filename not in self.open_panels:
@@ -406,8 +405,8 @@ class _DependencyDialog(object):
 
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        icon = wx.StaticBitmap(self.dialog, bitmap=wx.ArtProvider.GetBitmap(
-                                                "@warning", wx.ART_CMN_DIALOG))
+        icon = wx.StaticBitmap(self.dialog,
+                    bitmap=wx.GetApp().artprovider.get_dialog_icon("@warning"))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         label = wx.StaticText(self.dialog, label=self.warning)
@@ -532,6 +531,6 @@ class TabContextMenu(wx.Menu):
         self.close = wx.MenuItem(self,
                 wx.GetApp().menu.view.rightnb_submenu.ID_CLOSE, "&Close")
 
-        self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+        self.close.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@close'))
 
         self.AppendItem(self.close)

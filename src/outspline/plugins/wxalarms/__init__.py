@@ -35,23 +35,7 @@ alarmswindow = None
 class AlarmsWindow(object):
     def __init__(self, parent):
         self.ALARMS_MIN_HEIGHT = 140
-        self.ALARMS_ICON_BUNDLE = wx.IconBundle()
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_TOOLBAR))
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_MENU))
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_BUTTON))
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_FRAME_ICON))
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_CMN_DIALOG))
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_HELP_BROWSER))
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_MESSAGE_BOX))
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_OTHER))
+        self.ALARMS_ICON_BUNDLE = wxgui_api.get_frame_icon_bundle('@alarms')
 
         self.config = coreaux_api.get_plugin_configuration('wxalarms')
 
@@ -122,8 +106,8 @@ class AlarmsWindow(object):
         wxgui_api.bind_to_close_database(self._handle_close_db)
 
     def _init_hidden_panel(self):
-        icon = wx.StaticBitmap(self.window, bitmap=wx.ArtProvider.GetBitmap(
-                                                    '@warning', wx.ART_BUTTON))
+        icon = wx.StaticBitmap(self.window, bitmap=wxgui_api.get_button_icon(
+                                                                '@warning'))
         self.hidden_panel.Add(icon, flag=wx.ALIGN_CENTER_VERTICAL |
                                                             wx.RIGHT, border=4)
 
