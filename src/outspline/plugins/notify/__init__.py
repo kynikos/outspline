@@ -36,12 +36,11 @@ wxtrayicon_api = coreaux_api.import_optional_plugin_api('wxtrayicon')
 
 
 class Notifications():
-    alarm = None
-    trayicon_id = None
-
     def __init__(self, trayicon_id):
         Notify.init("Outspline")
 
+        # It should be safe if the icon is not found in the system
+        self.ICON = "appointment-soon"
         self.trayicon_id = trayicon_id
 
         organism_alarms_api.bind_to_alarm(self._handle_alarm)
@@ -60,7 +59,7 @@ class Notifications():
             text = core_api.get_item_text(filename, id_).partition('\n')[0]
 
             self.alarm = Notify.Notification.new(summary="Outspline",
-                                             body=text, icon="appointment-new")
+                                                    body=text, icon=self.ICON)
 
             if wxgui_api:
                 self.alarm.add_action("open_item", "Open", self._open_item,
