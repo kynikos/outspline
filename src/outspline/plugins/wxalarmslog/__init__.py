@@ -31,6 +31,8 @@ base = None
 
 class Main(object):
     def __init__(self):
+        wxgui_api.install_system_icon('@alarmslog', ('appointment-soon', ))
+
         self.alarmlogs = {}
         self.mainmenu = LogsMenu(self)
 
@@ -141,7 +143,7 @@ class AlarmsLog(object):
 
         self.tool_id, menu_items, popup_cmenu = wxgui_api.add_log(filename,
                                 self.view, "Alarms",
-                                wxgui_api.get_log_icon('@alarms'),
+                                wxgui_api.get_log_icon('@alarmslog'),
                                 cmenu.get_items(), cmenu.update)
         cmenu.store_items(menu_items)
 
@@ -237,7 +239,7 @@ class LogsMenu(object):
                 "Find in &database\t{}".format(config['find']),
                 "Select the database items associated to the selected entries")
 
-        self.alarms.SetBitmap(wxgui_api.get_menu_icon('@alarms'))
+        self.alarms.SetBitmap(wxgui_api.get_menu_icon('@alarmslog'))
         self.select.SetBitmap(wxgui_api.get_menu_icon('@focus'))
         self.find.SetBitmap(wxgui_api.get_menu_icon('@find'))
 

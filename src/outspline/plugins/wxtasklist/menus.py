@@ -109,10 +109,10 @@ class MainMenu(wx.Menu):
         self.scroll.SetBitmap(wxgui_api.get_menu_icon('@scroll'))
         self.find.SetBitmap(wxgui_api.get_menu_icon('@find'))
         self.edit.SetBitmap(wxgui_api.get_menu_icon('@edit'))
-        self.snooze.SetBitmap(wxgui_api.get_menu_icon('@alarms'))
-        self.snooze_all.SetBitmap(wxgui_api.get_menu_icon('@alarms'))
-        self.dismiss.SetBitmap(wxgui_api.get_menu_icon('@alarmoff'))
-        self.dismiss_all.SetBitmap(wxgui_api.get_menu_icon('@alarmoff'))
+        self.snooze.SetBitmap(wxgui_api.get_menu_icon('@snooze'))
+        self.snooze_all.SetBitmap(wxgui_api.get_menu_icon('@snooze'))
+        self.dismiss.SetBitmap(wxgui_api.get_menu_icon('@dismiss'))
+        self.dismiss_all.SetBitmap(wxgui_api.get_menu_icon('@dismiss'))
         self.export.SetBitmap(wxgui_api.get_menu_icon('@saveas'))
 
         self.AppendItem(self.navigator)
@@ -612,8 +612,8 @@ class TabContextMenu(wx.Menu):
         self.navigator.SetBitmap(wxgui_api.get_menu_icon('@navigator'))
         self.alarms.SetBitmap(wxgui_api.get_menu_icon('@alarms'))
         self.scroll.SetBitmap(wxgui_api.get_menu_icon('@scroll'))
-        self.snooze_all.SetBitmap(wxgui_api.get_menu_icon('@alarms'))
-        self.dismiss_all.SetBitmap(wxgui_api.get_menu_icon('@alarmoff'))
+        self.snooze_all.SetBitmap(wxgui_api.get_menu_icon('@snooze'))
+        self.dismiss_all.SetBitmap(wxgui_api.get_menu_icon('@dismiss'))
         self.export.SetBitmap(wxgui_api.get_menu_icon('@saveas'))
 
         self.AppendItem(self.show)
@@ -760,8 +760,8 @@ class ListContextMenu(wx.Menu):
 
         self.find.SetBitmap(wxgui_api.get_menu_icon('@find'))
         self.edit.SetBitmap(wxgui_api.get_menu_icon('@edit'))
-        self.snooze.SetBitmap(wxgui_api.get_menu_icon('@alarms'))
-        self.dismiss.SetBitmap(wxgui_api.get_menu_icon('@alarmoff'))
+        self.snooze.SetBitmap(wxgui_api.get_menu_icon('@snooze'))
+        self.dismiss.SetBitmap(wxgui_api.get_menu_icon('@dismiss'))
 
         self.AppendItem(self.find)
         self.AppendItem(self.edit)

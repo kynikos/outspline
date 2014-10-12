@@ -49,6 +49,11 @@ class TrayIcon(wx.TaskBarIcon):
         config = coreaux_api.get_plugin_configuration('wxtrayicon')(
                                                                 'Shortcuts')
 
+        wxgui_api.install_system_icon('@blinkicon', (wx.ART_WARNING,
+                                    'dialog-warning', 'gtk-dialog-warning'))
+        wxgui_api.install_system_icon('@tray', ('go-bottom', 'gtk-goto-bottom',
+                                                            wx.ART_GO_DOWN))
+
         self.icon = BlinkingIcon(self)
 
         menumin = wx.MenuItem(wxgui_api.get_menu_file(), self.ID_MINIMIZE,

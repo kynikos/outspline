@@ -25,6 +25,10 @@ from wxgui import rootw, notebooks, editor, menubar, tree, databases, dbprops
 
 ### ART ###
 
+def install_system_icon(name, artids):
+    return wx.GetApp().artprovider.install_system_icon(name, artids)
+
+
 def get_frame_icon_bundle(artid):
     return wx.GetApp().artprovider.get_frame_icon_bundle(artid)
 

@@ -33,6 +33,9 @@ class Dialogs(object):
         self.search_dialogs = {}
         self.activate_dialogs = {}
 
+        wxgui_api.install_system_icon('@oldalarmsdialog',
+                                                        ('appointment-soon', ))
+
         organism_alarms_api.install_unique_old_alarms_interface(
                                                 self._choose_old_alarms_unique)
         wxgui_api.register_aborted_save_warning(
@@ -153,7 +156,7 @@ class DialogSearch(object):
         vsizer.Add(hsizer1, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         icon = wx.StaticBitmap(self.dialog, bitmap=wxgui_api.get_dialog_icon(
-                                                                    '@alarms'))
+                                                        '@oldalarmsdialog'))
         hsizer1.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         self.labeltext = ("{} was last saved {} days ago: searching the "
@@ -258,7 +261,7 @@ class DialogActivate(object):
         self.vsizer.Add(hsizer, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         icon = wx.StaticBitmap(self.dialog, bitmap=wxgui_api.get_dialog_icon(
-                                                                    '@alarms'))
+                                                        '@oldalarmsdialog'))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         self.label = wx.StaticText(self.dialog, label="Filtering the old "

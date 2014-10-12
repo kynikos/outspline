@@ -462,7 +462,7 @@ class SnoozeDialog(wx.Dialog):
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
 
         icon = wx.StaticBitmap(self, bitmap=wxgui_api.get_dialog_icon(
-                                                                    '@alarms'))
+                                                            '@snoozedialog'))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         ssizer = wx.BoxSizer(wx.HORIZONTAL)

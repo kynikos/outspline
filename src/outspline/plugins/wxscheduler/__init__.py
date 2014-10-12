@@ -568,6 +568,8 @@ class ViewMenu(object):
         self.ID_FOCUS = wx.NewId()
         self.ID_TOGGLE = wx.NewId()
 
+        wxgui_api.install_system_icon('@scheduler', ('x-office-calendar', ))
+
         submenu = wx.Menu()
 
         config = coreaux_api.get_plugin_configuration('wxscheduler')(
@@ -584,7 +586,7 @@ class ViewMenu(object):
                                         "&Toggle\t{}".format(config['toggle']),
                                         "Toggle scheduler panel")
 
-        self.main.SetBitmap(wxgui_api.get_menu_icon('@tasklist'))
+        self.main.SetBitmap(wxgui_api.get_menu_icon('@scheduler'))
         self.focus.SetBitmap(wxgui_api.get_menu_icon('@focus'))
         self.toggle.SetBitmap(wxgui_api.get_menu_icon('@toggle'))
 

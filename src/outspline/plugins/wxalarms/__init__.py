@@ -34,8 +34,10 @@ alarmswindow = None
 
 class AlarmsWindow(object):
     def __init__(self, parent):
+        wxgui_api.install_system_icon('@alarmswin', ('appointment-soon', ))
+
         self.ALARMS_MIN_HEIGHT = 140
-        self.ALARMS_ICON_BUNDLE = wxgui_api.get_frame_icon_bundle('@alarms')
+        self.ALARMS_ICON_BUNDLE = wxgui_api.get_frame_icon_bundle('@alarmswin')
 
         self.config = coreaux_api.get_plugin_configuration('wxalarms')
 

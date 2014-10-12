@@ -33,43 +33,33 @@ class ArtProvider(object):
         #  http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
         # GTK stock icon names:
         #  https://developer.gnome.org/gtk3/stable/gtk3-Stock-Items.html
-        self.strids = {'@alarms': ('appointment-soon', ),
-                    '@alarmoff': ('appointment-missed', ),
-                    '@apply': (wx.ART_TICK_MARK, 'gtk-apply', 'gtk-ok',
+        self.strids = {'@apply': (wx.ART_TICK_MARK, 'gtk-apply', 'gtk-ok',
                                 'gtk-yes'),
                     '@backup': (wx.ART_FILE_SAVE_AS, 'document-save-as',
                                 'gtk-save-as'),
-                    '@blinkicon': (wx.ART_WARNING, 'dialog-warning',
-                                'gtk-dialog-warning'),
                     '@close': (wx.ART_CLOSE, 'window-close', 'gtk-close'),
                     '@closeall': (wx.ART_CLOSE, 'window-close', 'gtk-close'),
                     '@copy': (wx.ART_COPY, 'edit-copy', 'gtk-copy'),
                     '@cut': (wx.ART_CUT, 'edit-cut', 'gtk-cut'),
-                    '@dbsearch': ('system-search', wx.ART_FIND,
-                                'edit-find', 'gtk-find'),
                     '@delete': (wx.ART_DELETE, 'edit-delete', 'gtk-delete'),
                     '@edit': ('accessories-text-editor', "gtk-edit"),
                     '@editortab': (wx.ART_NORMAL_FILE, 'text-x-generic',
                                 "gtk-file"),
                     '@exit': (wx.ART_QUIT, 'application-exit', "gtk-quit"),
-                    '@exporttype': (wx.ART_NORMAL_FILE, 'text-x-generic',
-                                "gtk-file"),
                     '@find': ('system-search', wx.ART_FIND,
                                 'edit-find', 'gtk-find'),
                     '@focus': ('go-jump', "gtk-jump-to", wx.ART_GO_DOWN),
                     '@hide': (wx.ART_CLOSE, 'window-close', 'gtk-close'),
                     '@left': (wx.ART_GO_BACK, 'go-previous', "gtk-go-back"),
-                    '@links': ('emblem-symbolic-link', "insert-link"),
                     '@logs': ('applications-system', ),
                     '@movedown': (wx.ART_GO_DOWN, 'go-down', 'gtk-go-down'),
                     '@movetoparent': (wx.ART_GO_BACK, 'go-previous',
                                 'gtk-go-back'),
                     '@moveup': (wx.ART_GO_UP, 'go-up', 'gtk-go-up'),
-                    '@navigator': ('applications-system', ),
-                    '@next': (wx.ART_GO_FORWARD, 'go-next', "gtk-go-forward"),
                     '@newitem': (wx.ART_NEW, 'document-new', 'gtk-new'),
                     '@newsubitem': (wx.ART_NEW, 'document-new', 'gtk-new'),
                     '@outspline': ('accessories-text-editor', ),
+                    '@next': (wx.ART_GO_FORWARD, 'go-next', "gtk-go-forward"),
                     '@paste': (wx.ART_PASTE, 'edit-paste', 'gtk-paste'),
                     '@previous': (wx.ART_GO_BACK, 'go-previous',
                                 "gtk-go-back"),
@@ -85,11 +75,8 @@ class ArtProvider(object):
                                 'gtk-save'),
                     '@saveas': (wx.ART_FILE_SAVE_AS, 'document-save-as',
                                 'gtk-save-as'),
-                    '@scroll': (wx.ART_GO_DOWN, 'go-down', 'gtk-go-down'),
                     '@selectall': ('edit-select-all', 'gtk-select-all'),
-                    '@tasklist': ('x-office-calendar', ),
                     '@toggle': (wx.ART_GO_UP, 'go-up', 'gtk-go-up'),
-                    '@tray': ('go-bottom', 'gtk-goto-bottom', wx.ART_GO_DOWN),
                     '@undo': (wx.ART_UNDO, 'edit-undo', 'gtk-undo'),
                     '@undodb': (wx.ART_UNDO, 'edit-undo', 'gtk-undo'),
                     '@warning': (wx.ART_WARNING, 'dialog-warning',
@@ -181,6 +168,18 @@ class ArtProvider(object):
                 bundle.AddIcon(icon)
 
         return bundle
+
+    def install_system_icon(self, name, artids):
+        # Use names prefixed with "@" so that they can't conflict with icon
+        #  theme names
+        try:
+            self.strids[name]
+        except KeyError:
+            self.strids[name] = artids
+        else:
+            # Just crash if there's a conflict, it should happen only in
+            #  development
+            raise ValueError()
 
     def get_frame_icon_bundle(self, artid):
         bundle = self._create_icon_bundle(artid)

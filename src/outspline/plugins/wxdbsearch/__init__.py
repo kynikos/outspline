@@ -703,6 +703,9 @@ class TabContextMenu(wx.Menu):
 
 
 def main():
+    wxgui_api.install_system_icon('@dbsearch', ('system-search', wx.ART_FIND,
+                                                    'edit-find', 'gtk-find'))
+
     global mainmenu
     mainmenu = MainMenu()
 

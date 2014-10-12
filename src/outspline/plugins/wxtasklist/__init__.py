@@ -50,6 +50,17 @@ class TaskListPanel(wx.Panel):
 
 class TaskList(object):
     def __init__(self, parent):
+        wxgui_api.install_system_icon('@alarms', ('appointment-soon', ))
+        wxgui_api.install_system_icon('@dismiss', ('appointment-missed', ))
+        wxgui_api.install_system_icon('@exporttype', (wx.ART_NORMAL_FILE,
+                                                'text-x-generic', "gtk-file"))
+        wxgui_api.install_system_icon('@navigator', ('applications-system', ))
+        wxgui_api.install_system_icon('@scroll', (wx.ART_GO_DOWN, 'go-down',
+                                                                'gtk-go-down'))
+        wxgui_api.install_system_icon('@snooze', ('appointment-soon', ))
+        wxgui_api.install_system_icon('@snoozedialog', ('appointment-soon', ))
+        wxgui_api.install_system_icon('@tasklist', ('x-office-calendar', ))
+
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
         aconfig = self.config("ExtendedShortcuts")

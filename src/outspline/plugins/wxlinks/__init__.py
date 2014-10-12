@@ -35,6 +35,9 @@ class Main(object):
         self.items = {}
         self.itemicons = {}
 
+        wxgui_api.install_system_icon('@links', ('emblem-symbolic-link',
+                                                                "insert-link"))
+
         ViewMenu(self)
 
         wxgui_api.bind_to_creating_tree(self._handle_creating_tree)
