@@ -35,8 +35,7 @@ class Main(object):
         self.items = {}
         self.itemicons = {}
 
-        wxgui_api.install_system_icon('@links', ('emblem-symbolic-link',
-                                                                "insert-link"))
+        wxgui_api.install_bundled_icon('@links', ("Tango", "links16.png"))
 
         ViewMenu(self)
 
@@ -421,7 +420,7 @@ class ViewMenu(object):
                 "Toggle links manager panel")
 
         self.main.SetBitmap(wxgui_api.get_menu_icon('@links'))
-        self.focus.SetBitmap(wxgui_api.get_menu_icon('@focus'))
+        self.focus.SetBitmap(wxgui_api.get_menu_icon('@jump'))
         self.toggle.SetBitmap(wxgui_api.get_menu_icon('@toggle'))
 
         wxgui_api.add_menu_editor_plugin(self.main)

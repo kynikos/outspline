@@ -34,10 +34,13 @@ alarmswindow = None
 
 class AlarmsWindow(object):
     def __init__(self, parent):
-        wxgui_api.install_system_icon('@alarmswin', ('appointment-soon', ))
+        wxgui_api.install_icon_bundle('&alarmswin', (("alarmswin16.png", ),
+                                ("alarmswin24.png", ), ("alarmswin32.png", ),
+                                ("alarmswin48.png", ), ("alarmswin64.png", ),
+                                ("alarmswin128.png", )))
 
         self.ALARMS_MIN_HEIGHT = 140
-        self.ALARMS_ICON_BUNDLE = wxgui_api.get_frame_icon_bundle('@alarmswin')
+        self.ALARMS_ICON_BUNDLE = wxgui_api.get_frame_icon_bundle('&alarmswin')
 
         self.config = coreaux_api.get_plugin_configuration('wxalarms')
 
@@ -108,7 +111,7 @@ class AlarmsWindow(object):
         wxgui_api.bind_to_close_database(self._handle_close_db)
 
     def _init_hidden_panel(self):
-        icon = wx.StaticBitmap(self.window, bitmap=wxgui_api.get_button_icon(
+        icon = wx.StaticBitmap(self.window, bitmap=wxgui_api.get_message_icon(
                                                                 '@warning'))
         self.hidden_panel.Add(icon, flag=wx.ALIGN_CENTER_VERTICAL |
                                                             wx.RIGHT, border=4)

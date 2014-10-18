@@ -50,16 +50,17 @@ class TaskListPanel(wx.Panel):
 
 class TaskList(object):
     def __init__(self, parent):
-        wxgui_api.install_system_icon('@alarms', ('appointment-soon', ))
-        wxgui_api.install_system_icon('@dismiss', ('appointment-missed', ))
-        wxgui_api.install_system_icon('@exporttype', (wx.ART_NORMAL_FILE,
-                                                'text-x-generic', "gtk-file"))
-        wxgui_api.install_system_icon('@navigator', ('applications-system', ))
-        wxgui_api.install_system_icon('@scroll', (wx.ART_GO_DOWN, 'go-down',
-                                                                'gtk-go-down'))
-        wxgui_api.install_system_icon('@snooze', ('appointment-soon', ))
-        wxgui_api.install_system_icon('@snoozedialog', ('appointment-soon', ))
-        wxgui_api.install_system_icon('@tasklist', ('x-office-calendar', ))
+        wxgui_api.install_bundled_icon('@activealarms',
+                                                    ("activealarms16.png", ))
+        wxgui_api.install_bundled_icon('@dismiss', ("dismiss16.png", ))
+        wxgui_api.install_bundled_icon('@navigator',
+                                                ("Tango", "navigator16.png"))
+        wxgui_api.install_bundled_icon('@scroll', ("Tango", "scroll16.png"))
+        wxgui_api.install_bundled_icon('@snooze', ("snooze16.png", ))
+        wxgui_api.install_bundled_icon('@snoozedialog',
+                                                    ("snoozedialog48.png", ))
+        wxgui_api.install_bundled_icon('@tasklist',
+                                                ("Tango", "tasklist16.png"))
 
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
@@ -234,7 +235,7 @@ class WarningsBar(object):
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
 
-        icon = wx.StaticBitmap(self.panel, bitmap=wxgui_api.get_button_icon(
+        icon = wx.StaticBitmap(self.panel, bitmap=wxgui_api.get_message_icon(
                                                                 '@warning'))
         box.Add(icon, flag=wx.ALIGN_CENTER_VERTICAL | wx.ALL, border=4)
 

@@ -18,10 +18,15 @@
 
 import wx
 
+import outspline.coreaux_api as coreaux_api
+
+import exceptions
+
 
 class ArtProvider(object):
     def __init__(self):
         self._init_system_icons()
+        self._init_bundled_icons()
         self._init_list_header_icons()
 
     def _init_system_icons(self):
@@ -35,52 +40,56 @@ class ArtProvider(object):
         #  https://developer.gnome.org/gtk3/stable/gtk3-Stock-Items.html
         self.strids = {'@apply': (wx.ART_TICK_MARK, 'gtk-apply', 'gtk-ok',
                                 'gtk-yes'),
-                    '@backup': (wx.ART_FILE_SAVE_AS, 'document-save-as',
-                                'gtk-save-as'),
                     '@close': (wx.ART_CLOSE, 'window-close', 'gtk-close'),
-                    '@closeall': (wx.ART_CLOSE, 'window-close', 'gtk-close'),
                     '@copy': (wx.ART_COPY, 'edit-copy', 'gtk-copy'),
                     '@cut': (wx.ART_CUT, 'edit-cut', 'gtk-cut'),
                     '@delete': (wx.ART_DELETE, 'edit-delete', 'gtk-delete'),
-                    '@edit': ('accessories-text-editor', "gtk-edit"),
-                    '@editortab': (wx.ART_NORMAL_FILE, 'text-x-generic',
-                                "gtk-file"),
+                    '@down': (wx.ART_GO_DOWN, 'go-down', 'gtk-go-down'),
+                    '@edit': ("gtk-edit", ),
                     '@exit': (wx.ART_QUIT, 'application-exit', "gtk-quit"),
-                    '@find': ('system-search', wx.ART_FIND,
-                                'edit-find', 'gtk-find'),
-                    '@focus': ('go-jump', "gtk-jump-to", wx.ART_GO_DOWN),
-                    '@hide': (wx.ART_CLOSE, 'window-close', 'gtk-close'),
+                    '@file': (wx.ART_NORMAL_FILE, 'text-x-generic',
+                                                                "gtk-file"),
+                    '@jump': ('go-jump', "gtk-jump-to", wx.ART_GO_DOWN),
                     '@left': (wx.ART_GO_BACK, 'go-previous', "gtk-go-back"),
-                    '@logs': ('applications-system', ),
-                    '@movedown': (wx.ART_GO_DOWN, 'go-down', 'gtk-go-down'),
-                    '@movetoparent': (wx.ART_GO_BACK, 'go-previous',
-                                'gtk-go-back'),
-                    '@moveup': (wx.ART_GO_UP, 'go-up', 'gtk-go-up'),
-                    '@newitem': (wx.ART_NEW, 'document-new', 'gtk-new'),
-                    '@newsubitem': (wx.ART_NEW, 'document-new', 'gtk-new'),
-                    '@outspline': ('accessories-text-editor', ),
-                    '@next': (wx.ART_GO_FORWARD, 'go-next', "gtk-go-forward"),
+                    '@new': (wx.ART_NEW, 'document-new', 'gtk-new'),
                     '@paste': (wx.ART_PASTE, 'edit-paste', 'gtk-paste'),
-                    '@previous': (wx.ART_GO_BACK, 'go-previous',
-                                "gtk-go-back"),
                     '@properties': ('document-properties', "gtk-properties"),
                     '@question': (wx.ART_QUESTION, 'dialog-question',
                                 "gtk-dialog-question"),
                     '@redo': (wx.ART_REDO, 'edit-redo', 'gtk-redo'),
-                    '@redodb': (wx.ART_REDO, 'edit-redo', 'gtk-redo'),
                     '@refresh': ('view-refresh', "gtk-refresh"),
                     '@right': (wx.ART_GO_FORWARD, 'go-next', "gtk-go-forward"),
                     '@save': (wx.ART_FILE_SAVE, 'document-save', 'gtk-save'),
-                    '@saveall': (wx.ART_FILE_SAVE, 'document-save',
-                                'gtk-save'),
                     '@saveas': (wx.ART_FILE_SAVE_AS, 'document-save-as',
                                 'gtk-save-as'),
                     '@selectall': ('edit-select-all', 'gtk-select-all'),
-                    '@toggle': (wx.ART_GO_UP, 'go-up', 'gtk-go-up'),
                     '@undo': (wx.ART_UNDO, 'edit-undo', 'gtk-undo'),
-                    '@undodb': (wx.ART_UNDO, 'edit-undo', 'gtk-undo'),
+                    '@up': (wx.ART_GO_UP, 'go-up', 'gtk-go-up'),
                     '@warning': (wx.ART_WARNING, 'dialog-warning',
                                 "gtk-dialog-warning")}
+
+    def _init_bundled_icons(self):
+        # Use artids prefixed with "@" so that they can't conflict with icon
+        #  theme names
+        self.bundled = {
+            "@dbfind": ("Tango", "find16.png"),
+            "@edit": ("Tango", "edit16.png"),
+            "@logs": ("Tango", "logs16.png"),
+            "@outspline": ("main48.png", ),
+            "@outsplinetray": ("main24.png", ),
+            "@properties": ("Tango", "properties16.png"),
+            "@refresh": ("Tango", "refresh16.png"),
+            "@selectall": ("Tango", "selectall16.png"),
+            "@toggle": ("Tango", "toggle16.png"),
+        }
+
+        # Use bundleid prefixed with "&" so that they can't conflict with icon
+        #  theme names
+        self.bundles = {
+            "&outspline": (("main16.png", ), ("main24.png", ),
+                                        ("main32.png", ), ("main48.png", ),
+                                        ("main64.png", ), ("main128.png", )),
+        }
 
     def _init_list_header_icons(self):
         fg = wx.SystemSettings.GetColour(wx.SYS_COLOUR_CAPTIONTEXT
@@ -127,120 +136,110 @@ class ArtProvider(object):
                          "mmmmmmmmmmmmmmmm"])
         )
 
-    def _create_fallback_bitmap(self, size):
-        return wx.EmptyBitmapRGBA(size, size, red=255, green=255, blue=255,
-                                                                    alpha=0)
-
-    def _find_bitmap(self, artid, client, size):
-        return self._find(artid, client, size, wx.ArtProvider.GetBitmap)
-
-    def _find_icon(self, artid, client, size):
-        return self._find(artid, client, size, wx.ArtProvider.GetIcon)
-
-    def _find(self, artid, client, size, action):
-        try:
-            strids = self.strids[artid]
-        except KeyError:
-            return action(artid, client, size)
+    def install_bundled_icon(self, artid, path):
+        # Use artids prefixed with "@" so that they can't conflict with icon
+        #  theme names
+        if path in self.bundled.values():
+            raise exceptions.DuplicatedIconError()
         else:
-            for strid in strids:
-                bmp = action(strid, client, size)
-
-                if bmp.IsOk:
-                    return bmp
+            try:
+                self.bundled[artid]
+            except KeyError:
+                self.bundled[artid] = path
             else:
-                return action(artid, client, size)
+                # Just crash if there's a conflict, it should happen only in
+                #  development
+                raise exceptions.DuplicatedArtIdError()
 
-
-    def _create_icon_bundle(self, artid):
-        # wx.ArtProvider would have a GetIconBundle method, but it's not easy
-        #  to understand how to use it... if it's actually implemented at
-        #  all...
-        bundle = wx.IconBundle()
-
-        for client in (wx.ART_TOOLBAR, wx.ART_MENU, wx.ART_BUTTON,
-                    wx.ART_FRAME_ICON, wx.ART_CMN_DIALOG, wx.ART_HELP_BROWSER,
-                    wx.ART_MESSAGE_BOX, wx.ART_OTHER):
-
-            icon = self._find_icon(artid, client, (-1, -1))
-
-            if icon.IsOk():
-                bundle.AddIcon(icon)
-
-        return bundle
-
-    def install_system_icon(self, name, artids):
-        # Use names prefixed with "@" so that they can't conflict with icon
+    def install_icon_bundle(self, bundleid, paths):
+        # Use bundleid prefixed with "&" so that they can't conflict with icon
         #  theme names
         try:
-            self.strids[name]
+            self.bundles[bundleid]
         except KeyError:
-            self.strids[name] = artids
+            self.bundles[bundleid] = paths
         else:
             # Just crash if there's a conflict, it should happen only in
             #  development
-            raise ValueError()
+            raise exceptions.DuplicatedArtIdError()
 
-    def get_frame_icon_bundle(self, artid):
-        bundle = self._create_icon_bundle(artid)
+    def _find_bitmap(self, artid, client, size):
+        return self._find(artid, client, size, wx.ArtProvider.GetBitmap,
+                                                                    wx.Bitmap)
 
-        if bundle.IsEmpty():
-            # Even though a valid bundle wouldn't be required, be safe in
-            #  frames
-            for size in (16, 24, 32, 48):
-                bundle.AddIcon(wx.IconFromBitmap(self._create_fallback_bitmap(
-                                                                        size)))
+    def _find_icon(self, artid, client, size):
+        return self._find(artid, client, size, wx.ArtProvider.GetIcon, wx.Icon)
 
-        return bundle
+    def _find(self, artid, client, size, get_system, get_bundled):
+        try:
+            strids = self.strids[artid]
+        except KeyError:
+            # Use strict=True because it shouldn't happen that the @artid isn't
+            #  found in the bundled icons either
+            # Also, the @artid shouldn't be used to retrieve system icons or
+            #  file names directly, in fact bypassing this whole system
+            return self._find_bundled(artid, get_bundled, strict=True)
+        else:
+            for strid in strids:
+                bmp = get_system(strid, client, size)
+
+                if bmp.IsOk():
+                    return bmp
+
+            else:
+                # Use strict=False because the @artid was correctly used, it's
+                #  just that the system doesn't have the icon installed
+                return self._find_bundled(artid, get_bundled, strict=False)
+
+    def _find_bundled(self, artid, get_bundled, strict):
+        try:
+            filepath = self.bundled[artid]
+        except KeyError:
+            if strict:
+                raise exceptions.UnknownArtIdError()
+            else:
+                return False
+        else:
+            return get_bundled(coreaux_api.get_bundled_icon(filepath))
 
     def get_notebook_icon(self, artid):
-        bmp = self._find_bitmap(artid, wx.ART_TOOLBAR, (16, 16))
-
-        if bmp.IsOk():
-            return bmp
-        else:
-            # A valid bitmap must be returned in any case
-            return self._create_fallback_bitmap(16)
+        # A valid bitmap must be returned in any case
+        return self._find_bitmap(artid, wx.ART_TOOLBAR, (16, 16))
 
     def get_log_icon(self, artid):
-        bmp = self._find_bitmap(artid, wx.ART_MENU, (16, 16))
-
-        if bmp.IsOk():
-            return bmp
-        else:
-            # A valid bitmap must be returned in any case
-            return self._create_fallback_bitmap(16)
+        # A valid bitmap must be returned in any case
+        return self._find_bitmap(artid, wx.ART_MENU, (16, 16))
 
     def get_menu_icon(self, artid):
         # A valid bitmap is not required
-        return self._find_bitmap(artid, wx.ART_MENU, (-1, -1))
+        return self._find_bitmap(artid, wx.ART_MENU, (16, 16))
 
     def get_dialog_icon(self, artid):
         # A valid bitmap is not required
-        return self._find_bitmap(artid, wx.ART_CMN_DIALOG, (-1, -1))
+        return self._find_bitmap(artid, wx.ART_CMN_DIALOG, (48, 48))
 
-    def get_button_icon(self, artid):
+    def get_message_icon(self, artid):
         # A valid bitmap is not required
-        return self._find_bitmap(artid, wx.ART_BUTTON, (-1, -1))
+        return self._find_bitmap(artid, wx.ART_BUTTON, (16, 16))
 
-    def get_about_icon(self, artid):
-        bmp = self._find_bitmap(artid, wx.ART_CMN_DIALOG, (48, 48))
-
-        if bmp.IsOk():
-            return bmp
-        else:
-            # Even though a valid bitmap wouldn't be required, be safe in the
-            #  about dialog
-            return self._create_fallback_bitmap(48)
+    def get_about_icon(self):
+        return coreaux_api.get_bundled_icon(self.bundled["@outspline"])
 
     def get_tray_icon(self, artid):
-        bmp = self._find_icon(artid, wx.ART_OTHER, (-1, -1))
+        # Don't try to get an SVG, because the tray icon won't be resized with
+        #  the notification area anyway
+        return wx.Icon(coreaux_api.get_bundled_icon(self.bundled[artid]))
 
-        if bmp.IsOk():
-            return bmp
-        else:
-            # A valid icon must be returned in any case
-            return wx.IconFromBitmap(self._create_fallback_bitmap(16))
+    def get_frame_icon_bundle(self, bundleid):
+        # wx.ArtProvider would have a GetIconBundle method, but it's not easy
+        #  to understand how to use it... if it's actually
+        #  implemented/tested/maintained at all...
+        bundle = wx.IconBundle()
+
+        for path in self.bundles[bundleid]:
+            bundle.AddIcon(wx.Icon(coreaux_api.get_bundled_icon(path)))
+
+        return bundle
 
     def get_list_sort_icons(self):
         return self.listsorticons

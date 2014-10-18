@@ -45,9 +45,6 @@ class GUI(wx.App):
 
         self.artprovider = art.ArtProvider()
 
-        self.MAIN_ICON_BUNDLE = self.artprovider.get_frame_icon_bundle(
-                                                                "@outspline")
-
         self.root = MainFrame()
         self.logs_configuration = logs.LogsConfiguration()
 
@@ -64,9 +61,6 @@ class GUI(wx.App):
         if self.uncaught_max > 0:
             coreaux_api.bind_to_uncaught_exception(
                                             self._handle_uncaught_exception)
-
-    def get_main_icon_bundle(self):
-        return self.MAIN_ICON_BUNDLE
 
     def exit_app(self, event):
         self._export_options()
@@ -139,7 +133,8 @@ class MainFrame(wx.Frame):
         if self.config.get_bool('maximized'):
             self.Maximize()
 
-        self.SetIcons(wx.GetApp().get_main_icon_bundle())
+        self.SetIcons(wx.GetApp().artprovider.get_frame_icon_bundle(
+                                                                "&outspline"))
 
         self.menu = menubar.RootMenu(self)
         self.SetMenuBar(self.menu)

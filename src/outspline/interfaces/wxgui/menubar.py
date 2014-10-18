@@ -251,14 +251,13 @@ class MenuFile(wx.Menu):
 
         self.save.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@save'))
         self.saveas.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@saveas'))
-        self.backup.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@backup'))
-        self.saveall.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
-                                                                '@saveall'))
+        self.backup.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@saveas'))
+        self.saveall.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@save'))
         self.properties.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
                                                                 '@properties'))
         self.close_.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@close'))
         self.closeall.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
-                                                                '@closeall'))
+                                                                    '@close'))
 
         self.AppendItem(self.new_)
         self.AppendItem(self.open_)
@@ -451,17 +450,13 @@ class MenuDatabase(wx.Menu):
                                 "&Delete items\t{}".format(config['delete']),
                                 "Delete the selected items")
 
-        self.undo.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@undodb'))
-        self.redo.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@redodb'))
-        self.sibling.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
-                                                                '@newitem'))
-        self.child.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
-                                                                '@newsubitem'))
-        self.moveup.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@moveup'))
-        self.movedn.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
-                                                                '@movedown'))
-        self.movept.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
-                                                            '@movetoparent'))
+        self.undo.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@undo'))
+        self.redo.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@redo'))
+        self.sibling.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@new'))
+        self.child.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@new'))
+        self.moveup.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@up'))
+        self.movedn.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@down'))
+        self.movept.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@left'))
         self.edit.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@edit'))
         self.delete.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@delete'))
 
@@ -656,7 +651,7 @@ class MenuEdit(wx.Menu):
         self.cut.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@cut'))
         self.copy.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@copy'))
         self.paste.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@paste'))
-        self.find.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@find'))
+        self.find.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@dbfind'))
         self.apply.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@apply'))
         self.applyall.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
                                                                     '@apply'))
@@ -812,8 +807,7 @@ class MenuView(wx.Menu):
                                                                     '@left'))
         self.logs.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@logs'))
         self.rightnb.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@right'))
-        self.editors.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
-                                                                '@editortab'))
+        self.editors.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@edit'))
 
         self.AppendItem(self.databases)
         self.AppendItem(self.logs)
@@ -913,7 +907,7 @@ class MenuViewDatabases(wx.Menu):
 
         self.cycle.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@right'))
         self.rcycle.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@left'))
-        self.focus.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@focus'))
+        self.focus.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@jump'))
 
         self.AppendItem(self.cycle)
         self.AppendItem(self.rcycle)
@@ -1042,7 +1036,7 @@ class MenuViewLogs(wx.Menu):
 
         self.cycle.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@right'))
         self.rcycle.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@left'))
-        self.focus.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@focus'))
+        self.focus.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@jump'))
         self.items.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@edit'))
 
         self.AppendItem(self.show)
@@ -1124,7 +1118,7 @@ class MenuViewLogItems(wx.Menu):
                         "&Select\t{}".format(config['select']),
                         "Select the items history log")
 
-        self.select.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@focus'))
+        self.select.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@jump'))
 
         self.AppendItem(self.select)
 
@@ -1206,7 +1200,7 @@ class MenuViewRightNB(wx.Menu):
 
         self.cycle.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@right'))
         self.rcycle.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@left'))
-        self.focus.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@focus'))
+        self.focus.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@jump'))
         self.close.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@close'))
 
         self.AppendItem(self.cycle)
@@ -1326,7 +1320,7 @@ class MenuViewEditors(wx.Menu):
                     "Focus &text area\t{}".format(config['focus_text_area']),
                     "Focus the editor's text area")
 
-        self.text.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@focus'))
+        self.text.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@jump'))
 
         self.AppendItem(self.text)
 

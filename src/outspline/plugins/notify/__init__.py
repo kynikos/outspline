@@ -40,7 +40,7 @@ class Notifications():
         Notify.init("Outspline")
 
         # It should be safe if the icon is not found in the system
-        self.ICON = "appointment-soon"
+        self.ICON = "outspline-alarm"
         self.trayicon_id = trayicon_id
 
         organism_alarms_api.bind_to_alarm(self._handle_alarm)
@@ -87,10 +87,9 @@ class BlinkingTrayIcon():
     active_alarms = None
 
     def __init__(self):
-        wxgui_api.install_system_icon('@alarmtray', ('appointment-soon', ))
-
         self.ref_id = wx.NewId()
-        self.icon = wxgui_api.get_tray_icon('@alarmtray')
+        wxgui_api.install_bundled_icon('@trayalarm', ("alarm24.png", ))
+        self.icon = wxgui_api.get_tray_icon("@trayalarm")
         self.DELAY = 50
         # Set SDELAY shorter than DELAY, so that if an alarm is activated at
         # the same time an alarm is dismissed, there's a better chance that

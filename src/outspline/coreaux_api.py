@@ -17,6 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import os.path
 import importlib
 import copy
 import json
@@ -116,6 +117,10 @@ def get_interface_configuration(interface):
 
 def get_plugin_configuration(plugin):
     return config('Plugins')(plugin)
+
+
+def get_bundled_icon(relpath):
+    return os.path.join(coreaux.configuration.BUNDLED_ICONS_DIR, *relpath)
 
 
 def is_main_thread():

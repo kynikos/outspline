@@ -318,7 +318,7 @@ class ContextMenu(wx.Menu):
 
         self.hide = wx.MenuItem(self,
                     wx.GetApp().menu.view.logs_submenu.ID_SHOW, "&Hide logs")
-        self.hide.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@hide'))
+        self.hide.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@close'))
 
         self.AppendItem(self.hide)
         self.AppendSeparator()

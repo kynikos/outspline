@@ -896,15 +896,11 @@ class ContextMenu(wx.Menu):
         self.delete = wx.MenuItem(self, wx.GetApp().menu.database.ID_DELETE,
                                                             "&Delete items")
 
-        self.sibling.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
-                                                                '@newitem'))
-        self.child.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
-                                                                '@newsubitem'))
-        self.moveup.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@moveup'))
-        self.movedn.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
-                                                                '@movedown'))
-        self.movept.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
-                                                            '@movetoparent'))
+        self.sibling.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@new'))
+        self.child.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@new'))
+        self.moveup.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@up'))
+        self.movedn.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@down'))
+        self.movept.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@left'))
         self.edit.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@edit'))
         self.delete.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@delete'))
 
@@ -982,11 +978,11 @@ class TabContextMenu(wx.Menu):
         self.close = wx.MenuItem(self, wx.GetApp().menu.file.ID_CLOSE_DB,
                                                                       "&Close")
 
-        self.undo.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@undodb'))
-        self.redo.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@redodb'))
+        self.undo.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@undo'))
+        self.redo.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@redo'))
         self.save.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@save'))
         self.saveas.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@saveas'))
-        self.backup.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@backup'))
+        self.backup.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@saveas'))
         self.properties.SetBitmap(wx.GetApp().artprovider.get_menu_icon(
                                                                 '@properties'))
         self.close.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@close'))

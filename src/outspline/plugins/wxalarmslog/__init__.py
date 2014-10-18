@@ -31,7 +31,7 @@ base = None
 
 class Main(object):
     def __init__(self):
-        wxgui_api.install_system_icon('@alarmslog', ('appointment-soon', ))
+        wxgui_api.install_bundled_icon('@alarmslog', ("alarmslog16.png", ))
 
         self.alarmlogs = {}
         self.mainmenu = LogsMenu(self)
@@ -240,8 +240,8 @@ class LogsMenu(object):
                 "Select the database items associated to the selected entries")
 
         self.alarms.SetBitmap(wxgui_api.get_menu_icon('@alarmslog'))
-        self.select.SetBitmap(wxgui_api.get_menu_icon('@focus'))
-        self.find.SetBitmap(wxgui_api.get_menu_icon('@find'))
+        self.select.SetBitmap(wxgui_api.get_menu_icon('@jump'))
+        self.find.SetBitmap(wxgui_api.get_menu_icon('@dbfind'))
 
         wxgui_api.add_menu_logs_item(self.alarms)
         submenu.AppendItem(self.select)
@@ -289,7 +289,7 @@ class ContextMenu(object):
         self.log = log
 
         self.find_paramaters = (mainmenu.ID_FIND, "&Find in database",
-                                wxgui_api.get_menu_icon('@find'))
+                                wxgui_api.get_menu_icon('@dbfind'))
 
     def get_items(self):
         return (self.find_paramaters, )

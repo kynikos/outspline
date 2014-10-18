@@ -49,10 +49,8 @@ class TrayIcon(wx.TaskBarIcon):
         config = coreaux_api.get_plugin_configuration('wxtrayicon')(
                                                                 'Shortcuts')
 
-        wxgui_api.install_system_icon('@blinkicon', (wx.ART_WARNING,
-                                    'dialog-warning', 'gtk-dialog-warning'))
-        wxgui_api.install_system_icon('@tray', ('go-bottom', 'gtk-goto-bottom',
-                                                            wx.ART_GO_DOWN))
+        wxgui_api.install_bundled_icon('@tray', ("Tango", "tray16.png"))
+        wxgui_api.install_bundled_icon('@traywarning', ("warning24.png", ))
 
         self.icon = BlinkingIcon(self)
 
@@ -121,8 +119,8 @@ class BlinkingIcon():
 
         self.trayicon = trayicon
 
-        self.main_icon = wxgui_api.get_tray_icon('@outspline')
-        self.default_alternative_icon = wxgui_api.get_tray_icon('@blinkicon')
+        self.main_icon = wxgui_api.get_tray_icon("@outsplinetray")
+        self.default_alternative_icon = wxgui_api.get_tray_icon("@traywarning")
 
         self.current_tooltip = 'Outspline'
         self.tooltips = {}

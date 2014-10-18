@@ -25,12 +25,12 @@ from wxgui import rootw, notebooks, editor, menubar, tree, databases, dbprops
 
 ### ART ###
 
-def install_system_icon(name, artids):
-    return wx.GetApp().artprovider.install_system_icon(name, artids)
+def install_bundled_icon(artid, path):
+    return wx.GetApp().artprovider.install_bundled_icon(artid, path)
 
 
-def get_frame_icon_bundle(artid):
-    return wx.GetApp().artprovider.get_frame_icon_bundle(artid)
+def install_icon_bundle(bundleid, paths):
+    return wx.GetApp().artprovider.install_icon_bundle(bundleid, paths)
 
 
 def get_notebook_icon(artid):
@@ -49,12 +49,16 @@ def get_dialog_icon(artid):
     return wx.GetApp().artprovider.get_dialog_icon(artid)
 
 
-def get_button_icon(artid):
-    return wx.GetApp().artprovider.get_button_icon(artid)
+def get_message_icon(artid):
+    return wx.GetApp().artprovider.get_message_icon(artid)
 
 
 def get_tray_icon(artid):
     return wx.GetApp().artprovider.get_tray_icon(artid)
+
+
+def get_frame_icon_bundle(bundleid):
+    return wx.GetApp().artprovider.get_frame_icon_bundle(bundleid)
 
 
 def get_list_sort_icons():
@@ -463,10 +467,6 @@ def bind_to_plugin_close_event(handler, bind=True):
 
 def get_main_frame():
     return wx.GetApp().root
-
-
-def get_main_icon_bundle():
-    return wx.GetApp().get_main_icon_bundle()
 
 
 def show_main_window():

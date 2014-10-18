@@ -586,9 +586,9 @@ class MainMenu(wx.Menu):
                             "Open in the editor the database items associated "
                             "to the selected results")
 
-        self.search.SetBitmap(wxgui_api.get_menu_icon('@dbsearch'))
-        self.refresh.SetBitmap(wxgui_api.get_menu_icon('@dbsearch'))
-        self.find.SetBitmap(wxgui_api.get_menu_icon('@find'))
+        self.search.SetBitmap(wxgui_api.get_menu_icon('@dbfind'))
+        self.refresh.SetBitmap(wxgui_api.get_menu_icon('@dbfind'))
+        self.find.SetBitmap(wxgui_api.get_menu_icon('@dbfind'))
         self.edit.SetBitmap(wxgui_api.get_menu_icon('@edit'))
 
         self.AppendItem(self.search)
@@ -677,7 +677,7 @@ class ContextMenu(wx.Menu):
         find = wx.MenuItem(self, mainmenu.ID_FIND, "&Find in database")
         edit = wx.MenuItem(self, mainmenu.ID_EDIT, "&Edit selected")
 
-        find.SetBitmap(wxgui_api.get_menu_icon('@find'))
+        find.SetBitmap(wxgui_api.get_menu_icon('@dbfind'))
         edit.SetBitmap(wxgui_api.get_menu_icon('@edit'))
 
         self.AppendItem(find)
@@ -695,7 +695,7 @@ class TabContextMenu(wx.Menu):
                                 wxgui_api.get_menu_view_close_tab_id(),
                                 "Cl&ose", "Close the selected search")
 
-        refresh.SetBitmap(wxgui_api.get_menu_icon('@dbsearch'))
+        refresh.SetBitmap(wxgui_api.get_menu_icon('@dbfind'))
         close_.SetBitmap(wxgui_api.get_menu_icon('@close'))
 
         self.AppendItem(refresh)
@@ -703,15 +703,12 @@ class TabContextMenu(wx.Menu):
 
 
 def main():
-    wxgui_api.install_system_icon('@dbsearch', ('system-search', wx.ART_FIND,
-                                                    'edit-find', 'gtk-find'))
-
     global mainmenu
     mainmenu = MainMenu()
 
     global nb_icon_index
     nb_icon_index = wxgui_api.add_right_nb_image(
-                                    wxgui_api.get_notebook_icon('@find'))
+                                    wxgui_api.get_notebook_icon('@dbfind'))
     global nb_icon_refresh_index
     nb_icon_refresh_index = wxgui_api.add_right_nb_image(
                                     wxgui_api.get_notebook_icon('@refresh'))
