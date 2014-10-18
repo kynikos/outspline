@@ -61,7 +61,7 @@ def make_component_package(cfile, cname):
     shutil.copy2(os.path.join(DEPS_DIR, '__init__.py'), depsdir)
 
     if component.get_bool('provides_core', fallback='false'):
-        for src, dest, sd in ((SRC_DIR, pkgdir, 'files'),
+        for src, dest, sd in ((SRC_DIR, pkgdir, 'data'),
                               (BASE_DIR, maindir, 'static'),
                               (BASE_DIR, maindir, 'core'),
                               (BASE_DIR, maindir, 'coreaux')):

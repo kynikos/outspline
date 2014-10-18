@@ -69,14 +69,16 @@ def compose_metadata():
             'url': 'https://github.com/kynikos/outspline',
             'license': 'GPLv3'}
 
-    meta['scripts'] = ('files/outspline', )
+    meta['scripts'] = ('data/outspline', )
 
-    meta['data_files'] = (('/usr/share/applications',
-                           ('files/outspline.desktop', )),
+    meta['data_files'] = (
+        ('/usr/share/applications/',
+            ('data/outspline.desktop', )
+        ),
     # Currently there isn't an original icon (bug #24)
     #                      ('/usr/share/icons/hicolor/##x##',
-    #                       ('files/outspline.svg', ))
-                         )
+    #                       ('data/outspline.svg', ))
+    )
 
     meta.update(compose_package_metadata('outspline'))
 
