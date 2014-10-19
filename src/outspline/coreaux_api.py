@@ -119,8 +119,8 @@ def get_plugin_configuration(plugin):
     return config('Plugins')(plugin)
 
 
-def get_bundled_icon(relpath):
-    return os.path.join(coreaux.configuration.BUNDLED_ICONS_DIR, *relpath)
+def get_bundled_data(relpath):
+    return os.path.join(coreaux.configuration.BUNDLED_DATA_DIR, *relpath)
 
 
 def is_main_thread():

@@ -44,7 +44,7 @@ _USER_CONFIG_FILE = os.path.join(os.path.expanduser('~'), '.config',
 _USER_FOLDER_PERMISSIONS = 0750
 # Use the icons in $XDG_DATA_DIRS/icons only when there's no alternative, e.g.
 #  for the .desktop file and the notifications
-BUNDLED_ICONS_DIR = os.path.join(_ROOT_DIR, "icons")
+BUNDLED_DATA_DIR = os.path.join(_ROOT_DIR, "data")
 _DESCRIPTION_LONG = 'Outspline is a highly modular outliner whose '\
                     'functionality can be widely extended through the '\
                     'installation of addons.'

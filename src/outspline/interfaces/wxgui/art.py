@@ -200,7 +200,7 @@ class ArtProvider(object):
             else:
                 return False
         else:
-            return get_bundled(coreaux_api.get_bundled_icon(filepath))
+            return get_bundled(coreaux_api.get_bundled_data(filepath))
 
     def get_notebook_icon(self, artid):
         # A valid bitmap must be returned in any case
@@ -223,12 +223,12 @@ class ArtProvider(object):
         return self._find_bitmap(artid, wx.ART_BUTTON, (16, 16))
 
     def get_about_icon(self):
-        return coreaux_api.get_bundled_icon(self.bundled["@outspline"])
+        return coreaux_api.get_bundled_data(self.bundled["@outspline"])
 
     def get_tray_icon(self, artid):
         # Don't try to get an SVG, because the tray icon won't be resized with
         #  the notification area anyway
-        return wx.Icon(coreaux_api.get_bundled_icon(self.bundled[artid]))
+        return wx.Icon(coreaux_api.get_bundled_data(self.bundled[artid]))
 
     def get_frame_icon_bundle(self, bundleid):
         # wx.ArtProvider would have a GetIconBundle method, but it's not easy
@@ -237,7 +237,7 @@ class ArtProvider(object):
         bundle = wx.IconBundle()
 
         for path in self.bundles[bundleid]:
-            bundle.AddIcon(wx.Icon(coreaux_api.get_bundled_icon(path)))
+            bundle.AddIcon(wx.Icon(coreaux_api.get_bundled_data(path)))
 
         return bundle
 
