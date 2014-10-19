@@ -31,7 +31,8 @@ base = None
 
 class Main(object):
     def __init__(self):
-        wxgui_api.install_bundled_icon('@alarmslog', ("alarmslog16.png", ))
+        wxgui_api.install_bundled_icon("wxalarmslog", '@alarmslog',
+                                                        ("alarmslog16.png", ))
 
         self.alarmlogs = {}
         self.mainmenu = LogsMenu(self)

@@ -25,12 +25,12 @@ from wxgui import rootw, notebooks, editor, menubar, tree, databases, dbprops
 
 ### ART ###
 
-def install_bundled_icon(artid, path):
-    return wx.GetApp().artprovider.install_bundled_icon(artid, path)
+def install_bundled_icon(plugin, artid, path):
+    return wx.GetApp().artprovider.install_bundled_icon(plugin, artid, path)
 
 
-def install_icon_bundle(bundleid, paths):
-    return wx.GetApp().artprovider.install_icon_bundle(bundleid, paths)
+def install_icon_bundle(plugin, bundleid, paths):
+    return wx.GetApp().artprovider.install_icon_bundle(plugin, bundleid, paths)
 
 
 def get_notebook_icon(artid):

@@ -71,24 +71,26 @@ class ArtProvider(object):
     def _init_bundled_icons(self):
         # Use artids prefixed with "@" so that they can't conflict with icon
         #  theme names
-        self.bundled = {
-            "@dbfind": ("Tango", "find16.png"),
-            "@edit": ("Tango", "edit16.png"),
-            "@logs": ("Tango", "logs16.png"),
-            "@outspline": ("main48.png", ),
-            "@outsplinetray": ("main24.png", ),
-            "@properties": ("Tango", "properties16.png"),
-            "@refresh": ("Tango", "refresh16.png"),
-            "@selectall": ("Tango", "selectall16.png"),
-            "@toggle": ("Tango", "toggle16.png"),
+        self.bundled = {icon[0]: coreaux_api.get_interface_bundled_data(
+            "wxgui", icon[1]) for icon in (
+                ("@dbfind", ("Tango", "find16.png")),
+                ("@edit", ("Tango", "edit16.png")),
+                ("@logs", ("Tango", "logs16.png")),
+                ("@outspline", ("main48.png", )),
+                ("@outsplinetray", ("main24.png", )),
+                ("@properties", ("Tango", "properties16.png")),
+                ("@refresh", ("Tango", "refresh16.png")),
+                ("@selectall", ("Tango", "selectall16.png")),
+                ("@toggle", ("Tango", "toggle16.png")),
+            )
         }
 
         # Use bundleid prefixed with "&" so that they can't conflict with icon
         #  theme names
         self.bundles = {
-            "&outspline": (("main16.png", ), ("main24.png", ),
-                                        ("main32.png", ), ("main48.png", ),
-                                        ("main64.png", ), ("main128.png", )),
+            "&outspline": (coreaux_api.get_interface_bundled_data(
+                "wxgui", (icon, )) for icon in ("main16.png", "main24.png",
+                "main32.png", "main48.png", "main64.png", "main128.png", ))
         }
 
     def _init_list_header_icons(self):
@@ -136,28 +138,31 @@ class ArtProvider(object):
                          "mmmmmmmmmmmmmmmm"])
         )
 
-    def install_bundled_icon(self, artid, path):
+    def install_bundled_icon(self, plugin, artid, path):
         # Use artids prefixed with "@" so that they can't conflict with icon
         #  theme names
-        if path in self.bundled.values():
+        abspath = coreaux_api.get_plugin_bundled_data(plugin, path)
+
+        if abspath in self.bundled.values():
             raise exceptions.DuplicatedIconError()
         else:
             try:
                 self.bundled[artid]
             except KeyError:
-                self.bundled[artid] = path
+                self.bundled[artid] = abspath
             else:
                 # Just crash if there's a conflict, it should happen only in
                 #  development
                 raise exceptions.DuplicatedArtIdError()
 
-    def install_icon_bundle(self, bundleid, paths):
+    def install_icon_bundle(self, plugin, bundleid, paths):
         # Use bundleid prefixed with "&" so that they can't conflict with icon
         #  theme names
         try:
             self.bundles[bundleid]
         except KeyError:
-            self.bundles[bundleid] = paths
+            self.bundles[bundleid] = (coreaux_api.get_plugin_bundled_data(
+                                            plugin, path) for path in paths)
         else:
             # Just crash if there's a conflict, it should happen only in
             #  development
@@ -200,7 +205,7 @@ class ArtProvider(object):
             else:
                 return False
         else:
-            return get_bundled(coreaux_api.get_bundled_data(filepath))
+            return get_bundled(filepath)
 
     def get_notebook_icon(self, artid):
         # A valid bitmap must be returned in any case
@@ -223,12 +228,12 @@ class ArtProvider(object):
         return self._find_bitmap(artid, wx.ART_BUTTON, (16, 16))
 
     def get_about_icon(self):
-        return coreaux_api.get_bundled_data(self.bundled["@outspline"])
+        return self.bundled["@outspline"]
 
     def get_tray_icon(self, artid):
         # Don't try to get an SVG, because the tray icon won't be resized with
         #  the notification area anyway
-        return wx.Icon(coreaux_api.get_bundled_data(self.bundled[artid]))
+        return wx.Icon(self.bundled[artid])
 
     def get_frame_icon_bundle(self, bundleid):
         # wx.ArtProvider would have a GetIconBundle method, but it's not easy
@@ -237,7 +242,7 @@ class ArtProvider(object):
         bundle = wx.IconBundle()
 
         for path in self.bundles[bundleid]:
-            bundle.AddIcon(wx.Icon(coreaux_api.get_bundled_data(path)))
+            bundle.AddIcon(wx.Icon(path))
 
         return bundle
 

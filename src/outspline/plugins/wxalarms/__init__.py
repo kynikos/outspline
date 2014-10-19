@@ -34,10 +34,10 @@ alarmswindow = None
 
 class AlarmsWindow(object):
     def __init__(self, parent):
-        wxgui_api.install_icon_bundle('&alarmswin', (("alarmswin16.png", ),
-                                ("alarmswin24.png", ), ("alarmswin32.png", ),
-                                ("alarmswin48.png", ), ("alarmswin64.png", ),
-                                ("alarmswin128.png", )))
+        wxgui_api.install_icon_bundle("wxalarms", '&alarmswin',
+                                (("alarmswin16.png", ), ("alarmswin24.png", ),
+                                ("alarmswin32.png", ), ("alarmswin48.png", ),
+                                ("alarmswin64.png", ), ("alarmswin128.png", )))
 
         self.ALARMS_MIN_HEIGHT = 140
         self.ALARMS_ICON_BUNDLE = wxgui_api.get_frame_icon_bundle('&alarmswin')

@@ -33,7 +33,7 @@ class Dialogs(object):
         self.search_dialogs = {}
         self.activate_dialogs = {}
 
-        wxgui_api.install_bundled_icon('@oldalarmsdialog',
+        wxgui_api.install_bundled_icon("wxoldalarms", '@oldalarmsdialog',
                                                         ("oldalarms48.png", ))
 
         organism_alarms_api.install_unique_old_alarms_interface(

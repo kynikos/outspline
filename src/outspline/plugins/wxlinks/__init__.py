@@ -35,7 +35,8 @@ class Main(object):
         self.items = {}
         self.itemicons = {}
 
-        wxgui_api.install_bundled_icon('@links', ("Tango", "links16.png"))
+        wxgui_api.install_bundled_icon("wxlinks", '@links',
+                                                    ("Tango", "links16.png"))
 
         ViewMenu(self)
 

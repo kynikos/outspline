@@ -119,6 +119,18 @@ def get_plugin_configuration(plugin):
     return config('Plugins')(plugin)
 
 
+def get_extension_bundled_data(extension, relpath):
+    return get_bundled_data(["extensions", extension] + list(relpath))
+
+
+def get_interface_bundled_data(interface, relpath):
+    return get_bundled_data(["interfaces", interface] + list(relpath))
+
+
+def get_plugin_bundled_data(plugin, relpath):
+    return get_bundled_data(["plugins", plugin] + list(relpath))
+
+
 def get_bundled_data(relpath):
     return os.path.join(coreaux.configuration.BUNDLED_DATA_DIR, *relpath)
 

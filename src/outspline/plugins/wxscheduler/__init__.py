@@ -568,7 +568,7 @@ class ViewMenu(object):
         self.ID_FOCUS = wx.NewId()
         self.ID_TOGGLE = wx.NewId()
 
-        wxgui_api.install_bundled_icon('@scheduler',
+        wxgui_api.install_bundled_icon("wxscheduler", '@scheduler',
                                                 ("Tango", "scheduler16.png"))
 
         submenu = wx.Menu()

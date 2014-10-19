@@ -50,16 +50,19 @@ class TaskListPanel(wx.Panel):
 
 class TaskList(object):
     def __init__(self, parent):
-        wxgui_api.install_bundled_icon('@activealarms',
+        wxgui_api.install_bundled_icon("wxtasklist", '@activealarms',
                                                     ("activealarms16.png", ))
-        wxgui_api.install_bundled_icon('@dismiss', ("dismiss16.png", ))
-        wxgui_api.install_bundled_icon('@navigator',
+        wxgui_api.install_bundled_icon("wxtasklist", '@dismiss',
+                                                        ("dismiss16.png", ))
+        wxgui_api.install_bundled_icon("wxtasklist", '@navigator',
                                                 ("Tango", "navigator16.png"))
-        wxgui_api.install_bundled_icon('@scroll', ("Tango", "scroll16.png"))
-        wxgui_api.install_bundled_icon('@snooze', ("snooze16.png", ))
-        wxgui_api.install_bundled_icon('@snoozedialog',
+        wxgui_api.install_bundled_icon("wxtasklist", '@scroll',
+                                                    ("Tango", "scroll16.png"))
+        wxgui_api.install_bundled_icon("wxtasklist", '@snooze',
+                                                            ("snooze16.png", ))
+        wxgui_api.install_bundled_icon("wxtasklist", '@snoozedialog',
                                                     ("snoozedialog48.png", ))
-        wxgui_api.install_bundled_icon('@tasklist',
+        wxgui_api.install_bundled_icon("wxtasklist", '@tasklist',
                                                 ("Tango", "tasklist16.png"))
 
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
