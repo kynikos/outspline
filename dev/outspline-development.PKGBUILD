@@ -1,7 +1,7 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='outspline-development'
-pkgver='0.6.0'
+pkgver='0.7.0'
 pkgrel=1
 pkgdesc="Development component for Outspline"
 arch=('any')
