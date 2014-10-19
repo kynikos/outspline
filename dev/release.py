@@ -16,7 +16,9 @@ ROOT_DIR = '..'
 DEST_DIR = '.'
 SRC_DIR = os.path.join(ROOT_DIR, 'src')
 BASE_DIR = os.path.join(SRC_DIR, 'outspline')
+DATA_DIR = os.path.join(SRC_DIR, 'data')
 DEPS_DIR = os.path.join(BASE_DIR, 'dbdeps')
+RDATA_DIR = os.path.join(BASE_DIR, "data")
 PACKAGES = {
     'main': 'outspline',
     'development': 'outspline-development',
@@ -48,7 +50,9 @@ def make_component_package(cfile, cname):
     pkgdirname = pkgname + '-' + pkgver
     pkgdir = os.path.join(DEST_DIR, pkgdirname)
     maindir = os.path.join(pkgdir, 'outspline')
+    datadir = os.path.join(pkgdir, 'data')
     depsdir = os.path.join(maindir, 'dbdeps')
+    rdatadir = os.path.join(maindir, 'data')
 
     os.makedirs(maindir)
     shutil.copy2(os.path.join(ROOT_DIR, 'LICENSE'), pkgdir)
@@ -57,12 +61,14 @@ def make_component_package(cfile, cname):
     shutil.copy2(os.path.join(BASE_DIR, cfile), maindir)
     shutil.copy2(os.path.join(BASE_DIR, '__init__.py'), maindir)
 
+    os.makedirs(datadir)
+    os.makedirs(rdatadir)
+
     os.makedirs(depsdir)
     shutil.copy2(os.path.join(DEPS_DIR, '__init__.py'), depsdir)
 
     if component.get_bool('provides_core', fallback='false'):
-        for src, dest, sd in ((SRC_DIR, pkgdir, 'data'),
-                              (BASE_DIR, maindir, 'static'),
+        for src, dest, sd in ((BASE_DIR, maindir, 'static'),
                               (BASE_DIR, maindir, 'core'),
                               (BASE_DIR, maindir, 'coreaux')):
             shutil.copytree(os.path.join(src, sd), os.path.join(dest, sd),
@@ -70,6 +76,8 @@ def make_component_package(cfile, cname):
 
         for file_ in ('core_api.py', 'coreaux_api.py', 'outspline.conf'):
             shutil.copy2(os.path.join(BASE_DIR, file_), maindir)
+
+        make_data_files("core", datadir, rdatadir)
 
         shutil.copy2(os.path.join(DEPS_DIR, '_core.py'), depsdir)
 
@@ -91,6 +99,8 @@ def make_component_package(cfile, cname):
                                                                     typedir)
             except FileNotFoundError:
                 pass
+
+            make_data_files(os.path.join(type_, addon), datadir, rdatadir)
 
             if type_ == 'extensions':
                 try:
@@ -134,6 +144,20 @@ def find_addons(component):
                 addons['plugins'].append(component[o].split(' '))
 
     return addons
+
+
+def make_data_files(rpath, datadir, rdatadir):
+    try:
+        shutil.copytree(os.path.join(DATA_DIR, rpath), os.path.join(datadir,
+                                                                        rpath))
+    except FileNotFoundError:
+        pass
+
+    try:
+        shutil.copytree(os.path.join(RDATA_DIR, rpath), os.path.join(rdatadir,
+                                                                        rpath))
+    except FileNotFoundError:
+        pass
 
 
 def make_pkgbuild_package(cname):
