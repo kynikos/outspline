@@ -145,7 +145,8 @@ def make_pkgbuild_package(cname):
     tmppkgbuild = os.path.join(DEST_DIR, 'PKGBUILD')
     shutil.copy2(pkgbuild, tmppkgbuild)
 
-    subprocess.call(["makepkg", "--source", "--clean"])
+    subprocess.call(["mkaurball", ])
+    # Don't call makepkg --clean or errors will happen
 
     os.remove(tmppkgbuild)
 
