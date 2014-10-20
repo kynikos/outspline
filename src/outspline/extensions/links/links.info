@@ -5,5 +5,5 @@ website = https://github.com/kynikos/outspline/
 affects_database = yes
 provides_tables = Links CopyLinks
 dependencies = core.2
-optional_dependencies = extensions.copypaste.1 extensions.organism.1
+optional_dependencies = extensions.copypaste.2 extensions.organism.1
 database_dependency_group_1 = core.2 extensions.links.1

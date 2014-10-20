@@ -1,7 +1,7 @@
 version = 0.7.0
 release_date = 2014-10-20
 provides_core = true
-extension_1 = copypaste 1.0
+extension_1 = copypaste 2.0
 interface_1 = wxgui 1.0
 plugin_1 = wxcopypaste 1.0
 plugin_2 = wxtrayicon 1.0

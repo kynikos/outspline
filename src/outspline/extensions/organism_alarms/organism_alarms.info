@@ -5,5 +5,5 @@ website = https://github.com/kynikos/outspline/
 affects_database = yes
 provides_tables = AlarmsProperties Alarms CopyAlarms AlarmsOffLog
 dependencies = core.2 extensions.organism.1 extensions.organism_timer.1
-optional_dependencies = extensions.copypaste.1
+optional_dependencies = extensions.copypaste.2
 database_dependency_group_1 = core.2 extensions.organism.1 extensions.organism_timer.1 extensions.organism_alarms.1

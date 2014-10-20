@@ -1,5 +1,5 @@
 authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
-version = 1.0
+version = 2.0
 description = Adds the backend for cutting, copying and pasting database items.
 website = https://github.com/kynikos/outspline/
 affects_database = no
