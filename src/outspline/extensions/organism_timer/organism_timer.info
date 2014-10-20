@@ -1,5 +1,5 @@
 authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
-version = 1.0
+version = 1.1
 description = Adds the backend for calculating when item events/tasks happen and signal them.
 website = https://github.com/kynikos/outspline/
 affects_database = yes
