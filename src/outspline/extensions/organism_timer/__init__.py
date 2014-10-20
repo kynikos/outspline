@@ -41,7 +41,7 @@ class Main(object):
         core_api.bind_to_open_database_dirty(self._handle_open_database_dirty)
         core_api.bind_to_close_database(self._handle_close_database)
         core_api.bind_to_save_database_copy(self._handle_save_database_copy)
-        core_api.bind_to_delete_items(
+        core_api.bind_to_delete_subtree(
                                 self._handle_search_next_occurrences_request)
         core_api.bind_to_history(self._handle_search_next_occurrences_request)
         core_api.bind_to_exit_app_1(

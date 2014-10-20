@@ -34,24 +34,13 @@ alarmswindow = None
 
 class AlarmsWindow(object):
     def __init__(self, parent):
+        wxgui_api.install_icon_bundle("wxalarms", '&alarmswin',
+                                (("alarmswin16.png", ), ("alarmswin24.png", ),
+                                ("alarmswin32.png", ), ("alarmswin48.png", ),
+                                ("alarmswin64.png", ), ("alarmswin128.png", )))
+
         self.ALARMS_MIN_HEIGHT = 140
-        self.ALARMS_ICON_BUNDLE = wx.IconBundle()
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_TOOLBAR))
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_MENU))
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_BUTTON))
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_FRAME_ICON))
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_CMN_DIALOG))
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_HELP_BROWSER))
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_MESSAGE_BOX))
-        self.ALARMS_ICON_BUNDLE.AddIcon(wx.ArtProvider.GetIcon('@alarms',
-                                                        wx.ART_OTHER))
+        self.ALARMS_ICON_BUNDLE = wxgui_api.get_frame_icon_bundle('&alarmswin')
 
         self.config = coreaux_api.get_plugin_configuration('wxalarms')
 
@@ -102,18 +91,28 @@ class AlarmsWindow(object):
         self.LIMIT = self.config.get_int('limit')
         self.hiddenalarms = set()
 
-        self.mainmenu = MainMenu(self)
+        self.ID_SHOW_MENU = wx.NewId()
+        self.menushow = wx.MenuItem(wxgui_api.get_menu_view(),
+                                self.ID_SHOW_MENU,
+                                "Show &alarms window\t{}".format(
+                                            self.config('Shortcuts')['show']),
+                                "Show the alarms window", kind=wx.ITEM_CHECK)
+        wxgui_api.add_menu_view_item(self.menushow)
+
         TrayMenu(self)
 
         self.window.Bind(wx.EVT_CLOSE, self._handle_close)
+
+        wxgui_api.bind_to_menu(self.toggle_shown, self.menushow)
+        wxgui_api.bind_to_menu_view_update(self._handle_menu_view_update)
 
         organism_alarms_api.bind_to_alarm(self._handle_alarm)
         organism_alarms_api.bind_to_alarm_off(self._handle_alarm_off)
         wxgui_api.bind_to_close_database(self._handle_close_db)
 
     def _init_hidden_panel(self):
-        icon = wx.StaticBitmap(self.window, bitmap=wx.ArtProvider.GetBitmap(
-                                                    '@warning', wx.ART_BUTTON))
+        icon = wx.StaticBitmap(self.window, bitmap=wxgui_api.get_message_icon(
+                                                                '@warning'))
         self.hidden_panel.Add(icon, flag=wx.ALIGN_CENTER_VERTICAL |
                                                             wx.RIGHT, border=4)
 
@@ -121,7 +120,7 @@ class AlarmsWindow(object):
         self.hidden_panel.Add(self.hiddenL, flag=wx.ALIGN_CENTER_VERTICAL |
                                                             wx.RIGHT, border=4)
 
-        button_d = wx.Button(self.window, label='show', style=wx.BU_EXACTFIT)
+        button_d = wx.Button(self.window, label='sho&w', style=wx.BU_EXACTFIT)
         self.hidden_panel.Add(button_d, flag=wx.RIGHT, border=4)
 
         label2 = wx.StaticText(self.window, label='up to')
@@ -142,10 +141,10 @@ class AlarmsWindow(object):
                                                                     button_d)
 
     def _init_bottom(self):
-        button_s = wx.Button(self.window, label='Snooze all')
+        button_s = wx.Button(self.window, label='&Snooze all')
         self.bottom.Add(button_s, flag=wx.RIGHT, border=4)
 
-        button_d = wx.Button(self.window, label='Dismiss all')
+        button_d = wx.Button(self.window, label='&Dismiss all')
         self.bottom.Add(button_d, flag=wx.RIGHT, border=4)
 
         self.bottom.AddStretchSpacer()
@@ -168,6 +167,9 @@ class AlarmsWindow(object):
 
         self.window.Bind(wx.EVT_BUTTON, self.snooze_all, button_s)
         self.window.Bind(wx.EVT_BUTTON, self.dismiss_all, button_d)
+
+    def _handle_menu_view_update(self, kwargs):
+        self.menushow.Check(check=self.is_shown())
 
     def _handle_close(self, event):
         self._hide()
@@ -375,7 +377,7 @@ class AlarmsWindow(object):
         return alarmsd
 
     def get_show_menu_id(self):
-        return self.mainmenu.get_show_id()
+        return self.ID_SHOW_MENU
 
 
 class Alarm(object):
@@ -427,7 +429,7 @@ class Alarm(object):
         # Setting the label directly when instantiating CollapsiblePane through
         # the 'label' parameter would make it parse '&' characters to form
         # mnemonic shortcuts, like in menus
-        self._set_pane_label()
+        self._set_pane_label(core_api.get_item_text(self.filename, self.id_))
         self.pbox.Add(self.pane, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         self.cpane = self.pane.GetPane()
@@ -438,7 +440,7 @@ class Alarm(object):
         line = wx.StaticLine(parent, style=wx.LI_HORIZONTAL)
         self.pbox.Add(line, flag=wx.EXPAND)
 
-        core_api.bind_to_update_item(self._update_info)
+        core_api.bind_to_update_item_text(self._update_info)
 
         self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED,
                                                 self._update_pane_ancestors)
@@ -448,10 +450,9 @@ class Alarm(object):
 
     def _update_info(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_:
-            self._set_pane_label()
+            self._set_pane_label(kwargs["text"])
 
-    def _set_pane_label(self):
-        text = core_api.get_item_text(self.filename, self.id_)
+    def _set_pane_label(self, text):
         self.pane.SetLabel(text.partition('\n')[0])
 
     def _update_pane_ancestors(self, event):
@@ -475,8 +476,8 @@ class Alarm(object):
                 # characters to form mnemonic shortcuts, like in menus
                 # Note that in this case the '&' characters have to be escaped
                 # explicitly
-                ancestor.SetLabel(anc.get_text().partition('\n')[0].replace(
-                                                                    '&', '&&'))
+                ancestor.SetLabel(core_api.get_item_text(self.filename, anc
+                                    ).partition('\n')[0].replace('&', '&&'))
                 self.cbox.Add(ancestor, flag=wx.LEFT | wx.TOP, border=4)
 
             dbname = wx.StaticText(self.cpane)
@@ -527,7 +528,7 @@ class Alarm(object):
 
             # It's necessary to explicitly unbind the handler, otherwise this
             # object will not be garbage-collected
-            core_api.bind_to_update_item(self._update_info, False)
+            core_api.bind_to_update_item_text(self._update_info, False)
 
     def get_filename(self):
         return self.filename
@@ -537,33 +538,6 @@ class Alarm(object):
 
     def get_alarmid(self):
         return self.alarmid
-
-
-class MainMenu(wx.Menu):
-    def __init__(self, alarmswindow):
-        wx.Menu.__init__(self)
-        self.alarmswindow = alarmswindow
-
-        self.ID_SHOW = wx.NewId()
-
-        self.menushow = wx.MenuItem(self, self.ID_SHOW,
-                        "&Show window\tCTRL+SHIFT+a", "Show the alarms window",
-                        kind=wx.ITEM_CHECK)
-
-        self.AppendItem(self.menushow)
-
-        wxgui_api.bind_to_menu(alarmswindow.toggle_shown, self.menushow)
-        wxgui_api.bind_to_update_menu_items(self._update_items)
-
-        wxgui_api.insert_menu_main_item('&Alarms',
-                                    wxgui_api.get_menu_logs_position(), self)
-
-    def _update_items(self, kwargs):
-        if kwargs['menu'] is self:
-            self.menushow.Check(check=self.alarmswindow.is_shown())
-
-    def get_show_id(self):
-        return self.ID_SHOW
 
 
 class TrayMenu(object):

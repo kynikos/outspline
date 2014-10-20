@@ -38,8 +38,8 @@ class AboutWindow(wx.Frame):
         sizer1 = wx.GridBagSizer(4, 4)
         self.SetSizer(sizer1)
 
-        logo = wx.StaticBitmap(self, bitmap=wx.ArtProvider.GetBitmap(
-                                             '@outspline', wx.ART_CMN_DIALOG))
+        logo = wx.StaticBitmap(self, bitmap=wx.Bitmap(
+                                    wx.GetApp().artprovider.get_about_icon()))
 
         name = wx.StaticText(self, label='Outspline')
         name.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC,
@@ -64,7 +64,7 @@ class AboutWindow(wx.Frame):
 
         info = InfoBox(self)
 
-        button = wx.Button(self, label='Close')
+        button = wx.Button(self, label='&Close')
 
         sizer1.Add(logo, (0, 0), span=(2, 1), flag=wx.ALIGN_CENTER | wx.LEFT |
                    wx.TOP | wx.RIGHT, border=8)

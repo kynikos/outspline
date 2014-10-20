@@ -29,7 +29,9 @@ check_pending_changes_event = Event()
 reset_modified_state_event = Event()
 history_event = Event()
 history_insert_event = Event()
-history_update_event = Event()
+history_update_previous_event = Event()
+history_update_parent_event = Event()
+history_update_text_event = Event()
 history_delete_event = Event()
 history_clean_event = Event()
 
@@ -45,15 +47,25 @@ class DBHistory(object):
                 'undo': self._do_history_row_delete,
                 'redo': self._do_history_row_insert,
             },
-            'update': {
-                'undo': self._do_history_row_update,
-                'redo': self._do_history_row_update,
+            'update_previous': {
+                'undo': self._do_history_row_update_previous,
+                'redo': self._do_history_row_update_previous,
+            },
+            'update_parent': {
+                'undo': self._do_history_row_update_parent,
+                'redo': self._do_history_row_update_parent,
+            },
+            'update_text': {
+                'undo': self._do_history_row_update_text,
+                'redo': self._do_history_row_update_text,
             },
             'delete': {
                 'undo': self._do_history_row_insert,
                 'redo': self._do_history_row_delete,
             },
         }
+
+        self.status_updates = {0: 1, 1: 0, 2: 3, 3: 2, 4: 5, 5: 4}
 
     def set_limits(self, soft, time, hard):
         self.historylimits = [soft, time, hard]
@@ -111,18 +123,7 @@ class DBHistory(object):
         return cursor
 
     def _update_history_id(self, id_, status):
-        if status == 0:
-            newstatus = 1
-        elif status == 1:
-            newstatus = 0
-        elif status == 2:
-            newstatus = 3
-        elif status == 3:
-            newstatus = 2
-        elif status == 4:
-            newstatus = 5
-        elif status == 5:
-            newstatus = 4
+        newstatus = self.status_updates[status]
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.history_update_id, (newstatus, id_))
@@ -239,65 +240,67 @@ class DBHistory(object):
 
     def _do_history_row_insert(self, filename, action, jparams, hid, type_,
                                                                     itemid):
-        params = [itemid, ]
-        params.extend(json.loads(jparams))
+        parent, previous, text = json.loads(jparams)
 
         qconn = self.connection.get()
         cursor = qconn.cursor()
-        cursor.execute(queries.items_insert, params)
-        cursor.execute(queries.items_select_id, (itemid, ))
-        select = cursor.fetchone()
+        cursor.execute(queries.items_insert, (itemid, parent, previous, text))
         self.connection.give(qconn)
 
         self.items[itemid] = items.Item(self.connection, self, self.items,
                                                         self.filename, itemid)
 
         history_insert_event.signal(filename=self.filename, id_=itemid,
-                                                parent=select['I_parent'],
-                                                previous=select['I_previous'],
-                                                text=select['I_text'], hid=hid)
+                        parent=parent, previous=previous, text=text, hid=hid)
 
-    def _do_history_row_update(self, filename, action, jparams, hid, type_,
-                                                                    itemid):
+    def _do_history_row_update_previous(self, filename, action, jparams, hid,
+                                                                type_, itemid):
+        parent, previous = json.loads(jparams)
+
         qconn = self.connection.get()
         cursor = qconn.cursor()
-
-        kwparams = json.loads(jparams)
-        set_fields = ''
-        qparams = []
-
-        for field in kwparams:
-            value = kwparams[field]
-
-            if value is not None:
-                set_fields += '{}=?, '.format(field)
-                qparams.append(value)
-
-        set_fields = set_fields[:-2]
-        query = queries.items_update_id.format(set_fields)
-        qparams.append(itemid)
-        cursor.execute(query, qparams)
-
-        cursor.execute(queries.items_select_id, (itemid, ))
-        select = cursor.fetchone()
-
+        cursor.execute(queries.items_update_previous, (previous, itemid))
         self.connection.give(qconn)
 
-        history_update_event.signal(filename=self.filename, id_=itemid,
-                                                parent=select['I_parent'],
-                                                previous=select['I_previous'],
-                                                text=select['I_text'])
+        history_update_previous_event.signal(filename=self.filename,
+                                id_=itemid, parent=parent, previous=previous)
+
+    def _do_history_row_update_parent(self, filename, action, jparams, hid,
+                                                                type_, itemid):
+        oldparent, newparent, previous = json.loads(jparams)
+
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+        cursor.execute(queries.items_update_parent, (newparent, previous,
+                                                                    itemid))
+        self.connection.give(qconn)
+
+        history_update_parent_event.signal(filename=self.filename, id_=itemid,
+                oldparent=oldparent, newparent=newparent, previous=previous)
+
+    def _do_history_row_update_text(self, filename, action, jparams, hid,
+                                                                type_, itemid):
+        qconn = self.connection.get()
+        cursor = qconn.cursor()
+        cursor.execute(queries.items_update_text, (jparams, itemid))
+        self.connection.give(qconn)
+
+        history_update_text_event.signal(filename=self.filename, id_=itemid,
+                                                                text=jparams)
 
     def _do_history_row_delete(self, filename, action, jparams, hid, type_,
                                                                     itemid):
+        parent, text = json.loads(jparams)
+
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_delete_id, (itemid, ))
         self.connection.give(qconn)
 
         self.items[itemid].remove()
+
         history_delete_event.signal(filename=self.filename, id_=itemid,
-                                                        hid=hid, text=jparams)
+                                            hid=hid, parent=parent, text=text)
 
     def clean_history(self):
         # history_clean_event handlers will need a proper connection

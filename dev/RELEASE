@@ -32,13 +32,16 @@
     Remember that the major versions of add-ons must be increased for both
     database *and* API changes
   - interfaces.wxgui.about
-  - *.setup.py
+  - *.config.py
+  - setup.py
   - Copyright dates
   - docstrings (@version, @date...)
   - *.PKGBUILD (no hashes)
   - *.install
   - release.py
 * If database structure has changed, update upgrade mechanism
+* If some configuration options have been added/removed/changed, make sure to
+  update the user's file
 * Check the observance of all STYLE rules
 * Run release.py (inside ./dev)
   Note that it depends on the installed version of python-configfile

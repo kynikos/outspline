@@ -31,3 +31,9 @@ def upgrade_0_to_1(cursor):
                                             "H_description TEXT, "
                                             "H_redo TEXT, "
                                             "H_undo TEXT)")
+
+
+def upgrade_1_to_2(cursor):
+    # These queries must stay here because they must not be updated with the
+    # normal queries
+    pass

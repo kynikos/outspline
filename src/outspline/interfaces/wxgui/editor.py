@@ -32,7 +32,6 @@ open_editor_event = Event()
 apply_editor_event = Event()
 check_modified_state_event = Event()
 close_editor_event = Event()
-open_textctrl_event = Event()
 
 config = coreaux_api.get_interface_configuration('wxgui')
 
@@ -41,26 +40,34 @@ tabs = {}
 
 class Editors(object):
     def __init__(self, nb):
-        self.icon_index = nb.add_image(wx.ArtProvider.GetBitmap(
-                                    '@editortab', wx.ART_TOOLBAR, (16, 16)))
+        self.icon_index = nb.add_image(
+                            wx.GetApp().artprovider.get_notebook_icon('@edit'))
 
 
 class EditorPanel(wx.Panel):
-    ctabmenu = None
-
-    def __init__(self, parent, item):
+    def __init__(self, parent, editor, item):
         wx.Panel.__init__(self, parent)
+        self.editor = editor
         self.ctabmenu = TabContextMenu(item)
+
+    def store_accelerators_table(self, acctable):
+        self.acctable = acctable
 
     def get_tab_context_menu(self):
         self.ctabmenu.update()
         return self.ctabmenu
 
+    def get_accelerators_table(self):
+        return self.acctable
+
+    def close_tab(self):
+        self.editor.close()
+
 
 class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
-    def __init__(self, panel):
-        foldpanelbar.CaptionBarStyle.__init__(self)
-
+    @staticmethod
+    def compute_colors(panel):
+        fgcolour = panel.GetForegroundColour()
         bgcolour = panel.GetBackgroundColour()
 
         avg = (bgcolour.Red() + bgcolour.Green() + bgcolour.Blue()) // 3
@@ -84,10 +91,31 @@ class CaptionBarStyle(foldpanelbar.CaptionBarStyle):
                                         min((bgcolour.Green() + DIFF1, 255)),
                                         min((bgcolour.Blue() + DIFF1, 255)))
 
-        self.SetCaptionStyle(foldpanelbar.CAPTIONBAR_GRADIENT_V)
+        focuscolour = config["plugin_focus_color"]
+
+        if focuscolour == "system":
+            colourfocused = wx.SystemSettings.GetColour(wx.SYS_COLOUR_HIGHLIGHT)
+        else:
+            colourfocused = wx.Colour()
+            colourfocused.SetFromString(config["plugin_focus_color"])
+
+        return (colourtop, colourbottom, colourfocused, fgcolour)
+
+    def __init__(self, style, colourtop, colourbottom, fgcolour):
+        super(CaptionBarStyle, self).__init__()
+        self.SetCaptionStyle(style)
         self.SetFirstColour(colourtop)
         self.SetSecondColour(colourbottom)
-        self.SetCaptionColour(panel.GetForegroundColour())
+        self.SetCaptionColour(fgcolour)
+
+    @classmethod
+    def create_normal(cls, colourtop, colourbottom, fgcolour):
+        return cls(foldpanelbar.CAPTIONBAR_GRADIENT_V, colourtop, colourbottom,
+                                                                    fgcolour)
+
+    @classmethod
+    def create_focused(cls, colour, fgcolour):
+        return cls(foldpanelbar.CAPTIONBAR_SINGLE, colour, colour, fgcolour)
 
 
 class Editor():
@@ -106,23 +134,41 @@ class Editor():
         self.id_ = id_
         self.item = item
         self.modstate = False
+        self.captionbars = []
 
-        self.panel = EditorPanel(wx.GetApp().nb_right, item)
+        self.captionbar_keys = {
+            wx.WXK_TAB: self._handle_tab_on_captionbar,
+            wx.WXK_RETURN: self._handle_captionbar_key_toggle,
+            wx.WXK_SPACE: self._handle_captionbar_key_toggle,
+        }
+
+        self.panel = EditorPanel(wx.GetApp().nb_right, self, item)
         self.pbox = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.pbox)
 
     def _post_init(self):
-        filename = self.filename
-        id_ = self.id_
-
-        text = core_api.get_item_text(filename, id_)
+        text = core_api.get_item_text(self.filename, self.id_)
         title = self.make_title(text)
 
         self.area = textarea.TextArea(self.filename, self.id_, self.item, text)
         self.pbox.Add(self.area.area, proportion=1, flag=wx.EXPAND)
 
-        open_textctrl_event.signal(filename=filename, id_=id_, item=self.item,
-                                   text=text)
+        self.accelerators = {}
+
+        open_editor_event.signal(filename=self.filename, id_=self.id_,
+                                                    item=self.item, text=text)
+
+        aconfig = config("ExtendedShortcuts")("RightNotebook")("Editor")
+        self.accelerators.update({
+            aconfig["apply"]: lambda event: self.apply(),
+            aconfig["find"]: lambda event: self.find_in_tree(),
+            aconfig["focus_text"]: lambda event: self.focus_text(),
+        })
+        self.accelerators.update(
+                            wx.GetApp().nb_right.get_generic_accelerators())
+        acctable = wx.GetApp().root.accmanager.generate_table(
+                                    wx.GetApp().nb_right, self.accelerators)
+        self.panel.store_accelerators_table(acctable)
 
         nb = wx.GetApp().nb_right
         nb.add_page(self.panel, title, select=True,
@@ -136,33 +182,89 @@ class Editor():
         if item not in tabs:
             tabs[item] = cls(filename, id_, item)
             tabs[item]._post_init()
-            open_editor_event.signal(filename=filename, id_=id_, item=item)
         else:
             tabid = wx.GetApp().nb_right.GetPageIndex(tabs[item].panel)
-            wx.GetApp().nb_right.SetSelection(tabid)
+            wx.GetApp().nb_right.select_page(tabid)
 
     def add_plugin_panel(self, caption):
         if self.fpbar == None:
             self.fpbar = FoldPanelBar(self.panel,
                                             agwStyle=foldpanelbar.FPB_VERTICAL)
             self.pbox.Prepend(self.fpbar, flag=wx.EXPAND)
+            self.fpbar.MoveBeforeInTabOrder(self.area.area)
 
-            self.cbstyle = CaptionBarStyle(self.panel)
+            colourtop, colourbottom, colourfocused, fgcolour = \
+                                    CaptionBarStyle.compute_colors(self.panel)
+            self.cbstyles = (
+                CaptionBarStyle.create_normal(colourtop, colourbottom,
+                                                                    fgcolour),
+                CaptionBarStyle.create_focused(colourfocused, fgcolour),
+            )
 
             self.panel.Bind(wx.EVT_COLLAPSIBLEPANE_CHANGED,
                             self.handle_collapsiblepane)
             self.fpbar.Bind(foldpanelbar.EVT_CAPTIONBAR,
                             self.handle_captionbar)
 
-        fpanel = self.fpbar.AddFoldPanel(caption=caption, cbstyle=self.cbstyle)
+        fpanel = self.fpbar.AddFoldPanel(caption=caption,
+                                                    cbstyle=self.cbstyles[0])
 
         captionbar = self.get_captionbar(fpanel)
+        self.captionbars.append(captionbar)
         captionbar.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
         captionbar.Bind(wx.EVT_MOUSE_EVENTS,
                                         self.void_default_captionbar_behaviour)
         captionbar.Bind(wx.EVT_LEFT_DOWN, self.handle_mouse_click)
+        captionbar.Bind(wx.EVT_KEY_DOWN, self._handle_key_down)
+        captionbar.Bind(wx.EVT_SET_FOCUS, self._handle_set_focus)
+        captionbar.Bind(wx.EVT_KILL_FOCUS, self._handle_kill_focus)
 
         return fpanel
+
+    def _handle_key_down(self, event):
+        try:
+            self.captionbar_keys[event.GetKeyCode()](event)
+        except KeyError:
+            event.Skip()
+        # Don't skip the event if the key action is done
+        #event.Skip()
+
+    def _handle_tab_on_captionbar(self, event):
+        # This method must get the same arguments as
+        #  _handle_captionbar_key_toggle
+        captionbar = event.GetEventObject()
+        index = self.captionbars.index(captionbar)
+
+        if event.ShiftDown():
+            if index > 0 and self.captionbars[index - 1].IsCollapsed():
+                self.captionbars[index - 1].SetFocus()
+            else:
+                captionbar.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
+        else:
+            if captionbar.IsCollapsed():
+                if index < len(self.captionbars) - 1:
+                    self.captionbars[index + 1].SetFocus()
+                else:
+                    self.area.area.SetFocus()
+            else:
+                captionbar.Navigate(flags=wx.NavigationKeyEvent.IsForward)
+
+    def _handle_captionbar_key_toggle(self, event):
+        # This method must get the same arguments as _handle_tab_on_captionbar
+        captionbar = event.GetEventObject()
+
+        if captionbar.IsCollapsed():
+            self.expand_panel(captionbar.GetParent())
+        else:
+            self.collapse_panel(captionbar.GetParent())
+
+    def _handle_set_focus(self, event):
+        event.GetEventObject().SetCaptionStyle(self.cbstyles[1])
+        event.Skip()
+
+    def _handle_kill_focus(self, event):
+        event.GetEventObject().SetCaptionStyle(self.cbstyles[0])
+        event.Skip()
 
     def get_captionbar(self, fpanel):
         try:
@@ -201,9 +303,11 @@ class Editor():
         event.Skip()
         wx.CallAfter(self.resize_fpb)
 
-    def add_plugin_window(self, fpanel, window):
+    def add_plugin_window(self, fpanel, window, accelerators):
         self.fpbar.AddFoldPanelWindow(fpanel, window)
         self.panel.Layout()
+
+        self.accelerators.update(accelerators)
 
     def resize_fpb(self):
         sizeNeeded = self.fpbar.GetPanelsLength(0, 0)[2]
@@ -212,9 +316,14 @@ class Editor():
 
     def collapse_panel(self, fpanel):
         self.fpbar.Collapse(fpanel)
+        self.resize_fpb()
 
     def expand_panel(self, fpanel):
         self.fpbar.Expand(fpanel)
+        self.resize_fpb()
+
+    def focus_text(self):
+        self.area.area.SetFocus()
 
     def apply(self):
         group = core_api.get_next_history_group(self.filename)
@@ -240,7 +349,7 @@ class Editor():
     def close(self, ask='apply'):
         nb = wx.GetApp().nb_right
         tabid = nb.GetPageIndex(self.panel)
-        nb.SetSelection(tabid)
+        nb.select_page(tabid)
         item = self.item
 
         if ask != 'quiet' and self.is_modified():
@@ -273,7 +382,7 @@ class Editor():
 
     def find_in_tree(self):
         treedb = tree.dbs[self.filename]
-        treedb.select_item(treedb.find_item(self.id_))
+        treedb.select_item(self.id_)
         nb = wx.GetApp().nb_left
         nb.select_page(nb.GetPageIndex(treedb))
 
@@ -282,6 +391,9 @@ class Editor():
 
     def get_id(self):
         return self.id_
+
+    def get_plugin_captionbars(self):
+        return self.captionbars
 
     @staticmethod
     def make_title(text):
@@ -310,12 +422,12 @@ class TabContextMenu(wx.Menu):
                                                         "&Find in database")
         self.apply_ = wx.MenuItem(self, wx.GetApp().menu.edit.ID_APPLY,
                                                                     "&Apply")
-        self.close = wx.MenuItem(self, wx.GetApp().menu.edit.ID_CLOSE,
-                                                                    "Cl&ose")
+        self.close = wx.MenuItem(self,
+                wx.GetApp().menu.view.rightnb_submenu.ID_CLOSE, "Cl&ose")
 
-        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
-        self.apply_.SetBitmap(wx.ArtProvider.GetBitmap('@apply', wx.ART_MENU))
-        self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+        self.find.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@dbfind'))
+        self.apply_.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@apply'))
+        self.close.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@close'))
 
         self.AppendItem(self.find)
         self.AppendSeparator()

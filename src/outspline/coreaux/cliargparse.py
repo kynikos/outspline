@@ -74,6 +74,13 @@ def parse_cli_args():
                                 ''.format(os.path.expanduser(config('Log'
                                                             )['log_file'])))
 
+    cliparser.add_argument('-u',
+                           '--config-update',
+                           action='store_true',
+                           dest='updonly',
+                           help='only create or update the configuration '
+                                'file, then exit')
+
     cliparser.add_argument('-v',
                            '--version',
                            '--about',

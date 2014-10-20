@@ -17,9 +17,11 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import os.path
 import importlib
 import copy
 import json
+import threading
 
 from coreaux.configuration import components, info, config
 import coreaux.configuration
@@ -117,6 +119,27 @@ def get_plugin_configuration(plugin):
     return config('Plugins')(plugin)
 
 
+def get_extension_bundled_data(extension, relpath):
+    return get_bundled_data(["extensions", extension] + list(relpath))
+
+
+def get_interface_bundled_data(interface, relpath):
+    return get_bundled_data(["interfaces", interface] + list(relpath))
+
+
+def get_plugin_bundled_data(plugin, relpath):
+    return get_bundled_data(["plugins", plugin] + list(relpath))
+
+
+def get_bundled_data(relpath):
+    return os.path.join(coreaux.configuration.BUNDLED_DATA_DIR, *relpath)
+
+
+def is_main_thread():
+    return threading.current_thread().name == \
+                                        coreaux.configuration.MAIN_THREAD_NAME
+
+
 def import_optional_extension_api(extension):
     if extension in config('Extensions').get_sections() and \
                         config('Extensions')(extension).get_bool('enabled'):
@@ -145,4 +168,5 @@ def bind_to_external_nudge(handler, bind=True):
 
 
 def bind_to_uncaught_exception(handler, bind=True):
+    # This event may be signalled in a separate thread
     return coreaux.events.uncaught_exception_event.bind(handler, bind)

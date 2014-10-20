@@ -51,8 +51,8 @@ class DatabaseUpdaterAdd(object):
 
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        icon = wx.StaticBitmap(self.dialog, bitmap=wx.ArtProvider.GetBitmap(
-                                            '@question', wx.ART_CMN_DIALOG))
+        icon = wx.StaticBitmap(self.dialog,
+                bitmap=wx.GetApp().artprovider.get_dialog_icon('@question'))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         hvsizer = wx.BoxSizer(wx.VERTICAL)
@@ -79,7 +79,7 @@ class DatabaseUpdaterAdd(object):
 
         vsizer.Add(hsizer, flag=wx.ALIGN_CENTER | wx.BOTTOM, border=12)
 
-        add = wx.Button(self.dialog, label="Add support and open database")
+        add = wx.Button(self.dialog, label="Add &support and open database")
         vsizer.Add(add, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         label = wx.StaticText(self.dialog, label="Warning: enabling "
@@ -111,7 +111,7 @@ class DatabaseUpdaterAdd(object):
         vsizer.Add(wx.StaticLine(self.dialog), flag=wx.EXPAND | wx.BOTTOM,
                                                                     border=12)
 
-        skip = wx.Button(self.dialog, label="Open database as it is")
+        skip = wx.Button(self.dialog, label="&Open database as it is")
         vsizer.Add(skip, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         label = wx.StaticText(self.dialog, label="This dialog will appear "
@@ -125,7 +125,7 @@ class DatabaseUpdaterAdd(object):
         vsizer.Add(wx.StaticLine(self.dialog), flag=wx.EXPAND | wx.BOTTOM,
                                                                     border=12)
 
-        abort = wx.Button(self.dialog, label="Abort opening database")
+        abort = wx.Button(self.dialog, label="&Abort opening database")
         vsizer.Add(abort, flag=wx.EXPAND)
 
         self.dialog.Bind(wx.EVT_BUTTON, self._add, add)
@@ -184,8 +184,8 @@ class DatabaseUpdaterUpdate(object):
 
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        icon = wx.StaticBitmap(self.dialog, bitmap=wx.ArtProvider.GetBitmap(
-                                            '@question', wx.ART_CMN_DIALOG))
+        icon = wx.StaticBitmap(self.dialog,
+                bitmap=wx.GetApp().artprovider.get_dialog_icon('@question'))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         hvsizer = wx.BoxSizer(wx.VERTICAL)
@@ -220,7 +220,7 @@ class DatabaseUpdaterUpdate(object):
 
         vsizer.Add(hsizer, flag=wx.ALIGN_CENTER | wx.BOTTOM, border=12)
 
-        update = wx.Button(self.dialog, label="Update and open database")
+        update = wx.Button(self.dialog, label="&Update and open database")
         vsizer.Add(update, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         label = wx.StaticText(self.dialog, label="Warning: updating "
@@ -252,7 +252,7 @@ class DatabaseUpdaterUpdate(object):
         vsizer.Add(wx.StaticLine(self.dialog), flag=wx.EXPAND | wx.BOTTOM,
                                                                     border=12)
 
-        abort = wx.Button(self.dialog, label="Abort opening database")
+        abort = wx.Button(self.dialog, label="&Abort opening database")
         vsizer.Add(abort, flag=wx.EXPAND)
 
         self.dialog.Bind(wx.EVT_BUTTON, self._update, update)
@@ -299,8 +299,8 @@ class DatabaseUpdaterAbort(object):
 
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        icon = wx.StaticBitmap(self.dialog, bitmap=wx.ArtProvider.GetBitmap(
-                                            '@warning', wx.ART_CMN_DIALOG))
+        icon = wx.StaticBitmap(self.dialog,
+                    bitmap=wx.GetApp().artprovider.get_dialog_icon('@warning'))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         hvsizer = wx.BoxSizer(wx.VERTICAL)

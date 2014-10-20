@@ -21,6 +21,7 @@ import wx.propgrid as wxpg
 # Temporary workaround for bug #279
 import time as time_
 
+import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 import outspline.extensions.organism_alarms_api as organism_alarms_api
 import outspline.interfaces.wxgui_api as wxgui_api
@@ -30,6 +31,9 @@ base = None
 
 class Main(object):
     def __init__(self):
+        wxgui_api.install_bundled_icon("wxalarmslog", '@alarmslog',
+                                                        ("alarmslog16.png", ))
+
         self.alarmlogs = {}
         self.mainmenu = LogsMenu(self)
 
@@ -65,50 +69,91 @@ class Main(object):
         filename = wxgui_api.get_selected_database_filename()
 
         try:
-            return (self.alarmlogs[filename], filename)
+            return self.alarmlogs[filename]
         except KeyError:
-            return (False, False)
+            return False
+
+
+class AlarmsLogModel(wx.dataview.PyDataViewIndexListModel):
+    def __init__(self, data):
+        # Using a model is necessary to disable the native "live" search
+        # See bugs #349 and #351
+        super(AlarmsLogModel, self).__init__()
+        self.data = data
+
+        # The wxPython demo uses weak references for the item objects: see if
+        # it can be used also in this case (bug #348)
+        #self.objmapper.UseWeakRefs(True)
+
+    def GetValueByRow(self, row, col):
+        return self.data[row][col]
+
+    def GetColumnCount(self):
+        return 3
+
+    def GetCount(self):
+        return len(self.data)
+
+    '''def GetColumnType(self, col):
+        # It seems not needed to override this method, it's not done in the
+        # demos either
+        # Besides, returning "string" here would activate the "live" search
+        # feature that belongs to the native GTK widget used by DataViewCtrl
+        # See also bug #349
+        # https://groups.google.com/d/msg/wxpython-users/QvSesrnD38E/31l8f6AzIhAJ
+        # https://groups.google.com/d/msg/wxpython-users/4nsv7x1DE-s/ljQHl9RTnuEJ
+        return None'''
 
 
 class AlarmsLog(object):
     def __init__(self, parent, filename, mainmenu):
         self.filename = filename
 
-        self.view = wx.dataview.DataViewListCtrl(parent,
+        self.view = wx.dataview.DataViewCtrl(parent,
                         style=wx.dataview.DV_MULTIPLE |
                         wx.dataview.DV_ROW_LINES | wx.dataview.DV_NO_HEADER)
+
+        self.data = []
+        self.dvmodel = AlarmsLogModel(self.data)
+        self.view.AssociateModel(self.dvmodel)
+        # According to DataViewModel's documentation (as of September 2014)
+        # its reference count must be decreased explicitly to avoid memory
+        # leaks; the wxPython demo, however, doesn't do it, and if done here,
+        # the application crashes with a segfault when closing all databases
+        # See also bug #104
+        #self.dvmodel.DecRef()
+
         # Temporary workaround for bug #279
-        # Note how AppendDateColumn requires a second argument, while
-        # AppendTextColumn doesn't
         #self.view.AppendDateColumn('Timestamp', 0,
         #        width=wx.COL_WIDTH_AUTOSIZE, align=wx.ALIGN_CENTER_VERTICAL)
-        self.view.AppendTextColumn('Timestamp', width=wx.COL_WIDTH_AUTOSIZE)
-        self.view.AppendTextColumn('Action', width=wx.COL_WIDTH_AUTOSIZE)
-        self.view.AppendTextColumn('Item')
+        self.view.AppendTextColumn('Timestamp', 0, width=wx.COL_WIDTH_AUTOSIZE)
+        self.view.AppendTextColumn('Action', 1, width=wx.COL_WIDTH_AUTOSIZE)
+        self.view.AppendTextColumn('Item', 2)
+
+        config = coreaux_api.get_plugin_configuration('wxalarmslog')(
+                                                        'ExtendedShortcuts')
+        wxgui_api.install_accelerators(self.view, {
+            config["find"]: lambda event: self.find_in_tree(),
+        })
 
         self.reasons = {0: '[snoozed]',
                         1: '[dismissed]',
                         2: '[deleted]'}
 
-        cmenu = ContextMenu(mainmenu, self.view)
+        cmenu = ContextMenu(mainmenu, self)
 
-        menu_items, popup_cmenu = wxgui_api.add_log(filename, self.view,
-                    "Alarms", wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU),
-                    cmenu.get_items(), cmenu.update)
+        self.tool_id, menu_items, popup_cmenu = wxgui_api.add_log(filename,
+                                self.view, "Alarms",
+                                wxgui_api.get_log_icon('@alarmslog'),
+                                cmenu.get_items(), cmenu.update)
         cmenu.store_items(menu_items)
 
         self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU,
                                                                 popup_cmenu)
-
-        self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_START_EDITING,
-                                                    self._handle_item_editing)
         organism_alarms_api.bind_to_alarm_off(self._handle_alarm_off)
         wxgui_api.bind_to_close_database(self._handle_close_database)
 
         self._refresh()
-
-    def _handle_item_editing(self, event):
-        event.Veto()
 
     def _handle_alarm_off(self, kwargs):
         self._refresh()
@@ -116,17 +161,30 @@ class AlarmsLog(object):
     def _handle_close_database(self, kwargs):
         organism_alarms_api.bind_to_alarm_off(self._handle_alarm_off, False)
 
-    def get_view(self):
-        return self.view
+    def is_shown(self):
+        return self.view.IsShown()
+
+    def has_selection(self):
+        return self.view.HasSelection()
+
+    def get_selections(self):
+        return self.view.GetSelections()
+
+    def get_item_id(self, item):
+        return self.data[self.dvmodel.GetRow(item)][3]
+
+    def get_tool_id(self):
+        return self.tool_id
 
     def _refresh(self):
-        self.view.DeleteAllItems()
-
+        del self.data[:]
         cursor = organism_alarms_api.get_alarms_log(self.filename)
 
         for row in cursor:
-            self.view.AppendItem(self._format_values(row),
-                                                        data=row['AOL_item'])
+            # 4 values are stored per row, but only the first 3 must be shown
+            self.data.append(self._format_values(row))
+
+        self.dvmodel.Reset(len(self.data))
 
     def _format_values(self, row):
         # Temporary workaround for bug #279
@@ -135,12 +193,29 @@ class AlarmsLog(object):
                                                             row['AOL_tstamp']))
         reason = self.reasons[row['AOL_reason']]
         text = row['AOL_text']
-        return (tstamp, reason, text)
+        id_ = row['AOL_item']
+        return (tstamp, reason, text, id_)
 
     def set_log_limit(self, data, value):
         if core_api.block_databases():
             organism_alarms_api.update_alarms_log_limit(self.filename, value)
             core_api.release_databases()
+
+    def find_in_tree(self):
+        sel = self.get_selections()
+
+        if len(sel) > 0:
+            wxgui_api.unselect_all_items(self.filename)
+
+            # Do not loop directly on view.GetSelections(), e.g.
+            #   for s in view.GetSelections():
+            # because it doesn't work as expected!
+            for item in sel:
+                id_ = self.get_item_id(item)
+
+                # The logged item may not exist anymore
+                if core_api.is_item(self.filename, id_):
+                    wxgui_api.add_item_to_selection(self.filename, id_)
 
 
 class LogsMenu(object):
@@ -148,74 +223,74 @@ class LogsMenu(object):
         self.plugin = plugin
 
         self.ID_ALARMS = wx.NewId()
+        self.ID_SELECT = wx.NewId()
         self.ID_FIND = wx.NewId()
 
         submenu = wx.Menu()
 
+        config = coreaux_api.get_plugin_configuration('wxalarmslog')(
+                                                                'Shortcuts')
+
         self.alarms = wx.MenuItem(wxgui_api.get_menu_logs(), self.ID_ALARMS,
                             '&Alarms', 'Alarms log commands', subMenu=submenu)
+        self.select = wx.MenuItem(submenu, self.ID_SELECT,
+                "&Select\t{}".format(config['select']),
+                "Select the alarms history log")
         self.find = wx.MenuItem(submenu, self.ID_FIND,
-                "&Find in database\tCTRL+SHIFT+F6",
+                "Find in &database\t{}".format(config['find']),
                 "Select the database items associated to the selected entries")
 
-        self.alarms.SetBitmap(wx.ArtProvider.GetBitmap('@alarms', wx.ART_MENU))
-        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
+        self.alarms.SetBitmap(wxgui_api.get_menu_icon('@alarmslog'))
+        self.select.SetBitmap(wxgui_api.get_menu_icon('@jump'))
+        self.find.SetBitmap(wxgui_api.get_menu_icon('@dbfind'))
 
         wxgui_api.add_menu_logs_item(self.alarms)
+        submenu.AppendItem(self.select)
         submenu.AppendItem(self.find)
 
+        wxgui_api.bind_to_menu(self._select, self.select)
         wxgui_api.bind_to_menu(self._find_in_tree, self.find)
-        wxgui_api.bind_to_reset_menu_items(self._reset_items)
-        wxgui_api.bind_to_menu_logs_update(self._handle_menu_logs_update)
 
-    def _handle_menu_logs_update(self, kwargs):
+        wxgui_api.bind_to_menu_view_logs_update(self._update_items)
+        wxgui_api.bind_to_menu_view_logs_disable(self._disable_items)
+        wxgui_api.bind_to_reset_menu_items(self._reset_items)
+
+    def _update_items(self, kwargs):
         self.find.Enable(False)
 
-        log, filename = self.plugin.get_selected_log()
+        log = self.plugin.get_selected_log()
 
-        if log:
-            view = log.get_view()
+        if log and log.is_shown() and log.has_selection():
+            self.find.Enable()
 
-            if view.IsShown():
-                sel = view.GetSelectedItemsCount()
-
-                if sel > 0:
-                    self.find.Enable()
+    def _disable_items(self, kwargs):
+        self.alarms.Enable(False)
 
     def _reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
         # accelerators
+        self.alarms.Enable()
         self.find.Enable()
 
-    def _find_in_tree(self, event):
-        log, filename = self.plugin.get_selected_log()
+    def _select(self, event):
+        log = self.plugin.get_selected_log()
 
         if log:
-            view = log.get_view()
+            wxgui_api.select_log(log.get_tool_id())
 
-            if view.IsShown():
-                sel = view.GetSelections()
+    def _find_in_tree(self, event):
+        log = self.plugin.get_selected_log()
 
-                if len(sel) > 0:
-                    wxgui_api.unselect_all_items(filename)
-
-                    # Do not loop directly on view.GetSelections(), e.g.
-                    #   for s in view.GetSelections():
-                    # because it doesn't work as expected!
-                    for item in sel:
-                        id_ = view.GetItemData(item)
-
-                        # The logged item may not exist anymore
-                        if core_api.is_item(filename, id_):
-                            wxgui_api.add_item_to_selection(filename, id_)
+        if log and log.is_shown():
+            log.find_in_tree()
 
 
 class ContextMenu(object):
-    def __init__(self, mainmenu, logview):
-        self.logview = logview
+    def __init__(self, mainmenu, log):
+        self.log = log
 
         self.find_paramaters = (mainmenu.ID_FIND, "&Find in database",
-                                wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
+                                wxgui_api.get_menu_icon('@dbfind'))
 
     def get_items(self):
         return (self.find_paramaters, )
@@ -224,12 +299,10 @@ class ContextMenu(object):
         self.find = items[0]
 
     def update(self):
-        self.find.Enable(False)
-
-        sel = self.logview.GetSelectedItemsCount()
-
-        if sel > 0:
+        if self.log.has_selection():
             self.find.Enable()
+        else:
+            self.find.Enable(False)
 
 
 def main():

@@ -45,7 +45,7 @@ class Main(object):
         core_api.bind_to_save_database_copy(self._handle_save_database_copy)
         core_api.bind_to_close_database(self._handle_close_database)
         core_api.bind_to_insert_item(self._handle_insert_item)
-        core_api.bind_to_delete_item(self._handle_delete_item)
+        core_api.bind_to_deleting_item(self._handle_delete_item)
 
         if copypaste_api:
             copypaste_api.bind_to_copy_items(self._handle_copy_items)

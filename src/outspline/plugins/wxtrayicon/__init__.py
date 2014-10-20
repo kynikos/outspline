@@ -42,16 +42,25 @@ class TrayIcon(wx.TaskBarIcon):
         # Let self.restore have a different ID from menumin in the main menu,
         # in fact this is a check item, while the other is a normal item
         self.ID_RESTORE = wx.NewId()
+        # Don't use wx.ID_EXIT because it assigns a Ctrl+q accelerator
+        # automatically
+        self.ID_EXIT = wx.NewId()
 
-        config = coreaux_api.get_plugin_configuration('wxtrayicon')
+        config = coreaux_api.get_plugin_configuration('wxtrayicon')(
+                                                                'Shortcuts')
+
+        wxgui_api.install_bundled_icon("wxtrayicon", '@tray',
+                                                    ("Tango", "tray16.png"))
+        wxgui_api.install_bundled_icon("wxtrayicon", '@traywarning',
+                                                        ("warning24.png", ))
 
         self.icon = BlinkingIcon(self)
 
         menumin = wx.MenuItem(wxgui_api.get_menu_file(), self.ID_MINIMIZE,
-                                    '&Minimize to tray\tCTRL+m',
-                                    'Minimize the main window to tray icon')
+                            '&Minimize to tray\t{}'.format(config['minimize']),
+                            'Minimize the main window to tray icon')
 
-        menumin.SetBitmap(wx.ArtProvider.GetBitmap('@tray', wx.ART_MENU))
+        menumin.SetBitmap(wxgui_api.get_menu_icon('@tray'))
 
         wxgui_api.add_menu_file_item(menumin)
 
@@ -81,7 +90,7 @@ class TrayIcon(wx.TaskBarIcon):
     def CreatePopupMenu(self):
         # TrayMenu must be instantiated here, everytime CreatePopupMenu is
         # called
-        self.menu = TrayMenu(self, self.ID_RESTORE)
+        self.menu = TrayMenu(self, self.ID_RESTORE, self.ID_EXIT)
 
         create_menu_event.signal(menu=self.menu)
 
@@ -112,9 +121,8 @@ class BlinkingIcon():
 
         self.trayicon = trayicon
 
-        self.main_icon = wx.ArtProvider.GetIcon('@outspline', wx.ART_OTHER)
-        self.default_alternative_icon = wx.ArtProvider.GetIcon('@blinkicon',
-                                                                wx.ART_OTHER)
+        self.main_icon = wxgui_api.get_tray_icon("@outsplinetray")
+        self.default_alternative_icon = wxgui_api.get_tray_icon("@traywarning")
 
         self.current_tooltip = 'Outspline'
         self.tooltips = {}
@@ -181,12 +189,18 @@ class TrayMenu(wx.Menu):
     restore = None
     exit_ = None
 
-    def __init__(self, parent, ID_RESTORE):
+    def __init__(self, parent, ID_RESTORE, ID_EXIT):
         wx.Menu.__init__(self)
 
-        self.restore = self.AppendCheckItem(ID_RESTORE, "&Show Outspline")
+        self.restore = wx.MenuItem(self, ID_RESTORE, "&Show Outspline",
+                                                            kind=wx.ITEM_CHECK)
+        self.exit_ = wx.MenuItem(self, ID_EXIT, "E&xit")
+
+        self.exit_.SetBitmap(wxgui_api.get_menu_icon('@exit'))
+
+        self.AppendItem(self.restore)
         self.AppendSeparator()
-        self.exit_ = self.Append(wx.ID_EXIT, "E&xit\tCTRL+q")
+        self.AppendItem(self.exit_)
 
         parent.Bind(wx.EVT_MENU, self.toggle_main_window, self.restore)
         parent.Bind(wx.EVT_MENU, self.exit_application, self.exit_)

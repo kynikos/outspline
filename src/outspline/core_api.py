@@ -19,7 +19,7 @@
 from core import databases, items, history, queries
 from core.exceptions import (AccessDeniedError, DatabaseAlreadyOpenError,
                             DatabaseNotAccessibleError, DatabaseLockedError,
-                            CannotMoveItemError, NoLongerExistingItem)
+                            CannotMoveItemError, NonExistingItemError)
 
 
 def get_memory_connection():
@@ -63,40 +63,47 @@ def exit_():
     databases.memory.exit_()
 
 
-def create_child(filename, baseid, text='New item',
-                 description='Create child'):
+def create_child(filename, parent, text='New item',
+                                                description='Create child'):
+    previous = items.Item.get_last_child(filename, parent)
     group = databases.dbs[filename].dbhistory.get_next_history_group()
-    return items.Item.insert(filename=filename, mode='child', baseid=baseid,
-                             group=group, text=text, description=description)
+    return items.Item.insert(filename=filename, parent=parent,
+            previous=previous, group=group, text=text, description=description)
 
 
-def create_sibling(filename, baseid, text='New item',
-                   description='Create sibling'):
+def create_sibling(filename, parent, previous, text='New item',
+                                                description='Create sibling'):
     group = databases.dbs[filename].dbhistory.get_next_history_group()
-    return items.Item.insert(filename=filename, mode='sibling', baseid=baseid,
-                             group=group, text=text, description=description)
+    return items.Item.insert(filename=filename, parent=parent,
+            previous=previous, group=group, text=text, description=description)
 
 
-def append_item(filename, baseid, group=None, text='New item',
-                description='Insert item'):
+def append_item(filename, parent, group=None, text='New item',
+                                                    description='Insert item'):
+    previous = items.Item.get_last_child(filename, parent)
+
     if group == None:
         group = databases.dbs[filename].dbhistory.get_next_history_group()
-    return items.Item.insert(filename=filename, mode='child', baseid=baseid,
-                             group=group, text=text, description=description)
+
+    return items.Item.insert(filename=filename, parent=parent,
+            previous=previous, group=group, text=text, description=description)
 
 
-def insert_item_after(filename, baseid, group=None, text='New item',
-                      description='Insert item'):
+def insert_item_after(filename, previous, group=None, text='New item',
+                                                    description='Insert item'):
+    parent = databases.dbs[filename].items[previous].get_parent()
+
     if group == None:
         group = databases.dbs[filename].dbhistory.get_next_history_group()
-    return items.Item.insert(filename=filename, mode='sibling', baseid=baseid,
-                             group=group, text=text, description=description)
+
+    return items.Item.insert(filename=filename, parent=parent,
+            previous=previous, group=group, text=text, description=description)
 
 
 def move_item_up(filename, id_, description='Move item up'):
     group = databases.dbs[filename].dbhistory.get_next_history_group()
     try:
-        return databases.dbs[filename].items[id_].shift(mode='up', group=group,
+        return databases.dbs[filename].items[id_].shift_up(group=group,
                                                     description=description)
     except CannotMoveItemError:
         return False
@@ -105,8 +112,8 @@ def move_item_up(filename, id_, description='Move item up'):
 def move_item_down(filename, id_, description='Move item down'):
     group = databases.dbs[filename].dbhistory.get_next_history_group()
     try:
-        return databases.dbs[filename].items[id_].shift(mode='down',
-                                        group=group, description=description)
+        return databases.dbs[filename].items[id_].shift_down(group=group,
+                                                    description=description)
     except CannotMoveItemError:
         return False
 
@@ -114,26 +121,18 @@ def move_item_down(filename, id_, description='Move item down'):
 def move_item_to_parent(filename, id_, description='Move item to parent'):
     group = databases.dbs[filename].dbhistory.get_next_history_group()
     try:
-        return databases.dbs[filename].items[id_].shift(mode='parent',
-                                        group=group, description=description)
+        return databases.dbs[filename].items[id_].move_to_parent(group=group,
+                                                    description=description)
     except CannotMoveItemError:
         return False
 
 
 def update_item_text(filename, id_, text, group=None,
-                     description='Update item text'):
-    if group == None:
-        group = databases.dbs[filename].dbhistory.get_next_history_group()
-    return databases.dbs[filename].items[id_].update(group,
-                                            description=description, text=text)
-
-
-def update_item_text_no_event(filename, id_, text, group=None,
                                             description='Update item text'):
     if group == None:
         group = databases.dbs[filename].dbhistory.get_next_history_group()
-    return databases.dbs[filename].items[id_].update_no_event(group,
-                                            description=description, text=text)
+    return databases.dbs[filename].items[id_].update_text(text, group,
+                                                    description=description)
 
 
 def register_history_action_handlers(filename, name, redo_handler,
@@ -178,10 +177,10 @@ def redo_tree(filename):
     return databases.dbs[filename].dbhistory.redo_history()
 
 
-def delete_items(filename, ditems, group=None, description='Delete items'):
+def delete_subtree(filename, id_, group=None, description='Delete subtree'):
     if group == None:
         group = databases.dbs[filename].dbhistory.get_next_history_group()
-    return databases.dbs[filename].delete_items(ditems, group=group,
+    return databases.dbs[filename].delete_subtree(id_, group=group,
                                                description=description)
 
 
@@ -201,6 +200,14 @@ def is_item(filename, id_):
     return id_ in databases.dbs[filename].items
 
 
+def is_item_root(filename, id_):
+    return databases.dbs[filename].items[id_].is_root()
+
+
+def has_item_children(filename, id_):
+    return databases.dbs[filename].items[id_].has_children()
+
+
 def update_database_history_soft_limit(filename, limit):
     return databases.dbs[filename].dbhistory.update_soft_limit(limit)
 
@@ -211,10 +218,6 @@ def add_database_ignored_dependency(filename, extension):
 
 def remove_database_ignored_dependency(filename, extension):
     return databases.dbs[filename].remove_ignored_dependency(extension)
-
-
-def get_tree_item(filename, parent, previous):
-    return items.Item.get_tree_item(filename, parent, previous)
 
 
 def get_items_ids(filename):
@@ -229,11 +232,36 @@ def get_item_info(filename, id_):
     return databases.dbs[filename].items[id_].get_all_info()
 
 
+def get_item_parent(filename, id_):
+    return databases.dbs[filename].items[id_].get_parent()
+
+
+def get_item_children(filename, id_):
+    return databases.dbs[filename].items[id_].get_children()
+
+
+def get_item_previous(filename, id_):
+    return databases.dbs[filename].items[id_].get_previous()
+
+
+def get_item_next(filename, id_):
+    return databases.dbs[filename].items[id_].get_next()
+
+
 def get_item_ancestors(filename, id_):
-    # It's necessary to initialize ancestors=[] because otherwise for some
-    # reason the ancestors list from the previous call would be used, thus
-    # appending the ancestors again, multiplicating them at every call
-    return databases.dbs[filename].items[id_].get_ancestors(ancestors=[])
+    return databases.dbs[filename].items[id_].get_ancestors()
+
+
+def get_item_descendants(filename, id_):
+    return databases.dbs[filename].items[id_].get_descendants()
+
+
+def find_independent_items(filename, ids):
+    return databases.dbs[filename].find_independent_items(ids)
+
+
+def get_root_items(filename):
+    return databases.dbs[filename].get_root_items()
 
 
 def get_item_text(filename, id_):
@@ -241,10 +269,14 @@ def get_item_text(filename, id_):
         return databases.dbs[filename].items[id_].get_text()
     except KeyError:
         # KeyError is raised if the items[id_] has already been deleted
-        raise NoLongerExistingItem()
+        raise NonExistingItemError()
     except TypeError:
         # TypeError is raised if the query in get_text returns no values
-        raise NoLongerExistingItem()
+        raise NonExistingItemError()
+
+
+def get_all_items(filename):
+    return databases.dbs[filename].get_all_items()
 
 
 def get_all_items_text(filename):
@@ -359,8 +391,8 @@ def bind_to_save_database_copy(handler, bind=True):
     return databases.save_database_copy_event.bind(handler, bind)
 
 
-def bind_to_delete_items(handler, bind=True):
-    return databases.delete_items_event.bind(handler, bind)
+def bind_to_delete_subtree(handler, bind=True):
+    return databases.delete_subtree_event.bind(handler, bind)
 
 
 def bind_to_history(handler, bind=True):
@@ -371,8 +403,16 @@ def bind_to_history_insert(handler, bind=True):
     return history.history_insert_event.bind(handler, bind)
 
 
-def bind_to_history_update(handler, bind=True):
-    return history.history_update_event.bind(handler, bind)
+def bind_to_history_update_simple(handler, bind=True):
+    return history.history_update_previous_event.bind(handler, bind)
+
+
+def bind_to_history_update_deep(handler, bind=True):
+    return history.history_update_parent_event.bind(handler, bind)
+
+
+def bind_to_history_update_text(handler, bind=True):
+    return history.history_update_text_event.bind(handler, bind)
 
 
 def bind_to_history_remove(handler, bind=True):
@@ -403,9 +443,25 @@ def bind_to_insert_item(handler, bind=True):
     return items.item_insert_event.bind(handler, bind)
 
 
-def bind_to_update_item(handler, bind=True):
-    return items.item_update_event.bind(handler, bind)
+def bind_to_update_item_simple(handler, bind=True):
+    return items.item_update_previous_event.bind(handler, bind)
 
 
-def bind_to_delete_item(handler, bind=True):
-    return items.item_delete_event.bind(handler, bind)
+def bind_to_update_item_deep(handler, bind=True):
+    return items.item_update_parent_event.bind(handler, bind)
+
+
+def bind_to_update_item_text(handler, bind=True):
+    return items.item_update_text_event.bind(handler, bind)
+
+
+def bind_to_deleting_item(handler, bind=True):
+    return items.item_deleting_event.bind(handler, bind)
+
+
+def bind_to_deleted_item(handler, bind=True):
+    return items.item_deleted_event.bind(handler, bind)
+
+
+def bind_to_deleted_item_2(handler, bind=True):
+    return items.item_deleted_2_event.bind(handler, bind)

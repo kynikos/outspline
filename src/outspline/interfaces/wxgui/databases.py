@@ -104,8 +104,8 @@ def open_database(filename=None, check_new_extensions=True,
             return False
         else:
             tree.Database.open(filename)
-            # Note that this event is also bound directly by the sessions
-            # module
+            # Note that this event is also bound directly by the menubar and
+            # sessions modules
             open_database_event.signal(filename=filename)
 
             if open_properties:

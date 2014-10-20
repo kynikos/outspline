@@ -30,6 +30,9 @@ import exceptions
 upsert_link_event = Event()
 delete_link_event = Event()
 break_link_event = Event()
+history_insert_event = Event()
+history_update_event = Event()
+history_delete_event = Event()
 
 cdbs = set()
 
@@ -67,8 +70,7 @@ def do_delete_link(cursor, id_):
     # Do not update last_known_links here, otherwise it would lose its meaning
 
 
-def upsert_link(filename, id_, target, group, description='Insert link',
-                                                                event=True):
+def upsert_link(filename, id_, target, group, description='Insert link'):
     # target could be None (creating a broken link) or could be a no-longer
     # existing item
     if core_api.is_item(filename, target):
@@ -79,25 +81,14 @@ def upsert_link(filename, id_, target, group, description='Insert link',
         else:
             # Sync text
             tgttext = core_api.get_item_text(filename, target)
+            core_api.update_item_text(filename, id_, tgttext, group=group,
+                                                description=description)
 
-            if event:
-                core_api.update_item_text(filename, id_, tgttext, group=group,
+            # Drop any rules
+            if organism_api and filename in \
+                                organism_api.get_supported_open_databases():
+                organism_api.update_item_rules(filename, id_, [], group=group,
                                                     description=description)
-
-                # Drop any rules
-                if organism_api and filename in \
-                                organism_api.get_supported_open_databases():
-                    organism_api.update_item_rules(filename, id_, [],
-                                        group=group, description=description)
-            else:
-                core_api.update_item_text_no_event(filename, id_, tgttext,
-                                        group=group, description=description)
-
-                # Drop any rules
-                if organism_api and filename in \
-                                organism_api.get_supported_open_databases():
-                    organism_api.update_item_rules_no_event(filename, id_, [],
-                                        group=group, description=description)
     else:
         # Force target = None if the given target no longer exists
         target = None
@@ -105,12 +96,8 @@ def upsert_link(filename, id_, target, group, description='Insert link',
         # Drop any rules
         if organism_api and filename in \
                                 organism_api.get_supported_open_databases():
-            if event:
-                organism_api.update_item_rules(filename, id_, [], group=group,
-                                                       description=description)
-            else:
-                organism_api.update_item_rules_no_event(filename, id_, [],
-                                        group=group, description=description)
+            organism_api.update_item_rules(filename, id_, [], group=group,
+                                                    description=description)
 
     # Note that exceptions.CircularLinksError could be raised before getting
     # here
@@ -190,24 +177,28 @@ def break_links(filename, id_, group, description='Break links'):
     cursor.execute(queries.links_select_target, (id_, ))
 
     ids = set()
+    rows = cursor.fetchall()
 
-    for row in cursor.fetchall():
-        linkid = row['L_id']
-        ids.add(linkid)
+    if rows:
+        for row in rows:
+            linkid = row['L_id']
+            ids.add(linkid)
 
-        do_update_link(filename, cursor, None, linkid)
+            do_update_link(filename, cursor, None, linkid)
+
+            core_api.give_connection(filename, qconn)
+
+            core_api.insert_history(filename, group, linkid, 'link_update',
+                                                description, None, str(id_))
+
+            qconn = core_api.get_connection(filename)
+            cursor = qconn.cursor()
 
         core_api.give_connection(filename, qconn)
 
-        core_api.insert_history(filename, group, linkid, 'link_update',
-                                                description, None, str(id_))
-
-        qconn = core_api.get_connection(filename)
-        cursor = qconn.cursor()
-
-    core_api.give_connection(filename, qconn)
-
-    break_link_event.signal(filename=filename, ids=ids, oldtarget=id_)
+        break_link_event.signal(filename=filename, ids=ids, oldtarget=id_)
+    else:
+        core_api.give_connection(filename, qconn)
 
 
 def break_copied_links(filename, id_):
@@ -332,15 +323,7 @@ def paste_link(filename, id_, oldid, group, description):
                 # way of retrieving its new id
                 target = None
 
-            # Do not emit an update event when pasting links (affects only
-            # pasting in the same database), otherwise the interface will react
-            # trying to update the text and icon of the item in the tree, but
-            # the item hasn't been created yet in the tree, resulting in an
-            # exception (KeyError)
-            # Right because the item is inserted in the tree *after* updating
-            # its text, it will be added already with the correct text, so
-            # there's no need to handle an update event in that case
-            upsert_link(filename, id_, target, group, description, event=False)
+            upsert_link(filename, id_, target, group, description)
 
 
 def handle_history_insert(filename, action, jparams, hid, type_, itemid):
@@ -350,6 +333,8 @@ def handle_history_insert(filename, action, jparams, hid, type_, itemid):
                         itemid, int(jparams) if jparams is not None else None)
     core_api.give_connection(filename, qconn)
 
+    history_insert_event.signal(filename=filename, id_=itemid)
+
 
 def handle_history_update(filename, action, jparams, hid, type_, itemid):
     qconn = core_api.get_connection(filename)
@@ -358,12 +343,16 @@ def handle_history_update(filename, action, jparams, hid, type_, itemid):
                         int(jparams) if jparams is not None else None, itemid)
     core_api.give_connection(filename, qconn)
 
+    history_update_event.signal(filename=filename, id_=itemid)
+
 
 def handle_history_delete(filename, action, jparams, hid, type_, itemid):
     qconn = core_api.get_connection(filename)
     cursor = qconn.cursor()
     do_delete_link(cursor, itemid)
     core_api.give_connection(filename, qconn)
+
+    history_delete_event.signal(filename=filename, id_=itemid)
 
 
 def get_last_known_target(filename, id_):

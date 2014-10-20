@@ -69,3 +69,15 @@ def bind_to_delete_link(handler, bind=True):
 
 def bind_to_break_link(handler, bind=True):
     return links.break_link_event.bind(handler, bind)
+
+
+def bind_to_history_insert(handler, bind=True):
+    return links.history_insert_event.bind(handler, bind)
+
+
+def bind_to_history_update(handler, bind=True):
+    return links.history_update_event.bind(handler, bind)
+
+
+def bind_to_history_delete(handler, bind=True):
+    return links.history_delete_event.bind(handler, bind)

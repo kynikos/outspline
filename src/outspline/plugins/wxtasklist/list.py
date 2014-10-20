@@ -25,6 +25,8 @@ import os
 import string as string_
 import threading
 
+from outspline.static.wxclasses.misc import NarrowSpinCtrl
+
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import log
 import outspline.core_api as core_api
@@ -50,21 +52,15 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
         return self
 
     def _set_image_lists(self):
-        self.imagelistsmall = wx.ImageList(16, 16)
-        self.imagemap = {
-            'small': {}
-        }
-
-        self.imagemap['small']['sortup'] = self.imagelistsmall.Add(
-                 wx.ArtProvider.GetBitmap('@sortup', wx.ART_TOOLBAR, (16, 16)))
-        self.imagemap['small']['sortdown'] = self.imagelistsmall.Add(
-               wx.ArtProvider.GetBitmap('@sortdown', wx.ART_TOOLBAR, (16, 16)))
-
-        self.AssignImageList(self.imagelistsmall, wx.IMAGE_LIST_SMALL)
+        self.sortindices = []
+        sortup, sortdown = wxgui_api.get_list_sort_icons()
+        imagelist = wx.ImageList(16, 16)
+        self.sortindices.append(imagelist.Add(sortup))
+        self.sortindices.append(imagelist.Add(sortdown))
+        self.AssignImageList(imagelist, wx.IMAGE_LIST_SMALL)
 
     def GetSortImages(self):
-        return (self.imagemap['small']['sortup'],
-                                            self.imagemap['small']['sortdown'])
+        return self.sortindices
 
 
 class OccurrencesView(object):
@@ -116,19 +112,19 @@ class OccurrencesView(object):
         # application is closed, and if a user edits them manually he knows
         # he's done something wrong in the configuration file
         self.listview.InsertColumn(self.DATABASE_COLUMN, 'Database',
-                                width=self.config.get_int('database_column'))
+                        width=self.config('ColumnWidths').get_int('database'))
         self.listview.InsertColumn(self.HEADING_COLUMN, 'Heading',
-                                width=self.config.get_int('heading_column'))
+                        width=self.config('ColumnWidths').get_int('heading'))
         self.listview.InsertColumn(self.START_COLUMN, 'Start',
-                                width=self.config.get_int('start_column'))
+                        width=self.config('ColumnWidths').get_int('start'))
         self.listview.InsertColumn(self.DURATION_COLUMN, 'Duration',
-                                width=self.config.get_int('duration_column'))
+                        width=self.config('ColumnWidths').get_int('duration'))
         self.listview.InsertColumn(self.END_COLUMN, 'End',
-                                width=self.config.get_int('end_column'))
+                        width=self.config('ColumnWidths').get_int('end'))
         self.listview.InsertColumn(self.STATE_COLUMN, 'State',
-                                width=self.config.get_int('state_column'))
+                        width=self.config('ColumnWidths').get_int('state'))
         self.listview.InsertColumn(self.ALARM_COLUMN, 'Alarm',
-                                width=self.config.get_int('alarm_column'))
+                        width=self.config('ColumnWidths').get_int('alarm'))
 
         # Initialize sort column and order *before* enabling the autoscroll
         self.listview.SortListItems(self.STATE_COLUMN, 1)
@@ -181,6 +177,9 @@ class OccurrencesView(object):
     def set_filter(self, config):
         self.autoscroll.pre_execute()
         self.refengine.set_filter(config)
+
+    def set_focus(self):
+        self.listview.SetFocus()
 
     def is_time_in_range(self, now, min_time, max_time):
         return self.active_alarms_modes[self.active_alarms_mode](min_time, now,
@@ -323,24 +322,182 @@ class OccurrencesView(object):
     def save_configuration(self):
         config = coreaux_api.get_plugin_configuration('wxtasklist')
 
-        config['database_column'] = str(self.listview.GetColumnWidth(
+        config('ColumnWidths')['database'] = str(self.listview.GetColumnWidth(
                                                         self.DATABASE_COLUMN))
-        config['heading_column'] = str(self.listview.GetColumnWidth(
+        config('ColumnWidths')['heading'] = str(self.listview.GetColumnWidth(
                                                         self.HEADING_COLUMN))
-        config['start_column'] = str(self.listview.GetColumnWidth(
+        config('ColumnWidths')['start'] = str(self.listview.GetColumnWidth(
                                                             self.START_COLUMN))
-        config['duration_column'] = str(self.listview.GetColumnWidth(
+        config('ColumnWidths')['duration'] = str(self.listview.GetColumnWidth(
                                                         self.DURATION_COLUMN))
-        config['end_column'] = str(self.listview.GetColumnWidth(
+        config('ColumnWidths')['end'] = str(self.listview.GetColumnWidth(
                                                             self.END_COLUMN))
-        config['state_column'] = str(self.listview.GetColumnWidth(
+        config('ColumnWidths')['state'] = str(self.listview.GetColumnWidth(
                                                             self.STATE_COLUMN))
-        config['alarm_column'] = str(self.listview.GetColumnWidth(
+        config('ColumnWidths')['alarm'] = str(self.listview.GetColumnWidth(
                                                             self.ALARM_COLUMN))
         config['active_alarms'] = self.active_alarms_mode
         config['show_gaps'] = 'yes' if self.show_gaps else 'no'
         config['show_overlappings'] = 'yes' if self.show_overlappings else 'no'
         config['autoscroll'] = 'on' if self.autoscroll.is_enabled() else 'off'
+
+    def find_in_tree(self):
+        sel = self.listview.GetFirstSelected()
+
+        if sel > -1:
+            for filename in core_api.get_open_databases():
+                wxgui_api.unselect_all_items(filename)
+
+            # Loop that selects a database tab (but doesn't select items)
+            while sel > -1:
+                item = self.occs[self.listview.GetItemData(sel)]
+
+                if item.get_filename() is not None:
+                    wxgui_api.select_database_tab(item.get_filename())
+                    # The item is selected in the loop below
+                    break
+                else:
+                    sel = self.listview.GetNextSelected(sel)
+
+            # Loop that doesn't select a database tab but selects items,
+            # including the one found in the loop above
+            while sel > -1:
+                item = self.occs[self.listview.GetItemData(sel)]
+
+                if item.get_filename() is not None:
+                    wxgui_api.add_item_to_selection(item.get_filename(),
+                                                            item.get_id())
+
+                sel = self.listview.GetNextSelected(sel)
+
+    def edit_items(self):
+        sel = self.listview.GetFirstSelected()
+
+        while sel > -1:
+            item = self.occs[self.listview.GetItemData(sel)]
+
+            if item.get_filename() is not None:
+                wxgui_api.open_editor(item.get_filename(), item.get_id())
+
+            sel = self.listview.GetNextSelected(sel)
+
+    def snooze_selected_alarms_for(self, time):
+        self._snooze_alarms_for(time, self.get_selected_active_alarms)
+
+    def snooze_selected_alarms_for_custom(self):
+        self._snooze_alarms_for_custom(self.get_selected_active_alarms)
+
+    def snooze_all_alarms_for(self, time):
+        self._snooze_alarms_for(time, self.get_active_alarms)
+
+    def snooze_all_alarms_for_custom(self):
+        self._snooze_alarms_for_custom(self.get_active_alarms)
+
+    def _snooze_alarms_for(self, time, alarmscall):
+        if core_api.block_databases():
+            alarmsd = alarmscall()
+
+            if len(alarmsd) > 0:
+                organism_alarms_api.snooze_alarms(alarmsd, time)
+                # Let the alarm off event update the tasklist
+
+            core_api.release_databases()
+
+    def _snooze_alarms_for_custom(self, alarmscall):
+        if core_api.block_databases():
+            alarmsd = alarmscall()
+
+            if len(alarmsd) > 0:
+                dlg = SnoozeDialog()
+
+                if dlg.ShowModal() == wx.ID_OK:
+                    organism_alarms_api.snooze_alarms(alarmsd, dlg.get_time())
+                    # Let the alarm off event update the tasklist
+
+                # Unlike MessageDialog, a Dialog needs to be destroyed
+                # explicitly
+                dlg.Destroy()
+
+            core_api.release_databases()
+
+    def dismiss_selected_alarms(self):
+        if core_api.block_databases():
+            alarmsd = self.get_selected_active_alarms()
+
+            if len(alarmsd) > 0:
+                organism_alarms_api.dismiss_alarms(alarmsd)
+                # Let the alarm off event update the tasklist
+
+            core_api.release_databases()
+
+    def dismiss_all_alarms(self):
+        # Note that "all" means all the visible active alarms; some may be
+        # hidden in the current view
+        if core_api.block_databases():
+            alarmsd = self.get_active_alarms()
+
+            if len(alarmsd) > 0:
+                organism_alarms_api.dismiss_alarms(alarmsd)
+                # Let the alarm off event update the tasklist
+
+            core_api.release_databases()
+
+    def toggle_gaps(self):
+        self.show_gaps = not self.show_gaps
+        self.refresh()
+
+    def toggle_overlappings(self):
+        self.show_overlappings = not self.show_overlappings
+        self.refresh()
+
+
+class SnoozeDialog(wx.Dialog):
+    def __init__(self):
+        wx.Dialog.__init__(self, parent=wxgui_api.get_main_frame(),
+                                                title="Snooze configuration")
+
+        vsizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(vsizer)
+
+        hsizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        icon = wx.StaticBitmap(self, bitmap=wxgui_api.get_dialog_icon(
+                                                            '@snoozedialog'))
+        hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
+
+        ssizer = wx.BoxSizer(wx.HORIZONTAL)
+
+        label = wx.StaticText(self, label='Snooze for:')
+        ssizer.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
+
+        self.number = NarrowSpinCtrl(self, min=1, max=999,
+                                                        style=wx.SP_ARROW_KEYS)
+        self.number.SetValue(5)
+        ssizer.Add(self.number, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
+                                                                    border=4)
+
+        self.unit = wx.ComboBox(self, value='minutes',
+                                choices=('minutes', 'hours', 'days', 'weeks'),
+                                style=wx.CB_READONLY)
+        ssizer.Add(self.unit, flag=wx.ALIGN_CENTER_VERTICAL)
+
+        hsizer.Add(ssizer, flag=wx.ALIGN_TOP)
+
+        vsizer.Add(hsizer, flag=wx.ALIGN_CENTER | wx.ALL, border=12)
+
+        buttons = self.CreateButtonSizer(wx.OK | wx.CANCEL)
+        vsizer.Add(buttons,
+                        flag=wx.ALIGN_RIGHT | wx.LEFT | wx.RIGHT | wx.BOTTOM,
+                        border=12)
+
+        self.Fit()
+
+    def get_time(self):
+        mult = {'minutes': 60,
+                'hours': 3600,
+                'days': 86400,
+                'weeks': 604800}
+        return self.number.GetValue() * mult[self.unit.GetValue()]
 
 
 class RefreshEngineStop(UserWarning):
@@ -422,7 +579,7 @@ class RefreshEngine(object):
         self.cancel_request = False
 
     def enable(self):
-        core_api.bind_to_update_item(self._delay_restart_on_text_update)
+        core_api.bind_to_update_item_text(self._delay_restart_on_text_update)
         # The old occurrences are searched on a separate thread, so they may be
         # found *after* the next occurrences, so _delay_restart must be bound
         # to this one too
@@ -444,7 +601,8 @@ class RefreshEngine(object):
         # Do not even think of disabling refreshing when the notebook tab is
         # not selected, because then it should always be refreshed when
         # selecting it, which would make everything more sluggish
-        core_api.bind_to_update_item(self._delay_restart_on_text_update, False)
+        core_api.bind_to_update_item_text(self._delay_restart_on_text_update,
+                                                                        False)
         organism_alarms_api.bind_to_activate_alarms_range_end(
                                                     self._delay_restart, False)
         organism_timer_api.bind_to_search_next_occurrences(self._delay_restart,
@@ -475,8 +633,7 @@ class RefreshEngine(object):
         self.activealarms[filename][id_].append(alarmid)
 
     def _delay_restart_on_text_update(self, kwargs):
-        if kwargs['text'] is not None:
-            self.delay_restart()
+        self.delay_restart()
 
     def _delay_restart(self, kwargs):
         # self.delay_restart uses wx.CallLater, which cannot be called from
@@ -524,7 +681,7 @@ class RefreshEngine(object):
                     wx.CallAfter(self.occview.set_tab_icon_stopped)
                 except RefreshEngineLimit:
                     wx.CallAfter(self.occview.warn_limit_exceeded)
-                except core_api.NoLongerExistingItem:
+                except core_api.NonExistingItemError:
                     self._delay_restart(kwargs=None)
                 else:
                     # Since self._refresh_end (and so
@@ -727,9 +884,9 @@ class Formatter(object):
     def __init__(self, config, listview):
         self.config = config
         self.listview = listview
-        self.startformat = config['start_format']
-        self.endformat = config['end_format']
-        self.alarmformat = config['alarm_format']
+        self.startformat = config('Formats')['start']
+        self.endformat = config('Formats')['end']
+        self.alarmformat = config('Formats')['alarm']
 
         if self.endformat == 'start':
             self.endformat = self.startformat
@@ -737,12 +894,12 @@ class Formatter(object):
         if self.alarmformat == 'start':
             self.alarmformat = self.startformat
 
-        if config['database_format'] == 'full':
+        if config('Formats')['database'] == 'full':
             self.format_database = self._format_database_full
         else:
             self.format_database = self._format_database_short
 
-        if config['duration_format'] == 'compact':
+        if config('Formats')['duration'] == 'compact':
             self.format_duration = self._format_duration_compact
         else:
             self.format_duration = self._format_duration_expanded
@@ -751,12 +908,12 @@ class Formatter(object):
 
     def _init_colors(self):
         system = self.listview.GetTextColour()
-        colpast = self.config['color_past']
-        colongoing = self.config['color_ongoing']
-        colfuture = self.config['color_future']
-        colactive = self.config['color_active']
-        colgap = self.config['color_gap']
-        coloverlap = self.config['color_overlapping']
+        colpast = self.config('Colors')['past']
+        colongoing = self.config('Colors')['ongoing']
+        colfuture = self.config('Colors')['future']
+        colactive = self.config('Colors')['active']
+        colgap = self.config('Colors')['gap']
+        coloverlap = self.config('Colors')['overlapping']
         self.colors = {}
 
         if colpast == 'system':
@@ -882,6 +1039,12 @@ class Autoscroll(object):
         self.enabled = False
         self.execute = self._execute_maintain
         self.set_scrolled(True)
+
+    def toggle(self):
+        if self.enabled:
+            self.disable()
+        else:
+            self.enable()
 
     def is_enabled(self):
         return self.enabled

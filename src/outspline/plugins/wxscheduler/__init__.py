@@ -42,6 +42,8 @@ class Main(object):
         self.items = {}
         self.itemicons = {}
 
+        ViewMenu(self)
+
         wxgui_api.bind_to_creating_tree(self._handle_creating_tree)
         wxgui_api.bind_to_close_database(self._handle_close_database)
         wxgui_api.bind_to_open_editor(self._handle_open_editor)
@@ -96,7 +98,7 @@ class Scheduler():
         self.id_ = id_
 
         self.fpanel = wxgui_api.add_plugin_to_editor(filename, id_,
-                                                            'Schedule rules')
+                                                                'Scheduler')
 
     def post_init(self):
         self.panel = wx.Panel(self.fpanel)
@@ -111,13 +113,20 @@ class Scheduler():
         box.Add(self.rule_list.panel, flag=wx.EXPAND | wx.BOTTOM, border=4)
         box.Add(self.rule_editor.panel, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
+        config = coreaux_api.get_plugin_configuration('wxscheduler')(
+                                                        'ExtendedShortcuts')
+        accelerators = {
+            config["focus"]: lambda event: self.set_focus(),
+            config["toggle"]: lambda event: self.toggle_focus(),
+        }
+
         wxgui_api.add_window_to_plugin(self.filename, self.id_, self.fpanel,
-                                                                    self.panel)
+                                                    self.panel, accelerators)
         self.resize()
 
         # Must be done *after* resizing
         if not self.rule_list.rules:
-            self.collapse_foldpanel()
+            wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel)
 
     def resize(self):
         # This is necessary for letting the fold panel adapt to the variable
@@ -125,21 +134,26 @@ class Scheduler():
         self.panel.SetMinSize((-1, -1))
         self.panel.Fit()
         wxgui_api.expand_panel(self.filename, self.id_, self.fpanel)
-        wxgui_api.resize_foldpanelbar(self.filename, self.id_)
-
-    def collapse_foldpanel(self):
-        wxgui_api.collapse_panel(self.filename, self.id_, self.fpanel)
-        wxgui_api.resize_foldpanelbar(self.filename, self.id_)
 
     def show_list(self):
         self.rule_editor.panel.Show(False)
         self.rule_list.panel.Show()
+        self.rule_list.panel.SetFocus()
         self.resize()
 
     def show_editor(self):
         self.rule_list.panel.Show(False)
         self.rule_editor.panel.Show()
+        self.rule_editor.panel.SetFocus()
         self.resize()
+
+    def set_focus(self):
+        wxgui_api.expand_panel(self.filename, self.id_, self.fpanel)
+        self.rule_list.focus_list()
+
+    def toggle_focus(self):
+        if wxgui_api.toggle_panel(self.filename, self.id_, self.fpanel):
+            self.rule_list.focus_list()
 
 
 class RuleList():
@@ -171,6 +185,8 @@ class RuleList():
         # up and down
         # Initialize with a small size so that it will expand properly in the
         # sizer
+        # The list doesn't seem to support TAB traversal if there's only one
+        #   rule (but Home/End and PgUp/PgDown do select it) (bug #336)
         self.listview = wx.ListView(self.panel, size=(1, 1),
                     style=wx.LC_REPORT | wx.LC_NO_HEADER | wx.LC_SINGLE_SEL)
         self.listview.InsertColumn(0, 'Rules')
@@ -182,23 +198,23 @@ class RuleList():
 
         pbox = wx.BoxSizer(wx.VERTICAL)
 
-        self.button_add = wx.Button(self.panel, label='Add...',
+        self.button_add = wx.Button(self.panel, label='&Add...',
                                                         style=wx.BU_EXACTFIT)
         pbox.Add(self.button_add, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.button_edit = wx.Button(self.panel, label='Edit...',
+        self.button_edit = wx.Button(self.panel, label='&Edit...',
                                                         style=wx.BU_EXACTFIT)
         pbox.Add(self.button_edit, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.button_up = wx.Button(self.panel, label='Move up',
+        self.button_up = wx.Button(self.panel, label='Move &up',
                                                         style=wx.BU_EXACTFIT)
         pbox.Add(self.button_up, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.button_down = wx.Button(self.panel, label='Move down',
+        self.button_down = wx.Button(self.panel, label='Move &down',
                                                         style=wx.BU_EXACTFIT)
         pbox.Add(self.button_down, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
-        self.button_remove = wx.Button(self.panel, label='Remove',
+        self.button_remove = wx.Button(self.panel, label='&Remove',
                                                         style=wx.BU_EXACTFIT)
         pbox.Add(self.button_remove, flag=wx.EXPAND)
 
@@ -358,6 +374,9 @@ class RuleList():
 
         self.listview.SetColumnWidth(0, wx.LIST_AUTOSIZE)
 
+    def focus_list(self):
+        self.listview.SetFocus()
+
 
 class RuleEditor():
     parent = None
@@ -387,11 +406,15 @@ class RuleEditor():
         self.choice = wx.Choice(self.panel, choices=())
         mbox2.Add(self.choice, 1, flag=wx.ALIGN_CENTER_VERTICAL)
 
-        button_cancel = wx.Button(self.panel, label='Cancel')
+        button_cancel = wx.Button(self.panel, label='&Cancel')
         mbox2.Add(button_cancel, flag=wx.LEFT | wx.RIGHT, border=4)
 
-        button_ok = wx.Button(self.panel, label='OK')
-        mbox2.Add(button_ok)
+        # Temporary workaround for bug #332
+        #button_ok = wx.Button(self.panel, label='&OK')
+        self.button_ok = wx.Button(self.panel, label='&OK')
+        # Temporary workaround for bug #332
+        #mbox2.Add(button_ok)
+        mbox2.Add(self.button_ok)
 
         self.scwindow = wx.ScrolledWindow(self.panel, style=wx.BORDER_NONE)
         self.scwindow.SetScrollRate(20, 20)
@@ -401,7 +424,9 @@ class RuleEditor():
 
         self.panel.Bind(wx.EVT_CHOICE, self.choose_rule, self.choice)
         self.panel.Bind(wx.EVT_BUTTON, self.cancel, button_cancel)
-        self.panel.Bind(wx.EVT_BUTTON, self.check, button_ok)
+        # Temporary workaround for bug #332
+        #self.panel.Bind(wx.EVT_BUTTON, self.check, button_ok)
+        self.panel.Bind(wx.EVT_BUTTON, self.check, self.button_ok)
 
     def post_init(self):
         self.choice.SetSelection(0)
@@ -455,12 +480,13 @@ class TreeItemIcons(object):
     def __init__(self, filename):
         self.filename = filename
 
-        config = coreaux_api.get_plugin_configuration('wxscheduler')
-        char = config['icon_rules']
+        config = coreaux_api.get_plugin_configuration('wxscheduler')(
+                                                                'TreeIcons')
+        char = config['symbol']
 
         if char != '':
             bits_to_colour = {1: wx.Colour()}
-            bits_to_colour[1].SetFromString(config['icon_rules_color'])
+            bits_to_colour[1].SetFromString(config['color'])
 
             self.property_shift, self.property_mask = \
                                             wxgui_api.add_item_property(
@@ -468,11 +494,11 @@ class TreeItemIcons(object):
 
             organism_api.bind_to_update_item_rules_conditional(
                                                     self._handle_update_rules)
+            organism_api.bind_to_history_insert(self._handle_history)
+            organism_api.bind_to_history_update(self._handle_history)
 
             wxgui_api.bind_to_open_database(self._handle_open_database)
             wxgui_api.bind_to_close_database(self._handle_close_database)
-            wxgui_api.bind_to_undo_tree(self._handle_history)
-            wxgui_api.bind_to_redo_tree(self._handle_history)
 
             if wxcopypaste_api:
                 wxcopypaste_api.bind_to_items_pasted(self._handle_paste)
@@ -485,12 +511,12 @@ class TreeItemIcons(object):
         if kwargs['filename'] == self.filename:
             organism_api.bind_to_update_item_rules_conditional(
                                             self._handle_update_rules, False)
+            organism_api.bind_to_history_insert(self._handle_history, False)
+            organism_api.bind_to_history_update(self._handle_history, False)
 
             wxgui_api.bind_to_open_database(self._handle_open_database, False)
             wxgui_api.bind_to_close_database(self._handle_close_database,
                                                                         False)
-            wxgui_api.bind_to_undo_tree(self._handle_history, False)
-            wxgui_api.bind_to_redo_tree(self._handle_history, False)
 
             if wxcopypaste_api:
                 wxcopypaste_api.bind_to_items_pasted(self._handle_paste, False)
@@ -501,11 +527,8 @@ class TreeItemIcons(object):
 
     def _handle_history(self, kwargs):
         if kwargs['filename'] == self.filename:
-            for id_ in kwargs['items']:
-                # The history action may have deleted the item
-                if core_api.is_item(self.filename, id_):
-                    rules = organism_api.get_item_rules(self.filename, id_)
-                    self._update_item(id_, rules)
+            id_ = kwargs["id_"]
+            self._update_item_no_tree_update(id_, kwargs["rules"])
 
     def _handle_paste(self, kwargs):
         if kwargs['filename'] == self.filename:
@@ -519,7 +542,7 @@ class TreeItemIcons(object):
             rules = organism_api.convert_string_to_rules(row['R_rules'])
             self._update_item(id_, rules)
 
-    def _update_item(self, id_, rules):
+    def _update_item_properties(self, id_, rules):
         if len(rules) > 0:
             bits = 1 << self.property_shift
         else:
@@ -527,7 +550,76 @@ class TreeItemIcons(object):
 
         wxgui_api.update_item_properties(self.filename, id_, bits,
                                                             self.property_mask)
-        wxgui_api.update_item_image(self.filename, id_)
+
+    def _update_item_no_tree_update(self, id_, rules):
+        self._update_item_properties(id_, rules)
+        wxgui_api.request_tree_item_refresh(self.filename, id_)
+
+    def _update_item(self, id_, rules):
+        self._update_item_properties(id_, rules)
+        wxgui_api.update_tree_item(self.filename, id_)
+
+
+class ViewMenu(object):
+    def __init__(self, plugin):
+        self.plugin = plugin
+
+        self.ID_MAIN = wx.NewId()
+        self.ID_FOCUS = wx.NewId()
+        self.ID_TOGGLE = wx.NewId()
+
+        wxgui_api.install_bundled_icon("wxscheduler", '@scheduler',
+                                                ("Tango", "scheduler16.png"))
+
+        submenu = wx.Menu()
+
+        config = coreaux_api.get_plugin_configuration('wxscheduler')(
+                                                                'Shortcuts')
+
+        self.main = wx.MenuItem(wxgui_api.get_menu_view_editors(),
+                                self.ID_MAIN,
+                                '&Scheduler', 'Scheduler navigation actions',
+                                subMenu=submenu)
+        self.focus = wx.MenuItem(submenu, self.ID_FOCUS,
+                                        "&Focus\t{}".format(config['focus']),
+                                        "Focus scheduler panel")
+        self.toggle = wx.MenuItem(submenu, self.ID_TOGGLE,
+                                        "&Toggle\t{}".format(config['toggle']),
+                                        "Toggle scheduler panel")
+
+        self.main.SetBitmap(wxgui_api.get_menu_icon('@scheduler'))
+        self.focus.SetBitmap(wxgui_api.get_menu_icon('@jump'))
+        self.toggle.SetBitmap(wxgui_api.get_menu_icon('@toggle'))
+
+        wxgui_api.add_menu_editor_plugin(self.main)
+        submenu.AppendItem(self.focus)
+        submenu.AppendItem(self.toggle)
+
+        wxgui_api.bind_to_menu(self._focus, self.focus)
+        wxgui_api.bind_to_menu(self._toggle, self.toggle)
+
+        wxgui_api.bind_to_menu_view_editors_disable(self._disable_items)
+        wxgui_api.bind_to_reset_menu_items(self._reset_items)
+
+    def _disable_items(self, kwargs):
+        self.main.Enable(False)
+
+    def _reset_items(self, kwargs):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.main.Enable()
+
+    def _focus(self, event):
+        filename, id_ = wxgui_api.get_selected_editor_identification()
+
+        if filename:
+            self.plugin.get_scheduler(filename, id_).set_focus()
+
+    def _toggle(self, event):
+        filename, id_ = wxgui_api.get_selected_editor_identification()
+
+        if filename:
+            self.plugin.get_scheduler(filename, id_).toggle_focus()
 
 
 def main():

@@ -50,12 +50,18 @@ class LogsPanel(object):
         self.box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(self.box)
 
-        # TB_FLAT and BORDER_NONE seem to have no effect (bug #273)
-        self.toolbar = wx.ToolBar(self.panel, style=wx.TB_VERTICAL |
-                                                wx.TB_FLAT | wx.BORDER_NONE)
+        # The tools are not TAB-traversable (bug #335)
+        self.toolbar = wx.ToolBar(self.panel, style=wx.TB_VERTICAL)
         self.box.Add(self.toolbar, flag=wx.EXPAND)
 
         self.logviews = []
+
+        config = coreaux_api.get_interface_configuration('wxgui')(
+                                "ExtendedShortcuts")("LeftNotebook")("Logs")
+        wx.GetApp().root.accmanager.create_manager(self.panel, {
+            config["cycle"]: lambda event: self.advance_selection(),
+            config["cycle_reverse"]: lambda event: self.reverse_selection(),
+        })
 
         # Hide, otherwise the children windows will be shown even if panel is
         # hidden in the configuration
@@ -64,14 +70,23 @@ class LogsPanel(object):
         self.toolbar.Bind(wx.EVT_TOOL, self._handle_tool)
 
     def _handle_tool(self, event):
+        self.select_log(event.GetId())
+
+    def select_log(self, selection):
         old_view = self.logviews[self.selection]
-        view = self.logviews[event.GetId()]
+        view = self.logviews[selection]
+        has_focus = old_view.HasFocus()
 
         old_view.Show(False)
         self.box.Replace(old_view, view)
         view.Show()
 
-        self.selection = event.GetId()
+        if has_focus:
+            view.SetFocus()
+
+        self.selection = selection
+
+        self.toolbar.ToggleTool(selection, True)
 
         self.panel.Layout()
 
@@ -81,16 +96,17 @@ class LogsPanel(object):
     def add_log(self, view, label, icon, menu_items, menu_update):
         self.logviews.append(view)
         view.Show(False)
+        tool_id = len(self.logviews) - 1
 
         # Labels will appear for example in the dropdown menu that appears when
         # there's not enough room to display all the tools
-        self.toolbar.AddLabelTool(len(self.logviews) - 1, label, icon,
-                                                            shortHelp=label)
+        self.toolbar.AddRadioLabelTool(tool_id, label, icon, shortHelp=label)
         self.toolbar.Realize()
 
         cmenu = ContextMenu(view, self.filename, menu_items, menu_update)
 
-        return cmenu.get_items_and_popup()
+        menu_items, popup_cmenu = cmenu.get_items_and_popup()
+        return (tool_id, menu_items, popup_cmenu)
 
     def initialize(self):
         self.selection = 0
@@ -101,30 +117,101 @@ class LogsPanel(object):
         if len(self.logviews) < 2:
             self.toolbar.Show(False)
 
+    def focus_selected(self):
+        self.logviews[self.selection].SetFocus()
+
+    def advance_selection(self):
+        newsel = self.selection + 1
+
+        if newsel >= len(self.logviews):
+            newsel = 0
+
+        self.select_log(newsel)
+
+    def reverse_selection(self):
+        newsel = self.selection - 1
+
+        # Don't rely on the support for negative indices in lists because the
+        # new index is also the id of the respective toolbar tool
+        if newsel < 0:
+            newsel = len(self.logviews) - 1
+
+        self.select_log(newsel)
+
+
+class DatabaseHistoryModel(wx.dataview.PyDataViewIndexListModel):
+    def __init__(self, data):
+        # Using a model is necessary to disable the native "live" search
+        # See bugs #349 and #351
+        super(DatabaseHistoryModel, self).__init__()
+        self.data = data
+
+        # The wxPython demo uses weak references for the item objects: see if
+        # it can be used also in this case (bug #348)
+        #self.objmapper.UseWeakRefs(True)
+
+    def GetValueByRow(self, row, col):
+        return self.data[row][col]
+
+    def GetColumnCount(self):
+        return 4
+
+    def GetCount(self):
+        return len(self.data)
+
+    '''def GetColumnType(self, col):
+        # It seems not needed to override this method, it's not done in the
+        # demos either
+        # Besides, returning "string" here would activate the "live" search
+        # feature that belongs to the native GTK widget used by DataViewCtrl
+        # See also bug #349
+        # https://groups.google.com/d/msg/wxpython-users/QvSesrnD38E/31l8f6AzIhAJ
+        # https://groups.google.com/d/msg/wxpython-users/4nsv7x1DE-s/ljQHl9RTnuEJ
+        return None'''
+
 
 class DatabaseHistory(object):
-    def __init__(self, logspanel, parent, filename, bgcolor):
+    def __init__(self, tree, logspanel, parent, filename, bgcolor):
+        self.tree = tree
+        self.logspanel = logspanel
         self.filename = filename
         self.config = coreaux_api.get_interface_configuration('wxgui')
 
-        statusflags = 0 if self.config.get_bool('debug_history') else \
+        statusflags = 0 if self.config('History').get_bool('debug') else \
                                                 wx.dataview.DATAVIEW_COL_HIDDEN
 
-        self.view = wx.dataview.DataViewListCtrl(parent,
+        self.view = wx.dataview.DataViewCtrl(parent,
                         style=wx.dataview.DV_SINGLE |
                         wx.dataview.DV_ROW_LINES | wx.dataview.DV_NO_HEADER)
-        # Note how AppendBitmapColumn requires a second argument, while
-        # AppendTextColumn doesn't
+
+        self.data = []
+        self.dvmodel = DatabaseHistoryModel(self.data)
+        self.view.AssociateModel(self.dvmodel)
+        # According to DataViewModel's documentation (as of September 2014)
+        # its reference count must be decreased explicitly to avoid memory
+        # leaks; the wxPython demo, however, doesn't do it, and if done here,
+        # the application crashes with a segfault when closing all databases
+        # See also bug #104
+        #self.dvmodel.DecRef()
+
         self.view.AppendBitmapColumn('Icon', 0, width=wx.COL_WIDTH_AUTOSIZE)
-        self.view.AppendTextColumn('Status', width=wx.COL_WIDTH_AUTOSIZE,
+        self.view.AppendTextColumn('Status', 1, width=wx.COL_WIDTH_AUTOSIZE,
                                                             flags=statusflags)
-        self.view.AppendTextColumn('Timestamp', width=wx.COL_WIDTH_AUTOSIZE)
-        self.view.AppendTextColumn('Description')
+        self.view.AppendTextColumn('Timestamp', 2, width=wx.COL_WIDTH_AUTOSIZE)
+        self.view.AppendTextColumn('Description', 3)
 
         self._make_icons(bgcolor)
 
-        menu_items, popup_cmenu = logspanel.add_log(self.view, "Items",
-                                wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU),
+        aconfig = self.config("ExtendedShortcuts")("LeftNotebook")("Logs")(
+                                                                    "History")
+        wx.GetApp().root.accmanager.create_manager(self.view, {
+            aconfig["undo"]: lambda event: self.tree.undo(),
+            aconfig["redo"]: lambda event: self.tree.redo(),
+        })
+
+        self.tool_id, menu_items, popup_cmenu = self.logspanel.add_log(
+                                self.view, "Items",
+                                wx.GetApp().artprovider.get_log_icon('@edit'),
                                 self._init_context_menu_items(),
                                 self._update_context_menu)
         self._store_context_menu_items(menu_items)
@@ -132,15 +219,13 @@ class DatabaseHistory(object):
         self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_CONTEXT_MENU, popup_cmenu)
         self.view.Bind(wx.dataview.EVT_DATAVIEW_SELECTION_CHANGED,
                                                         self._handle_selection)
-        self.view.Bind(wx.dataview.EVT_DATAVIEW_ITEM_START_EDITING,
-                                                    self._handle_item_editing)
 
         self.refresh()
 
     def _make_icons(self, bgcolor):
-        coldone = self.config['history_color_done']
-        colundone = self.config['history_color_undone']
-        colsaved = self.config['history_color_saved']
+        coldone = self.config('History')['color_done']
+        colundone = self.config('History')['color_undone']
+        colsaved = self.config('History')['color_saved']
 
         if coldone == 'none':
             colordone = bgcolor
@@ -186,9 +271,9 @@ class DatabaseHistory(object):
 
     def _init_context_menu_items(self):
         return ((wx.GetApp().menu.database.ID_UNDO, "&Undo",
-                            wx.ArtProvider.GetBitmap('@undo', wx.ART_MENU)),
+                            wx.GetApp().artprovider.get_menu_icon('@undo')),
                 (wx.GetApp().menu.database.ID_REDO, "&Redo",
-                            wx.ArtProvider.GetBitmap('@redo', wx.ART_MENU)))
+                            wx.GetApp().artprovider.get_menu_icon('@redo')))
 
     def _update_context_menu(self):
         self.undo.Enable(False)
@@ -206,20 +291,21 @@ class DatabaseHistory(object):
     def _handle_selection(self, event):
         self.view.UnselectAll()
 
-    def _handle_item_editing(self, event):
-        event.Veto()
-
     def refresh(self):
-        self.view.DeleteAllItems()
-
+        del self.data[:]
         descriptions = core_api.get_history_descriptions(self.filename)
 
         for row in descriptions:
             tstamp = time_.strftime('%Y-%m-%d %H:%M', time_.localtime(
                                                             row['H_tstamp']))
-            item = self.view.AppendItem((self.icons[row['H_status']],
+            self.data.append((self.icons[row['H_status']],
                                     "".join(("[", str(row['H_status']), "]")),
                                     tstamp, row['H_description']))
+
+        self.dvmodel.Reset(len(self.data))
+
+    def select(self):
+        self.logspanel.select_log(self.tool_id)
 
 
 class ContextMenu(wx.Menu):
@@ -230,9 +316,9 @@ class ContextMenu(wx.Menu):
         self._update = update
         self.added_items = []
 
-        self.hide = wx.MenuItem(self, wx.GetApp().menu.logs.ID_LOGS,
-                                                                "&Hide logs")
-        self.hide.SetBitmap(wx.ArtProvider.GetBitmap('@logs', wx.ART_MENU))
+        self.hide = wx.MenuItem(self,
+                    wx.GetApp().menu.view.logs_submenu.ID_SHOW, "&Hide logs")
+        self.hide.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@close'))
 
         self.AppendItem(self.hide)
         self.AppendSeparator()
@@ -247,8 +333,9 @@ class ContextMenu(wx.Menu):
         self._update()
         self.view.PopupMenu(self)
 
-        # Skipping the event lets right clicks behave correctly
-        event.Skip()
+        # Skipping the event would change the current selection after the
+        # click and only select the item under the cursor
+        #event.Skip()
 
     def get_items_and_popup(self):
         return (self.added_items, self._popup)

@@ -40,10 +40,10 @@ nb_icon_refresh_index = None
 
 
 class SearchViewPanel(wx.Panel):
-    ctabmenu = None
-
-    def __init__(self, parent):
+    def __init__(self, parent, searchview, acctable):
         wx.Panel.__init__(self, parent)
+        self.searchview = searchview
+        self.acctable = acctable
 
     def _init_tab_menu(self):
         self.ctabmenu = TabContextMenu()
@@ -51,18 +51,26 @@ class SearchViewPanel(wx.Panel):
     def get_tab_context_menu(self):
         return self.ctabmenu
 
+    def get_accelerators_table(self):
+        return self.acctable
 
-class SearchView():
-    panel = None
-    box = None
-    filters = None
-    results = None
-    threads = None
-    search_threaded_action = None
-    finish_search_action = None
+    def close_tab(self):
+        self.searchview.close_()
 
+
+class SearchView(object):
     def __init__(self, parent):
-        self.panel = SearchViewPanel(parent)
+        config = coreaux_api.get_plugin_configuration('wxdbsearch')(
+                                                        'ExtendedShortcuts')
+        accelerators = {
+            config["search"]: lambda event: self.search(),
+            config["find"]: lambda event: self.results.find_in_tree(),
+            config["edit"]: lambda event: self.results.edit_items(),
+        }
+        accelerators.update(wxgui_api.get_right_nb_generic_accelerators())
+        acctable = wxgui_api.generate_right_nb_accelerators(accelerators)
+
+        self.panel = SearchViewPanel(parent, self, acctable)
         self.box = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(self.box)
 
@@ -78,8 +86,8 @@ class SearchView():
         self.box.Add(self.filters.box, flag=wx.EXPAND | wx.BOTTOM, border=4)
         self.box.Add(self.results.listview, 1, flag=wx.EXPAND)
 
-        wxgui_api.bind_to_close_database(self.handle_close_database)
-        wxgui_api.bind_to_plugin_close_event(self.handle_tab_hide)
+        wxgui_api.bind_to_close_database(self._handle_close_database)
+        wxgui_api.bind_to_plugin_close_event(self._handle_tab_hide)
 
     @classmethod
     def open_(cls):
@@ -94,33 +102,33 @@ class SearchView():
 
     def close_(self):
         self.finish_search_action = self._finish_search_close
-        self.stop_search()
+        self._stop_search()
 
-    def handle_tab_hide(self, kwargs):
+    def _handle_tab_hide(self, kwargs):
         if kwargs['page'] is self.panel:
             self.close_()
 
-    def handle_close_database(self, kwargs):
+    def _handle_close_database(self, kwargs):
         if core_api.get_databases_count() < 1:
             self.close_()
 
-    def set_title(self, title):
+    def _set_title(self, title):
         if len(title) > 20:
             title = title[:17] + '...'
 
         wxgui_api.set_right_nb_page_title(self.panel, title)
 
-    def set_tab_icon_stopped(self):
+    def _set_tab_icon_stopped(self):
         wxgui_api.set_right_nb_page_image(self.panel, nb_icon_index)
 
-    def set_tab_icon_ongoing(self):
+    def _set_tab_icon_ongoing(self):
         wxgui_api.set_right_nb_page_image(self.panel, nb_icon_refresh_index)
 
     def search(self):
         self.finish_search_action = self._finish_search_restart
-        self.stop_search()
+        self._stop_search()
 
-    def stop_search(self):
+    def _stop_search(self):
         if self.threads > 0:
             self.search_threaded_action = self._search_threaded_stop
         else:
@@ -135,7 +143,7 @@ class SearchView():
         if self.threads < 1:
             # Reset the icon *before* calling finish_search_action, which
             # could be set to restart, thus setting the icon ongoing again
-            self.set_tab_icon_stopped()
+            self._set_tab_icon_stopped()
             self.finish_search_action()
 
     def _finish_search_dummy(self):
@@ -151,16 +159,16 @@ class SearchView():
         # searches when closing all databases (e.g. when quitting the
         # application) raising an exception when trying to remove self from
         # the searches list
-        wxgui_api.bind_to_close_database(self.handle_close_database, False)
-        wxgui_api.bind_to_plugin_close_event(self.handle_tab_hide, False)
+        wxgui_api.bind_to_close_database(self._handle_close_database, False)
+        wxgui_api.bind_to_plugin_close_event(self._handle_tab_hide, False)
 
         self.finish_search_action = self._finish_search_dummy
 
     def _finish_search_restart(self):
-        self.set_tab_icon_ongoing()
+        self._set_tab_icon_ongoing()
 
         string = self.filters.text.GetValue()
-        self.set_title(string)
+        self._set_title(string)
 
         if not self.filters.option4.GetValue():
             string = re.escape(string)
@@ -333,32 +341,22 @@ class SearchView():
         return (line, line_end)
 
 
-class SearchFilters():
-    mainview = None
-    box = None
-    text = None
-    search = None
-    ogrid = None
-    option1 = None
-    option2 = None
-    option3 = None
-    option4 = None
-    option5 = None
-
+class SearchFilters(object):
     def __init__(self, mainview):
         self.mainview = mainview
 
         self.box = wx.BoxSizer(wx.VERTICAL)
         sbox = wx.BoxSizer(wx.HORIZONTAL)
 
-        label = wx.StaticText(mainview.panel, label='Search for:')
+        label = wx.StaticText(mainview.panel, label='Search &for:')
         sbox.Add(label, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT, border=4)
 
-        self.text = wx.TextCtrl(mainview.panel)
+        self.text = wx.TextCtrl(mainview.panel, style=wx.TE_PROCESS_ENTER)
         sbox.Add(self.text, 1, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
+        wxgui_api.register_text_ctrl(self.text)
 
-        self.search = wx.Button(mainview.panel, label='Search')
+        self.search = wx.Button(mainview.panel, label='&Search')
         sbox.Add(self.search, flag=wx.ALIGN_CENTER_VERTICAL)
 
         self.box.Add(sbox, flag=wx.EXPAND | wx.BOTTOM, border=4)
@@ -367,15 +365,15 @@ class SearchFilters():
         self.box.Add(self.ogrid, flag=wx.EXPAND)
 
         self.option1 = wx.CheckBox(self.mainview.panel,
-                                            label='Only in selected database')
+                                            label='Only in selected &database')
         self.option2 = wx.CheckBox(self.mainview.panel,
-                                            label='Only in headings')
+                                            label='Only in &headings')
         self.option3 = wx.CheckBox(self.mainview.panel,
-                                            label='Only one result per item')
+                                            label='Only &one result per item')
         self.option4 = wx.CheckBox(self.mainview.panel,
-                                            label='Regular expression')
+                                            label='&Regular expression')
         self.option5 = wx.CheckBox(self.mainview.panel,
-                                            label='Case sensitive')
+                                            label='&Case sensitive')
 
         # The order of addition affects the placement in the GridSizer
         self.ogrid.Add(self.option1)
@@ -384,6 +382,7 @@ class SearchFilters():
         self.ogrid.Add(self.option5)
         self.ogrid.Add(self.option3)
 
+        mainview.panel.Bind(wx.EVT_TEXT_ENTER, self._search, self.text)
         mainview.panel.Bind(wx.EVT_BUTTON, self._search, self.search)
 
     def _search(self, event):
@@ -405,30 +404,18 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
         return self
 
     def set_image_lists(self):
-        self.imagelistsmall = wx.ImageList(16, 16)
-        self.imagemap = {
-            'small': {}
-        }
-
-        self.imagemap['small']['sortup'] = self.imagelistsmall.Add(
-                 wx.ArtProvider.GetBitmap('@sortup', wx.ART_TOOLBAR, (16, 16)))
-        self.imagemap['small']['sortdown'] = self.imagelistsmall.Add(
-               wx.ArtProvider.GetBitmap('@sortdown', wx.ART_TOOLBAR, (16, 16)))
-
-        self.AssignImageList(self.imagelistsmall, wx.IMAGE_LIST_SMALL)
+        self.sortindices = []
+        sortup, sortdown = wxgui_api.get_list_sort_icons()
+        imagelist = wx.ImageList(16, 16)
+        self.sortindices.append(imagelist.Add(sortup))
+        self.sortindices.append(imagelist.Add(sortdown))
+        self.AssignImageList(imagelist, wx.IMAGE_LIST_SMALL)
 
     def GetSortImages(self):
-        return (self.imagemap['small']['sortup'],
-                                            self.imagemap['small']['sortdown'])
+        return self.sortindices
 
 
-class SearchResults():
-    mainview = None
-    listview = None
-    cmenu = None
-    datamap = None
-    itemdatamap = None
-
+class SearchResults(object):
     def __init__(self, mainview):
         self.mainview = mainview
         self.listview = ListView(mainview.panel, 3)
@@ -439,9 +426,9 @@ class SearchResults():
 
         self.cmenu = ContextMenu()
 
-        self.listview.Bind(wx.EVT_CONTEXT_MENU, self.popup_context_menu)
+        self.listview.Bind(wx.EVT_CONTEXT_MENU, self._popup_context_menu)
 
-    def popup_context_menu(self, event):
+    def _popup_context_menu(self, event):
         self.listview.PopupMenu(self.cmenu)
 
     def reset(self):
@@ -487,6 +474,82 @@ class SearchResults():
 
         self.mainview.finish_search()
 
+    def find_in_tree(self):
+        sel = self.listview.GetFirstSelected()
+
+        if sel > -1:
+            for filename in core_api.get_open_databases():
+                wxgui_api.unselect_all_items(filename)
+
+            seldb = None
+            warning = False
+
+            # [1]: line repeated in the loop because of
+            # wxgui_api.select_database_tab
+            filename, id_ = self.itemdatamap[self.listview.GetItemData(sel)]
+
+            while True:
+                # It's necessary to repeat this line (see [1]) because
+                # wxgui_api.select_database_tab must be executed only once
+                # for the first selected item
+                filename, id_ = self.itemdatamap[self.listview.GetItemData(
+                                                                        sel)]
+
+                # Check whether the database is still open and the item
+                # still exists because the search results are retrieved in
+                # a separate thread and are not updated together with the
+                # database
+                if core_api.is_database_open(filename) and \
+                                        core_api.is_item(filename, id_):
+                    wxgui_api.add_item_to_selection(filename, id_)
+
+                    if seldb is None:
+                        seldb = filename
+                else:
+                    warning = True
+
+                sel = self.listview.GetNextSelected(sel)
+
+                if sel < 0:
+                    break
+
+            if seldb:
+                wxgui_api.select_database_tab(seldb)
+
+                if warning:
+                    msgboxes.some_items_not_found().ShowModal()
+            elif warning:
+                msgboxes.all_items_not_found().ShowModal()
+
+    def edit_items(self):
+        sel = self.listview.GetFirstSelected()
+
+        exists = False
+        warning = False
+
+        while sel > -1:
+            filename, id_ = self.itemdatamap[self.listview.GetItemData(sel)]
+
+            # Check whether the database is still open and the item
+            # still exists because the search results are retrieved in
+            # a separate thread and are not updated together with the
+            # database
+            if core_api.is_database_open(filename) and \
+                                        core_api.is_item(filename, id_):
+                wxgui_api.open_editor(filename, id_)
+
+                exists = True
+            else:
+                warning = True
+
+            sel = self.listview.GetNextSelected(sel)
+
+        if warning:
+            if exists:
+                msgboxes.some_items_not_found().ShowModal()
+            else:
+                msgboxes.all_items_not_found().ShowModal()
+
 
 class MainMenu(wx.Menu):
     ID_NEW_SEARCH = None
@@ -497,10 +560,6 @@ class MainMenu(wx.Menu):
     find = None
     ID_EDIT = None
     edit = None
-    ID_CLOSE = None
-    close_ = None
-    ID_CLOSE_ALL = None
-    closeall = None
 
     def __init__(self):
         wx.Menu.__init__(self)
@@ -509,58 +568,45 @@ class MainMenu(wx.Menu):
         self.ID_REFRESH_SEARCH = wx.NewId()
         self.ID_FIND = wx.NewId()
         self.ID_EDIT = wx.NewId()
-        self.ID_CLOSE = wx.NewId()
-        self.ID_CLOSE_ALL = wx.NewId()
+
+        config = coreaux_api.get_plugin_configuration('wxdbsearch')(
+                                                                'Shortcuts')
 
         self.search = wx.MenuItem(self, self.ID_NEW_SEARCH,
-                                    "&New search...\tCTRL+f",
-                                    "Open a new text search in the databases")
+                            "&New search...\t{}".format(config['new_search']),
+                            "Open a new text search in the databases")
         self.refresh = wx.MenuItem(self, self.ID_REFRESH_SEARCH,
-                                                "&Start search\tCTRL+r",
-                                                "Start the selected search")
+                            "&Start search\t{}".format(config['start_search']),
+                            "Start the selected search")
         self.find = wx.MenuItem(self, self.ID_FIND,
-                "&Find in database\tF9",
+                "&Find in database\t{}".format(config['find_item']),
                 "Select the database items associated to the selected results")
         self.edit = wx.MenuItem(self, self.ID_EDIT,
-                            "&Edit selected\tCTRL+F9",
+                            "&Edit selected\t{}".format(config['edit_item']),
                             "Open in the editor the database items associated "
                             "to the selected results")
-        self.close_ = wx.MenuItem(self, self.ID_CLOSE, "Cl&ose\tCTRL+t",
-                                                "Close the selected search")
-        self.closeall = wx.MenuItem(self, self.ID_CLOSE_ALL,
-                        "Clos&e all\tCTRL+SHIFT+t", "Close all open searches")
 
-        self.search.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch',
-                                                                wx.ART_MENU))
-        self.refresh.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch',
-                                                                wx.ART_MENU))
-        self.find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
-        self.edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
-        self.close_.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
-        self.closeall.SetBitmap(wx.ArtProvider.GetBitmap('@closeall',
-                                                                wx.ART_MENU))
+        self.search.SetBitmap(wxgui_api.get_menu_icon('@dbfind'))
+        self.refresh.SetBitmap(wxgui_api.get_menu_icon('@dbfind'))
+        self.find.SetBitmap(wxgui_api.get_menu_icon('@dbfind'))
+        self.edit.SetBitmap(wxgui_api.get_menu_icon('@edit'))
 
         self.AppendItem(self.search)
         self.AppendItem(self.refresh)
         self.AppendSeparator()
         self.AppendItem(self.find)
         self.AppendItem(self.edit)
-        self.AppendSeparator()
-        self.AppendItem(self.close_)
-        self.AppendItem(self.closeall)
 
         wxgui_api.bind_to_menu(self.new_search, self.search)
         wxgui_api.bind_to_menu(self.refresh_search, self.refresh)
         wxgui_api.bind_to_menu(self.find_in_tree, self.find)
         wxgui_api.bind_to_menu(self.edit_items, self.edit)
-        wxgui_api.bind_to_menu(self.close_tab, self.close_)
-        wxgui_api.bind_to_menu(self.close_all_tabs, self.closeall)
 
         wxgui_api.bind_to_update_menu_items(self.update_items)
         wxgui_api.bind_to_reset_menu_items(self.reset_items)
 
         wxgui_api.insert_menu_main_item('&Search',
-                                    wxgui_api.get_menu_logs_position(), self)
+                                    wxgui_api.get_menu_view_position(), self)
 
     @staticmethod
     def get_selected_search():
@@ -578,8 +624,6 @@ class MainMenu(wx.Menu):
             self.refresh.Enable(False)
             self.find.Enable(False)
             self.edit.Enable(False)
-            self.close_.Enable(False)
-            self.closeall.Enable(False)
 
             if core_api.get_databases_count() > 0:
                 self.search.Enable()
@@ -588,16 +632,12 @@ class MainMenu(wx.Menu):
 
             if mainview:
                 self.refresh.Enable()
-                self.close_.Enable()
 
                 sel = mainview.results.listview.GetFirstSelected()
 
                 if sel > -1:
                     self.find.Enable()
                     self.edit.Enable()
-
-            if len(searches) > 0:
-                self.closeall.Enable()
 
     def reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
@@ -606,8 +646,6 @@ class MainMenu(wx.Menu):
         self.refresh.Enable()
         self.find.Enable()
         self.edit.Enable()
-        self.close_.Enable()
-        self.closeall.Enable()
 
     def new_search(self, event):
         if core_api.get_databases_count() > 0:
@@ -623,100 +661,13 @@ class MainMenu(wx.Menu):
         mainview = self.get_selected_search()
 
         if mainview:
-            results = mainview.results
-            listview = results.listview
-
-            sel = listview.GetFirstSelected()
-
-            if sel > -1:
-                for filename in core_api.get_open_databases():
-                    wxgui_api.unselect_all_items(filename)
-
-                seldb = None
-                warning = False
-
-                # [1]: line repeated in the loop because of
-                # wxgui_api.select_database_tab
-                filename, id_ = results.itemdatamap[listview.GetItemData(sel)]
-
-                while True:
-                    # It's necessary to repeat this line (see [1]) because
-                    # wxgui_api.select_database_tab must be executed only once
-                    # for the first selected item
-                    filename, id_ = results.itemdatamap[listview.GetItemData(
-                                                                        sel)]
-
-                    # Check whether the database is still open and the item
-                    # still exists because the search results are retrieved in
-                    # a separate thread and are not updated together with the
-                    # database
-                    if core_api.is_database_open(filename) and \
-                                            core_api.is_item(filename, id_):
-                        wxgui_api.add_item_to_selection(filename, id_)
-
-                        if seldb is None:
-                            seldb = filename
-                    else:
-                        warning = True
-
-                    sel = listview.GetNextSelected(sel)
-
-                    if sel < 0:
-                        break
-
-                if seldb:
-                    wxgui_api.select_database_tab(seldb)
-
-                    if warning:
-                        msgboxes.some_items_not_found().ShowModal()
-                elif warning:
-                    msgboxes.all_items_not_found().ShowModal()
+            mainview.results.find_in_tree()
 
     def edit_items(self, event):
         mainview = self.get_selected_search()
 
         if mainview:
-            results = mainview.results
-            listview = results.listview
-
-            sel = listview.GetFirstSelected()
-
-            exists = False
-            warning = False
-
-            while sel > -1:
-                filename, id_ = results.itemdatamap[listview.GetItemData(sel)]
-
-                # Check whether the database is still open and the item
-                # still exists because the search results are retrieved in
-                # a separate thread and are not updated together with the
-                # database
-                if core_api.is_database_open(filename) and \
-                                            core_api.is_item(filename, id_):
-                    wxgui_api.open_editor(filename, id_)
-
-                    exists = True
-                else:
-                    warning = True
-
-                sel = listview.GetNextSelected(sel)
-
-            if warning:
-                if exists:
-                    msgboxes.some_items_not_found().ShowModal()
-                else:
-                    msgboxes.all_items_not_found().ShowModal()
-
-    def close_tab(self, event):
-        mainview = self.get_selected_search()
-
-        if mainview:
-            mainview.close_()
-
-    def close_all_tabs(self, event):
-        # Use a copy of searches because close_ is modifying it
-        for mainview in searches[:]:
-            mainview.close_()
+            mainview.results.edit_items()
 
 
 class ContextMenu(wx.Menu):
@@ -726,8 +677,8 @@ class ContextMenu(wx.Menu):
         find = wx.MenuItem(self, mainmenu.ID_FIND, "&Find in database")
         edit = wx.MenuItem(self, mainmenu.ID_EDIT, "&Edit selected")
 
-        find.SetBitmap(wx.ArtProvider.GetBitmap('@find', wx.ART_MENU))
-        edit.SetBitmap(wx.ArtProvider.GetBitmap('@edit', wx.ART_MENU))
+        find.SetBitmap(wxgui_api.get_menu_icon('@dbfind'))
+        edit.SetBitmap(wxgui_api.get_menu_icon('@edit'))
 
         self.AppendItem(find)
         self.AppendItem(edit)
@@ -738,13 +689,14 @@ class TabContextMenu(wx.Menu):
         wx.Menu.__init__(self)
 
         refresh = wx.MenuItem(self, mainmenu.ID_REFRESH_SEARCH,
-                                                "&Start search\tCTRL+r",
+                                                "&Start search",
                                                 "Start the selected search")
-        close_ = wx.MenuItem(self, mainmenu.ID_CLOSE, "Cl&ose\tCTRL+t",
-                                                "Close the selected search")
+        close_ = wx.MenuItem(self,
+                                wxgui_api.get_menu_view_close_tab_id(),
+                                "Cl&ose", "Close the selected search")
 
-        refresh.SetBitmap(wx.ArtProvider.GetBitmap('@dbsearch', wx.ART_MENU))
-        close_.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+        refresh.SetBitmap(wxgui_api.get_menu_icon('@dbfind'))
+        close_.SetBitmap(wxgui_api.get_menu_icon('@close'))
 
         self.AppendItem(refresh)
         self.AppendItem(close_)
@@ -756,9 +708,7 @@ def main():
 
     global nb_icon_index
     nb_icon_index = wxgui_api.add_right_nb_image(
-                                    wx.ArtProvider.GetBitmap('@find',
-                                    wx.ART_TOOLBAR, (16, 16)))
+                                    wxgui_api.get_notebook_icon('@dbfind'))
     global nb_icon_refresh_index
     nb_icon_refresh_index = wxgui_api.add_right_nb_image(
-                                    wx.ArtProvider.GetBitmap('@refresh',
-                                    wx.ART_TOOLBAR, (16, 16)))
+                                    wxgui_api.get_notebook_icon('@refresh'))

@@ -44,15 +44,14 @@ class DatabasePropertyManager(object):
         core_api.bind_to_history_insert(self._handle_items_number)
         core_api.bind_to_history_remove(self._handle_items_number)
         core_api.bind_to_insert_item(self._handle_items_number)
-        core_api.bind_to_delete_item(self._handle_items_number)
+        core_api.bind_to_deleted_item(self._handle_items_number)
         # No need to bind to pasting items
 
         databases.close_database_event.bind(self._handle_close_database)
 
     def post_init(self):
         self.nb_icon_index = wx.GetApp().nb_right.add_image(
-                                        wx.ArtProvider.GetBitmap('@properties',
-                                        wx.ART_TOOLBAR, (16, 16)))
+                    wx.GetApp().artprovider.get_notebook_icon('@properties'))
 
     def open(self, filename):
         if filename not in self.open_panels:
@@ -60,7 +59,7 @@ class DatabasePropertyManager(object):
             self.open_panels[filename].configure()
         else:
             nb = wx.GetApp().nb_right
-            nb.SetSelection(nb.GetPageIndex(self.open_panels[filename].panel))
+            nb.select_page(nb.GetPageIndex(self.open_panels[filename].panel))
 
     def _handle_save_database(self, kwargs):
         try:
@@ -97,12 +96,20 @@ class DatabasePropertyManager(object):
 
 
 class DatabasePropertiesPanel(wx.Panel):
-    def __init__(self, parent, manager, filename):
+    def __init__(self, parent, props, acctable):
         wx.Panel.__init__(self, parent)
-        self.ctabmenu = TabContextMenu(manager, filename)
+        self.props = props
+        self.ctabmenu = TabContextMenu()
+        self.acctable = acctable
 
     def get_tab_context_menu(self):
         return self.ctabmenu
+
+    def get_accelerators_table(self):
+        return self.acctable
+
+    def close_tab(self):
+        self.props.manager.close(self.props.filename)
 
 
 class DatabaseProperties(object):
@@ -111,10 +118,15 @@ class DatabaseProperties(object):
         self.filename = filename
         nb = wx.GetApp().nb_right
 
-        self.panel = DatabasePropertiesPanel(nb, self.manager, self.filename)
+        accelerators = nb.get_generic_accelerators()
+        acctable = wx.GetApp().root.accmanager.generate_table(nb,
+                                                                accelerators)
+
+        self.panel = DatabasePropertiesPanel(nb, self, acctable)
         sizer = wx.BoxSizer(wx.VERTICAL)
         self.panel.SetSizer(sizer)
 
+        # PropertyGrid doesn't support TAB traversal (bug #331)
         self.propgrid = wxpg.PropertyGrid(self.panel, style=wxpg.PG_TOOLTIPS)
         self.propgrid.SetExtraStyle(wxpg.PG_EX_HELP_AS_TOOLTIPS)
 
@@ -125,9 +137,33 @@ class DatabaseProperties(object):
 
         self.onchange_actions = {}
 
+        # Temporary fix for bug #331
+        self.propgrid.Bind(wx.EVT_KEY_DOWN, self._handle_esc_down)
+        # Temporary fix for bug #331
+        self.propgrid.Bind(wx.EVT_KEY_DOWN, self._handle_tab_down)
         self.propgrid.Bind(wxpg.EVT_PG_CHANGED, self._handle_property_changed)
 
         notebooks.plugin_close_event.bind(self._handle_close_tab)
+
+    def _handle_esc_down(self, event):
+        # Temporary fix for bug #331
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self.propgrid.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
+            # Don't skip the event
+        else:
+            event.Skip()
+
+    def _handle_tab_down(self, event):
+        # Temporary fix for bug #331
+        if event.GetKeyCode() == wx.WXK_TAB and event.ControlDown():
+            if event.ShiftDown():
+                self.propgrid.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
+                # Don't skip the event
+            else:
+                self.propgrid.Navigate(flags=wx.NavigationKeyEvent.IsForward)
+                # Don't skip the event
+        else:
+            event.Skip()
 
     def _handle_property_changed(self, event):
         property_ = event.GetProperty()
@@ -369,8 +405,8 @@ class _DependencyDialog(object):
 
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        icon = wx.StaticBitmap(self.dialog, bitmap=wx.ArtProvider.GetBitmap(
-                                                "@warning", wx.ART_CMN_DIALOG))
+        icon = wx.StaticBitmap(self.dialog,
+                    bitmap=wx.GetApp().artprovider.get_dialog_icon("@warning"))
         hsizer.Add(icon, flag=wx.ALIGN_TOP | wx.RIGHT, border=12)
 
         label = wx.StaticText(self.dialog, label=self.warning)
@@ -407,10 +443,10 @@ class _DependencyDialog(object):
 
         hsizer3 = wx.BoxSizer(wx.HORIZONTAL)
 
-        ok = wx.Button(self.dialog, label="OK")
+        ok = wx.Button(self.dialog, label="&OK")
         hsizer3.Add(ok, flag=wx.RIGHT, border=8)
 
-        cancel = wx.Button(self.dialog, label="Cancel")
+        cancel = wx.Button(self.dialog, label="&Cancel")
         hsizer3.Add(cancel)
 
         vsizer.Add(hsizer3, flag=wx.ALIGN_RIGHT)
@@ -487,23 +523,14 @@ class DependencyDialogDisable(_DependencyDialog):
 
 
 class TabContextMenu(wx.Menu):
-    def __init__(self, manager, filename):
+    def __init__(self):
         # Without implementing this menu, the menu of the previously selected
         # tab is shown when righ-clicking the tab
-        self.manager = manager
-        self.filename = filename
-
         wx.Menu.__init__(self)
 
-        self.ID_CLOSE = wx.NewId()
+        self.close = wx.MenuItem(self,
+                wx.GetApp().menu.view.rightnb_submenu.ID_CLOSE, "&Close")
 
-        self.close = wx.MenuItem(self, self.ID_CLOSE, "&Close")
-
-        self.close.SetBitmap(wx.ArtProvider.GetBitmap('@close', wx.ART_MENU))
+        self.close.SetBitmap(wx.GetApp().artprovider.get_menu_icon('@close'))
 
         self.AppendItem(self.close)
-
-        wx.GetApp().Bind(wx.EVT_MENU, self._close_tab, self.close)
-
-    def _close_tab(self, event):
-        self.manager.close(self.filename)

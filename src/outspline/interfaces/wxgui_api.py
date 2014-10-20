@@ -23,10 +23,56 @@ import outspline.core_api as core_api
 from wxgui import rootw, notebooks, editor, menubar, tree, databases, dbprops
 
 
+### ART ###
+
+def install_bundled_icon(plugin, artid, path):
+    return wx.GetApp().artprovider.install_bundled_icon(plugin, artid, path)
+
+
+def install_icon_bundle(plugin, bundleid, paths):
+    return wx.GetApp().artprovider.install_icon_bundle(plugin, bundleid, paths)
+
+
+def get_notebook_icon(artid):
+    return wx.GetApp().artprovider.get_notebook_icon(artid)
+
+
+def get_log_icon(artid):
+    return wx.GetApp().artprovider.get_log_icon(artid)
+
+
+def get_menu_icon(artid):
+    return wx.GetApp().artprovider.get_menu_icon(artid)
+
+
+def get_dialog_icon(artid):
+    return wx.GetApp().artprovider.get_dialog_icon(artid)
+
+
+def get_message_icon(artid):
+    return wx.GetApp().artprovider.get_message_icon(artid)
+
+
+def get_tray_icon(artid):
+    return wx.GetApp().artprovider.get_tray_icon(artid)
+
+
+def get_frame_icon_bundle(bundleid):
+    return wx.GetApp().artprovider.get_frame_icon_bundle(bundleid)
+
+
+def get_list_sort_icons():
+    return wx.GetApp().artprovider.get_list_sort_icons()
+
+
 ### DATABASE ###
 
 def get_open_databases():
     return databases.get_open_databases()
+
+
+def get_databases_count():
+    return len(tree.dbs)
 
 
 def register_aborted_save_warning(exception, message):
@@ -56,23 +102,28 @@ def add_plugin_to_editor(filename, id_, caption):
                        ].add_plugin_panel(caption)
 
 
-def add_window_to_plugin(filename, id_, fpanel, window):
+def add_window_to_plugin(filename, id_, fpanel, window, accelerators):
     return editor.tabs[editor.Editor.make_tabid(filename, id_)
-                       ].add_plugin_window(fpanel, window)
-
-
-def resize_foldpanelbar(filename, id_):
-    return editor.tabs[editor.Editor.make_tabid(filename, id_)].resize_fpb()
+                            ].add_plugin_window(fpanel, window, accelerators)
 
 
 def collapse_panel(filename, id_, fpanel):
-    return editor.tabs[editor.Editor.make_tabid(filename, id_)
-                       ].collapse_panel(fpanel)
+    return editor.tabs[editor.Editor.make_tabid(filename, id_)].collapse_panel(
+                                                                        fpanel)
 
 
 def expand_panel(filename, id_, fpanel):
-    return editor.tabs[editor.Editor.make_tabid(filename, id_)
-                       ].expand_panel(fpanel)
+    return editor.tabs[editor.Editor.make_tabid(filename, id_)].expand_panel(
+                                                                        fpanel)
+
+
+def toggle_panel(filename, id_, fpanel):
+    if fpanel.IsExpanded():
+        collapse_panel(filename, id_, fpanel)
+        return False
+    else:
+        expand_panel(filename, id_, fpanel)
+        return True
 
 
 def set_editor_modified(filename, id_):
@@ -95,10 +146,6 @@ def bind_to_close_editor(handler, bind=True):
     return editor.close_editor_event.bind(handler, bind)
 
 
-def bind_to_open_textctrl(handler, bind=True):
-    return editor.open_textctrl_event.bind(handler, bind)
-
-
 def simulate_replace_editor_text(text):
     tab = wx.GetApp().nb_right.get_selected_editor()
     if tab:
@@ -117,11 +164,16 @@ def simulate_apply_all_editors():
 
 
 def simulate_close_editor(ask='apply'):
-    return wx.GetApp().menu.edit.close_tab(None, ask=ask)
+    tab = wx.GetApp().nb_right.get_selected_editor()
+    if tab:
+        return editor.tabs[tab].close(ask=ask)
+    else:
+        return False
 
 
 def simulate_close_all_editors(ask='apply'):
-    return wx.GetApp().menu.edit.close_all_tabs(None, ask=ask)
+    for item in editor.tabs.keys():
+        editor.tabs[item].close(ask=ask)
 
 
 ### MENUBAR ###
@@ -138,16 +190,28 @@ def get_menu_editor():
     return wx.GetApp().menu.edit
 
 
+def get_menu_view():
+    return wx.GetApp().menu.view
+
+
+def get_menu_view_editors():
+    return wx.GetApp().menu.view.editors_submenu
+
+
 def get_menu_logs():
-    return wx.GetApp().menu.logs
+    return wx.GetApp().menu.view.logs_submenu
 
 
-def get_menu_logs_position():
-    return wx.GetApp().menu.FindMenu('Logs')
+def get_menu_view_position():
+    return wx.GetApp().menu.FindMenu('View')
 
 
 def get_menu_help_position():
     return wx.GetApp().menu.FindMenu('Help')
+
+
+def get_menu_view_close_tab_id():
+    return wx.GetApp().menu.view.rightnb_submenu.ID_CLOSE
 
 
 def insert_menu_main_item(title, position, menu):
@@ -167,8 +231,20 @@ def add_menu_editor_item(item):
     return wx.GetApp().menu.edit.InsertItem(0, item)
 
 
+def add_menu_view_item(item):
+    return wx.GetApp().menu.view.append_plugin_item(item)
+
+
+def add_menu_editor_plugin(item):
+    return wx.GetApp().menu.view.editors_submenu.append_plugin_item(item)
+
+
+def insert_menu_right_tab_group(menu):
+    return wx.GetApp().menu.view.insert_tab_group(menu)
+
+
 def add_menu_logs_item(item):
-    return wx.GetApp().menu.logs.AppendItem(item)
+    return wx.GetApp().menu.view.logs_submenu.AppendItem(item)
 
 
 def bind_to_update_menu_items(handler, bind=True):
@@ -187,8 +263,20 @@ def bind_to_menu_edit_update(handler, bind=True):
     return menubar.menu_edit_update_event.bind(handler, bind)
 
 
-def bind_to_menu_logs_update(handler, bind=True):
-    return menubar.menu_logs_update_event.bind(handler, bind)
+def bind_to_menu_view_update(handler, bind=True):
+    return menubar.menu_view_update_event.bind(handler, bind)
+
+
+def bind_to_menu_view_logs_disable(handler, bind=True):
+    return menubar.menu_view_logs_disable_event.bind(handler, bind)
+
+
+def bind_to_menu_view_logs_update(handler, bind=True):
+    return menubar.menu_view_logs_update_event.bind(handler, bind)
+
+
+def bind_to_menu_view_editors_disable(handler, bind=True):
+    return menubar.menu_view_editors_disable_event.bind(handler, bind)
 
 
 def bind_to_open_database(handler, bind=True):
@@ -197,22 +285,6 @@ def bind_to_open_database(handler, bind=True):
 
 def bind_to_close_database(handler, bind=True):
     return databases.close_database_event.bind(handler, bind)
-
-
-def bind_to_undo_tree(handler, bind=True):
-    return menubar.undo_tree_event.bind(handler, bind)
-
-
-def bind_to_redo_tree(handler, bind=True):
-    return menubar.redo_tree_event.bind(handler, bind)
-
-
-def bind_to_move_item(handler, bind=True):
-    return menubar.move_item_event.bind(handler, bind)
-
-
-def bind_to_delete_items(handler, bind=True):
-    return menubar.delete_items_event.bind(handler, bind)
 
 
 def simulate_create_database(filename):
@@ -305,6 +377,15 @@ def get_right_nb():
     return wx.GetApp().nb_right
 
 
+def get_right_nb_generic_accelerators():
+    return wx.GetApp().nb_right.get_generic_accelerators()
+
+
+def select_right_nb_tab(window):
+    nb = wx.GetApp().nb_right
+    return nb.select_page(nb.GetPageIndex(window))
+
+
 def is_page_in_right_nb(window):
     nb = wx.GetApp().nb_right
     tabid = nb.GetPageIndex(window)
@@ -322,8 +403,12 @@ def get_selected_editor_tab_index():
 
 def get_selected_editor_identification():
     item = wx.GetApp().nb_right.get_selected_editor()
-    tab = editor.tabs[item]
-    return (tab.get_filename(), tab.get_id())
+
+    if item:
+        tab = editor.tabs[item]
+        return (tab.get_filename(), tab.get_id())
+    else:
+        return (False, False)
 
 
 def get_selected_right_nb_tab():
@@ -384,10 +469,6 @@ def get_main_frame():
     return wx.GetApp().root
 
 
-def get_main_icon_bundle():
-    return wx.GetApp().get_main_icon_bundle()
-
-
 def show_main_window():
     return wx.GetApp().root.show()
 
@@ -402,6 +483,19 @@ def toggle_main_window():
 
 def is_shown():
     return wx.GetApp().root.IsShown()
+
+
+def generate_right_nb_accelerators(accelsconf):
+    return wx.GetApp().root.accmanager.generate_table(wx.GetApp().nb_right,
+                                                                    accelsconf)
+
+
+def install_accelerators(window, accelsconf):
+    return wx.GetApp().root.accmanager.create_manager(window, accelsconf)
+
+
+def register_text_ctrl(window):
+    return wx.GetApp().root.accmanager.register_text_ctrl(window)
 
 
 def exit_application(event):
@@ -430,6 +524,10 @@ def bind_to_close_window(handler):
 
 ### TREE ###
 
+def install_database_accelerators(filename, accelsconf):
+    return tree.dbs[filename].install_additional_accelerators(accelsconf)
+
+
 def get_tree_selections(filename, none=True, many=True, descendants=None):
     return tree.dbs[filename].get_selections(none=none, many=many,
                                              descendants=descendants)
@@ -440,44 +538,19 @@ def unselect_all_items(filename):
 
 
 def add_item_to_selection(filename, id_):
-    treeitem = tree.dbs[filename].find_item(id_)
-    return tree.dbs[filename].add_item_to_selection(treeitem)
+    return tree.dbs[filename].add_item_to_selection(id_)
 
 
-def get_tree_item_id(filename, treeitem):
-    return tree.dbs[filename].get_item_id(treeitem)
+def expand_item_ancestors(filename, id_):
+    return tree.dbs[filename].expand_item_ancestors(id_)
 
 
-def get_root_tree_item(filename):
-    return tree.dbs[filename].get_root()
+def get_tree_item_id(filename, item):
+    return tree.dbs[filename].get_item_id(item)
 
 
-def append_item(filename, baseid, id_, text):
-    base = tree.dbs[filename].find_item(baseid)
-    return tree.dbs[filename].insert_item(base, 'append', id_, text=text)
-
-
-def insert_item_after(filename, baseid, id_, text):
-    base = tree.dbs[filename].find_item(baseid)
-    return tree.dbs[filename].insert_item(base, 'after', id_, text=text)
-
-
-def append_tree_item(filename, baseid, id_):
-    text = core_api.get_item_text(filename, id_)
-    return tree.dbs[filename].insert_item(baseid, 'append', id_, text=text)
-
-
-def insert_tree_item_after(filename, baseid, id_):
-    text = core_api.get_item_text(filename, id_)
-    return tree.dbs[filename].insert_item(baseid, 'after', id_, text=text)
-
-
-def create_tree(filename, treeroot):
-    return tree.dbs[filename].create(base=treeroot)
-
-
-def remove_tree_items(filename, treeitems):
-    return tree.dbs[filename].remove_items(treeitems)
+def delete_items(filename, ids, description="Delete items"):
+    return tree.dbs[filename].delete_items(ids, description=description)
 
 
 def get_tree_context_menu(filename):
@@ -489,24 +562,20 @@ def add_tree_context_menu_item(filename, item):
 
 
 def add_item_property(filename, bitsn, character, bits_to_colour):
-    return tree.dbs[filename].get_properties().add(bitsn, character,
-                                                                bits_to_colour)
+    return tree.dbs[filename].add_property(bitsn, character, bits_to_colour)
 
 
 def update_item_properties(filename, id_, property_bits, property_mask):
-    try:
-        treeitem = tree.dbs[filename].find_item(id_)
-    except KeyError:
-        return False
-    else:
-        tree.dbs[filename].update_item_properties(treeitem, property_bits,
+    tree.dbs[filename].update_item_properties(id_, property_bits,
                                                                 property_mask)
-        return True
 
 
-def update_item_image(filename, id_):
-    treeitem = tree.dbs[filename].find_item(id_)
-    return tree.dbs[filename].update_item_image(treeitem)
+def update_tree_item(filename, id_):
+    tree.dbs[filename].update_tree_item(id_)
+
+
+def request_tree_item_refresh(filename, id_):
+    return tree.dbs[filename].request_item_refresh(id_)
 
 
 def get_logs_parent(filename):
@@ -516,6 +585,11 @@ def get_logs_parent(filename):
 def add_log(filename, sizer, label, icon, menu_items, menu_update):
     return tree.dbs[filename].get_logs_panel().add_log(sizer, label, icon,
                                                     menu_items, menu_update)
+
+
+def select_log(tool_id):
+    treedb = wx.GetApp().nb_left.get_selected_tab()
+    return treedb.get_logs_panel().select_log(tool_id)
 
 
 def refresh_history(filename):
@@ -534,20 +608,30 @@ def bind_to_popup_tree_context_menu(handler, bind=True):
     return tree.popup_context_menu_event.bind(handler, bind)
 
 
+def bind_to_undo_tree(handler, bind=True):
+    return tree.undo_tree_event.bind(handler, bind)
+
+
+def bind_to_redo_tree(handler, bind=True):
+    return tree.redo_tree_event.bind(handler, bind)
+
+
+def bind_to_delete_items(handler, bind=True):
+    return tree.delete_items_event.bind(handler, bind)
+
+
 def simulate_unselect_all_items(filename):
     return tree.dbs[filename].unselect_all_items()
 
 
 def simulate_add_items_to_selection(filename, ids):
     for id_ in ids:
-        item = tree.dbs[filename].find_item(id_)
-        tree.dbs[filename].add_item_to_selection(item)
+        tree.dbs[filename].add_item_to_selection(id_)
 
 
 def simulate_remove_items_from_selection(filename, ids):
     for id_ in ids:
-        item = tree.dbs[filename].find_item(id_)
-        tree.dbs[filename].remove_item_from_selection(item)
+        tree.dbs[filename].remove_item_from_selection(id_)
 
 
 ### PROPERTIES ###
@@ -559,3 +643,57 @@ def add_property_option(filename, property_, action):
 
 def bind_to_load_property_options(handler, bind=True):
     return dbprops.load_options_event.bind(handler, bind)
+
+
+### TEMPORARY CODE ###
+
+class Bug332Workaround(object):
+    # Temporary workaround for bug #332
+    # Note that simply using the Window.Navigate or Window.NavigateIn methods
+    #  doesn't work :(
+    # Also note that DatePickerCtrl doesn't seem to respond to EVT_KEY_DOWN
+    #  nor EVT_CHAR, so an AcceleratorTable must be used :((
+    def __init__(self, datepicker, previous, next_):
+        self.previous = previous
+        self.datepicker = datepicker
+        self.next = next_
+
+        ID_PREVIOUS = wx.NewId()
+        ID_NEXT = wx.NewId()
+        datepicker.Bind(wx.EVT_BUTTON, self._focus_previous, id=ID_PREVIOUS)
+        datepicker.Bind(wx.EVT_BUTTON, self._focus_next, id=ID_NEXT)
+
+        accels = [
+            wx.AcceleratorEntry(wx.ACCEL_SHIFT, wx.WXK_TAB, ID_PREVIOUS),
+            wx.AcceleratorEntry(wx.ACCEL_CTRL | wx.ACCEL_SHIFT, wx.WXK_TAB,
+                                                                ID_PREVIOUS),
+            wx.AcceleratorEntry(wx.ACCEL_NORMAL, wx.WXK_TAB, ID_NEXT),
+            wx.AcceleratorEntry(wx.ACCEL_CTRL, wx.WXK_TAB, ID_NEXT),
+        ]
+
+        acctable = wx.AcceleratorTable(accels)
+        datepicker.SetAcceleratorTable(acctable)
+
+    def _focus_previous(self, event):
+        try:
+            self.previous.SetFocus()
+        except AttributeError:
+            # self.previous could be a callable
+            self.previous().SetFocus()
+        except wx.PyAssertionError:
+            # PyAssertionError is raised if, when Tab is pressed, the
+            # DatePickerCtrl has been cleared with e.g. Del (it has no content)
+            pass
+        # Do not Skip the event, or the focus will be moved 2 widgets ahead
+
+    def _focus_next(self, event):
+        try:
+            self.next.SetFocus()
+        except AttributeError:
+            # self.previous could be a callable
+            self.next().SetFocus()
+        except wx.PyAssertionError:
+            # PyAssertionError is raised if, when Tab is pressed, the
+            # DatePickerCtrl has been cleared with e.g. Del (it has no content)
+            pass
+        # Do not Skip the event, or the focus will be moved 2 widgets ahead

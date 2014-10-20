@@ -41,7 +41,7 @@ close_database_event = Event()
 save_permission_check_event = Event()
 save_database_event = Event()
 save_database_copy_event = Event()
-delete_items_event = Event()
+delete_subtree_event = Event()
 exit_app_event_1 = Event()
 exit_app_event_2 = Event()
 
@@ -75,8 +75,6 @@ class Protection(object):
         self.q.put(baton)
 
     def block(self, block=False, quiet=False):
-        log.debug('Block databases')
-
         try:
             self.s = self.q.get(block)
         except queue.Empty:
@@ -85,6 +83,7 @@ class Protection(object):
 
             return False
         else:
+            log.debug('Block databases')
             return True
 
     def release(self):
@@ -295,7 +294,8 @@ class Database(object):
     def close(self):
         closing_database_event.signal(filename=self.filename)
 
-        self._remove()
+        global dbs
+        del dbs[self.filename]
 
         qconn = self.connection.get()
         qconn.close()
@@ -310,32 +310,30 @@ class Database(object):
 
         return True
 
-    def _remove(self):
-        for id_ in self.items.copy():
-            item = self.items[id_]
-            if item.get_filename() == self.filename:
-                item.remove()
+    def delete_subtree(self, id_, group, description='Delete subtree'):
+        self.items[id_].delete_subtree(group, description=description)
+        delete_subtree_event.signal()
 
-        global dbs
-        del dbs[self.filename]
+    def find_independent_items(self, ids):
+        roots = set(ids)
 
-    def delete_items(self, dids, group, description='Delete items'):
-        while dids:
-            for id_ in dids[:]:
-                # First delete the items without children
-                if not self.items[id_].has_children():
-                    self.items[id_].delete(group, description=description)
-                    del dids[dids.index(id_)]
+        for id_ in ids:
+            roots -= set(self.items[id_].get_children())
 
-        delete_items_event.signal()
+        return roots
 
-    def get_all_items_text(self):
+    def get_root_items(self):
+        return items.Item.get_children_sorted(self.filename, 0)
+
+    def get_all_items(self):
         qconn = self.connection.get()
         cursor = qconn.cursor()
         cursor.execute(queries.items_select_search)
         self.connection.give(qconn)
+        return cursor
 
-        return cursor.fetchall()
+    def get_all_items_text(self):
+        return self.get_all_items().fetchall()
 
     def add_ignored_dependency(self, extension):
         qconn = self.connection.get()

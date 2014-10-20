@@ -1,9 +1,9 @@
 authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
-version = 1.0
+version = 1.1
 description = Adds the backend for calculating when item events/tasks happen and signal them.
 website = https://github.com/kynikos/outspline/
 affects_database = yes
 provides_tables = TimerProperties
-dependencies = core.1 extensions.organism.1
-optional_dependencies = extensions.copypaste.1
-database_dependency_group_1 = core.1 extensions.organism.1 extensions.organism_timer.1
+dependencies = core.2 extensions.organism.2
+optional_dependencies = extensions.copypaste.2
+database_dependency_group_1 = core.2 extensions.organism.2 extensions.organism_timer.1

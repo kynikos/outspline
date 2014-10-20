@@ -30,9 +30,9 @@ class TextHistory(object):
         self.areas = {}
         Menu(self)
 
-        wxgui_api.bind_to_open_textctrl(self._handle_open_textctrl)
+        wxgui_api.bind_to_open_editor(self._handle_open_editor)
 
-    def _handle_open_textctrl(self, kwargs):
+    def _handle_open_editor(self, kwargs):
         self.areas[kwargs['item']] = texthistory.WxTextHistory(
                     wxgui_api.get_textctrl(kwargs['filename'], kwargs['id_']),
                     kwargs['text'], self.config.get_int('max_undos'),
@@ -61,15 +61,20 @@ class Menu(object):
         self.ID_UNDO = wx.NewId()
         self.ID_REDO = wx.NewId()
 
+        config = coreaux_api.get_plugin_configuration('wxtexthistory')(
+                                                                'Shortcuts')
+
         self.mundo = wx.MenuItem(wxgui_api.get_menu_editor(), self.ID_UNDO,
-                                '&Undo\tCTRL+z', 'Undo the previous text edit')
+                                            '&Undo\t{}'.format(config['undo']),
+                                            'Undo the previous text edit')
         self.mredo = wx.MenuItem(wxgui_api.get_menu_editor(), self.ID_REDO,
-                                '&Redo\tCTRL+y', 'Redo the next text edit')
+                                            '&Redo\t{}'.format(config['redo']),
+                                            'Redo the next text edit')
         separator = wx.MenuItem(wxgui_api.get_menu_editor(),
                                                         kind=wx.ITEM_SEPARATOR)
 
-        self.mundo.SetBitmap(wx.ArtProvider.GetBitmap('@undo', wx.ART_MENU))
-        self.mredo.SetBitmap(wx.ArtProvider.GetBitmap('@redo', wx.ART_MENU))
+        self.mundo.SetBitmap(wxgui_api.get_menu_icon('@undo'))
+        self.mredo.SetBitmap(wxgui_api.get_menu_icon('@redo'))
 
         # Add in reverse order
         wxgui_api.add_menu_editor_item(separator)

@@ -16,7 +16,10 @@ ROOT_DIR = '..'
 DEST_DIR = '.'
 SRC_DIR = os.path.join(ROOT_DIR, 'src')
 BASE_DIR = os.path.join(SRC_DIR, 'outspline')
+SCRIPTS_DIR = os.path.join(SRC_DIR, 'scripts')
+DATA_DIR = os.path.join(SRC_DIR, 'data_files')
 DEPS_DIR = os.path.join(BASE_DIR, 'dbdeps')
+RDATA_DIR = os.path.join(BASE_DIR, "data")
 PACKAGES = {
     'main': 'outspline',
     'development': 'outspline-development',
@@ -48,21 +51,26 @@ def make_component_package(cfile, cname):
     pkgdirname = pkgname + '-' + pkgver
     pkgdir = os.path.join(DEST_DIR, pkgdirname)
     maindir = os.path.join(pkgdir, 'outspline')
+    datadir = os.path.join(pkgdir, 'data_files')
     depsdir = os.path.join(maindir, 'dbdeps')
+    rdatadir = os.path.join(maindir, 'data')
 
     os.makedirs(maindir)
     shutil.copy2(os.path.join(ROOT_DIR, 'LICENSE'), pkgdir)
-    shutil.copy2(os.path.join(SRC_DIR, pkgname + '.setup.py'),
-                                            os.path.join(pkgdir, 'setup.py'))
+    shutil.copy2(os.path.join(SRC_DIR, 'setup.py'), pkgdir)
+    shutil.copy2(os.path.join(SRC_DIR, pkgname + '.config.py'),
+                                            os.path.join(pkgdir, 'config.py'))
     shutil.copy2(os.path.join(BASE_DIR, cfile), maindir)
     shutil.copy2(os.path.join(BASE_DIR, '__init__.py'), maindir)
+
+    os.makedirs(datadir)
+    os.makedirs(rdatadir)
 
     os.makedirs(depsdir)
     shutil.copy2(os.path.join(DEPS_DIR, '__init__.py'), depsdir)
 
     if component.get_bool('provides_core', fallback='false'):
-        for src, dest, sd in ((SRC_DIR, pkgdir, 'files'),
-                              (BASE_DIR, maindir, 'static'),
+        for src, dest, sd in ((BASE_DIR, maindir, 'static'),
                               (BASE_DIR, maindir, 'core'),
                               (BASE_DIR, maindir, 'coreaux')):
             shutil.copytree(os.path.join(src, sd), os.path.join(dest, sd),
@@ -70,6 +78,9 @@ def make_component_package(cfile, cname):
 
         for file_ in ('core_api.py', 'coreaux_api.py', 'outspline.conf'):
             shutil.copy2(os.path.join(BASE_DIR, file_), maindir)
+
+        shutil.copytree(SCRIPTS_DIR, os.path.join(pkgdir, 'scripts'))
+        make_data_files("core", datadir, rdatadir)
 
         shutil.copy2(os.path.join(DEPS_DIR, '_core.py'), depsdir)
 
@@ -91,6 +102,8 @@ def make_component_package(cfile, cname):
                                                                     typedir)
             except FileNotFoundError:
                 pass
+
+            make_data_files(os.path.join(type_, addon), datadir, rdatadir)
 
             if type_ == 'extensions':
                 try:
@@ -136,6 +149,20 @@ def find_addons(component):
     return addons
 
 
+def make_data_files(rpath, datadir, rdatadir):
+    try:
+        shutil.copytree(os.path.join(DATA_DIR, rpath), os.path.join(datadir,
+                                                                        rpath))
+    except FileNotFoundError:
+        pass
+
+    try:
+        shutil.copytree(os.path.join(RDATA_DIR, rpath), os.path.join(rdatadir,
+                                                                        rpath))
+    except FileNotFoundError:
+        pass
+
+
 def make_pkgbuild_package(cname):
     pkgname = PACKAGES[cname]
     pkgbuild = os.path.join(DEST_DIR, pkgname + '.PKGBUILD')
@@ -145,7 +172,8 @@ def make_pkgbuild_package(cname):
     tmppkgbuild = os.path.join(DEST_DIR, 'PKGBUILD')
     shutil.copy2(pkgbuild, tmppkgbuild)
 
-    subprocess.call(["makepkg", "--source", "--clean"])
+    subprocess.call(["mkaurball", ])
+    # Don't call makepkg --clean or errors will happen
 
     os.remove(tmppkgbuild)
 

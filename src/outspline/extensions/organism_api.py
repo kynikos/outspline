@@ -44,13 +44,6 @@ def update_item_rules(filename, id_, rules, group,
                                    description=description)
 
 
-def update_item_rules_no_event(filename, id_, rules, group,
-                                            description='Update item rules'):
-    # See update_item_rules for guidelines
-    return extension.databases[filename].update_item_rules_no_event(id_, rules,
-                                                group, description=description)
-
-
 def get_supported_open_databases():
     return extension.databases.keys()
 
@@ -78,6 +71,14 @@ def convert_string_to_rules(string):
 
 def bind_to_open_database(handler, bind=True):
     return database_open_event.bind(handler, bind)
+
+
+def bind_to_history_insert(handler, bind=True):
+    return items.history_insert_event.bind(handler, bind)
+
+
+def bind_to_history_update(handler, bind=True):
+    return items.history_update_event.bind(handler, bind)
 
 
 def bind_to_update_item_rules_conditional(handler, bind=True):

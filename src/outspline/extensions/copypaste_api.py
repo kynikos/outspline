@@ -22,12 +22,6 @@ import copypaste
 from copypaste import queries
 
 
-def cut_items(filename, citems, description='Cut items'):
-    group = core_api.get_next_history_group(filename)
-    return copypaste.copy_items(filename, citems, cut=True, group=group,
-                               description=description)
-
-
 def copy_items(filename, citems):
     return copypaste.copy_items(filename, citems)
 

@@ -205,6 +205,7 @@ class DateHourCtrl(object):
         box = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(box)
 
+        # DatePickerCtrl doesn't release TAB (Outspline bug #332)
         self.datectrl = wx.DatePickerCtrl(self.panel)
         box.Add(self.datectrl, flag=wx.ALIGN_CENTER_VERTICAL)
 

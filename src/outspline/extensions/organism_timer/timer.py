@@ -453,14 +453,31 @@ class NextOccurrencesEngine(object):
         # self.databases must be a live reference
         self.databases = databases
         self.rule_handlers = rule_handlers
-        self.timer = None
+        self.thread = threading.Thread(target=int)
+        self.queued = False
+        self.timer = threading.Timer(0, int)
 
     def restart(self):
+        # Allow only one restart request in the queue
+        if not self.queued:
+            self.queued = True
+            # There's no need to call self.thread.join because the search
+            # blocks the databases, so if another one is started, it will block
+            # until the previous one is finished anyway
+            self.thread = threading.Thread(target=self._restart)
+            self.thread.name = "organism_engine"
+            self.thread.start()
+
+    def _restart(self):
         # Note that this function must be kept separate from
         # NextOccurrencesSearch because the latter can be used without this
         # (e.g. by wxtasklist); note also that both functions generate their
         # own events
 
+        # Blocking here also prevents a second search from running
+        # simultaneously
+        core_api.block_databases(block=True)
+        self.queued = False
         log.debug('Search next occurrences')
 
         # Make sure to use the same set of filenames during the search, because
@@ -470,8 +487,8 @@ class NextOccurrencesEngine(object):
         base_times = {filename: self.databases[filename].get_last_search() for
                                                         filename in filenames}
         # For the moment there seems to be no need to stop the search if a
-        # database is closed, in fact the search is run on the main thread and
-        # it seems to terminate cleanly, and anyway it should take a reasonable
+        # database is closed, in fact the databases are blocked, and the search
+        # seems to terminate cleanly, and anyway it should take a reasonable
         # time to complete
         search = NextOccurrencesSearch(filenames, self.rule_handlers,
                                                         base_times=base_times)
@@ -506,7 +523,7 @@ class NextOccurrencesEngine(object):
                 self.timer = threading.Timer(next_loop,
                                             self._activate_occurrences_block,
                                             (next_occurrence, occsd))
-                self.timer.name = "organism_engine"
+                self.timer.name = "organism_engine_timer"
                 self.timer.start()
 
                 log.debug('Next occurrence in {} seconds'.format(next_loop))
@@ -520,16 +537,19 @@ class NextOccurrencesEngine(object):
             for filename in filenames:
                 self.databases[filename].set_last_search(now)
 
+        core_api.release_databases()
+
+        # Note that this event is not protected in the databases block
         search_next_occurrences_event.signal()
 
     def cancel(self):
-        if self.timer and self.timer.is_alive():
+        if self.timer.is_alive():
             log.debug('Cancel timer')
             self.timer.cancel()
 
     def _activate_occurrences_block(self, time, occsd):
         # It's important that the databases are blocked on this thread, and not
-        # on the main thread, otherwise the program would hang if some
+        # on the search thread, otherwise the program would hang if some
         # occurrences are activated while the user is performing an action
         core_api.block_databases(block=True)
         self._activate_occurrences(time, occsd)

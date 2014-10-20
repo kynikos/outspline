@@ -19,6 +19,7 @@
 import sys
 import os
 import hashlib
+import threading
 
 try:
     import dbus
@@ -82,6 +83,27 @@ def check_existing_processes(configfile):
             sys.exit("Another instance of Outspline is using " + configfile)
 
 
+def install_thread_excepthook():
+    # This function is a workaround for bug #341
+    init_old = threading.Thread.__init__
+
+    def init(self, *args, **kwargs):
+        init_old(self, *args, **kwargs)
+        run_old = self.run
+
+        def run_with_excepthook(*args, **kw):
+            try:
+                run_old(*args, **kw)
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except:
+                sys.excepthook(*sys.exc_info())
+
+        self.run = run_with_excepthook
+
+    threading.Thread.__init__ = init
+
+
 def main():
     configuration.load_component_info()
     configuration.load_addon_info_and_default_config()
@@ -92,6 +114,7 @@ def main():
     # This must be done *before* checking for existing processes, because a
     # configuration file may haven't been set in the command arguments
     configfile = configuration.set_configuration_file(cliargs)
+    configuration.set_update_only(cliargs)
 
     if dbus:
         check_existing_processes(configfile)
@@ -101,4 +124,12 @@ def main():
     import logger
     logger.set_logger(cliargs)
 
+    # Make sure the main thread has a known name
+    threading.current_thread().setName(configuration.MAIN_THREAD_NAME)
     sys.excepthook = handle_uncaught_exception
+    # The application must crash also if an exception is raised in a secondary
+    # thread, for example because if the thread has blocked the databases, it
+    # won't release them otherwise; yes, they could be released in a finally
+    # clause, but that would leave the database in an unknown state, which is
+    # pretty bad
+    install_thread_excepthook()

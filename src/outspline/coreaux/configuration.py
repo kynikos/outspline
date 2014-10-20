@@ -18,6 +18,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 import os
 import errno
 import locale
@@ -34,12 +35,16 @@ locale.setlocale(locale.LC_ALL, '')
 
 __author__ = "Dario Giovannetti <dev@dariogiovannetti.net>"
 
+MAIN_THREAD_NAME = "MAIN"
 _ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
 _CORE_INFO = os.path.join(_ROOT_DIR, 'coreaux', 'core.info')
 _CONFIG_FILE = os.path.join(_ROOT_DIR, 'outspline.conf')
 _USER_CONFIG_FILE = os.path.join(os.path.expanduser('~'), '.config',
                                                 'outspline', 'outspline.conf')
 _USER_FOLDER_PERMISSIONS = 0750
+# Use the icons in $XDG_DATA_DIRS/icons only when there's no alternative, e.g.
+#  for the .desktop file and the notifications
+BUNDLED_DATA_DIR = os.path.join(_ROOT_DIR, "data")
 _DESCRIPTION_LONG = 'Outspline is a highly modular outliner whose '\
                     'functionality can be widely extended through the '\
                     'installation of addons.'
@@ -70,6 +75,7 @@ user_config_file = _USER_CONFIG_FILE
 components = None
 info = None
 config = None
+update_only = False
 
 
 def load_component_info():
@@ -165,6 +171,11 @@ def set_configuration_file(cliargs):
     return user_config_file
 
 
+def set_update_only(cliargs):
+    global update_only
+    update_only = cliargs.updonly
+
+
 def load_configuration():
     # Try to make the directory separately from the logger, because they could
     # be set to different paths
@@ -186,5 +197,9 @@ def load_configuration():
         raise
 
 
-def export_configuration():
+def export_configuration(log):
     config.export_add(user_config_file)
+
+    if update_only:
+        log.info('Configuration file correctly created or updated')
+        sys.exit()

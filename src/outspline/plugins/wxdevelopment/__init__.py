@@ -50,6 +50,10 @@ class MenuDev(wx.Menu):
         # Initialize self.ID_PRINT so it can be destroyed at the beginning of
         # self.reset_print_menu
         self.ID_PRINT = wx.NewId()
+        self.ID_PRINT_ALL = wx.NewId()
+        self.ID_PRINT_MEMORY = wx.NewId()
+        self.ID_PRINT_MEMORY_ALL = wx.NewId()
+
         self.PrependItem(wx.MenuItem(self, self.ID_PRINT, "INIT"))
 
         self.inspection = self.Append(wx.NewId(), "&Inspection tool")
@@ -76,7 +80,7 @@ class MenuDev(wx.Menu):
         self.printtb = wx.Menu()
         self.PrependMenu(self.ID_PRINT, "Print &databases", self.printtb)
 
-        self.all_ = self.printtb.Append(wx.NewId(), 'All databases')
+        self.all_ = self.printtb.Append(self.ID_PRINT_ALL, 'All databases')
         wxgui_api.bind_to_menu(self.print_all_databases, self.all_)
 
         self.printtb.AppendSeparator()
@@ -84,26 +88,36 @@ class MenuDev(wx.Menu):
         self.databases = {}
 
         for filename in core_api.get_open_databases():
+            # Note that these IDs will grow progressively every time this menu
+            # is reset, UNTIL THE INTERNAL ID LIMIT FOR MENU ITEMS!!!
+            # (Then, crash...)
+            TEMP_ID_MENU = wx.NewId()
+            TEMP_ID_ALL = wx.NewId()
+
             self.databases[filename] = {
                 'menu': wx.Menu(),
                 'all_': None,
                 'tables': {}
             }
 
-            self.printtb.AppendMenu(wx.NewId(), _os.path.basename(filename),
+            self.printtb.AppendMenu(TEMP_ID_MENU, _os.path.basename(filename),
                                     self.databases[filename]['menu'])
 
             self.databases[filename]['all_'] = self.databases[filename][
-                                    'menu'].Append(wx.NewId(), 'All tables')
+                                    'menu'].Append(TEMP_ID_ALL, 'All tables')
             wxgui_api.bind_to_menu(self.print_all_tables_loop(filename),
                                    self.databases[filename]['all_'])
 
             self.databases[filename]['menu'].AppendSeparator()
 
             for table in core_api.select_all_table_names(filename):
+                # Note that these IDs will grow progressively every time this
+                # menu is reset, UNTIL THE INTERNAL ID LIMIT FOR MENU ITEMS!!!
+                # (Then, crash...)
+                TEMP_ID = wx.NewId()
                 self.databases[filename]['tables'][table[0]] = \
                                     self.databases[filename]['menu'].Append(
-                                    wx.NewId(), table[0])
+                                    TEMP_ID, table[0])
                 wxgui_api.bind_to_menu(self.print_table_loop(filename,
                                 table[0]),
                                 self.databases[filename]['tables'][table[0]])
@@ -117,18 +131,23 @@ class MenuDev(wx.Menu):
             'tables': {}
         }
 
-        self.printtb.AppendMenu(wx.NewId(), ':memory:', self.memory['menu'])
+        self.printtb.AppendMenu(self.ID_PRINT_MEMORY, ':memory:',
+                                                        self.memory['menu'])
 
-        self.memory['all_'] = self.memory['menu'].Append(wx.NewId(),
-                                                                'All tables')
+        self.memory['all_'] = self.memory['menu'].Append(
+                                        self.ID_PRINT_MEMORY_ALL, 'All tables')
         wxgui_api.bind_to_menu(self.print_all_memory_tables,
                                                         self.memory['all_'])
 
         self.memory['menu'].AppendSeparator()
 
         for table in core_api.select_all_memory_table_names():
+            # Note that these IDs will grow progressively every time this menu
+            # is reset, UNTIL THE INTERNAL ID LIMIT FOR MENU ITEMS!!!
+            # (Then, crash...)
+            TEMP_ID = wx.NewId()
             self.memory['tables'][table[0]] = self.memory['menu'].Append(
-                                                        wx.NewId(), table[0])
+                                                            TEMP_ID, table[0])
             wxgui_api.bind_to_menu(self.print_memory_table_loop(table[0]),
                                    self.memory['tables'][table[0]])
 
@@ -177,8 +196,8 @@ class MenuDev(wx.Menu):
             if filename:
                 group = core_api.get_next_history_group(filename)
                 description = 'Populate tree'
-
                 i = 0
+
                 while i < 10:
                     dbitems = core_api.get_items_ids(filename)
 
@@ -187,22 +206,20 @@ class MenuDev(wx.Menu):
                     except IndexError:
                         # No items in the database yet
                         itemid = 0
+                        mode = 'child'
+                    else:
+                        mode = random.choice(('child', 'sibling'))
 
-                    mode = random.choice(('child', 'sibling'))
+                        # See the comment in wxgui.tree.expand_item_ancestors
+                        #  for the reason why calling this method is necessary
+                        wxgui_api.expand_item_ancestors(filename, itemid)
 
-                    if mode == 'sibling' and itemid == 0:
-                        continue
-
-                    i += 1
 
                     text = self._populate_tree_text()
 
                     id_ = self._populate_tree_item(mode, filename, itemid,
                                                     group, text, description)
 
-                    self._populate_tree_gui(mode, filename, itemid, id_, text)
-
-                    # Rules must be created *after* self._populate_tree_gui
                     # It should also be checked if the database supports
                     #  organism_basicrules (bug #330)
                     if organism_api and wxscheduler_basicrules_api and \
@@ -211,12 +228,13 @@ class MenuDev(wx.Menu):
                         self._populate_tree_rules(filename, id_, group,
                                                             description)
 
-                    # Links must be created *after* self._populate_tree_gui
                     if links_api and wxlinks_api and len(dbitems) > 0 and \
                                     filename in \
                                     links_api.get_supported_open_databases():
                         self._populate_tree_link(filename, id_, dbitems, group,
                                                                 description)
+
+                    i += 1
 
                 wxgui_api.refresh_history(filename)
             core_api.release_databases()
@@ -301,7 +319,8 @@ class MenuDev(wx.Menu):
 
             rules.append(rule)
 
-        organism_api.update_item_rules(filename, id_, rules, group,
+        if rules:
+            organism_api.update_item_rules(filename, id_, rules, group,
                                                     description=description)
 
     def _populate_tree_link(self, filename, id_, dbitems, group, description):
@@ -310,12 +329,6 @@ class MenuDev(wx.Menu):
             # *before* the new item was appended
             target = random.choice(dbitems)
             links_api.make_link(filename, id_, target, group, description)
-
-    def _populate_tree_gui(self, mode, filename, itemid, id_, text):
-        if mode == 'child':
-            wxgui_api.append_item(filename, itemid, id_, text)
-        elif mode == 'sibling':
-            wxgui_api.insert_item_after(filename, itemid, id_, text)
 
     def reset_simulator_item(self):
         if simulator.is_active():

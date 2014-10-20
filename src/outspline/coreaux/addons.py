@@ -257,6 +257,6 @@ def start_interface():
 
 def main():
     start_addons()
-    configuration.export_configuration()
+    configuration.export_configuration(log)
     start_interface()
     log.info('Outspline exited successfully')

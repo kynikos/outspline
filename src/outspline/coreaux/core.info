@@ -1,5 +1,5 @@
 authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
-version = 1.0
+version = 2.0
 description = Outspline, a highly modular and extensible outliner.
 website = https://github.com/kynikos/outspline/
 affects_database = yes

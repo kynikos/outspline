@@ -44,7 +44,6 @@ class Navigator(object):
         self.fbox = wx.WrapSizer(orient=wx.HORIZONTAL)
         self.panel.SetSizer(self.fbox)
 
-
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
         self.limits = (self.config.get_int('minimum_year'),
@@ -76,7 +75,7 @@ class Navigator(object):
                 pass
 
     def _init_button_previous(self):
-        button_previous = wx.Button(self.panel, label='<',
+        button_previous = wx.Button(self.panel, label='&<',
                                                         style=wx.BU_EXACTFIT)
         self.fbox.Add(button_previous, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
@@ -88,7 +87,7 @@ class Navigator(object):
                                                             button_previous)
 
     def _init_button_next(self):
-        button_next = wx.Button(self.panel, label='>', style=wx.BU_EXACTFIT)
+        button_next = wx.Button(self.panel, label='&>', style=wx.BU_EXACTFIT)
         self.fbox.Add(button_next, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         self.fbox.AddSpacer(4)
@@ -96,7 +95,7 @@ class Navigator(object):
         self.panel.Bind(wx.EVT_BUTTON, self._show_next_page, button_next)
 
     def _init_button_reset(self):
-        button_reset = wx.Button(self.panel, label='Reset',
+        button_reset = wx.Button(self.panel, label='&Reset',
                                                         style=wx.BU_EXACTFIT)
         self.fbox.Add(button_reset, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
@@ -105,7 +104,7 @@ class Navigator(object):
         self.panel.Bind(wx.EVT_BUTTON, self._reset, button_reset)
 
     def _init_button_set(self):
-        button_set = wx.Button(self.panel, label='Set', style=wx.BU_EXACTFIT)
+        button_set = wx.Button(self.panel, label='&Set', style=wx.BU_EXACTFIT)
         self.fbox.Add(button_set, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         self.fbox.AddSpacer(4)
@@ -113,7 +112,7 @@ class Navigator(object):
         self.panel.Bind(wx.EVT_BUTTON, self._set, button_set)
 
     def _init_button_apply(self):
-        button_apply = wx.Button(self.panel, label='Apply',
+        button_apply = wx.Button(self.panel, label='&Apply',
                                                         style=wx.BU_EXACTFIT)
         self.fbox.Add(button_apply, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
@@ -136,7 +135,10 @@ class Navigator(object):
         choice = self._set_filter_selection(config)
 
         self.sfilter = self.choice.GetClientData(choice)(self.panel,
-                                                        self.limits, config)
+                                                        self.limits, config,
+                            # Temporary workaround for bug #332
+                            bug332choice=self.choice,
+                            bug332list=lambda: self.tasklist.list_.listview)
         self.fbox.Add(self.sfilter.panel, flag=wx.BOTTOM, border=4)
         self.parent.Layout()
 
@@ -148,7 +150,10 @@ class Navigator(object):
 
     def _show_filter(self, choice, config):
         fpanel = self.choice.GetClientData(choice)(self.panel, self.limits,
-                                                                        config)
+                                                                        config,
+                                    # Temporary workaround for bug #332
+                                    bug332choice=self.choice,
+                                    bug332list=self.tasklist.list_.listview)
         self.fbox.Replace(self.sfilter.panel, fpanel.panel)
         self.sfilter.panel.Destroy()
         self.sfilter = fpanel
@@ -755,7 +760,9 @@ class FilterConfigurationMonth(object):
 
 
 class FilterInterfaceRelative(object):
-    def __init__(self, parent, limits, config):
+    def __init__(self, parent, limits, config,
+                                        # Temporary workaround for bug #332
+                                        bug332choice=None, bug332list=None):
         self.limits = limits
         self.units = ('minutes', 'hours', 'days', 'weeks', 'months', 'years')
         self.config = config
@@ -764,7 +771,7 @@ class FilterInterfaceRelative(object):
         self.fbox = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(self.fbox)
 
-        lowlabel = wx.StaticText(self.panel, label='From')
+        lowlabel = wx.StaticText(self.panel, label='&From')
         self.fbox.Add(lowlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
@@ -795,6 +802,7 @@ class FilterInterfaceRelative(object):
         # unitchoice must be created before highchoice, but added to the sizer
         # after
         self.fbox.Add(self.unitchoice, flag=wx.ALIGN_CENTER_VERTICAL)
+        self.unitchoice.MoveAfterInTabOrder(self.highchoice.get_main_panel())
 
     def _handle_choice(self, event):
         self.lowlimit.SetValue(self.config['low'][event.GetInt()])
@@ -836,15 +844,20 @@ class FilterInterfaceRelative(object):
 
 
 class FilterInterfaceDate(object):
-    def __init__(self, parent, limits, config):
+    def __init__(self, parent, limits, config,
+                                        # Temporary workaround for bug #332
+                                        bug332choice=None, bug332list=None):
         self.limits = limits
         self.config = config
+
+        # Temporary workaround for bug #332
+        self.bug332list = bug332list
 
         self.panel = wx.Panel(parent)
         self.fbox = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(self.fbox)
 
-        lowlabel = wx.StaticText(self.panel, label='From')
+        lowlabel = wx.StaticText(self.panel, label='&From')
         self.fbox.Add(lowlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 
@@ -872,6 +885,10 @@ class FilterInterfaceDate(object):
         self.highchoice.force_update()
         self.fbox.Add(self.highchoice.get_main_panel(),
                                                 flag=wx.ALIGN_CENTER_VERTICAL)
+
+        # Temporary workaround for bug #332
+        wxgui_api.Bug332Workaround(self.lowdate, bug332choice,
+                                                    self.highchoice.choicectrl)
 
     def _create_for_widget(self):
         panel = wx.Panel(self.highchoice.get_main_panel())
@@ -904,6 +921,10 @@ class FilterInterfaceDate(object):
         hdate.Set(year=self.limits[1], month=11, day=31)
         self.highdate.SetRange(ldate, hdate)
 
+        # Temporary workaround for bug #332
+        wxgui_api.Bug332Workaround(self.highdate, self.highchoice.choicectrl,
+                                                            self.bug332list)
+
         return self.highdate
 
     def get_values(self):
@@ -935,7 +956,9 @@ class FilterInterfaceDate(object):
 
 
 class FilterInterfaceMonth(object):
-    def __init__(self, parent, limits, config):
+    def __init__(self, parent, limits, config,
+                                        # Temporary workaround for bug #332
+                                        bug332choice=None, bug332list=None):
         self.limits = limits
         self.config = config
 
@@ -943,7 +966,7 @@ class FilterInterfaceMonth(object):
         self.fbox = wx.BoxSizer(wx.HORIZONTAL)
         self.panel.SetSizer(self.fbox)
 
-        lowlabel = wx.StaticText(self.panel, label='From')
+        lowlabel = wx.StaticText(self.panel, label='&From')
         self.fbox.Add(lowlabel, flag=wx.ALIGN_CENTER_VERTICAL | wx.RIGHT,
                                                                     border=4)
 

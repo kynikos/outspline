@@ -18,115 +18,233 @@
 
 import wx
 
+import outspline.coreaux_api as coreaux_api
 
-class ArtProvider(wx.ArtProvider):
-    gtk = None
-    bundled = None
+import exceptions
 
+
+class ArtProvider(object):
     def __init__(self):
-        wx.ArtProvider.__init__(self)
+        self._init_system_icons()
+        self._init_bundled_icons()
+        self._init_list_header_icons()
 
-        # Find standard icon names at http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
-        # Use ids prefixed with '@' so that they're not mistaken as GTK icons
-        self.gtk = {'@add-filter': ('list-add', ),
-                    '@alarms': ('appointment-soon', 'appointment',
-                                'appointment-new', 'stock_new-appointment'),
-                    '@alarmoff': ('appointment-missed', 'appointment-soon',
-                                  'appointment'),
-                    '@apply': ('emblem-ok', 'dialog-apply', 'dialog-ok',
-                               'dialog-yes', 'gtk-apply', 'gtk-ok', 'gtk-yes',
-                               'stock_yes', 'stock_mark', 'emblem-default'),
-                    '@backup': ('document-save-as', 'gtk-save-as',
-                                'filesaveas', 'stock_save-as'),
-                    '@blinkicon': ('dialog-warning', 'gtk-dialog-warning',
-                                   'stock_dialog-warning', 'important'),
-                    '@bugreport': ('stock_terminal-reportbug',
-                                   'dialog-warning', 'gtk-dialog-warning',
-                                   'stock_dialog-warning'),
-                    '@close': ('window-close', 'gtk-close', 'stock_close'),
-                    '@closeall': ('window-close', 'gtk-close', 'stock_close'),
-                    '@compare': ('find' 'edit-find', 'gtk-find', 'filefind',
-                                 'stock_search'),
-                    '@copy': ('edit-copy', 'editcopy', 'gtk-copy',
-                              'stock_copy'),
-                    '@cut': ('edit-cut', 'editcut', 'gtk-cut', 'stock_cut'),
-                    '@dbsearch': ('search', 'find' 'edit-find', 'gtk-find',
-                                  'filefind', 'stock_search'),
-                    '@delete': ('edit-delete', 'editdelete', 'gtk-delete',
-                                'stock_delete'),
-                    '@edit': ('text-editor', 'accessories-text-editor'),
-                    '@edit-filter': ('document-properties', ),
-                    '@editortab': ('text-x-generic', ),
-                    '@exporttxt': ('document-export', 'gnome-stock-export',
-                                   'document-save-as', 'gtk-save-as',
-                                   'filesaveas', 'stock_save-as'),
-                    '@exporttype': ('text-x-generic', ),
-                    '@filters': ('document-open', ),
-                    '@find': ('system-search', 'search', 'find' 'edit-find',
-                                    'gtk-find', 'filefind', 'stock_search'),
-                    '@logs': ('window-close', ),
-                    '@languages': ('locale', 'preferences-desktop-locale',
-                                   'config-language'),
-                    '@movedown': ('go-down', 'gtk-go-down', 'down',
-                                  'stock_down'),
-                    '@movetoparent': ('go-previous', 'gtk-go-back-ltr',
-                                      'previous', 'stock_left'),
-                    '@moveup': ('go-up', 'gtk-go-up', 'up', 'stock_up'),
-                    '@navigator': ('applications-system', ),
-                    '@next': ('go-next', ),
-                    '@newitem': ('document-new', 'gtk-new', 'filenew',
-                                 'stock_new-text'),
-                    '@newsubitem': ('document-new', 'gtk-new', 'filenew',
-                                    'stock_new-text'),
-                    '@outspline': ('text-editor', ),
-                    '@paste': ('edit-paste', 'editpaste', 'gtk-paste',
-                               'stock_paste'),
-                    '@preferences': ('package_settings', 'gtk-preferences'),
-                    '@previous': ('go-previous', ),
-                    '@properties': ('document-properties', ),
-                    '@question': ('dialog-question', ),
-                    '@redo': ('redo', 'edit-redo', 'gtk-redo-ltr',
-                                'stock_redo'),
-                    '@redodb': ('redo', 'edit-redo', 'gtk-redo-ltr',
-                                'stock_redo'),
-                    '@refresh': ('view-refresh', ),
-                    '@remove-filter': ('list-remove', ),
-                    '@save': ('document-save', 'gtk-save', 'filesave',
-                                'stock_save'),
-                    '@saveall': ('document-save', 'gtk-save', 'filesave',
-                                'stock_save'),
-                    '@saveas': ('document-save-as', 'gtk-save-as',
-                                'filesaveas', 'stock_save-as'),
-                    '@selectall': ('edit-select-all', 'gtk-select-all',
-                                   'stock_select-all'),
-                    '@sortdown': ('go-down', 'gtk-go-down', 'down',
-                                  'stock_down'),
-                    '@sortup': ('go-up', 'gtk-go-up', 'up', 'stock_up'),
-                    '@tasklist': ('x-office-calendar', ),
-                    '@textsearch': ('edit-find-replace',
-                                    'gtk-find-and-replace',
-                                    'stock_search-and-replace'),
-                    '@tips': ('dialog-information', 'info', 'gtk-dialog-info',
-                              'stock_dialog-info'),
-                    '@tray': ('go-bottom', 'gtk-goto-bottom', 'bottom',
-                              'stock_bottom'),
-                    '@undo': ('undo', 'edit-undo', 'gtk-undo-ltr',
-                                'stock_undo'),
-                    '@undodb': ('undo', 'edit-undo', 'gtk-undo-ltr',
-                                'stock_undo'),
-                    '@warning': ('dialog-warning', )}
+    def _init_system_icons(self):
+        # Use ids prefixed with "@" so that they can't conflict with icon theme
+        #  names
+        # wxWidgets default icon names:
+        #  http://wxpython.org/Phoenix/docs/html/ArtProvider.html#phoenix-title-identifying-art-resources
+        # Freedesktop.org icon names:
+        #  http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-latest.html
+        # GTK stock icon names:
+        #  https://developer.gnome.org/gtk3/stable/gtk3-Stock-Items.html
+        self.strids = {'@apply': (wx.ART_TICK_MARK, 'gtk-apply', 'gtk-ok',
+                                'gtk-yes'),
+                    '@close': (wx.ART_CLOSE, 'window-close', 'gtk-close'),
+                    '@copy': (wx.ART_COPY, 'edit-copy', 'gtk-copy'),
+                    '@cut': (wx.ART_CUT, 'edit-cut', 'gtk-cut'),
+                    '@delete': (wx.ART_DELETE, 'edit-delete', 'gtk-delete'),
+                    '@down': (wx.ART_GO_DOWN, 'go-down', 'gtk-go-down'),
+                    '@edit': ("gtk-edit", ),
+                    '@exit': (wx.ART_QUIT, 'application-exit', "gtk-quit"),
+                    '@file': (wx.ART_NORMAL_FILE, 'text-x-generic',
+                                                                "gtk-file"),
+                    '@jump': ('go-jump', "gtk-jump-to", wx.ART_GO_DOWN),
+                    '@left': (wx.ART_GO_BACK, 'go-previous', "gtk-go-back"),
+                    '@new': (wx.ART_NEW, 'document-new', 'gtk-new'),
+                    '@paste': (wx.ART_PASTE, 'edit-paste', 'gtk-paste'),
+                    '@properties': ('document-properties', "gtk-properties"),
+                    '@question': (wx.ART_QUESTION, 'dialog-question',
+                                "gtk-dialog-question"),
+                    '@redo': (wx.ART_REDO, 'edit-redo', 'gtk-redo'),
+                    '@refresh': ('view-refresh', "gtk-refresh"),
+                    '@right': (wx.ART_GO_FORWARD, 'go-next', "gtk-go-forward"),
+                    '@save': (wx.ART_FILE_SAVE, 'document-save', 'gtk-save'),
+                    '@saveas': (wx.ART_FILE_SAVE_AS, 'document-save-as',
+                                'gtk-save-as'),
+                    '@selectall': ('edit-select-all', 'gtk-select-all'),
+                    '@undo': (wx.ART_UNDO, 'edit-undo', 'gtk-undo'),
+                    '@up': (wx.ART_GO_UP, 'go-up', 'gtk-go-up'),
+                    '@warning': (wx.ART_WARNING, 'dialog-warning',
+                                "gtk-dialog-warning")}
 
-        # Bundled images (currently empty)
-        self.bundled = {}
+    def _init_bundled_icons(self):
+        # Use artids prefixed with "@" so that they can't conflict with icon
+        #  theme names
+        self.bundled = {icon[0]: coreaux_api.get_interface_bundled_data(
+            "wxgui", icon[1]) for icon in (
+                ("@dbfind", ("Tango", "find16.png")),
+                ("@edit", ("Tango", "edit16.png")),
+                ("@logs", ("Tango", "logs16.png")),
+                ("@outspline", ("main48.png", )),
+                ("@outsplinetray", ("main24.png", )),
+                ("@properties", ("Tango", "properties16.png")),
+                ("@refresh", ("Tango", "refresh16.png")),
+                ("@selectall", ("Tango", "selectall16.png")),
+                ("@toggle", ("Tango", "toggle16.png")),
+            )
+        }
 
-    def CreateBitmap(self, artid, client, size):
-        if artid in self.gtk:
-            for gtkid in self.gtk[artid]:
-                bmp = wx.ArtProvider.GetBitmap(gtkid, client, size)
-                if bmp.IsOk():
-                    break
-        # The default art provider will take care of the else case
+        # Use bundleid prefixed with "&" so that they can't conflict with icon
+        #  theme names
+        self.bundles = {
+            "&outspline": (coreaux_api.get_interface_bundled_data(
+                "wxgui", (icon, )) for icon in ("main16.png", "main24.png",
+                "main32.png", "main48.png", "main64.png", "main128.png", ))
+        }
+
+    def _init_list_header_icons(self):
+        fg = wx.SystemSettings.GetColour(wx.SYS_COLOUR_CAPTIONTEXT
+                                            ).GetAsString(wx.C2S_HTML_SYNTAX)
+        header = ["16 16 2 1",
+                  ". m {}".format(fg),
+                  "m m none"]
+        # Note that "gtk-sort-ascending" and "gtk-sort-descending" are for
+        #  menus, not list headings
+        self.listsorticons = (
+            wx.BitmapFromXPMData(header +
+                        ["mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmm.mmmmmmmm",
+                         "mmmmmm...mmmmmmm",
+                         "mmmmm.....mmmmmm",
+                         "mmmm.......mmmmm",
+                         "mmm.........mmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm"]),
+            wx.BitmapFromXPMData(header +
+                        ["mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmm.........mmmm",
+                         "mmmm.......mmmmm",
+                         "mmmmm.....mmmmmm",
+                         "mmmmmm...mmmmmmm",
+                         "mmmmmmm.mmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm",
+                         "mmmmmmmmmmmmmmmm"])
+        )
+
+    def install_bundled_icon(self, plugin, artid, path):
+        # Use artids prefixed with "@" so that they can't conflict with icon
+        #  theme names
+        abspath = coreaux_api.get_plugin_bundled_data(plugin, path)
+
+        if abspath in self.bundled.values():
+            raise exceptions.DuplicatedIconError()
         else:
-            bmp = wx.ArtProvider.GetBitmap(artid, client, size)
+            try:
+                self.bundled[artid]
+            except KeyError:
+                self.bundled[artid] = abspath
+            else:
+                # Just crash if there's a conflict, it should happen only in
+                #  development
+                raise exceptions.DuplicatedArtIdError()
 
-        return bmp
+    def install_icon_bundle(self, plugin, bundleid, paths):
+        # Use bundleid prefixed with "&" so that they can't conflict with icon
+        #  theme names
+        try:
+            self.bundles[bundleid]
+        except KeyError:
+            self.bundles[bundleid] = (coreaux_api.get_plugin_bundled_data(
+                                            plugin, path) for path in paths)
+        else:
+            # Just crash if there's a conflict, it should happen only in
+            #  development
+            raise exceptions.DuplicatedArtIdError()
+
+    def _find_bitmap(self, artid, client, size):
+        return self._find(artid, client, size, wx.ArtProvider.GetBitmap,
+                                                                    wx.Bitmap)
+
+    def _find_icon(self, artid, client, size):
+        return self._find(artid, client, size, wx.ArtProvider.GetIcon, wx.Icon)
+
+    def _find(self, artid, client, size, get_system, get_bundled):
+        try:
+            strids = self.strids[artid]
+        except KeyError:
+            # Use strict=True because it shouldn't happen that the @artid isn't
+            #  found in the bundled icons either
+            # Also, the @artid shouldn't be used to retrieve system icons or
+            #  file names directly, in fact bypassing this whole system
+            return self._find_bundled(artid, get_bundled, strict=True)
+        else:
+            for strid in strids:
+                bmp = get_system(strid, client, size)
+
+                if bmp.IsOk():
+                    return bmp
+
+            else:
+                # Use strict=False because the @artid was correctly used, it's
+                #  just that the system doesn't have the icon installed
+                return self._find_bundled(artid, get_bundled, strict=False)
+
+    def _find_bundled(self, artid, get_bundled, strict):
+        try:
+            filepath = self.bundled[artid]
+        except KeyError:
+            if strict:
+                raise exceptions.UnknownArtIdError()
+            else:
+                return False
+        else:
+            return get_bundled(filepath)
+
+    def get_notebook_icon(self, artid):
+        # A valid bitmap must be returned in any case
+        return self._find_bitmap(artid, wx.ART_TOOLBAR, (16, 16))
+
+    def get_log_icon(self, artid):
+        # A valid bitmap must be returned in any case
+        return self._find_bitmap(artid, wx.ART_MENU, (16, 16))
+
+    def get_menu_icon(self, artid):
+        # A valid bitmap is not required
+        return self._find_bitmap(artid, wx.ART_MENU, (16, 16))
+
+    def get_dialog_icon(self, artid):
+        # A valid bitmap is not required
+        return self._find_bitmap(artid, wx.ART_CMN_DIALOG, (48, 48))
+
+    def get_message_icon(self, artid):
+        # A valid bitmap is not required
+        return self._find_bitmap(artid, wx.ART_BUTTON, (16, 16))
+
+    def get_about_icon(self):
+        return self.bundled["@outspline"]
+
+    def get_tray_icon(self, artid):
+        # Don't try to get an SVG, because the tray icon won't be resized with
+        #  the notification area anyway
+        return wx.Icon(self.bundled[artid])
+
+    def get_frame_icon_bundle(self, bundleid):
+        # wx.ArtProvider would have a GetIconBundle method, but it's not easy
+        #  to understand how to use it... if it's actually
+        #  implemented/tested/maintained at all...
+        bundle = wx.IconBundle()
+
+        for path in self.bundles[bundleid]:
+            bundle.AddIcon(wx.Icon(path))
+
+        return bundle
+
+    def get_list_sort_icons(self):
+        return self.listsorticons

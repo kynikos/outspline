@@ -1,9 +1,9 @@
 authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
-version = 1.0
+version = 2.0
 description = Adds the backend for storing schedule information for items.
 website = https://github.com/kynikos/outspline/
 affects_database = yes
 provides_tables = Rules CopyRules
-dependencies = core.1
-optional_dependencies = extensions.copypaste.1
-database_dependency_group_1 = core.1 extensions.organism.1
+dependencies = core.2
+optional_dependencies = extensions.copypaste.2
+database_dependency_group_1 = core.2 extensions.organism.2

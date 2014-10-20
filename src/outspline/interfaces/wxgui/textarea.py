@@ -26,29 +26,23 @@ import outspline.core_api as core_api
 import editor
 import tree
 
-config = coreaux_api.get_interface_configuration('wxgui')
 
-
-class TextArea():
-    filename = None
-    id_ = None
-    item = None
-    original = None
-    mtimer = None
-    tmrunning = None
-    area = None
-
+class TextArea(object):
     def __init__(self, filename, id_, item, text):
         self.filename = filename
         self.id_ = id_
         self.item = item
         self.original = text
+        self.mtimer = None
         self.tmrunning = False
+        config = coreaux_api.get_interface_configuration('wxgui')
+        self.DELAY = config.get_int('text_min_upd_time')
+
         # Do not set the text now, otherwise for example URLs won't be
         # highlighted in blue
+        # wx.TE_PROCESS_TAB seems to have no effect...
         self.area = TextUrlCtrl(editor.tabs[item].panel, value='',
-                                    style=wx.TE_PROCESS_TAB | wx.TE_MULTILINE |
-                                    wx.TE_NOHIDESEL | wx.TE_DONTWRAP)
+                    style=wx.TE_MULTILINE | wx.TE_DONTWRAP | wx.TE_NOHIDESEL)
 
         font = self.area.GetFont()
         font = wx.Font(font.GetPointSize(), wx.FONTFAMILY_TELETYPE,
@@ -59,13 +53,58 @@ class TextArea():
         # correctly highlighted in blue
         self.area.SetValue(text)
 
-        self.area.Bind(wx.EVT_TEXT, self._on_text)
-        editor.apply_editor_event.bind(self.handle_apply)
-        editor.check_modified_state_event.bind(
-                                             self.handle_check_editor_modified)
-        editor.close_editor_event.bind(self.handle_close)
+        wx.GetApp().root.accmanager.register_text_ctrl(self.area)
 
-    def _on_text(self, event):
+        self.textctrl_nav_keys = {
+            wx.WXK_ESCAPE: self._navigate_textctrl_backward,
+        }
+
+        # wx.TE_PROCESS_TAB seems to have no effect...
+        if not config.get_bool('text_process_tab'):
+            # Note that this natively still lets Ctrl+(Shift+)Tab navigate as
+            #  expected
+            self.textctrl_nav_keys[wx.WXK_TAB] = self._handle_tab_on_textctrl
+
+        self.area.Bind(wx.EVT_KEY_DOWN, self._handle_key_down)
+
+        self.area.Bind(wx.EVT_TEXT, self._handle_text)
+        editor.apply_editor_event.bind(self._handle_apply)
+        editor.check_modified_state_event.bind(
+                                            self._handle_check_editor_modified)
+        editor.close_editor_event.bind(self._handle_close)
+
+    def _handle_key_down(self, event):
+        try:
+            self.textctrl_nav_keys[event.GetKeyCode()](event)
+        except KeyError:
+            event.Skip()
+        # Don't skip the event if the navigation is done
+        #event.Skip()
+
+    def _handle_tab_on_textctrl(self, event):
+        # This method must get the same arguments as
+        #  _navigate_textctrl_backward
+        # Note that this natively still lets Ctrl+(Shift+)Tab navigate as
+        #  expected
+        if event.ShiftDown():
+            self._navigate_textctrl_backward(event)
+        else:
+            self.area.Navigate(flags=wx.NavigationKeyEvent.IsForward)
+
+    def _navigate_textctrl_backward(self, event):
+        # This method must get the same arguments as _handle_tab_on_textctrl
+        try:
+            captionbar = editor.tabs[self.item].get_plugin_captionbars()[-1]
+        except IndexError:
+            # No plugins installed/enabled
+            self.area.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
+        else:
+            if captionbar.IsCollapsed():
+                captionbar.SetFocus()
+            else:
+                self.area.Navigate(flags=wx.NavigationKeyEvent.IsBackward)
+
+    def _handle_text(self, event):
         if not (self.tmrunning):
             # Always set modified when (re)starting the timer, in fact it's not
             # possible that the textarea can be unmodified, except for the
@@ -77,62 +116,61 @@ class TextArea():
             self.mtimer.cancel()
 
         self.tmrunning = True
-        self.mtimer = Timer(config.get_int('min_text_upd_time'),
-                            self.reset_timer)
+        self.mtimer = Timer(self.DELAY, self._reset_timer)
         self.mtimer.name = "wxtextarea"
         self.mtimer.start()
 
         event.Skip()
 
-    def reset_timer(self):
+    def _reset_timer(self):
         self.tmrunning = False
-        self.set_modified()
+        self._set_modified()
 
-    def set_modified(self):
+    def _set_modified(self):
         if self.area.GetValue() == self.original:
             self.area.SetModified(False)
         else:
             self.area.SetModified(True)
 
-    def reset_modified(self):
+    def _reset_modified(self):
         self.original = self.area.GetValue()
         self.area.SetModified(False)
 
-    def is_modified(self):
-        self.set_modified()
+    def _is_modified(self):
+        self._set_modified()
         return self.area.IsModified()
 
-    def handle_apply(self, kwargs):
+    def _handle_apply(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_ \
-                                                        and self.is_modified():
+                                                    and self._is_modified():
             core_api.update_item_text(self.filename, self.id_,
                                       self.area.GetValue(), kwargs['group'],
                                       kwargs['description'])
-            self.refresh_mod_state()
+            self._refresh_mod_state()
 
-    def refresh_mod_state(self):
+    def _refresh_mod_state(self):
         treedb = tree.dbs[self.filename]
         tabtitle = editor.Editor.make_title(self.area.GetLineText(0))
         wx.GetApp().nb_right.set_editor_title(self.item, tabtitle)
 
-        self.reset_modified()
+        self._reset_modified()
 
-    def handle_check_editor_modified(self, kwargs):
+    def _handle_check_editor_modified(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_ \
-                                                        and self.is_modified():
+                                                    and self._is_modified():
             editor.tabs[self.item].set_modified()
 
-    def handle_close(self, kwargs):
+    def _handle_close(self, kwargs):
         if kwargs['filename'] == self.filename and kwargs['id_'] == self.id_:
             if self.mtimer:
                 self.mtimer.cancel()
             # It's necessary to explicitly unbind the handlers, otherwise this
             # object will never be garbage-collected due to circular
             # references, and the automatic unbinding won't work
-            editor.apply_editor_event.bind(self.handle_apply, False)
+            editor.apply_editor_event.bind(self._handle_apply, False)
             editor.check_modified_state_event.bind(
-                                      self.handle_check_editor_modified, False)
-            editor.close_editor_event.bind(self.handle_close, False)
+                                    self._handle_check_editor_modified, False)
+            editor.close_editor_event.bind(self._handle_close, False)
 
     def cut(self):
         self.area.Cut()

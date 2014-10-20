@@ -29,322 +29,326 @@ import msgboxes
 cut_items_event = Event()
 items_pasted_event = Event()
 
-ID_CUT = None
-mcut = None
-ID_COPY = None
-mcopy = None
-ID_PASTE = None
-mpaste = None
-mpaste_label_1 = None
-mpaste_help_1 = None
-mpaste_label_2 = None
-mpaste_help_2 = None
-ID_PASTE_SUB = None
-mpastesub = None
-cmenu = {}
-cpaste_label_1 = None
-cpaste_label_2 = None
+plugin = None
 
 
-def cut_items(event, no_confirm=False):
-    if core_api.block_databases():
-        filename = wxgui_api.get_selected_database_filename()
+class Main(object):
+    def __init__(self):
+        self.dbs = {}
+        self.mainmenu = MainMenu(self.dbs)
 
-        # This method may be launched by the menu accelerator, but no database
-        # may be open
-        if filename:
-            # select() arguments must be compatible with delete_items()
-            selection = wxgui_api.get_tree_selections(filename, none=False,
-                                                            descendants=True)
+        wxgui_api.bind_to_creating_tree(self._handle_creating_tree)
+        wxgui_api.bind_to_close_database(self._handle_close_database)
+
+    def _handle_creating_tree(self, kwargs):
+        filename = kwargs['filename']
+        self.dbs[filename] = Database(filename, self.mainmenu)
+
+    def _handle_close_database(self, kwargs):
+        del self.dbs[kwargs['filename']]
+
+
+class Database(object):
+    def __init__(self, filename, mainmenu):
+        self.filename = filename
+
+        config = coreaux_api.get_plugin_configuration('wxcopypaste')(
+                                                        'ExtendedShortcuts')
+        wxgui_api.install_database_accelerators(filename, {
+            config["cut"]: lambda event: self.cut_items(),
+            config["copy"]: lambda event: self.copy_items(),
+            config["paste_siblings"]:
+                                lambda event: self.paste_items_as_siblings(),
+            config["paste_children"]:
+                                lambda event: self.paste_items_as_children(),
+        })
+
+        TreeContextMenu(filename, mainmenu)
+
+    def cut_items(self, no_confirm=False):
+        if core_api.block_databases():
+            # get_tree_selections() arguments must be compatible with the
+            # ones used in self.delete_items()
+            selection = wxgui_api.get_tree_selections(self.filename,
+                                                none=False, descendants=True)
 
             if selection:
-                for item in selection:
-                    id_ = wxgui_api.get_tree_item_id(filename, item)
+                items = []
 
-                    if not wxgui_api.close_editor(filename, id_,
+                for item in selection:
+                    id_ = wxgui_api.get_tree_item_id(self.filename, item)
+
+                    if not wxgui_api.close_editor(self.filename, id_,
                                     ask='quiet' if no_confirm else 'discard'):
                         core_api.release_databases()
                         return False
 
-                items = []
-
-                for item in selection:
-                    id_ = wxgui_api.get_tree_item_id(filename, item)
                     items.append(id_)
 
-                copypaste_api.cut_items(filename, items,
-                                description='Cut {} items'.format(len(items)))
+                copypaste_api.copy_items(self.filename, items)
 
-                wxgui_api.remove_tree_items(filename, selection)
-                wxgui_api.refresh_history(filename)
+                wxgui_api.delete_items(self.filename, items,
+                                description='Cut {} items'.format(len(items)))
+                wxgui_api.refresh_history(self.filename)
                 cut_items_event.signal()
 
-        core_api.release_databases()
+            core_api.release_databases()
 
-
-def copy_items(event):
-    if core_api.block_databases():
-        filename = wxgui_api.get_selected_database_filename()
-
-        # This method may be launched by the menu accelerator, but not database
-        # may be open
-        if filename:
-            # select() arguments must be compatible with delete_items()
-            selection = wxgui_api.get_tree_selections(filename, none=False,
-                                                            descendants=True)
+    def copy_items(self):
+        if core_api.block_databases():
+            # get_tree_selections() arguments must be compatible with the
+            # ones used in self.delete_items()
+            selection = wxgui_api.get_tree_selections(self.filename,
+                                                none=False, descendants=True)
 
             if selection:
                 items = []
 
                 for item in selection:
-                    items.append(wxgui_api.get_tree_item_id(filename, item))
+                    items.append(wxgui_api.get_tree_item_id(self.filename,
+                                                                        item))
 
-                copypaste_api.copy_items(filename, items)
+                copypaste_api.copy_items(self.filename, items)
 
-        core_api.release_databases()
+            core_api.release_databases()
 
-
-def paste_items_as_siblings(event, no_confirm=False):
-    if core_api.block_databases():
-        filename = wxgui_api.get_selected_database_filename()
-
-        # This method may be launched by the menu accelerator, but not database
-        # may be open
-        if filename and \
-                    (no_confirm or copypaste_api.can_paste_safely(filename) or
-                    msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK):
-            # Do not use none=False in order to allow pasting in an empty
-            # database
-            selection = wxgui_api.get_tree_selections(filename, many=False)
-
-            # If multiple items are selected, selection will be bool (False)
-            if isinstance(selection, list):
-                if len(selection) > 0:
-                    base = selection[0]
-                    baseid = wxgui_api.get_tree_item_id(filename, base)
-
-                    roots, ids = copypaste_api.paste_items_as_siblings(
-                                filename, baseid, description='Paste items')
-
-                    for r in roots:
-                        treeroot = wxgui_api.insert_tree_item_after(filename,
-                                                            selection[0], r)
-                        wxgui_api.create_tree(filename, treeroot)
-                else:
-                    base = wxgui_api.get_root_tree_item(filename)
-                    baseid = wxgui_api.get_tree_item_id(filename, base)
-
-                    roots, ids = copypaste_api.paste_items_as_children(
-                                    filename, baseid, description='Paste items')
-
-                    for r in roots:
-                        treeroot = wxgui_api.append_tree_item(filename, base,
-                                                                            r)
-                        wxgui_api.create_tree(filename, treeroot)
-
-                wxgui_api.refresh_history(filename)
-
-                items_pasted_event.signal(filename=filename, roots=roots,
-                                                                    ids=ids)
-
-        core_api.release_databases()
-
-
-def paste_items_as_children(event, no_confirm=False):
-    if core_api.block_databases():
-        filename = wxgui_api.get_selected_database_filename()
-
-        # This method may be launched by the menu accelerator, but not database
-        # may be open
-        if filename:
-            selection = wxgui_api.get_tree_selections(filename, none=False,
+    def paste_items_as_siblings(self, no_confirm=False):
+        if core_api.block_databases():
+            if no_confirm or copypaste_api.can_paste_safely(self.filename) or \
+                    msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK:
+                # Do not use none=False in order to allow pasting in an empty
+                # database
+                selection = wxgui_api.get_tree_selections(self.filename,
                                                                     many=False)
 
+                # If multiple items are selected, selection will be False
+                if selection is not False:
+                    if len(selection) > 0:
+                        baseid = wxgui_api.get_tree_item_id(self.filename,
+                                                                selection[0])
+
+                        roots, ids = copypaste_api.paste_items_as_siblings(
+                            self.filename, baseid, description='Paste items')
+                    else:
+                        roots, ids = copypaste_api.paste_items_as_children(
+                                self.filename, 0, description='Paste items')
+
+                    wxgui_api.refresh_history(self.filename)
+
+                    items_pasted_event.signal(filename=self.filename,
+                                                        roots=roots, ids=ids)
+
+            core_api.release_databases()
+
+    def paste_items_as_children(self, no_confirm=False):
+        if core_api.block_databases():
+            selection = wxgui_api.get_tree_selections(self.filename,
+                                                        none=False, many=False)
+
             if selection and (no_confirm or
-                                    copypaste_api.can_paste_safely(filename) or
-                                    msgboxes.unsafe_paste_confirm().ShowModal(
-                                    ) == wx.ID_OK):
-                baseid = wxgui_api.get_tree_item_id(filename, selection[0])
+                    copypaste_api.can_paste_safely(self.filename) or
+                    msgboxes.unsafe_paste_confirm().ShowModal() == wx.ID_OK):
+                baseid = wxgui_api.get_tree_item_id(self.filename,
+                                                                selection[0])
 
-                roots, ids = copypaste_api.paste_items_as_children(filename,
-                                        baseid, description='Paste sub-items')
+                roots, ids = copypaste_api.paste_items_as_children(
+                        self.filename, baseid, description='Paste sub-items')
 
-                for r in roots:
-                    treeroot = wxgui_api.append_tree_item(filename,
-                                                            selection[0], r)
-                    wxgui_api.create_tree(filename, treeroot)
+                wxgui_api.refresh_history(self.filename)
 
-                wxgui_api.refresh_history(filename)
-
-                items_pasted_event.signal(filename=filename, roots=roots,
+                items_pasted_event.signal(filename=self.filename, roots=roots,
                                                                     ids=ids)
 
-        core_api.release_databases()
+            core_api.release_databases()
 
 
-def handle_open_database(kwargs):
-    filename = kwargs['filename']
+class MainMenu(object):
+    def __init__(self, dbs):
+        self.dbs = dbs
 
-    global cmenu, cpaste_label_1, cpaste_label_2
-    cpaste_label_1 = '&Paste items'
-    cpaste_label_2 = '&Paste as siblings'
+        self.ID_CUT = wx.NewId()
+        self.ID_COPY = wx.NewId()
+        self.ID_PASTE = wx.NewId()
+        self.ID_PASTE_SUB = wx.NewId()
 
-    cmenu[filename] = {}
+        config = coreaux_api.get_plugin_configuration('wxcopypaste')(
+                                                                'Shortcuts')
 
-    config = coreaux_api.get_plugin_configuration('wxcopypaste')
+        self.mpaste_label_1 = '&Paste items\t{}'.format(config['paste'])
+        self.mpaste_help_1 = 'Paste items as root items'
+        self.mpaste_label_2 = '&Paste as siblings\t{}'.format(config['paste'])
+        self.mpaste_help_2 = 'Paste items as siblings below the selected item'
 
-    cmenu[filename]['cut'] = wx.MenuItem(
-                                    wxgui_api.get_tree_context_menu(filename),
-                                    ID_CUT, 'Cu&t items')
-    cmenu[filename]['copy'] = wx.MenuItem(
-                                    wxgui_api.get_tree_context_menu(filename),
-                                    ID_COPY, '&Copy items')
-    cmenu[filename]['paste'] = wx.MenuItem(
-                                    wxgui_api.get_tree_context_menu(filename),
-                                    ID_PASTE, cpaste_label_1)
-    cmenu[filename]['pastesub'] = wx.MenuItem(
-                                    wxgui_api.get_tree_context_menu(filename),
-                                    ID_PASTE_SUB, 'P&aste as children')
+        self.mcut = wx.MenuItem(wxgui_api.get_menu_database(), self.ID_CUT,
+                                        'Cu&t items\t{}'.format(config['cut']),
+                                        'Cut the selected items')
+        self.mcopy = wx.MenuItem(wxgui_api.get_menu_database(), self.ID_COPY,
+                                    '&Copy items\t{}'.format(config['copy']),
+                                    'Copy the selected items')
+        self.mpaste = wx.MenuItem(wxgui_api.get_menu_database(), self.ID_PASTE,
+                                    self.mpaste_label_1, self.mpaste_help_1)
+        self.mpastesub = wx.MenuItem(wxgui_api.get_menu_database(),
+                                                            self.ID_PASTE_SUB,
+                    'P&aste as children\t{}'.format(config['paste_children']),
+                    'Paste items as children of the selected item')
 
-    cmenu[filename]['cut'].SetBitmap(wx.ArtProvider.GetBitmap('@cut',
-                                                                wx.ART_MENU))
-    cmenu[filename]['copy'].SetBitmap(wx.ArtProvider.GetBitmap('@copy',
-                                                                wx.ART_MENU))
-    cmenu[filename]['paste'].SetBitmap(wx.ArtProvider.GetBitmap('@paste',
-                                                                wx.ART_MENU))
-    cmenu[filename]['pastesub'].SetBitmap(wx.ArtProvider.GetBitmap('@paste',
-                                                                wx.ART_MENU))
+        self.mcut.SetBitmap(wxgui_api.get_menu_icon('@cut'))
+        self.mcopy.SetBitmap(wxgui_api.get_menu_icon('@copy'))
+        self.mpaste.SetBitmap(wxgui_api.get_menu_icon('@paste'))
+        self.mpastesub.SetBitmap(wxgui_api.get_menu_icon('@paste'))
 
-    separator = wx.MenuItem(wxgui_api.get_tree_context_menu(filename),
+        separator = wx.MenuItem(wxgui_api.get_menu_database(),
                                                         kind=wx.ITEM_SEPARATOR)
 
-    # Add in reverse order
-    wxgui_api.add_tree_context_menu_item(filename, separator)
-    wxgui_api.add_tree_context_menu_item(filename, cmenu[filename]['pastesub'])
-    wxgui_api.add_tree_context_menu_item(filename, cmenu[filename]['paste'])
-    wxgui_api.add_tree_context_menu_item(filename, cmenu[filename]['copy'])
-    wxgui_api.add_tree_context_menu_item(filename, cmenu[filename]['cut'])
+        # Add in reverse order
+        wxgui_api.add_menu_database_item(separator)
+        wxgui_api.add_menu_database_item(self.mpastesub)
+        wxgui_api.add_menu_database_item(self.mpaste)
+        wxgui_api.add_menu_database_item(self.mcopy)
+        wxgui_api.add_menu_database_item(self.mcut)
+
+        wxgui_api.bind_to_menu(self.cut_items, self.mcut)
+        wxgui_api.bind_to_menu(self.copy_items, self.mcopy)
+        wxgui_api.bind_to_menu(self.paste_items_as_siblings, self.mpaste)
+        wxgui_api.bind_to_menu(self.paste_items_as_children, self.mpastesub)
+
+        wxgui_api.bind_to_reset_menu_items(self._handle_reset_menu_items)
+        wxgui_api.bind_to_menu_database_update(self._handle_enable_tree_menus)
+
+    def _handle_reset_menu_items(self, kwargs):
+        # Re-enable all the actions so they are available for their
+        # accelerators
+        self.mcut.Enable()
+        self.mcopy.Enable()
+        self.mpaste.Enable()
+        self.mpastesub.Enable()
+
+    def _handle_enable_tree_menus(self, kwargs):
+        filename = kwargs['filename']
+
+        self.mcut.Enable(False)
+        self.mcopy.Enable(False)
+        self.mpaste.Enable(False)
+        self.mpastesub.Enable(False)
+        self.mpaste.SetItemLabel(self.mpaste_label_1)
+        self.mpaste.SetHelp(self.mpaste_help_1)
+
+        # filename is None is no database is open
+        if filename:
+            sel = wxgui_api.get_tree_selections(filename)
+
+            if len(sel) == 1:
+                self.mcut.Enable()
+                self.mcopy.Enable()
+
+                if copypaste_api.has_copied_items(filename):
+                    self.mpaste.Enable()
+                    self.mpaste.SetItemLabel(self.mpaste_label_2)
+                    self.mpaste.SetHelp(self.mpaste_help_2)
+                    self.mpastesub.Enable()
+
+            elif len(sel) > 1:
+                self.mcut.Enable()
+                self.mcopy.Enable()
+
+            elif copypaste_api.has_copied_items(filename):
+                self.mpaste.Enable()
+
+    def cut_items(self, event, no_confirm=False):
+        filename = wxgui_api.get_selected_database_filename()
+
+        # This method may be launched by the menu accelerator, but the database
+        # database may not be open
+        if filename:
+            self.dbs[filename].cut_items(no_confirm=no_confirm)
+
+    def copy_items(self, event):
+        filename = wxgui_api.get_selected_database_filename()
+
+        # This method may be launched by the menu accelerator, but the database
+        # database may not be open
+        if filename:
+            self.dbs[filename].copy_items()
+
+    def paste_items_as_siblings(self, event, no_confirm=False):
+        filename = wxgui_api.get_selected_database_filename()
+
+        # This method may be launched by the menu accelerator, but the database
+        # database may not be open
+        if filename:
+            self.dbs[filename].paste_items_as_siblings(no_confirm=no_confirm)
+
+    def paste_items_as_children(self, event, no_confirm=False):
+        filename = wxgui_api.get_selected_database_filename()
+
+        # This method may be launched by the menu accelerator, but the database
+        # database may not be open
+        if filename:
+            self.dbs[filename].paste_items_as_children(no_confirm=no_confirm)
 
 
-def handle_close_database(kwargs):
-    del cmenu[kwargs['filename']]
+class TreeContextMenu(object):
+    def __init__(self, filename, mainmenu):
+        self.cpaste_label_1 = '&Paste items'
+        self.cpaste_label_2 = '&Paste as siblings'
 
+        self.cut = wx.MenuItem(wxgui_api.get_tree_context_menu(filename),
+                                                mainmenu.ID_CUT, 'Cu&t items')
+        self.copy = wx.MenuItem(wxgui_api.get_tree_context_menu(filename),
+                                            mainmenu.ID_COPY, '&Copy items')
+        self.paste = wx.MenuItem(wxgui_api.get_tree_context_menu(filename),
+                                        mainmenu.ID_PASTE, self.cpaste_label_1)
+        self.pastesub = wx.MenuItem(wxgui_api.get_tree_context_menu(filename),
+                                mainmenu.ID_PASTE_SUB, 'P&aste as children')
 
-def handle_reset_menu_items(kwargs):
-    # Re-enable all the actions so they are available for their accelerators
-    mcut.Enable()
-    mcopy.Enable()
-    mpaste.Enable()
-    mpastesub.Enable()
+        self.cut.SetBitmap(wxgui_api.get_menu_icon('@cut'))
+        self.copy.SetBitmap(wxgui_api.get_menu_icon('@copy'))
+        self.paste.SetBitmap(wxgui_api.get_menu_icon('@paste'))
+        self.pastesub.SetBitmap(wxgui_api.get_menu_icon('@paste'))
 
+        separator = wx.MenuItem(wxgui_api.get_tree_context_menu(filename),
+                                                        kind=wx.ITEM_SEPARATOR)
 
-def handle_enable_tree_menus(kwargs):
-    filename = kwargs['filename']
+        # Add in reverse order
+        wxgui_api.add_tree_context_menu_item(filename, separator)
+        wxgui_api.add_tree_context_menu_item(filename, self.pastesub)
+        wxgui_api.add_tree_context_menu_item(filename, self.paste)
+        wxgui_api.add_tree_context_menu_item(filename, self.copy)
+        wxgui_api.add_tree_context_menu_item(filename, self.cut)
 
-    mcut.Enable(False)
-    mcopy.Enable(False)
-    mpaste.Enable(False)
-    mpastesub.Enable(False)
-    mpaste.SetItemLabel(mpaste_label_1)
-    mpaste.SetHelp(mpaste_help_1)
+        wxgui_api.bind_to_reset_tree_context_menu(
+                                        self._handle_reset_tree_context_menu)
+        wxgui_api.bind_to_popup_tree_context_menu(
+                                        self._handle_popup_tree_context_menu)
 
-    # filename is None is no database is open
-    if filename:
+    def _handle_reset_tree_context_menu(self, kwargs):
+        self.cut.Enable(False)
+        self.copy.Enable(False)
+        self.paste.Enable(False)
+        self.pastesub.Enable(False)
+        self.paste.SetItemLabel(self.cpaste_label_1)
+
+    def _handle_popup_tree_context_menu(self, kwargs):
+        filename = kwargs['filename']
         sel = wxgui_api.get_tree_selections(filename)
 
         if len(sel) == 1:
-            mcut.Enable()
-            mcopy.Enable()
+            self.cut.Enable()
+            self.copy.Enable()
+
             if copypaste_api.has_copied_items(filename):
-                mpaste.Enable()
-                mpaste.SetItemLabel(mpaste_label_2)
-                mpaste.SetHelp(mpaste_help_2)
-                mpastesub.Enable()
+                self.paste.Enable()
+                self.paste.SetItemLabel(self.cpaste_label_2)
+                self.pastesub.Enable()
+
         elif len(sel) > 1:
-            mcut.Enable()
-            mcopy.Enable()
+            self.cut.Enable()
+            self.copy.Enable()
+
         elif copypaste_api.has_copied_items(filename):
-            mpaste.Enable()
-
-
-def handle_reset_tree_context_menu(kwargs):
-    cms = cmenu[kwargs['filename']]
-    cms['cut'].Enable(False)
-    cms['copy'].Enable(False)
-    cms['paste'].Enable(False)
-    cms['pastesub'].Enable(False)
-    cms['paste'].SetItemLabel(cpaste_label_1)
-
-
-def handle_popup_tree_context_menu(kwargs):
-    filename = kwargs['filename']
-    cms = cmenu[filename]
-    sel = wxgui_api.get_tree_selections(filename)
-
-    if len(sel) == 1:
-        cms['cut'].Enable()
-        cms['copy'].Enable()
-        if copypaste_api.has_copied_items(filename):
-            cms['paste'].Enable()
-            cms['paste'].SetItemLabel(cpaste_label_2)
-            cms['pastesub'].Enable()
-    elif len(sel) > 1:
-        cms['cut'].Enable()
-        cms['copy'].Enable()
-    elif copypaste_api.has_copied_items(filename):
-        cms['paste'].Enable()
+            self.paste.Enable()
 
 
 def main():
-    global ID_CUT, ID_COPY, ID_PASTE, ID_PASTE_SUB
-    ID_CUT = wx.NewId()
-    ID_COPY = wx.NewId()
-    ID_PASTE = wx.NewId()
-    ID_PASTE_SUB = wx.NewId()
-
-    global mpaste_label_1, mpaste_help_1, mpaste_label_2, mpaste_help_2
-    mpaste_label_1 = '&Paste items\tCTRL+SHIFT+v'
-    mpaste_help_1 = 'Paste items as root items'
-    mpaste_label_2 = '&Paste as siblings\tCTRL+SHIFT+v'
-    mpaste_help_2 = 'Paste items as siblings below the selected item'
-
-    global mcut, mcopy, mpaste, mpastesub
-    config = coreaux_api.get_plugin_configuration('wxcopypaste')
-
-    mcut = wx.MenuItem(wxgui_api.get_menu_database(), ID_CUT,
-                        'Cu&t items\tCTRL+SHIFT+x', 'Cut the selected items')
-    mcopy = wx.MenuItem(wxgui_api.get_menu_database(), ID_COPY,
-                        '&Copy items\tCTRL+SHIFT+c', 'Copy the selected items')
-    mpaste = wx.MenuItem(wxgui_api.get_menu_database(), ID_PASTE,
-                                                mpaste_label_1, mpaste_help_1)
-    mpastesub = wx.MenuItem(wxgui_api.get_menu_database(), ID_PASTE_SUB,
-                                'P&aste as children\tCTRL+SHIFT+b',
-                                'Paste items as children of the selected item')
-
-    mcut.SetBitmap(wx.ArtProvider.GetBitmap('@cut', wx.ART_MENU))
-    mcopy.SetBitmap(wx.ArtProvider.GetBitmap('@copy', wx.ART_MENU))
-    mpaste.SetBitmap(wx.ArtProvider.GetBitmap('@paste', wx.ART_MENU))
-    mpastesub.SetBitmap(wx.ArtProvider.GetBitmap('@paste', wx.ART_MENU))
-
-    separator = wx.MenuItem(wxgui_api.get_menu_database(),
-                                                        kind=wx.ITEM_SEPARATOR)
-
-    # Add in reverse order
-    wxgui_api.add_menu_database_item(separator)
-    wxgui_api.add_menu_database_item(mpastesub)
-    wxgui_api.add_menu_database_item(mpaste)
-    wxgui_api.add_menu_database_item(mcopy)
-    wxgui_api.add_menu_database_item(mcut)
-
-    wxgui_api.bind_to_menu(cut_items, mcut)
-    wxgui_api.bind_to_menu(copy_items, mcopy)
-    wxgui_api.bind_to_menu(paste_items_as_siblings, mpaste)
-    wxgui_api.bind_to_menu(paste_items_as_children, mpastesub)
-
-    wxgui_api.bind_to_open_database(handle_open_database)
-    wxgui_api.bind_to_close_database(handle_close_database)
-
-    wxgui_api.bind_to_reset_menu_items(handle_reset_menu_items)
-    wxgui_api.bind_to_menu_database_update(handle_enable_tree_menus)
-    wxgui_api.bind_to_reset_tree_context_menu(handle_reset_tree_context_menu)
-    wxgui_api.bind_to_popup_tree_context_menu(handle_popup_tree_context_menu)
+    global plugin
+    plugin = Main()
