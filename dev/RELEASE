@@ -32,7 +32,8 @@
     Remember that the major versions of add-ons must be increased for both
     database *and* API changes
   - interfaces.wxgui.about
-  - *.setup.py
+  - *.config.py
+  - setup.py
   - Copyright dates
   - docstrings (@version, @date...)
   - *.PKGBUILD (no hashes)

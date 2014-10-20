@@ -20,6 +20,8 @@ import os
 import errno
 from distutils.core import setup
 
+import config
+
 _DATA_EXT_BLACKLIST = ('.py', '.pyc', '.pyo')
 
 
@@ -109,15 +111,7 @@ def compose_scripts():
                                                         for script in scripts]}
 
 
-def compose_metadata():
-    meta = {'name': 'outspline',
-            'version': '0.6.0',
-            'description': 'Highly modular and extensible outliner.',
-            'author': 'Dario Giovannetti',
-            'author_email': 'dev@dariogiovannetti.net',
-            'url': 'https://github.com/kynikos/outspline',
-            'license': 'GPLv3'}
-
+def compose_metadata(meta):
     meta.update(compose_package_metadata('outspline'))
     meta.update(compose_scripts())
     meta.update(compose_data_files(os.path.join("data_files", "core")))
@@ -127,4 +121,4 @@ def compose_metadata():
 
     return meta
 
-setup(**compose_metadata())
+setup(**compose_metadata(config.meta))

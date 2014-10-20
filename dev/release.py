@@ -57,8 +57,9 @@ def make_component_package(cfile, cname):
 
     os.makedirs(maindir)
     shutil.copy2(os.path.join(ROOT_DIR, 'LICENSE'), pkgdir)
-    shutil.copy2(os.path.join(SRC_DIR, pkgname + '.setup.py'),
-                                            os.path.join(pkgdir, 'setup.py'))
+    shutil.copy2(os.path.join(SRC_DIR, 'setup.py'), pkgdir)
+    shutil.copy2(os.path.join(SRC_DIR, pkgname + '.config.py'),
+                                            os.path.join(pkgdir, 'config.py'))
     shutil.copy2(os.path.join(BASE_DIR, cfile), maindir)
     shutil.copy2(os.path.join(BASE_DIR, '__init__.py'), maindir)
 
