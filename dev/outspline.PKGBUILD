@@ -17,6 +17,7 @@ optdepends=('outspline-organism: adds personal organizer capabilities'
             'dbus-glib: prevent opening multiple instances with the same configuration file')
 conflicts=('organism')
 replaces=('organism')
+install=outspline.install
 source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
 sha256sums=('795ed0ff40885675cbf5f6d88e0a6af2b97b6b63ad04729d099b60e8a543625a')
 
