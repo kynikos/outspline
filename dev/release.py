@@ -16,7 +16,8 @@ ROOT_DIR = '..'
 DEST_DIR = '.'
 SRC_DIR = os.path.join(ROOT_DIR, 'src')
 BASE_DIR = os.path.join(SRC_DIR, 'outspline')
-DATA_DIR = os.path.join(SRC_DIR, 'data')
+SCRIPTS_DIR = os.path.join(SRC_DIR, 'scripts')
+DATA_DIR = os.path.join(SRC_DIR, 'data_files')
 DEPS_DIR = os.path.join(BASE_DIR, 'dbdeps')
 RDATA_DIR = os.path.join(BASE_DIR, "data")
 PACKAGES = {
@@ -50,7 +51,7 @@ def make_component_package(cfile, cname):
     pkgdirname = pkgname + '-' + pkgver
     pkgdir = os.path.join(DEST_DIR, pkgdirname)
     maindir = os.path.join(pkgdir, 'outspline')
-    datadir = os.path.join(pkgdir, 'data')
+    datadir = os.path.join(pkgdir, 'data_files')
     depsdir = os.path.join(maindir, 'dbdeps')
     rdatadir = os.path.join(maindir, 'data')
 
@@ -77,6 +78,7 @@ def make_component_package(cfile, cname):
         for file_ in ('core_api.py', 'coreaux_api.py', 'outspline.conf'):
             shutil.copy2(os.path.join(BASE_DIR, file_), maindir)
 
+        shutil.copytree(SCRIPTS_DIR, os.path.join(pkgdir, 'scripts'))
         make_data_files("core", datadir, rdatadir)
 
         shutil.copy2(os.path.join(DEPS_DIR, '_core.py'), depsdir)

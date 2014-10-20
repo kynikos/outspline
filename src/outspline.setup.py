@@ -17,6 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import errno
 from distutils.core import setup
 
 _DATA_EXT_BLACKLIST = ('.py', '.pyc', '.pyo')
@@ -32,6 +33,7 @@ def find_package_data(head, rhead):
         if os.path.isdir(path):
             if not os.path.exists(os.path.join(path, '__init__.py')):
                 data.extend(find_package_data(path, rpath))
+
         elif os.path.splitext(tail)[1] not in _DATA_EXT_BLACKLIST:
             data.append(rpath)
 
@@ -45,10 +47,14 @@ def compose_package_metadata(head):
         pkg = head.replace('/', '.')
         packages.append(pkg)
         package_dir[pkg] = head
-        package_data[pkg] = find_package_data(head, '')
+        data = find_package_data(head, '')
+
+        if data:
+            package_data[pkg] = data
 
     for tail in os.listdir(head):
         path = os.path.join(head, tail)
+
         if os.path.isdir(path):
             result = compose_package_metadata(path)
             packages.extend(result['packages'])
@@ -60,6 +66,49 @@ def compose_package_metadata(head):
             'package_data': package_data}
 
 
+def compose_addon_data_files(type_):
+    head = os.path.join("data_files", type_)
+
+    try:
+        tails = os.listdir(head)
+    except OSError as err:
+        if err.errno != errno.ENOENT:
+            raise
+        else:
+            return {}
+    else:
+        for tail in tails:
+            path = os.path.join(head, tail)
+
+            if os.path.isdir(path):
+                return compose_data_files(path)
+
+
+def compose_data_files(head):
+    data_files = []
+
+    for dirpath, dirnames, filenames in os.walk(head):
+        if filenames:
+            instpath = os.path.join("/", dirpath[len(head):])
+            files = [os.path.join(dirpath, filename) for filename in filenames]
+            data_files.append((instpath, files))
+
+    return {'data_files': data_files}
+
+
+def compose_scripts():
+    try:
+        scripts = os.listdir("scripts")
+    except OSError as err:
+        if err.errno != errno.ENOENT:
+            raise
+        else:
+            return {}
+    else:
+        return {'scripts': [os.path.join("scripts", script)
+                                                        for script in scripts]}
+
+
 def compose_metadata():
     meta = {'name': 'outspline',
             'version': '0.6.0',
@@ -69,18 +118,12 @@ def compose_metadata():
             'url': 'https://github.com/kynikos/outspline',
             'license': 'GPLv3'}
 
-    meta['scripts'] = ('data/outspline', )
-
-    meta['data_files'] = (
-        ('/usr/share/applications/',
-            ('data/outspline.desktop', )
-        ),
-    # Currently there isn't an original icon (bug #24)
-    #                      ('/usr/share/icons/hicolor/##x##',
-    #                       ('data/outspline.svg', ))
-    )
-
     meta.update(compose_package_metadata('outspline'))
+    meta.update(compose_scripts())
+    meta.update(compose_data_files(os.path.join("data_files", "core")))
+
+    for type_ in ("extensions", "interfaces", "plugins"):
+        meta.update(compose_addon_data_files(type_))
 
     return meta
 
