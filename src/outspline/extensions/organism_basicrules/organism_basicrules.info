@@ -4,4 +4,4 @@ description = Adds the backend for calculating item events/tasks with basic sche
 website = https://github.com/kynikos/outspline/
 affects_database = yes
 provides_tables =
-dependencies = core.1 extensions.organism.1 extensions.organism_timer.1
+dependencies = core.2 extensions.organism.1 extensions.organism_timer.1
