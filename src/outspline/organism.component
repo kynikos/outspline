@@ -1,6 +1,6 @@
-version = 0.6.0
-release_date = 2014-08-20
-extension_1 = organism 1.0
+version = 0.7.0
+release_date = 2014-10-20
+extension_1 = organism 2.0
 extension_2 = organism_timer 1.0
 extension_3 = organism_basicrules 1.0
 extension_4 = organism_alarms 1.0

@@ -29,10 +29,19 @@ def add(cursor):
     for row in rows:
         cursor.execute(queries.rules_insert, (row['I_id'], json.dumps([])))
 
+
 def remove(cursor):
     cursor.execute(queries.rules_drop)
 
+
 def upgrade_0_to_1(cursor):
+    # Placeholder/example
+    # These queries must stay here because they must not be updated with the
+    # normal queries
+    pass
+
+
+def upgrade_1_to_2(cursor):
     # Placeholder/example
     # These queries must stay here because they must not be updated with the
     # normal queries
