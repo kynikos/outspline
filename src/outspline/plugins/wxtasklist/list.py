@@ -657,10 +657,10 @@ class RefreshEngine(object):
             self.timer = threading.Timer(delay, self._refresh)
             self.timer.name = self.TIMER_NAME
             self.timer.start()
-            log.debug('Next tasklist refresh in {} seconds'.format(delay))
+            log.debug('Next schedule refresh in {} seconds'.format(delay))
 
     def _refresh(self):
-        log.debug('Refresh tasklist')
+        log.debug('Refresh schedule')
 
         self.now = int(_time.time())
 
