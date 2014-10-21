@@ -93,10 +93,10 @@ class Main(object):
             qconnd.close()
 
     def _handle_search_next_occurrences_request(self, kwargs):
-         self.nextoccsengine.restart()
+        self.nextoccsengine.restart()
 
     def _handle_search_next_occurrences_cancel_request(self, kwargs):
-         self.nextoccsengine.cancel()
+        self.nextoccsengine.cancel()
 
     def _handle_close_database(self, kwargs):
         try:
