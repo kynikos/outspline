@@ -82,8 +82,6 @@ def make_component_package(cfile, cname):
         shutil.copytree(SCRIPTS_DIR, os.path.join(pkgdir, 'scripts'))
         make_data_files("core", datadir, rdatadir)
 
-        shutil.copy2(os.path.join(DEPS_DIR, '_core.py'), depsdir)
-
     addons = find_addons(component)
 
     for type_ in addons:
