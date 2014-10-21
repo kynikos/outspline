@@ -1,7 +1,7 @@
 [Desktop Entry]
 Name=Outspline
 GenericName=Outliner
-Comment=A highly modular and extensible outliner
+Comment=Highly modular and extensible outliner
 Exec=outspline
 Icon=outspline
 Terminal=false
