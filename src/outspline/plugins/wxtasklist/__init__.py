@@ -221,7 +221,7 @@ class TaskList(object):
     def _update_tab_label(self, kwargs=None):
         nalarms = organism_alarms_api.get_number_of_active_alarms()
         wxgui_api.set_right_nb_page_title(self.panel,
-                                                "Events ({})".format(nalarms))
+                                                "{} alarms".format(nalarms))
 
     def work_around_bug332(self):
         # Temporary workaround for bug #332

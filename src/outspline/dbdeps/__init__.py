@@ -24,6 +24,37 @@ from outspline.coreaux_api import OutsplineError
 from outspline.core import queries
 
 
+class Core(object):
+    # Keep core upgrade functions here, not in a module like for the
+    #  extensions, because giving core a dedicated module would "pollute" the
+    #  dbdeps folder with a module that doesn't represent an extension,
+    #  requiring a name (e.g. "_core.py") that in the future may conflict with
+    #  a new real extension
+
+    # Core can't be added nor removed
+
+    @staticmethod
+    def upgrade_0_to_1(cursor):
+        # These queries must stay here because they must not be updated with
+        # the normal queries
+        cursor.execute('DROP TABLE History')
+        cursor.execute("CREATE TABLE History (H_id INTEGER PRIMARY KEY, "
+                                                "H_group INTEGER, "
+                                                "H_status INTEGER, "
+                                                "H_item INTEGER, "
+                                                "H_type TEXT, "
+                                                "H_tstamp INTEGER, "
+                                                "H_description TEXT, "
+                                                "H_redo TEXT, "
+                                                "H_undo TEXT)")
+
+    @staticmethod
+    def upgrade_1_to_2(cursor):
+        # These queries must stay here because they must not be updated with
+        # the normal queries
+        pass
+
+
 class Database(object):
     def __init__(self, filename):
         self.filename = filename
@@ -183,7 +214,12 @@ class Database(object):
 
         for ext in self._sort_extensions(extensions):
             if ext is None:
-                module = importlib.import_module('outspline.dbdeps._core')
+                # Yeah, Core is a static class, not a module like for the
+                #  extensions, but giving core a dedicated module would
+                #  "pollute" the dbdeps folder with a module that doesn't
+                #  represent an extension, requiring a name (e.g. "_core.py")
+                #  that in the future may conflict with a new real extension
+                module = Core
             else:
                 module = importlib.import_module('outspline.dbdeps.' + ext)
 

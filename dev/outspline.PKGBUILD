@@ -1,7 +1,7 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='outspline'
-pkgver='0.7.0'
+pkgver='0.7.1'
 pkgrel=1
 pkgdesc="Highly modular and extensible outliner for managing your notes"
 arch=('any')
@@ -19,7 +19,7 @@ conflicts=('organism')
 replaces=('organism')
 install=outspline.install
 source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
-sha256sums=('6726e3f366b427ff7a1e6bb130bbe8137c3b5e1e36db47b1430b858e2f9f7c34')
+sha256sums=('20a4465bbba554652c1e3c8483802b3e626607dc0253b7883dbcb5e4621c3a5e')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"

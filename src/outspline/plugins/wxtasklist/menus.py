@@ -137,7 +137,8 @@ class MainMenu(wx.Menu):
         wxgui_api.bind_to_update_menu_items(self._update_items)
         wxgui_api.bind_to_reset_menu_items(self._reset_items)
 
-        wxgui_api.insert_menu_main_item('Even&ts',
+
+        wxgui_api.insert_menu_main_item('S&chedule',
                                     wxgui_api.get_menu_view_position(), self)
 
     def _update_items(self, kwargs):
@@ -409,15 +410,16 @@ class ViewMenu(object):
         config = coreaux_api.get_plugin_configuration('wxtasklist')(
                                                         'Shortcuts')('View')
 
+
         self.events = wx.MenuItem(wxgui_api.get_menu_view(), self.ID_EVENTS,
-                        'Even&ts', 'Events navigation actions',
+                        '&Schedule', 'Schedule navigation actions',
                         subMenu=submenu)
         self.show = wx.MenuItem(submenu, self.ID_SHOW,
                                 "Show &panel\t{}".format(config['show']),
-                                "Show the events panel", kind=wx.ITEM_CHECK)
+                                "Show the schedule panel", kind=wx.ITEM_CHECK)
         self.focus = wx.MenuItem(submenu, self.ID_FOCUS,
                         "&Focus\t{}".format(config['focus']),
-                        "Set focus on the events tab")
+                        "Set focus on the schedule tab")
         self.alarms = wx.MenuItem(submenu, self.ID_ALARMS, '&Active alarms',
                                         'Set the visibility of active alarms',
                                         subMenu=self.alarms_submenu)

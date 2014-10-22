@@ -376,7 +376,10 @@ class Database(wx.SplitterWindow):
         # (e.g. the queries that update the previous id to the next/previous
         # items when moving an item)
         # It should be quite efficient anyway because self.data is not
-        # recalculated except for the items that explicitly requested it
+        # recalculated except for the items that explicitly requested it, and
+        # only the root items and their children are re-added, the rest of the
+        # items will be re-added on request (when their parents are expanded
+        # again)
         if kwargs['filename'] == self.filename:
             if self.history_tree_reset_request:
                 self.dvmodel.Cleared()
@@ -386,7 +389,7 @@ class Database(wx.SplitterWindow):
                     # For some reason ItemDeleted must be called too first...
                     self.dvmodel.ItemDeleted(self._get_root(), item)
                     self.dvmodel.ItemAdded(self._get_root(), item)
-                    self._reset_subtree(id_, item)
+                    self._reset_children(id_, item)
 
             for id_ in self.history_item_update_requests:
                 # id_ may have been deleted by an action in the history group
@@ -559,7 +562,7 @@ class Database(wx.SplitterWindow):
 
         self.dvmodel.ItemDeleted(parent, item)
         self.dvmodel.ItemAdded(parent, item)
-        self._reset_subtree(id_, item)
+        self._reset_children(id_, item)
 
     def move_item_to_parent(self):
         if core_api.block_databases():
@@ -583,20 +586,24 @@ class Database(wx.SplitterWindow):
 
                     self.dvmodel.ItemDeleted(oldparent, item)
                     self.dvmodel.ItemAdded(newparent, item)
-                    self._reset_subtree(id_, item)
+                    self._reset_children(id_, item)
                     self._refresh_item_arrow(newparent, oldpid, oldparent)
                     self.select_item(id_)
                     self.dbhistory.refresh()
 
             core_api.release_databases()
 
-    def _reset_subtree(self, id_, item):
+    def _reset_children(self, id_, item):
         childids = core_api.get_item_children(self.filename, id_)
 
         for childid in childids:
             child = self.get_tree_item(childid)
             self.dvmodel.ItemAdded(item, child)
-            self._reset_subtree(childid, child)
+            # There's no need to make this recursive and re-add all the
+            #  descendants immediately: they'll be re-added on request (when
+            #  their parents will be expanded again)
+            # Making this recursive would be exaggerately slow
+            #self._reset_children(childid, child)
 
     def edit_item(self):
         selection = self.get_selections(none=False)

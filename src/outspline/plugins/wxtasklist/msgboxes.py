@@ -24,7 +24,7 @@ import outspline.interfaces.wxgui_api as wxgui_api
 
 def save_to_json():
     return wx.FileDialog(wxgui_api.get_main_frame(),
-                            message="Export tasklist view",
+                            message="Export schedule view",
                             defaultDir=os.path.expanduser('~'),
                             defaultFile="outspline_events.json",
                             wildcard="JSON (*.json)|*.json|All files (*)|*",
@@ -33,7 +33,7 @@ def save_to_json():
 
 def save_to_tsv():
     return wx.FileDialog(wxgui_api.get_main_frame(),
-                            message="Export tasklist view",
+                            message="Export schedule view",
                             defaultDir=os.path.expanduser('~'),
                             defaultFile="outspline_events.tsv",
                             wildcard="TSV (*.tsv)|*.tsv|All files (*)|*",
@@ -42,7 +42,7 @@ def save_to_tsv():
 
 def save_to_xml():
     return wx.FileDialog(wxgui_api.get_main_frame(),
-                            message="Export tasklist view",
+                            message="Export schedule view",
                             defaultDir=os.path.expanduser('~'),
                             defaultFile="outspline_events.xml",
                             wildcard="XML (*.xml)|*.xml|All files (*)|*",
@@ -53,5 +53,5 @@ def warn_user_rights(filename):
     return wx.MessageDialog(wxgui_api.get_main_frame(), 'You are not '
                             'authorized to '
                             'create or overwrite {}.'.format(filename),
-                            caption="Export tasklist view",
+                            caption="Export schedule view",
                             style=wx.OK | wx.ICON_EXCLAMATION)
