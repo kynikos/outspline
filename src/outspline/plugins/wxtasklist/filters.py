@@ -663,7 +663,7 @@ class FilterConfigurationMonth(object):
             raise OutOfRangeError()
 
     def compute_from_interface(self, intvalues):
-        # The values are already sanitized by the date widgets
+        # The values are already sanitized by the spin widgets
         lowyear = intvalues['lowyear']
         lowmonth0 = intvalues['lowmonth0']
         type_ = intvalues['type']
