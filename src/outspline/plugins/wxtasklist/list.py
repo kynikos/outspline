@@ -75,8 +75,7 @@ class OccurrencesView(object):
         self._init_list()
 
         formatter = Formatter(self.config, self.listview)
-        self.refengine = RefreshEngine(self.config, self, formatter, self.occs,
-                                                                self.datamap)
+        self.refengine = RefreshEngine(self.config, self, formatter, self.occs)
 
         self._init_autoscroll()
         self._init_filters()
@@ -190,8 +189,12 @@ class OccurrencesView(object):
 
     def insert_items(self):
         # This method is always executed in the main thread, so there can't be
-        # races, except for self.occs that may be re-created meanwhile, but
-        # it's enough to iterate over a copy
+        #  races, except for self.occs that may be re-created meanwhile, but
+        #  it's enough to iterate over a copy
+        # Since self.datamap depends on self.occs, though, make sure to update
+        #  it here, and not in the search thread, or it will be subject to the
+        #  same race conditions as self.occs
+        self.datamap.clear()
 
         # Explicitly preserve the scrolled attribute of Autoscroll, because
         # DeleteAllItems generates EVT_SCROLLWIN that would always set it to
@@ -243,6 +246,10 @@ class OccurrencesView(object):
             # In order for ColumnSorterMixin to work, all items must have a
             # unique data value
             self.listview.SetItemData(index, i)
+
+            # Both the key and the values of self.datamap must comply with the
+            # requirements of ColumnSorterMixin
+            self.datamap[i] = item.get_comparison_values()
 
         # Use SortListItems instead of occurrences.sort(), so that the heading
         # will properly display the arrow icon
@@ -513,11 +520,10 @@ class RefreshEngineLimit(UserWarning):
 
 
 class RefreshEngine(object):
-    def __init__(self, config, occview, formatter, occs, datamap):
+    def __init__(self, config, occview, formatter, occs):
         self.occview = occview
         self.formatter = formatter
         self.occs = occs
-        self.datamap = datamap
         self.activealarms = {}
         self.TIMER_NAME = "wxtasklist_engine"
         self.DELAY = config.get_int('refresh_delay')
@@ -713,7 +719,6 @@ class RefreshEngine(object):
         # Don't re-assign = [] or the other live references to the object won't
         # be updated anymore (they'll still refer to the old object)
         self.occs[:] = []
-        self.datamap.clear()
         self.activealarms.clear()
         self.pastN = 0
 
@@ -751,17 +756,13 @@ class RefreshEngine(object):
         self._insert_item(item)
 
     def _insert_item(self, item):
-        i = len(self.occs)
         self.occs.append(item)
-
-        # Both the key and the values of self.datamap must comply with the
-        # requirements of ColumnSorterMixin
-        self.datamap[i] = item.get_comparison_values()
-
         self.pastN += item.get_past_count()
 
         # No point in inserting the item in the tasklist here with CallAfter,
         #  as it wouldn't make the interface responsive anyway
+        # Also, don't even dream of updating ListCtrl's itemDataMap here,
+        #  because it would be subject to the same race conditions as self.occs
 
 
 class TimeAllocation(object):
