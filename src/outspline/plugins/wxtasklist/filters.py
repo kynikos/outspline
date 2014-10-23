@@ -36,18 +36,16 @@ from exceptions import OutOfRangeError
 
 
 class Navigator(object):
-    def __init__(self, tasklist):
+    def __init__(self, tasklist, limits):
         # tasklist.list_ hasn't been instantiated yet here
         self.tasklist = tasklist
+        self.limits = limits
         self.parent = tasklist.panel
         self.panel = wx.Panel(self.parent)
         self.fbox = wx.WrapSizer(orient=wx.HORIZONTAL)
         self.panel.SetSizer(self.fbox)
 
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
-
-        self.limits = (self.config.get_int('minimum_year'),
-                                        self.config.get_int('maximum_year'))
 
         self.configuration = FilterConfiguration(self.limits)
 

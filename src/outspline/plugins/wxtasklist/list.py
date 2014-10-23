@@ -64,7 +64,7 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
 
 
 class OccurrencesView(object):
-    def __init__(self, tasklist, navigator):
+    def __init__(self, tasklist, navigator, limits):
         self.tasklist = tasklist
         self.navigator = navigator
 
@@ -75,7 +75,8 @@ class OccurrencesView(object):
         self._init_list()
 
         formatter = Formatter(self.config, self.listview)
-        self.refengine = RefreshEngine(self.config, self, formatter, self.occs)
+        self.refengine = RefreshEngine(self.config, self, formatter, self.occs,
+                                                                        limits)
 
         self._init_autoscroll()
         self._init_filters()
@@ -520,7 +521,7 @@ class RefreshEngineLimit(UserWarning):
 
 
 class RefreshEngine(object):
-    def __init__(self, config, occview, formatter, occs):
+    def __init__(self, config, occview, formatter, occs, limits):
         self.occview = occview
         self.formatter = formatter
         self.occs = occs
@@ -537,10 +538,9 @@ class RefreshEngine(object):
         }
 
         self.filterlimits = (
-            int(_time.mktime(_datetime.datetime(
-                    config.get_int('minimum_year'), 1, 1).timetuple())),
-            int(_time.mktime(_datetime.datetime(
-                    config.get_int('maximum_year') + 1, 1, 1).timetuple())) - 1
+            int(_time.mktime(_datetime.datetime(limits[0], 1, 1).timetuple())),
+            int(_time.mktime(_datetime.datetime(limits[1], 12, 31, 23, 59, 59,
+                                                                ).timetuple()))
         )
 
     def pre_enable(self):

@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 import wx
 
 import outspline.coreaux_api as coreaux_api
@@ -50,6 +51,8 @@ class TaskListPanel(wx.Panel):
 
 class TaskList(object):
     def __init__(self, parent):
+        self.YEAR_LIMITS = self._set_search_limits()
+
         wxgui_api.install_bundled_icon("wxtasklist", '@activealarms',
                                                     ("activealarms16.png", ))
         wxgui_api.install_bundled_icon("wxtasklist", '@dismiss',
@@ -117,9 +120,9 @@ class TaskList(object):
         # latter; note that inverting the order would work anyway because of a
         # usually favorable race condition (the list is refreshed after an
         # asynchronous delay), but of course that shouldn't be relied on
-        self.navigator = filters.Navigator(self)
+        self.navigator = filters.Navigator(self, self.YEAR_LIMITS)
         self.warningsbar = WarningsBar(self.panel)
-        self.list_ = list_.OccurrencesView(self, self.navigator)
+        self.list_ = list_.OccurrencesView(self, self.navigator, self.YEAR_LIMITS)
 
         self.mainmenu = menus.MainMenu(self)
         self.viewmenu = menus.ViewMenu(self)
@@ -134,6 +137,19 @@ class TaskList(object):
         wxgui_api.bind_to_hide_main_window(self._handle_hide_main_window)
         wxgui_api.bind_to_open_database(self._handle_open_database)
         core_api.bind_to_exit_app_1(self._handle_exit_application)
+
+    def _set_search_limits(self):
+        if sys.maxsize > 2**32:
+            # 64bit
+            # According to https://docs.python.org/2/library/time.html
+            #  "Values 100-1899 are always illegal"
+            #  This wouldn't apply to Python 3, if I could use it...
+            #  The maximum would be 9999, but keep it reasonable
+            return (1900, 2200)
+        else:
+            # 32bit
+            # Here the limits are of course given by the integer size
+            return (1902, 2037)
 
     def _handle_tab_hide(self, kwargs):
         if kwargs['page'] is self.panel:
