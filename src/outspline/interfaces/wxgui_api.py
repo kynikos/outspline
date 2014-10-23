@@ -398,7 +398,7 @@ def select_editor_tab_index(index):
 
 def get_selected_editor_tab_index():
     # Returns -1 if there's no tab
-    return wx.GetApp().nb_right.get_selected_tab_index()
+    return wx.GetApp().nb_right.get_apparent_selected_tab_index()
 
 
 def get_selected_editor_identification():
