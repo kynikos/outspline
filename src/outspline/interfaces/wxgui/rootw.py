@@ -269,7 +269,7 @@ class MainPanes(wx.SplitterWindow):
         # Make sure the left notebook is shown in any case
         self.nb_left.Show(True)
 
-        if not self.IsSplit() and self.nb_right.get_page_count() > 0:
+        if not self.IsSplit() and self.nb_right.get_real_page_count() > 0:
             # Make sure the right notebook is shown although
             # self.SplitVertically should do it implicitly
             self.nb_right.Show(True)

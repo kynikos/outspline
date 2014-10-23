@@ -1230,7 +1230,7 @@ class MenuViewRightNB(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self._focus_last, self.focus_last)
 
     def update_items(self):
-        ntabs = wx.GetApp().nb_right.get_page_count()
+        ntabs = wx.GetApp().nb_right.get_apparent_page_count()
 
         if ntabs < 1:
             self.cycle.Enable(False)

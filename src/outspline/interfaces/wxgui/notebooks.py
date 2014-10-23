@@ -112,9 +112,6 @@ class Notebook(FlatNotebook):
     def get_selected_tab(self):
         return self.GetCurrentPage()
 
-    def get_page_count(self):
-        return self.GetPageCount()
-
 
 class LeftNotebook(Notebook):
     def __init__(self, parent, frame, menu):
@@ -288,6 +285,18 @@ class RightNotebook(Notebook):
 
     def set_page_title(self, window, title):
         self.SetPageText(self.GetPageIndex(window), text=title)
+
+    def get_real_page_count(self):
+        return self.GetPageCount()
+
+    def get_apparent_page_count(self):
+        # If all open databases are closed, the main SplitterWindow is unsplit,
+        #  but e.g. the schedule tab remains open in the notebook, thus making
+        #  GetPageCount still return 1
+        if self.IsShown():
+            return self.GetPageCount()
+        else:
+            return 0
 
     def get_selected_editor(self):
         tab = self.get_selected_tab()
