@@ -105,9 +105,6 @@ class Notebook(FlatNotebook):
     def select_last_page(self):
         self.select_page(self.GetPageCount() - 1)
 
-    def get_selected_tab(self):
-        return self.GetCurrentPage()
-
 
 class LeftNotebook(Notebook):
     def __init__(self, parent, frame, menu):
@@ -152,6 +149,9 @@ class LeftNotebook(Notebook):
     def get_selected_tab_index(self):
         # Returns -1 if there's no tab
         return self.GetSelection()
+
+    def get_selected_tab(self):
+        return self.GetCurrentPage()
 
     def select_page(self, index):
         # FlatNotebook's SetSelection method doesn't send page change events,
@@ -242,6 +242,16 @@ class RightNotebook(Notebook):
         else:
             return -1
 
+    def get_apparent_selected_tab(self):
+        # If all open databases are closed, the main SplitterWindow is unsplit,
+        #  but e.g. the schedule tab remains open in the notebook, thus making
+        #  GetCurrentPage still return the schedule object
+        if self.IsShown():
+            # Returns None if there's no tab
+            return self.GetCurrentPage()
+        else:
+            return None
+
     def _split(self):
         if self.parent.nb_left.GetPageCount() > 0:
             self.parent.split_window()
@@ -309,7 +319,7 @@ class RightNotebook(Notebook):
             return 0
 
     def get_selected_editor(self):
-        tab = self.get_selected_tab()
+        tab = self.GetCurrentPage()
 
         for item in editor.tabs:
             if editor.tabs[item].panel is tab:

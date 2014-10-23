@@ -1263,13 +1263,13 @@ class MenuViewRightNB(wx.Menu):
         wx.GetApp().nb_right.AdvanceSelection(False)
 
     def _focus(self, event):
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wx.GetApp().nb_right.get_apparent_selected_tab()
 
         if tab:
             tab.SetFocus()
 
     def _close(self, event):
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wx.GetApp().nb_right.get_apparent_selected_tab()
 
         if tab:
             wx.GetApp().nb_right.close_tab(tab)
