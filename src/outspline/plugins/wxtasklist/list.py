@@ -37,7 +37,7 @@ import outspline.interfaces.wxgui_api as wxgui_api
 
 import filters
 import menus
-from exceptions import OutOfRangeError
+from exceptions import SearchOutOfRangeError
 
 
 class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
@@ -143,7 +143,7 @@ class OccurrencesView(object):
     def _init_filters(self):
         try:
             self.set_filter(self.navigator.get_current_configuration())
-        except OutOfRangeError:
+        except SearchOutOfRangeError:
             self.set_filter(self.navigator.get_default_configuration())
 
     def _init_show_options(self):
@@ -319,7 +319,7 @@ class OccurrencesView(object):
         self.tasklist.show_warning("Search results limit exceeded")
         self.tasklist.set_tab_icon_stopped()
 
-    def warn_out_of_range(self):
+    def warn_search_out_of_range(self):
         self.tasklist.show_warning("The search parameters are out of the "
                                                             "supported range")
 
@@ -673,12 +673,12 @@ class RefreshEngine(object):
         try:
             self.min_time, self.max_time = self.filter_.compute_limits(
                                                                 self.now)
-        except OutOfRangeError:
-            wx.CallAfter(self.occview.warn_out_of_range)
+        except SearchOutOfRangeError:
+            wx.CallAfter(self.occview.warn_search_out_of_range)
         else:
             if self.min_time < self.filterlimits[0] or \
                                     self.max_time > self.filterlimits[1]:
-                wx.CallAfter(self.occview.warn_out_of_range)
+                wx.CallAfter(self.occview.warn_search_out_of_range)
             else:
                 wx.CallAfter(self.occview.reset_warnings)
                 try:
