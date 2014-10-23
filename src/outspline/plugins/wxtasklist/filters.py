@@ -532,6 +532,12 @@ class FilterConfigurationDate(object):
                 highdate = lowdate + spand - _datetime.timedelta(days=1)
             except OverflowError:
                 raise OutOfRangeError()
+            else:
+                # In 32-bit systems, OverflowError isn't raised here, but later
+                #  in FilterDate by time.mktime, so be consistent and validate
+                #  the values already here
+                if highdate.year > self.limits[1]:
+                    raise OutOfRangeError()
 
             return {
                 'mode': 'date',
@@ -695,6 +701,10 @@ class FilterConfigurationMonth(object):
                 tempmonth0 = lowmonth0 - 1 + span
                 yspan, highmonth0 = divmod(tempmonth0, 12)
                 highyear = lowyear + yspan
+
+            # This is especially important for 32-bit systems
+            if highyear > self.limits[1]:
+                raise OutOfRangeError()
 
             return {
                 'mode': 'month',
@@ -1243,7 +1253,9 @@ class FilterRelativeWeeks(object):
             relweekdaystart = (7 - self.firstweekday + weekday) % 7 * 86400
             self.weekstart = int(_time.mktime(dnow.timetuple())
                                                             ) - relweekdaystart
-        except ValueError:
+        # OverflowError can be raised by time.mktime, especially on 32-bit
+        #  systems
+        except (ValueError, OverflowError):
             raise OutOfRangeError()
         else:
             mint = self.weekstart + self.low
@@ -1281,7 +1293,9 @@ class FilterRelativeMonths(object):
             # to only show the current month, and not occurrences starting at
             # the next month
             maxt = int(_time.mktime(dmax.timetuple())) - 1
-        except ValueError:
+        # OverflowError can be raised by time.mktime, especially on 32-bit
+        #  systems
+        except (ValueError, OverflowError):
             raise OutOfRangeError()
         else:
             return (mint, maxt)
@@ -1318,7 +1332,9 @@ class FilterRelativeYears(object):
             # to only show the current year, and not occurrences starting at
             # the next year
             maxt = int(_time.mktime(dmax.timetuple())) - 1
-        except ValueError:
+        # OverflowError can be raised by time.mktime, especially on 32-bit
+        #  systems
+        except (ValueError, OverflowError):
             raise OutOfRangeError()
         else:
             return (mint, maxt)
