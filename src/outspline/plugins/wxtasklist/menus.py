@@ -191,11 +191,9 @@ class MainMenu(wx.Menu):
                     self.snooze_all.Enable()
                     self.dismiss_all.Enable()
 
+                self.navigator.Enable()
                 self.navigator_submenu.update_items_selected()
 
-            if self.tasklist.is_shown():
-                # Already appropriately checked above
-                self.navigator.Enable()
                 self.export.Enable()
 
     def _reset_items(self, kwargs):
