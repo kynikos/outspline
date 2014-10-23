@@ -37,7 +37,7 @@ import outspline.interfaces.wxgui_api as wxgui_api
 
 import filters
 import menus
-from exceptions import SearchOutOfRangeError
+from exceptions import SearchOutOfRangeError, ResultsOutOfRangeError
 
 
 class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
@@ -323,6 +323,10 @@ class OccurrencesView(object):
         self.tasklist.show_warning("The search parameters are out of the "
                                                             "supported range")
 
+    def warn_results_out_of_range(self):
+        self.tasklist.show_warning("The search results are out of the "
+                                                            "supported range")
+
     def reset_warnings(self):
         self.tasklist.set_tab_icon_ongoing()
         self.tasklist.dismiss_warning()
@@ -529,6 +533,7 @@ class RefreshEngine(object):
         self.TIMER_NAME = "wxtasklist_engine"
         self.DELAY = config.get_int('refresh_delay')
         self.LIMIT = config.get_int('maximum_items')
+        self.DEBUG_MODE = config.get_bool("debug_mode")
         self.pastN = 0
 
         self.filterclasses = {
@@ -687,6 +692,8 @@ class RefreshEngine(object):
                     wx.CallAfter(self.occview.set_tab_icon_stopped)
                 except RefreshEngineLimit:
                     wx.CallAfter(self.occview.warn_limit_exceeded)
+                except ResultsOutOfRangeError:
+                    wx.CallAfter(self.occview.warn_results_out_of_range)
                 except core_api.NonExistingItemError:
                     self._delay_restart(kwargs=None)
                 else:
@@ -699,7 +706,22 @@ class RefreshEngine(object):
         self.search = organism_api.get_occurrences_range(mint=self.min_time,
                         maxt=self.max_time,
                         filenames=organism_api.get_supported_open_databases())
-        self.search.start()
+
+        try:
+            self.search.start()
+        except:
+            # If an item has a long duration or a very far alarm, the
+            #  calculated occurrence secondary times (end and alarm) may fall
+            #  in the search range, but their start time may be out of the
+            #  range supported by the time and datetime module functions, thus
+            #  raising exceptions that would be too hard to predict one by one;
+            #  for this reason use this catch-all exception in production mode,
+            #  remembering to activate DEBUG_MODE when developing
+            # See also further below for a related problem
+            if self.DEBUG_MODE:
+                raise
+            else:
+                raise ResultsOutOfRangeError()
 
         if self.cancel_request:
             raise RefreshEngineStop()
@@ -725,8 +747,23 @@ class RefreshEngine(object):
         self.timealloc = TimeAllocation(self.min_time, self.max_time,
                                                             self.occview, self)
 
-        for occurrence in occurrences:
-            self._insert_occurrence(occurrence)
+        try:
+            for occurrence in occurrences:
+                self._insert_occurrence(occurrence)
+        except:
+            # If an item has a long duration or a very far alarm, the
+            #  calculated occurrence secondary times (end and alarm) may go out
+            #  of the range supported by the time and datetime module
+            #  functions, even if the start time is correct, thus raising
+            #  exceptions when formatting their timestamps; for this reason use
+            #  this catch-all exception in production mode, remembering to
+            #  activate DEBUG_MODE when developing; don't try to catch the
+            #  specific exceptions for consistency with the other similar
+            #  problem further above
+            if self.DEBUG_MODE:
+                raise
+            else:
+                raise ResultsOutOfRangeError()
 
         self.timealloc.insert_gaps_and_overlappings()
 
