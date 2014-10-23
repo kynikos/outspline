@@ -19,6 +19,7 @@
   - database upgrade mechanism
   - database properties
   - database search
+  Test on 32-bit systems
   Test interfaces with various GTK themes
 * Check code with the pep8 tool
 * Update and release any library that is maintained in external repos
