@@ -481,7 +481,12 @@ class ViewMenu(object):
 
         if self.tasklist.is_shown():
             self.show.Check(check=True)
-            self.focus.Enable()
+
+            if wxgui_api.get_databases_count() > 0:
+                self.focus.Enable()
+            else:
+                self.focus.Enable(False)
+
             self.alarms.Enable()
             self.navigator.Enable()
             self.gaps.Enable()
