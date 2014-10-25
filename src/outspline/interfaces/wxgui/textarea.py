@@ -56,6 +56,9 @@ class TextArea(object):
         wx.GetApp().root.accmanager.register_text_ctrl(self.area)
 
         self.textctrl_nav_keys = {
+            # The Ctrl+Enter in the menu isn't processed when the TextCtrl is
+            #   focused; wx.TE_PROCESS_ENTER seems to have no effect either...
+            wx.WXK_RETURN: self._handle_enter_on_textctrl,
             wx.WXK_ESCAPE: self._navigate_textctrl_backward,
         }
 
@@ -80,6 +83,18 @@ class TextArea(object):
             event.Skip()
         # Don't skip the event if the navigation is done
         #event.Skip()
+
+    def _handle_enter_on_textctrl(self, event):
+        # This method must get the same arguments as
+        #  _navigate_textctrl_backward
+        if event.ControlDown():
+            if event.ShiftDown():
+                for item in editor.tabs:
+                    editor.tabs[item].apply()
+            else:
+                editor.tabs[self.item].apply()
+        else:
+            event.Skip()
 
     def _handle_tab_on_textctrl(self, event):
         # This method must get the same arguments as
