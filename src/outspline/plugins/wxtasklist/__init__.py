@@ -201,7 +201,7 @@ class TaskList(object):
     def _disable(self):
         self.list_.disable_refresh()
 
-        organism_alarms_api.bind_to_alarm(self._update_tab_label, False)
+        organism_alarms_api.bind_to_alarm(self._update_tab_label_after, False)
         organism_alarms_api.bind_to_alarm_off(self._update_tab_label, False)
         wxgui_api.bind_to_close_database(self._update_tab_label, False)
 
