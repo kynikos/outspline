@@ -276,14 +276,15 @@ class DatabaseHistory(object):
                             wx.GetApp().artprovider.get_menu_icon('@redo')))
 
     def _update_context_menu(self):
-        self.undo.Enable(False)
-        self.redo.Enable(False)
-
         if core_api.preview_undo_tree(self.filename):
             self.undo.Enable()
+        else:
+            self.undo.Enable(False)
 
         if core_api.preview_redo_tree(self.filename):
             self.redo.Enable()
+        else:
+            self.redo.Enable(False)
 
     def _store_context_menu_items(self, items):
         self.undo, self.redo = items

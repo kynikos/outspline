@@ -226,13 +226,6 @@ class MainMenu(object):
     def _handle_enable_tree_menus(self, kwargs):
         filename = kwargs['filename']
 
-        self.mcut.Enable(False)
-        self.mcopy.Enable(False)
-        self.mpaste.Enable(False)
-        self.mpastesub.Enable(False)
-        self.mpaste.SetItemLabel(self.mpaste_label_1)
-        self.mpaste.SetHelp(self.mpaste_help_1)
-
         # filename is None is no database is open
         if filename:
             sel = wxgui_api.get_tree_selections(filename)
@@ -247,12 +240,44 @@ class MainMenu(object):
                     self.mpaste.SetHelp(self.mpaste_help_2)
                     self.mpastesub.Enable()
 
+                else:
+                    self.mpaste.Enable(False)
+                    self.mpaste.SetItemLabel(self.mpaste_label_1)
+                    self.mpaste.SetHelp(self.mpaste_help_1)
+                    self.mpastesub.Enable(False)
+
             elif len(sel) > 1:
                 self.mcut.Enable()
+                self.mcopy.Enable(False)
                 self.mcopy.Enable()
+                self.mpaste.Enable(False)
+                self.mpaste.SetItemLabel(self.mpaste_label_1)
+                self.mpaste.SetHelp(self.mpaste_help_1)
+                self.mpastesub.Enable(False)
 
             elif copypaste_api.has_copied_items(filename):
+                self.mcut.Enable(False)
+                self.mcopy.Enable(False)
                 self.mpaste.Enable()
+                self.mpaste.SetItemLabel(self.mpaste_label_1)
+                self.mpaste.SetHelp(self.mpaste_help_1)
+                self.mpastesub.Enable(False)
+
+            else:
+                self.mcut.Enable(False)
+                self.mcopy.Enable(False)
+                self.mpaste.Enable(False)
+                self.mpaste.SetItemLabel(self.mpaste_label_1)
+                self.mpaste.SetHelp(self.mpaste_help_1)
+                self.mpastesub.Enable(False)
+
+        else:
+            self.mcut.Enable(False)
+            self.mcopy.Enable(False)
+            self.mpaste.Enable(False)
+            self.mpaste.SetItemLabel(self.mpaste_label_1)
+            self.mpaste.SetHelp(self.mpaste_help_1)
+            self.mpastesub.Enable(False)
 
     def cut_items(self, event, no_confirm=False):
         filename = wxgui_api.get_selected_database_filename()

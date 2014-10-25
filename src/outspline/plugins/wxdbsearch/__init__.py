@@ -614,13 +614,10 @@ class MainMenu(wx.Menu):
 
     def update_items(self, kwargs):
         if kwargs['menu'] is self:
-            self.search.Enable(False)
-            self.refresh.Enable(False)
-            self.find.Enable(False)
-            self.edit.Enable(False)
-
             if core_api.get_databases_count() > 0:
                 self.search.Enable()
+            else:
+                self.search.Enable(False)
 
             mainview = self.get_selected_search()
 
@@ -632,6 +629,14 @@ class MainMenu(wx.Menu):
                 if sel > -1:
                     self.find.Enable()
                     self.edit.Enable()
+                else:
+                    self.find.Enable(False)
+                    self.edit.Enable(False)
+
+            else:
+                self.refresh.Enable(False)
+                self.find.Enable(False)
+                self.edit.Enable(False)
 
     def reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their

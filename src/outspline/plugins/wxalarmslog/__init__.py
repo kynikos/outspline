@@ -256,12 +256,12 @@ class LogsMenu(object):
         wxgui_api.bind_to_reset_menu_items(self._reset_items)
 
     def _update_items(self, kwargs):
-        self.find.Enable(False)
-
         log = self.plugin.get_selected_log()
 
         if log and log.is_shown() and log.has_selection():
             self.find.Enable()
+        else:
+            self.find.Enable(False)
 
     def _disable_items(self, kwargs):
         self.alarms.Enable(False)
