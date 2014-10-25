@@ -28,6 +28,8 @@ try:
 except ImportError:
     wx = None
 
+from outspline.static.pyaux.timeaux import TimeSpanFormatters
+
 import outspline.core_api as core_api
 import outspline.coreaux_api as coreaux_api
 import outspline.extensions.organism_alarms_api as organism_alarms_api
@@ -46,20 +48,39 @@ class Notifications():
         organism_alarms_api.bind_to_alarm(self._handle_alarm)
 
     def _handle_alarm(self, kwargs):
+        now = int(time.time()) // 60 * 60
+
         # Don't notify for old alarms to avoid filling the screen with
         # notifications
         # Of course this check will prevent a valid notification if Outspline
         # takes more than 1 minute from the activation of the alarm to get
         # here, but in case of such serious slowness, a missed notification is
         # probably just a minor problem
-        if kwargs['alarm'] == int(time.time()) // 60 * 60:
+        if kwargs['alarm'] == now:
             filename = kwargs['filename']
             id_ = kwargs['id_']
+            start = kwargs['start']
+            end = kwargs['end']
 
             text = core_api.get_item_text(filename, id_).partition('\n')[0]
 
-            self.alarm = Notify.Notification.new(summary="Outspline",
-                                                    body=text, icon=self.ICON)
+            rstart = start - now
+
+            if rstart > 0:
+                body = "In {}".format(TimeSpanFormatters.format_compact(
+                                                                    rstart))
+            elif rstart == 0:
+                body = "Now"
+            else:
+                body = "{} ago".format(TimeSpanFormatters.format_compact(
+                                                                    rstart))
+
+            if end:
+                body += ", for {}".format(TimeSpanFormatters.format_compact(
+                                                                end - start))
+
+            self.alarm = Notify.Notification.new(summary=text, body=body,
+                                                                icon=self.ICON)
 
             if wxgui_api:
                 self.alarm.add_action("open_item", "Open", self._open_item,
