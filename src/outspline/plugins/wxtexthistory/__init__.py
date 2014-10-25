@@ -18,7 +18,7 @@
 
 import wx
 
-import texthistory
+import outspline.static.texthistory as texthistory
 
 import outspline.coreaux_api as coreaux_api
 import outspline.interfaces.wxgui_api as wxgui_api

@@ -24,7 +24,7 @@ import errno
 import locale
 from datetime import datetime
 
-import configfile
+import outspline.static.configfile as configfile
 
 import exceptions
 
