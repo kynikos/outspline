@@ -87,7 +87,6 @@ class SearchView(object):
         self.box.Add(self.results.listview, 1, flag=wx.EXPAND)
 
         wxgui_api.bind_to_close_database(self._handle_close_database)
-        wxgui_api.bind_to_plugin_close_event(self._handle_tab_hide)
 
     @classmethod
     def open_(cls):
@@ -103,10 +102,6 @@ class SearchView(object):
     def close_(self):
         self.finish_search_action = self._finish_search_close
         self._stop_search()
-
-    def _handle_tab_hide(self, kwargs):
-        if kwargs['page'] is self.panel:
-            self.close_()
 
     def _handle_close_database(self, kwargs):
         if core_api.get_databases_count() < 1:
@@ -160,7 +155,6 @@ class SearchView(object):
         # application) raising an exception when trying to remove self from
         # the searches list
         wxgui_api.bind_to_close_database(self._handle_close_database, False)
-        wxgui_api.bind_to_plugin_close_event(self._handle_tab_hide, False)
 
         self.finish_search_action = self._finish_search_dummy
 

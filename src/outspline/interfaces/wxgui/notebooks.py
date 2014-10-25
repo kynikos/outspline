@@ -28,7 +28,6 @@ import editor
 import databases
 
 last_database_closed_event = Event()
-plugin_close_event = Event()
 
 
 class Notebook(FlatNotebook):
@@ -215,18 +214,7 @@ class RightNotebook(Notebook):
         event.Veto()
 
         if core_api.block_databases():
-            page = self.GetCurrentPage()
-
-            # This also prevents closing a plugin window
-            for item in tuple(editor.tabs.keys()):
-                if editor.tabs[item].panel is page:
-                    editor.tabs[item].close()
-                    break
-            else:
-                # Note that this event is also bound directly by the dbprops
-                # module
-                plugin_close_event.signal(page=page)
-
+            self.GetCurrentPage().close_tab()
             core_api.release_databases()
 
     def _handle_page_closed(self, event):

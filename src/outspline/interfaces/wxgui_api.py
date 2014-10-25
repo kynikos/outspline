@@ -459,10 +459,6 @@ def set_right_nb_page_image(page, index):
     return wx.GetApp().nb_right.set_page_image(page, index)
 
 
-def bind_to_plugin_close_event(handler, bind=True):
-    return notebooks.plugin_close_event.bind(handler, bind)
-
-
 ### ROOTW ###
 
 def get_main_frame():

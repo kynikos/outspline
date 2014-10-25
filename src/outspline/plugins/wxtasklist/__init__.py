@@ -132,7 +132,6 @@ class TaskList(object):
         self.pbox.Add(self.warningsbar.get_panel(), flag=wx.EXPAND)
         self.pbox.Add(self.list_.listview, 1, flag=wx.EXPAND)
 
-        wxgui_api.bind_to_plugin_close_event(self._handle_tab_hide)
         wxgui_api.bind_to_show_main_window(self._handle_show_main_window)
         wxgui_api.bind_to_hide_main_window(self._handle_hide_main_window)
         wxgui_api.bind_to_open_database(self._handle_open_database)
@@ -150,10 +149,6 @@ class TaskList(object):
             # 32bit
             # Here the limits are of course given by the integer size
             return (1902, 2037)
-
-    def _handle_tab_hide(self, kwargs):
-        if kwargs['page'] is self.panel:
-            self._hide()
 
     def _handle_show_main_window(self, kwargs):
         if self.is_shown():

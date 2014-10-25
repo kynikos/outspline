@@ -27,7 +27,6 @@ import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import Event
 import outspline.core_api as core_api
 
-import notebooks
 import databases
 import msgboxes
 
@@ -143,8 +142,6 @@ class DatabaseProperties(object):
         self.propgrid.Bind(wx.EVT_KEY_DOWN, self._handle_tab_down)
         self.propgrid.Bind(wxpg.EVT_PG_CHANGED, self._handle_property_changed)
 
-        notebooks.plugin_close_event.bind(self._handle_close_tab)
-
     def _handle_esc_down(self, event):
         # Temporary fix for bug #331
         if event.GetKeyCode() == wx.WXK_ESCAPE:
@@ -169,10 +166,6 @@ class DatabaseProperties(object):
         property_ = event.GetProperty()
         self.onchange_actions[property_.GetName()](property_.GetClientData(),
                                                         property_.GetValue())
-
-    def _handle_close_tab(self, kwargs):
-        if kwargs['page'] is self.panel:
-            self.manager.close(self.filename)
 
     def configure(self):
         self._init_file_props()
