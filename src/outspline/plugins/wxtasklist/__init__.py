@@ -163,9 +163,14 @@ class TaskList(object):
         return wxgui_api.is_page_in_right_nb(self.panel)
 
     def toggle_shown(self, event):
+        # Showing/hiding is the correct behaviour: allowing multiple instances
+        # of tasklist notebook tabs would need finding a way to refresh only
+        # one at a time, probably only the selected one, thus requiring to
+        # update it every time it gets selected, which would in turn make
+        # everything more sluggish
         if self.is_shown():
             self._hide()
-        elif wxgui_api.get_databases_count():
+        else:
             self._show()
 
     def _show(self):
@@ -174,11 +179,6 @@ class TaskList(object):
         self._enable()
 
     def _hide(self):
-        # Showing/hiding is the correct behaviour: allowing multiple instances
-        # of tasklist notebook tabs would need finding a way to refresh only
-        # one at a time, probably only the selected one, thus requiring to
-        # update it every time it gets selected, which would in turn make
-        # everything more sluggish
         wxgui_api.hide_right_nb_page(self.panel)
         self._disable()
 
