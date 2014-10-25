@@ -9,8 +9,17 @@ import re
 import configfile
 
 # This script is supposed to be run in the ./dev directory as ./release.py
+# If the -l option is passed, the external libraries won't be bundled and will
+#  have to be installed on the system separately
 # It's possible to build only some components by specifying them as arguments
-# for the command
+#  for the command
+
+if sys.argv[1] == "-l":
+    BUNDLE_LIBS = False
+    COMPONENTS = sys.argv[2:]
+else:
+    BUNDLE_LIBS = True
+    COMPONENTS = sys.argv[1:]
 
 ROOT_DIR = '..'
 DEST_DIR = '.'
@@ -28,8 +37,8 @@ PACKAGES = {
 }
 
 def main():
-    if len(sys.argv) > 1:
-        for cname in sys.argv[1:]:
+    if len(COMPONENTS) > 0:
+        for cname in COMPONENTS:
             cfile = cname + '.component'
             make_component_package(cfile, cname)
             make_pkgbuild_package(cname)
@@ -70,11 +79,30 @@ def make_component_package(cfile, cname):
     shutil.copy2(os.path.join(DEPS_DIR, '__init__.py'), depsdir)
 
     if component.get_bool('provides_core', fallback='false'):
-        for src, dest, sd in ((BASE_DIR, maindir, 'static'),
-                              (BASE_DIR, maindir, 'core'),
-                              (BASE_DIR, maindir, 'coreaux')):
-            shutil.copytree(os.path.join(src, sd), os.path.join(dest, sd),
+        shutil.copytree(os.path.join(BASE_DIR, 'core'), os.path.join(
+                            maindir, 'core'),
                             ignore=shutil.ignore_patterns('*.pyc', '*.pyo'))
+        shutil.copytree(os.path.join(BASE_DIR, 'coreaux'), os.path.join(
+                            maindir, 'coreaux'),
+                            ignore=shutil.ignore_patterns('*.pyc', '*.pyo'))
+
+        try:
+            shutil.copytree(os.path.join(BASE_DIR, 'static'), os.path.join(
+                            maindir, 'static'),
+                            ignore=shutil.ignore_patterns('*.pyc', '*.pyo'))
+        except shutil.Error as errs:
+            # A symlink to a folder has been found (an external library)
+            if BUNDLE_LIBS:
+                for srcname, dstname, exception in errs.args[0]:
+                    shutil.copytree(os.path.join(BASE_DIR, 'static',
+                            os.readlink(srcname)), dstname,
+                            ignore=shutil.ignore_patterns('*.pyc', '*.pyo'))
+            else:
+                for srcname, dstname, exception in errs.args[0]:
+                    with open(dstname + ".py", "w") as file_:
+                        file_.write("from __future__ import absolute_import\n"
+                                                "from {} import *\n".format(
+                                                os.path.basename(dstname)))
 
         for file_ in ('core_api.py', 'coreaux_api.py', 'outspline.conf'):
             shutil.copy2(os.path.join(BASE_DIR, file_), maindir)
