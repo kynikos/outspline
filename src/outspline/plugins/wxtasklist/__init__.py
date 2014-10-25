@@ -132,9 +132,10 @@ class TaskList(object):
         self.pbox.Add(self.warningsbar.get_panel(), flag=wx.EXPAND)
         self.pbox.Add(self.list_.listview, 1, flag=wx.EXPAND)
 
+        self._show()
+
         wxgui_api.bind_to_show_main_window(self._handle_show_main_window)
         wxgui_api.bind_to_hide_main_window(self._handle_hide_main_window)
-        wxgui_api.bind_to_open_database(self._handle_open_database)
         core_api.bind_to_exit_app_1(self._handle_exit_application)
 
     def _set_search_limits(self):
@@ -157,14 +158,6 @@ class TaskList(object):
     def _handle_hide_main_window(self, kwargs):
         if self.is_shown():
             self._disable()
-
-    def _handle_open_database(self, kwargs):
-        # Do not add the plugin if there's no database open, otherwise strange
-        # bugs will happen, like the keyboard menu shortcuts not working until
-        # a database is opened. Add the plugin only when the first database is
-        # opened.
-        self._show()
-        wxgui_api.bind_to_open_database(self._handle_open_database, False)
 
     def is_shown(self):
         return wxgui_api.is_page_in_right_nb(self.panel)
