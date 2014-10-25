@@ -25,6 +25,7 @@ import os
 import string as string_
 import threading
 
+from outspline.static.pyaux.timeaux import TimeSpanFormatters
 from outspline.static.wxclasses.misc import NarrowSpinCtrl
 
 import outspline.coreaux_api as coreaux_api
@@ -938,9 +939,9 @@ class Formatter(object):
             self.format_database = self._format_database_short
 
         if config('Formats')['duration'] == 'compact':
-            self.format_duration = self._format_duration_compact
+            self.format_duration = TimeSpanFormatters.format_compact
         else:
-            self.format_duration = self._format_duration_expanded
+            self.format_duration = TimeSpanFormatters.format_expanded
 
         self._init_colors()
 
@@ -1020,37 +1021,6 @@ class Formatter(object):
     def format_duration(self, duration):
         # This method is assigned dynamically
         pass
-
-    def _format_duration_compact(self, duration):
-        if duration % 604800 == 0:
-            return '{} weeks'.format(str(duration // 604800))
-        elif duration % 86400 == 0:
-            return '{} days'.format(str(duration // 86400))
-        elif duration % 3600 == 0:
-            return '{} hours'.format(str(duration // 3600))
-        elif duration % 60 == 0:
-            return '{} minutes'.format(str(duration // 60))
-
-    def _format_duration_expanded(self, duration):
-        strings = []
-        w, r = divmod(duration, 604800)
-        d, r = divmod(r, 86400)
-        h, r = divmod(r, 3600)
-        m = r // 60
-
-        if w > 0:
-            strings.append('{}w'.format(str(w)))
-
-        if d > 0:
-            strings.append('{}d'.format(str(d)))
-
-        if h > 0:
-            strings.append('{}h'.format(str(h)))
-
-        if m > 0:
-            strings.append('{}m'.format(str(m)))
-
-        return ' '.join(strings)
 
 
 class Autoscroll(object):

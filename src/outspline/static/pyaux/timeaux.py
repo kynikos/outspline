@@ -74,3 +74,43 @@ class UTCOffset(object):
         recommended for isolated time offset computations.
         """
         return cls._compute_variable(time_.time())
+
+
+class TimeSpanFormatters(object):
+    @staticmethod
+    def format_compact(seconds):
+        if seconds % 604800 == 0:
+            return '{} weeks'.format(str(seconds // 604800))
+        elif seconds % 86400 == 0:
+            return '{} days'.format(str(seconds // 86400))
+        elif seconds % 3600 == 0:
+            return '{} hours'.format(str(seconds // 3600))
+        elif seconds % 60 == 0:
+            return '{} minutes'.format(str(seconds // 60))
+        else:
+            return '{} seconds'.format(str(seconds))
+
+    @staticmethod
+    def format_expanded(seconds):
+        strings = []
+        w, r = divmod(seconds, 604800)
+        d, r = divmod(r, 86400)
+        h, r = divmod(r, 3600)
+        m, s = divmod(r, 60)
+
+        if w > 0:
+            strings.append('{}w'.format(str(w)))
+
+        if d > 0:
+            strings.append('{}d'.format(str(d)))
+
+        if h > 0:
+            strings.append('{}h'.format(str(h)))
+
+        if m > 0:
+            strings.append('{}m'.format(str(m)))
+
+        if s > 0:
+            strings.append('{}s'.format(str(s)))
+
+        return ' '.join(strings)
