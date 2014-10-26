@@ -63,8 +63,6 @@ class Database(object):
             connection = sqlite3.connect(filename)
             cursor = connection.cursor()
 
-            # I have to import here, or a circular import will happen
-            import outspline.core_api as core_api
             cursor.execute(queries.compatibility_select)
         except sqlite3.DatabaseError:
             connection.close()
