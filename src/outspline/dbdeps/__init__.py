@@ -57,15 +57,19 @@ class Core(object):
 
 class Database(object):
     def __init__(self, filename):
+        # I have to import here, or a circular import will happen
+        from outspline.core.databases import FileDB
+
         self.filename = filename
 
         try:
-            connection = sqlite3.connect(filename)
+            connection = FileDB(filename)
             cursor = connection.cursor()
 
             cursor.execute(queries.compatibility_select)
+
         except sqlite3.DatabaseError:
-            connection.close()
+            connection.disconnect()
             raise DatabaseNotValidError()
 
         # ABORT - If a dependency is not installed
@@ -137,7 +141,7 @@ class Database(object):
 
                 del self.dependencies['add'][row[1]]
 
-        connection.close()
+        connection.disconnect()
 
     def is_compatible(self, check_new_extensions):
         if len(self.dependencies['abort']) > 0:
