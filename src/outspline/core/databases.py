@@ -277,7 +277,7 @@ class Database(object):
         # case it should be saved first, and that's not what is expected
 
         qconn = self.connection.get()
-        qconnd = sqlite3.connect(destination)
+        qconnd = FileDB(destination)
         cursor = qconn.cursor()
         cursord = qconnd.cursor()
 
@@ -302,8 +302,7 @@ class Database(object):
 
         self.connection.give(qconn)
 
-        qconnd.commit()
-        qconnd.close()
+        qconnd.save_and_disconnect()
 
     def close(self):
         closing_database_event.signal(filename=self.filename)
