@@ -20,20 +20,13 @@ alarmsproperties_create = ('CREATE TABLE AlarmsProperties '
                           '(AP_id INTEGER PRIMARY KEY, '
                            'AP_log_limit INTEGER)')
 
-alarmsproperties_select = 'SELECT * FROM AlarmsProperties'
-
 alarmsproperties_select_history = ('SELECT AP_log_limit FROM AlarmsProperties '
                                     'WHERE AP_log_limit IS NOT NULL LIMIT 1')
 
 alarmsproperties_insert_init = ('INSERT INTO AlarmsProperties '
                                     '(AP_id, AP_log_limit) VALUES (NULL, ?)')
 
-alarmsproperties_insert_copy = ('INSERT INTO AlarmsProperties '
-                                        '(AP_id, AP_log_limit) VALUES (?, ?)')
-
 alarmsproperties_update = 'UPDATE AlarmsProperties SET AP_log_limit=?'
-
-alarmsproperties_delete = 'DELETE FROM AlarmsProperties'
 
 alarmsproperties_drop = 'DROP TABLE AlarmsProperties'
 
@@ -54,9 +47,6 @@ alarms_select_count = ('SELECT COUNT(*) AS A_active_alarms FROM Alarms '
 
 alarms_insert = ('INSERT INTO Alarms (A_id, A_item, A_start, A_end, A_alarm, '
                                     'A_snooze) VALUES (NULL, ?, ?, ?, ?, ?)')
-
-alarms_insert_copy = ('INSERT INTO Alarms (A_id, A_item, A_start, A_end, '
-                                'A_alarm, A_snooze) VALUES (?, ?, ?, ?, ?, ?)')
 
 alarms_update_id = 'UPDATE Alarms SET A_snooze=? WHERE A_id=?'
 
@@ -90,17 +80,12 @@ alarmsofflog_create = ("CREATE TABLE AlarmsOffLog ("
                                                 "AOL_reason INTEGER, "
                                                 "AOL_text TEXT)")
 
-alarmsofflog_select = 'SELECT * FROM AlarmsOffLog'
-
 alarmsofflog_select_order = ('SELECT * FROM AlarmsOffLog '
                                                     'ORDER BY AOL_tstamp DESC')
 
 alarmsofflog_insert = ('INSERT INTO AlarmsOffLog (AOL_id, AOL_item, '
                             'AOL_tstamp, AOL_reason, AOL_text) '
                             'VALUES (NULL, ?, strftime("%s", "now"), ?, ?)')
-
-alarmsofflog_insert_copy = ('INSERT INTO AlarmsOffLog (AOL_id, AOL_item, '
-                    'AOL_tstamp, AOL_reason, AOL_text) VALUES (?, ?, ?, ?, ?)')
 
 # The following query is not supported:
 #   DELETE FROM AlarmsOffLog ORDER BY AOL_tstamp DESC LIMIT -1 OFFSET ?

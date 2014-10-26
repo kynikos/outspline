@@ -40,7 +40,6 @@ closing_database_event = Event()
 close_database_event = Event()
 save_permission_check_event = Event()
 save_database_event = Event()
-save_database_copy_event = Event()
 delete_subtree_event = Event()
 exit_app_event_1 = Event()
 exit_app_event_2 = Event()
@@ -262,23 +261,21 @@ class Database(object):
         cursor = qconn.cursor()
         cursord = qconnd.cursor()
 
-        cursord.execute(queries.properties_delete)
-        cursor.execute(queries.properties_select)
-        for row in cursor:
-            cursord.execute(queries.properties_insert_copy, tuple(row))
+        cursor.execute(queries.master_select_tables)
 
-        cursord.execute(queries.compatibility_delete_all)
-        cursor.execute(queries.compatibility_select)
         for row in cursor:
-            cursord.execute(queries.compatibility_insert_copy, tuple(row))
+            tname = row["name"]
 
-        cursor.execute(queries.items_select)
-        for row in cursor:
-            cursord.execute(queries.items_insert, tuple(row))
+            # Some tables are initialized by self.create
+            cursord.execute(queries.master_delete.format(tname))
 
-        cursor.execute(queries.history_select)
-        for row in cursor:
-            cursord.execute(queries.history_insert_copy, tuple(row))
+            tcursor = qconn.cursor()
+            tcursor.execute(queries.master_select_table.format(tname))
+
+            for trow in tcursor:
+                cursord.execute(queries.master_insert.format(tname,
+                                    ", ".join(trow.keys()),
+                                    ", ".join(["?", ] * len(trow))), (trow))
 
         cursord.execute(queries.history_update_status_new)
         cursord.execute(queries.history_update_status_old)
@@ -287,9 +284,6 @@ class Database(object):
 
         qconnd.commit()
         qconnd.close()
-
-        save_database_copy_event.signal(origin=self.filename,
-                                        destination=destination)
 
     def close(self):
         closing_database_event.signal(filename=self.filename)

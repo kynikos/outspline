@@ -49,7 +49,6 @@ class Main(object):
                                             self._handle_reset_modified_state)
         # No need to bind to close_database, as specific filenames will be
         # deleted from self.databases in self._handle_history_clean
-        core_api.bind_to_save_database_copy(self._handle_save_database_copy)
         core_api.bind_to_history_remove(self._handle_history_remove)
         core_api.bind_to_history_clean(self._handle_history_clean)
 
@@ -106,12 +105,6 @@ class Main(object):
     def _handle_reset_modified_state(self, kwargs):
         try:
             self.databases[kwargs['filename']].reset_modified_state()
-        except KeyError:
-            pass
-
-    def _handle_save_database_copy(self, kwargs):
-        try:
-            self.databases[kwargs['origin']].save_copy(kwargs['destination'])
         except KeyError:
             pass
 

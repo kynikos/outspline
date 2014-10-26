@@ -20,10 +20,12 @@ master_select_tables = "SELECT name FROM sqlite_master WHERE type='table'"
 
 master_select_table = "SELECT * FROM {}"
 
+master_insert = "INSERT INTO {} ({}) VALUES ({})"
+
+master_delete = "DELETE FROM {}"
+
 properties_create = ('CREATE TABLE Properties (P_id INTEGER PRIMARY KEY, '
                                               'P_max_history INTEGER)')
-
-properties_select = 'SELECT * FROM Properties'
 
 properties_select_history = ('SELECT P_max_history FROM Properties '
                              'WHERE P_max_history IS NOT NULL LIMIT 1')
@@ -35,11 +37,6 @@ properties_update = 'UPDATE Properties SET P_max_history=?'
 
 properties_insert_init = ('INSERT INTO Properties (P_id, P_max_history) '
                           'VALUES (NULL, ?)')
-
-properties_insert_copy = ('INSERT INTO Properties (P_id, P_max_history) '
-                          'VALUES (?, ?)')
-
-properties_delete = 'DELETE FROM Properties'
 
 properties_delete_dummy = 'DELETE FROM Properties WHERE P_max_history IS NULL'
 
@@ -56,9 +53,6 @@ compatibility_insert = ('INSERT INTO CoMpatibility (CM_id, CM_extension, '
 compatibility_insert_ignored = ('INSERT INTO CoMpatibility (CM_id, '
                             'CM_extension, CM_version) VALUES (NULL, ?, NULL)')
 
-compatibility_insert_copy = ('INSERT INTO CoMpatibility (CM_id, '
-                             'CM_extension, CM_version) VALUES (?, ?, ?)')
-
 compatibility_update_core = ('UPDATE CoMpatibility SET CM_version=? '
                                                 'WHERE CM_extension IS NULL')
 
@@ -67,14 +61,10 @@ compatibility_update_extension = ('UPDATE CoMpatibility SET CM_version=? '
 
 compatibility_delete = 'DELETE FROM CoMpatibility WHERE CM_extension=?'
 
-compatibility_delete_all = 'DELETE FROM CoMpatibility'
-
 items_create = ("CREATE TABLE Items (I_id INTEGER PRIMARY KEY, "
                                     "I_parent INTEGER, "
                                     "I_previous INTEGER, "
                                     "I_text TEXT)")
-
-items_select = 'SELECT * FROM Items'
 
 items_select_tree = 'SELECT I_id FROM Items'
 
@@ -126,8 +116,6 @@ history_create = ("CREATE TABLE History (H_id INTEGER PRIMARY KEY, "
                                         "H_redo TEXT, "
                                         "H_undo TEXT)")
 
-history_select = ('SELECT * FROM History')
-
 # Do not change the index of H_undo [3]
 history_select_group_undo = ('SELECT H_id, H_item, H_type, H_undo '
                              'FROM History WHERE H_group=? ORDER BY H_id DESC')
@@ -157,10 +145,6 @@ history_select_description = ('SELECT DISTINCT H_group, H_status, H_tstamp, '
 history_insert = ('INSERT INTO History (H_id, H_group, H_status, '
                   'H_item, H_type, H_tstamp, H_description, H_redo, H_undo) '
                   'VALUES (NULL, ?, 1, ?, ?, strftime("%s", "now"), ?, ?, ?)')
-
-history_insert_copy = ('INSERT INTO History (H_id, H_group, H_status, H_item, '
-                       'H_type, H_tstamp, H_description, H_redo, H_undo) '
-                       'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
 
 history_update_status_new = ('UPDATE History SET H_status=5 '
                              'WHERE H_status IN (1, 3)')

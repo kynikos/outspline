@@ -18,7 +18,6 @@
 
 import json
 import time as time_
-import sqlite3
 
 from outspline.static.pyaux import timeaux
 from outspline.coreaux_api import log, Event

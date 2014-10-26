@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import sqlite3
-
 from outspline.coreaux_api import Event
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
@@ -42,7 +40,6 @@ class Main(object):
 
         core_api.bind_to_open_database_dirty(self._handle_open_database_dirty)
         core_api.bind_to_open_database(self._handle_open_database)
-        core_api.bind_to_save_database_copy(self._handle_save_database_copy)
         core_api.bind_to_close_database(self._handle_close_database)
         core_api.bind_to_insert_item(self._handle_insert_item)
         core_api.bind_to_deleting_item(self._handle_delete_item)
@@ -78,24 +75,6 @@ class Main(object):
             pass
         else:
             database_open_event.signal(filename=filename)
-
-    def _handle_save_database_copy(self, kwargs):
-        origin = kwargs['origin']
-
-        if origin in self.databases:
-            qconn = core_api.get_connection(origin)
-            qconnd = sqlite3.connect(kwargs['destination'])
-            cur = qconn.cursor()
-            curd = qconnd.cursor()
-
-            cur.execute(queries.rules_select)
-            for row in cur:
-                curd.execute(queries.rules_insert, tuple(row))
-
-            core_api.give_connection(origin, qconn)
-
-            qconnd.commit()
-            qconnd.close()
 
     def _handle_close_database(self, kwargs):
         try:

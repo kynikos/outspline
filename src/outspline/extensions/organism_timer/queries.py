@@ -20,8 +20,6 @@ timerproperties_create = ('CREATE TABLE TimerProperties '
                           '(TP_id INTEGER PRIMARY KEY, '
                            'TP_last_search INTEGER)')
 
-timerproperties_select = 'SELECT * FROM TimerProperties'
-
 timerproperties_select_search = ('SELECT TP_last_search '
                                  'FROM TimerProperties LIMIT 1')
 
@@ -29,8 +27,5 @@ timerproperties_insert = ('INSERT INTO TimerProperties (TP_id, '
                           'TP_last_search) VALUES (NULL, ?)')
 
 timerproperties_update = 'UPDATE TimerProperties SET TP_last_search=?'
-
-timerproperties_update_copy = ('UPDATE TimerProperties SET TP_id=?, '
-                               'TP_last_search=?')
 
 timerproperties_drop = 'DROP TABLE TimerProperties'

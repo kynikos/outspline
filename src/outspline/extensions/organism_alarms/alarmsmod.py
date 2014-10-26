@@ -351,33 +351,6 @@ class Database(object):
         else:
             core_api.give_connection(self.filename, qconn)
 
-    def save_copy(self, destination):
-        qconn = core_api.get_connection(self.filename)
-        qconnd = sqlite3.connect(destination)
-        cur = qconn.cursor()
-        curd = qconnd.cursor()
-
-        curd.execute(queries.alarmsproperties_delete)
-        cur.execute(queries.alarmsproperties_select)
-
-        for row in cur:
-            curd.execute(queries.alarmsproperties_insert_copy, tuple(row))
-
-        cur.execute(queries.alarms_select)
-
-        for row in cur:
-            curd.execute(queries.alarms_insert_copy, tuple(row))
-
-        cur.execute(queries.alarmsofflog_select)
-
-        for row in cur:
-            curd.execute(queries.alarmsofflog_insert_copy, tuple(row))
-
-        core_api.give_connection(self.filename, qconn)
-
-        qconnd.commit()
-        qconnd.close()
-
     def _insert_alarm_log(self, id_, reason, text):
         qconn = core_api.get_connection(self.filename)
         cursor = qconn.cursor()

@@ -387,10 +387,6 @@ def bind_to_save_database(handler, bind=True):
     return databases.save_database_event.bind(handler, bind)
 
 
-def bind_to_save_database_copy(handler, bind=True):
-    return databases.save_database_copy_event.bind(handler, bind)
-
-
 def bind_to_delete_subtree(handler, bind=True):
     return databases.delete_subtree_event.bind(handler, bind)
 
