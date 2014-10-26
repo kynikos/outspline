@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import sqlite3 as sql
+import sqlite3
 import importlib
 
 import outspline.coreaux_api as coreaux_api
@@ -60,13 +60,13 @@ class Database(object):
         self.filename = filename
 
         try:
-            connection = sql.connect(filename)
+            connection = sqlite3.connect(filename)
             cursor = connection.cursor()
 
             # I have to import here, or a circular import will happen
             import outspline.core_api as core_api
             cursor.execute(queries.compatibility_select)
-        except sql.DatabaseError:
+        except sqlite3.DatabaseError:
             connection.close()
             raise DatabaseNotValidError()
 
@@ -208,8 +208,8 @@ class Database(object):
         return outexts
 
     def _execute(self, extensions, action, **kwargs):
-        connection = sql.connect(self.filename)
-        connection.row_factory = sql.Row
+        connection = sqlite3.connect(self.filename)
+        connection.row_factory = sqlite3.Row
         cursor = connection.cursor()
 
         for ext in self._sort_extensions(extensions):

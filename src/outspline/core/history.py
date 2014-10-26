@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import sqlite3 as _sql
+import sqlite3
 import json
 
 from outspline.coreaux_api import Event
@@ -305,7 +305,7 @@ class DBHistory(object):
     def clean_history(self):
         # This operation must be performed on a different connection than
         # the main one (which at this point has been closed already anyway)
-        qconn = _sql.connect(self.filename)
+        qconn = sqlite3.connect(self.filename)
         cursor = qconn.cursor()
 
         cursor.execute(queries.history_delete_select,

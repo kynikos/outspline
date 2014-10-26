@@ -19,7 +19,7 @@
 import os
 import errno
 import Queue as queue
-import sqlite3 as _sql
+import sqlite3
 
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import Event, log
@@ -106,10 +106,10 @@ class MemoryDB(DBQueue):
         DBQueue.__init__(self)
 
         # Enable multi-threading, as the database is protected with a queue
-        self.put(_sql.connect(':memory:', check_same_thread=False))
+        self.put(sqlite3.connect(':memory:', check_same_thread=False))
 
         qmemory = self.get()
-        qmemory.row_factory = _sql.Row
+        qmemory.row_factory = sqlite3.Row
         self.give(qmemory)
 
     def exit_(self):
@@ -133,16 +133,16 @@ class Database(object):
 
         conn = self.connection
         # Enable multi-threading, as the database is protected with a queue
-        conn.put(_sql.connect(filename, check_same_thread=False))
+        conn.put(sqlite3.connect(filename, check_same_thread=False))
         qconn = conn.get()
-        qconn.row_factory = _sql.Row
+        qconn.row_factory = sqlite3.Row
         cursor = qconn.cursor()
 
         try:
             # In order to test if the database is locked (open by another
             # instance of Outspline), a SELECT query is not enough
             cursor.execute(queries.properties_insert_dummy)
-        except _sql.OperationalError:
+        except sqlite3.OperationalError:
             raise exceptions.DatabaseLockedError()
         else:
             cursor.execute(queries.properties_delete_dummy)
@@ -177,7 +177,7 @@ class Database(object):
             else:
                 db.close()
 
-                conn = _sql.connect(filename)
+                conn = sqlite3.connect(filename)
                 cursor = conn.cursor()
 
                 cursor.execute(queries.properties_create)
@@ -257,7 +257,7 @@ class Database(object):
         # case it should be saved first, and that's not what is expected
 
         qconn = self.connection.get()
-        qconnd = _sql.connect(destination)
+        qconnd = sqlite3.connect(destination)
         cursor = qconn.cursor()
         cursord = qconnd.cursor()
 
