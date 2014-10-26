@@ -123,6 +123,24 @@ class MemoryDB(DBQueue):
         exit_app_event_2.signal()
 
 
+class FileDB(object):
+    def __init__(self, filename, check_same_thread=False, name_based=False):
+        self.connection = sqlite3.connect(filename,
+                                        check_same_thread=check_same_thread)
+
+        if name_based:
+            self.connection.row_factory = sqlite3.Row
+
+    def cursor(self):
+        return self.connection.cursor()
+
+    def save(self):
+        self.connection.commit()
+
+    def disconnect(self):
+        self.connection.close()
+
+
 class Database(object):
     def __init__(self, filename):
         self.connection = DBQueue()
@@ -131,11 +149,10 @@ class Database(object):
         self.dbhistory = history.DBHistory(self.connection, self.items,
                                                                 self.filename)
 
-        conn = self.connection
         # Enable multi-threading, as the database is protected with a queue
-        conn.put(sqlite3.connect(filename, check_same_thread=False))
-        qconn = conn.get()
-        qconn.row_factory = sqlite3.Row
+        self.connection.put(FileDB(filename, check_same_thread=False,
+                                                            name_based=True))
+        qconn = self.connection.get()
         cursor = qconn.cursor()
 
         try:
@@ -155,7 +172,7 @@ class Database(object):
         self.dbhistory.set_limits(softlimit, timelimit, hardlimit)
 
         dbitems = cursor.execute(queries.items_select_tree)
-        conn.give(qconn)
+        self.connection.give(qconn)
 
         for item in dbitems:
             self.items[item['I_id']] = items.Item(self.connection,
@@ -241,7 +258,7 @@ class Database(object):
         cursor = qconn.cursor()
         cursor.execute(queries.history_update_status_new)
         cursor.execute(queries.history_update_status_old)
-        qconn.commit()
+        qconn.save()
         self.connection.give(qconn)
 
         self.dbhistory.reset_modified_state()
@@ -292,7 +309,7 @@ class Database(object):
         del dbs[self.filename]
 
         qconn = self.connection.get()
-        qconn.close()
+        qconn.disconnect()
         self.connection.task_done()
         self.connection.join()
 
