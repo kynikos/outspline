@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import sqlite3
 import threading
 
 from outspline.coreaux_api import Event
@@ -378,15 +377,9 @@ class Database(object):
 
         return cursor
 
-    def clean_alarms_log(self):
-        # The normal database connection has already been closed here
-        qconn = sqlite3.connect(self.filename)
-        cursor = qconn.cursor()
-
-        cursor.execute(queries.alarmsofflog_delete_clean_close,
+    def clean_alarms_log(self, dbcursor):
+        dbcursor.execute(queries.alarmsofflog_delete_clean_close,
                                                         (self.log_limits[0], ))
-        qconn.commit()
-        qconn.close()
 
     def check_pending_changes(self):
         conn = core_api.get_connection(self.filename)

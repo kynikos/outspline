@@ -157,7 +157,7 @@ class Main(object):
         filename = kwargs['filename']
 
         try:
-            self.databases[filename].clean_alarms_log()
+            self.databases[filename].clean_alarms_log(kwargs["dbcursor"])
         except KeyError:
             pass
         else:
