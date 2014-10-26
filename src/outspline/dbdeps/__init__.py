@@ -59,6 +59,7 @@ class Database(object):
     def __init__(self, filename):
         # I have to import here, or a circular import will happen
         from outspline.core.databases import FileDB
+        self.FileDB = FileDB
 
         self.filename = filename
 
@@ -210,8 +211,7 @@ class Database(object):
         return outexts
 
     def _execute(self, extensions, action, **kwargs):
-        connection = sqlite3.connect(self.filename)
-        connection.row_factory = sqlite3.Row
+        connection = self.FileDB(self.filename, name_based=True)
         cursor = connection.cursor()
 
         for ext in self._sort_extensions(extensions):
@@ -233,8 +233,7 @@ class Database(object):
         # too dangerous
         cursor.execute(queries.history_delete_purge)
 
-        connection.commit()
-        connection.close()
+        connection.save_and_disconnect()
 
     def add(self, extensions):
         self._execute(extensions, self._add)
