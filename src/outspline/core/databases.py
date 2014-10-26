@@ -140,6 +140,10 @@ class FileDB(object):
     def disconnect(self):
         self.connection.close()
 
+    def save_and_disconnect(self):
+        self.save()
+        self.disconnect()
+
 
 class Database(object):
     def __init__(self, filename):
@@ -194,7 +198,7 @@ class Database(object):
             else:
                 db.close()
 
-                conn = sqlite3.connect(filename)
+                conn = FileDB(filename)
                 cursor = conn.cursor()
 
                 cursor.execute(queries.properties_create)
@@ -214,8 +218,7 @@ class Database(object):
                 cursor.execute(queries.items_create)
                 cursor.execute(queries.history_create)
 
-                conn.commit()
-                conn.close()
+                conn.save_and_disconnect()
 
                 extinfo = coreaux_api.get_addons_info(disabled=False)(
                                                                 'Extensions')
