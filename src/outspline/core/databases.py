@@ -131,6 +131,26 @@ class FileDB(object):
         if name_based:
             self.connection.row_factory = sqlite3.Row
 
+        cursor = self.connection.cursor()
+
+        # No exception will be raised by sqlite3.connect if the file isn't a
+        #  database, a query must be attempted
+        try:
+            cursor.execute(queries.pragma_valid_test)
+        except sqlite3.DatabaseError:
+            self.disconnect()
+            raise exceptions.DatabaseNotValidError()
+
+        try:
+            # In order to test if the database is locked (open by another
+            # instance of Outspline), a SELECT query is not enough
+            cursor.execute(queries.properties_insert_dummy)
+        except sqlite3.OperationalError:
+            self.disconnect()
+            raise exceptions.DatabaseLockedError()
+        else:
+            cursor.execute(queries.properties_delete_dummy)
+
     def cursor(self):
         return self.connection.cursor()
 
@@ -158,15 +178,6 @@ class Database(object):
                                                             name_based=True))
         qconn = self.connection.get()
         cursor = qconn.cursor()
-
-        try:
-            # In order to test if the database is locked (open by another
-            # instance of Outspline), a SELECT query is not enough
-            cursor.execute(queries.properties_insert_dummy)
-        except sqlite3.OperationalError:
-            raise exceptions.DatabaseLockedError()
-        else:
-            cursor.execute(queries.properties_delete_dummy)
 
         cursor.execute(queries.properties_select_history)
         softlimit = cursor.fetchone()[0]

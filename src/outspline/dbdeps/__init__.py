@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import sqlite3
 import importlib
 
 import outspline.coreaux_api as coreaux_api
@@ -63,15 +62,9 @@ class Database(object):
 
         self.filename = filename
 
-        try:
-            connection = FileDB(filename)
-            cursor = connection.cursor()
-
-            cursor.execute(queries.compatibility_select)
-
-        except sqlite3.DatabaseError:
-            connection.disconnect()
-            raise DatabaseNotValidError()
+        connection = FileDB(filename)
+        cursor = connection.cursor()
+        cursor.execute(queries.compatibility_select)
 
         # ABORT - If a dependency is not installed
         # ABORT - If a dependency is installed with a lesser version number
@@ -279,10 +272,6 @@ class Database(object):
             cursor.execute(queries.compatibility_delete, (ext, ))
 
         module.remove(cursor)
-
-
-class DatabaseNotValidError(OutsplineError):
-    pass
 
 
 class DatabaseIncompatibleError(OutsplineError):

@@ -31,6 +31,10 @@ class DatabaseNotAccessibleError(OutsplineError):
     pass
 
 
+class DatabaseNotValidError(OutsplineError):
+    pass
+
+
 class DatabaseLockedError(OutsplineError):
     pass
 

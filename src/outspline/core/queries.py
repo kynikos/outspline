@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+pragma_valid_test = "PRAGMA schema_version"
+
 master_select_tables = "SELECT name FROM sqlite_master WHERE type='table'"
 
 master_select_table = "SELECT * FROM {}"
