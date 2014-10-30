@@ -14,7 +14,7 @@ import configfile
 # It's possible to build only some components by specifying them as arguments
 #  for the command
 
-if sys.argv[1] == "-l":
+if len(sys.argv) > 1 and sys.argv[1] == "-l":
     BUNDLE_LIBS = False
     COMPONENTS = sys.argv[2:]
 else:
