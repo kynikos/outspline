@@ -141,15 +141,17 @@ class FileDB(object):
             self.disconnect()
             raise exceptions.DatabaseNotValidError()
 
-        try:
-            # In order to test if the database is locked (open by another
-            # instance of Outspline), a SELECT query is not enough
-            cursor.execute(queries.properties_insert_dummy)
-        except sqlite3.OperationalError:
-            self.disconnect()
-            raise exceptions.DatabaseLockedError()
-        else:
-            cursor.execute(queries.properties_delete_dummy)
+        # If == 0 it means the database is new (just been created)
+        if cursor.fetchone()[0] > 0:
+            try:
+                # In order to test if the database is locked (open by another
+                # instance of Outspline), a SELECT query is not enough
+                cursor.execute(queries.properties_insert_dummy)
+            except sqlite3.OperationalError:
+                self.disconnect()
+                raise exceptions.DatabaseLockedError()
+            else:
+                cursor.execute(queries.properties_delete_dummy)
 
     def cursor(self):
         return self.connection.cursor()
