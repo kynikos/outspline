@@ -19,6 +19,8 @@
 import os
 import errno
 import Queue as queue
+import bz2
+import filecmp
 import sqlite3
 
 import outspline.coreaux_api as coreaux_api
@@ -125,6 +127,10 @@ class MemoryDB(DBQueue):
 
 class FileDB(object):
     def __init__(self, filename, check_same_thread=False, name_based=False):
+        # When a file is opened, the file type is guessed and stored here *****************
+        # When a file is created, a default file type (configurable) is used **************
+        # When a file is saved, the type is read from the stored value ********************
+        # The file type must be settable through the interface ****************************
         self.connection = sqlite3.connect(filename,
                                         check_same_thread=check_same_thread)
 
@@ -138,11 +144,28 @@ class FileDB(object):
         try:
             cursor.execute(queries.pragma_valid_test)
         except sqlite3.DatabaseError:
-            self.disconnect()
-            raise exceptions.DatabaseNotValidError()
+            # *******************************************************************************
+            uncdb = bz2.BZ2File(filename, 'rb')
+
+            try:
+                data = uncdb.read()
+            except IOError:
+                self.disconnect()
+                raise exceptions.DatabaseNotValidError()
+            else:
+                ufilename = "-".join((filename, "uncompressed"))
+
+                # Check the file doesn't exist already ******************************************
+                #  If it exists, compare the two: filecmp.cmp('file1.txt', 'file1.txt') *********
+                #   If they're the same, overwrite, otherwise raise an exception ****************
+                with open(ufilename, 'wb') as ufile:
+                    ufile.write(data)
+
+                # Retry to connect (to ufilename this time) *********************************
 
         # If == 0 it means the database is new (just been created)
         if cursor.fetchone()[0] > 0:
+            # ************************************************************************************
             try:
                 # In order to test if the database is locked (open by another
                 # instance of Outspline), a SELECT query is not enough
@@ -157,12 +180,18 @@ class FileDB(object):
         return self.connection.cursor()
 
     def save(self):
-        self.connection.commit()
+        # Always recompress the database in order to keep the compressed and ***********
+        #  uncompressed files in sync **************************************************
+        pass#self.connection.commit()  # ***********************************************
 
     def disconnect(self):
+        # Remove the uncompressed database **********************************************
         self.connection.close()
 
     def save_and_disconnect(self):
+        # This will have to be optimized: saving requires closing the *******************
+        #  connection, compressing the database and re-opening the connection, **********
+        #  but in this case the connection shouldn't be reopened ************************
         self.save()
         self.disconnect()
 
