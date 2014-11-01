@@ -29,7 +29,7 @@
   main repository
 * Update files:
   - *.component
-  - *.info
+  - info/*.py
     Remember that the major versions of add-ons must be increased for both
     database *and* API changes
   - interfaces.wxgui.about

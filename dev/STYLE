@@ -48,13 +48,13 @@ Development:
 - Let populate database create items with all the supported features
 - Add all possible user actions to the simulator
 
-Info files:
+Info modules:
 - authors:
-    JSON list of author names and contacts
+    Tuple of author names and contacts
     Required but can have an empty value
 - contributors:
-    JSON list of contributor names and contacts
-    Required but can have an empty value
+    Tuple of contributor names and contacts
+    Optional
 - version:
     Full addon version number
     Required
@@ -65,9 +65,8 @@ Info files:
     Web reference for the addon
     Required but can have an empty value
 - affects_database:
-    Set to a different value than 'no' if the extension can write the user
-    database or if it affects the standards with which other extensions read or
-    write the user database
+    Set to True if the extension can write the user database or if it affects
+    the standards with which other extensions read or write the user database
     In general, this option determines which extensions are added to the
     CoMpatibility table and hence used for compatibility checks when opening a
     user database
@@ -79,11 +78,11 @@ Info files:
     If another extension provides some of those tables, Outspline won't load
     Required only for core and extensions, and can have an empty value
 - dependencies:
-    Space-separated required dependencies for the addon
+    Tuple of required dependencies for the addon
     If not all dependencies are satisfied, the addon is not loaded
     Optional
 - optional_dependencies:
-    Space-separated optional dependencies for the addon
+    Tuple of optional dependencies for the addon
     If not all optional dependencies are satisfied, the addon is loaded anyway,
     and only some of its functionalities will be disabled
     Optional

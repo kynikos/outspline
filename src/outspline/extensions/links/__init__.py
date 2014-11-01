@@ -20,10 +20,10 @@ import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
 
+import outspline.info.extensions.links as info
+
 import links
 import queries
-
-_ADDON_NAME = ('Extensions', 'links')
 
 
 def create_copy_table():
@@ -34,11 +34,15 @@ def create_copy_table():
 
 
 def handle_open_database_dirty(kwargs):
-    info = coreaux_api.get_addons_info()
-    dependencies = info(_ADDON_NAME[0])(_ADDON_NAME[1]
-                                    )['database_dependency_group_1'].split(' ')
+    dependencies = info.database_dependency_group_1
 
-    if not set(dependencies) - set(kwargs['dependencies']):
+    try:
+        for dep in dependencies:
+            if dep not in kwargs["dependencies"]:
+                raise UserWarning()
+    except UserWarning:
+        pass
+    else:
         links.cdbs.add(kwargs['filename'])
 
 

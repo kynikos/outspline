@@ -27,6 +27,7 @@ SRC_DIR = os.path.join(ROOT_DIR, 'src')
 BASE_DIR = os.path.join(SRC_DIR, 'outspline')
 SCRIPTS_DIR = os.path.join(SRC_DIR, 'scripts')
 DATA_DIR = os.path.join(SRC_DIR, 'data_files')
+INFO_DIR = os.path.join(BASE_DIR, 'info')
 DEPS_DIR = os.path.join(BASE_DIR, 'dbdeps')
 RDATA_DIR = os.path.join(BASE_DIR, "data")
 PACKAGES = {
@@ -61,6 +62,7 @@ def make_component_package(cfile, cname):
     pkgdir = os.path.join(DEST_DIR, pkgdirname)
     maindir = os.path.join(pkgdir, 'outspline')
     datadir = os.path.join(pkgdir, 'data_files')
+    infodir = os.path.join(maindir, 'info')
     depsdir = os.path.join(maindir, 'dbdeps')
     rdatadir = os.path.join(maindir, 'data')
 
@@ -75,6 +77,9 @@ def make_component_package(cfile, cname):
     os.makedirs(datadir)
     os.makedirs(rdatadir)
 
+    os.makedirs(infodir)
+    shutil.copy2(os.path.join(INFO_DIR, '__init__.py'), infodir)
+
     os.makedirs(depsdir)
     shutil.copy2(os.path.join(DEPS_DIR, '__init__.py'), depsdir)
 
@@ -85,6 +90,8 @@ def make_component_package(cfile, cname):
         shutil.copytree(os.path.join(BASE_DIR, 'coreaux'), os.path.join(
                             maindir, 'coreaux'),
                             ignore=shutil.ignore_patterns('*.pyc', '*.pyo'))
+
+        shutil.copy2(os.path.join(INFO_DIR, "core.py"), infodir)
 
         try:
             shutil.copytree(os.path.join(BASE_DIR, 'static'), os.path.join(
@@ -117,11 +124,18 @@ def make_component_package(cfile, cname):
         os.mkdir(typedir)
         shutil.copy2(os.path.join(BASE_DIR, type_, '__init__.py'), typedir)
 
+        typeinfodir = os.path.join(infodir, type_)
+        os.mkdir(typeinfodir)
+        shutil.copy2(os.path.join(INFO_DIR, type_, '__init__.py'), typeinfodir)
+
         for caddon in addons[type_]:
             addon, version = caddon
 
             shutil.copy2(os.path.join(BASE_DIR, type_, addon + '.conf'),
                                                                     typedir)
+
+            shutil.copy2(os.path.join(INFO_DIR, type_, addon + '.py'),
+                                                                typeinfodir)
 
             try:
                 shutil.copy2(os.path.join(BASE_DIR, type_, addon + '_api.py'),

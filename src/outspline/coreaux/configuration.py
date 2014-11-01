@@ -23,7 +23,9 @@ import os
 import errno
 import locale
 from datetime import datetime
+import importlib
 
+import outspline.info as info
 import outspline.static.configfile as configfile
 
 import exceptions
@@ -37,7 +39,6 @@ __author__ = "Dario Giovannetti <dev@dariogiovannetti.net>"
 
 MAIN_THREAD_NAME = "MAIN"
 _ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
-_CORE_INFO = os.path.join(_ROOT_DIR, 'coreaux', 'core.info')
 _CONFIG_FILE = os.path.join(_ROOT_DIR, 'outspline.conf')
 _USER_CONFIG_FILE = os.path.join(os.path.expanduser('~'), '.config',
                                                 'outspline', 'outspline.conf')
@@ -73,7 +74,6 @@ along with Outspline.  If not, see <http://www.gnu.org/licenses/>.'''
 
 user_config_file = _USER_CONFIG_FILE
 components = None
-info = None
 config = None
 update_only = False
 
@@ -136,30 +136,23 @@ def load_component_info():
 
 
 def load_addon_info_and_default_config():
-    global info
     global config
-
-    info = configfile.ConfigFile({}, inherit_options=False)
-    info.make_subsection('Core')
-    info('Core').add(_CORE_INFO)
 
     config = configfile.ConfigFile(_CONFIG_FILE, inherit_options=False)
 
     for t in ('Extensions', 'Interfaces', 'Plugins'):
-        info.make_subsection(t)
-
         # Note that an addon needs to be provided by a component in order to be
         # loaded (the mere existence of its folder and files is not enough)
         for a in components(t).get_sections():
-            info(t).make_subsection(a)
             config(t).make_subsection(a)
 
-            # Let the normal exception be raised if the .info or .conf files
-            # are not found
-            info(t)(a).add(os.path.join(_ROOT_DIR, t.lower(), a, a + '.info'))
+            # Let the normal exception be raised if the .conf file is not found
             config(t)(a).add(os.path.join(_ROOT_DIR, t.lower(), a + '.conf'))
 
-            if info(t)(a)['version'] not in components(t)(a).get_options():
+            info = importlib.import_module(".".join(("outspline", "info",
+                                                                t.lower(), a)))
+
+            if info.version not in components(t)(a).get_options():
                 raise exceptions.AddonNotFoundError()
 
 

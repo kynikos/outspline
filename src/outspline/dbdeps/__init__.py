@@ -74,7 +74,7 @@ class Database(object):
         # UPDATE - If a dependency is installed with a greater version number
         # ADD - If an extension is not present in the dependencies
 
-        info = coreaux_api.get_addons_info(disabled=False)
+        extensions = coreaux_api.get_enabled_installed_addons()['Extensions']
 
         self.dependencies = {
             'ignore': {},
@@ -91,17 +91,17 @@ class Database(object):
         self.dependencies['add'][None] = [int(float(
                                         coreaux_api.get_core_version())), None]
 
-        extensions = info('Extensions')
+        for ext in extensions:
+            info = coreaux_api.import_extension_info(ext)
 
-        for ext in extensions.get_sections():
-            if extensions(ext).get_bool('affects_database'):
+            if info.affects_database:
                 # Core will never end up staying in the 'add' key, however
                 # initialize it here so that it can be moved like the
                 # extensions
                 # Only compare major versions, as they are supposed to keep
                 # backward compatibility
-                self.dependencies['add'][ext] = [int(extensions(ext).get_float(
-                                                            'version')), None]
+                self.dependencies['add'][ext] = [int(info.version.split(
+                                                            ".", 1)[0]), None]
 
         for row in cursor:
             # 'row[2] == None' means that the addon is not a dependency, but if
@@ -125,13 +125,13 @@ class Database(object):
                     elif row[2] < dep[0]:
                         self.dependencies['update'][row[1]] = dep[:]
                     else:
-                        version = str(row[2])
+                        version = row[2]
 
                         if row[1] is None:
-                            self.fdeps.append('.'.join(('core', version)))
+                            self.fdeps.append(('core', version))
                         else:
-                            self.fdeps.append('.'.join(('extensions', row[1],
-                                                                    version)))
+                            self.fdeps.append(('.'.join(('extensions',
+                                                            row[1])), version))
 
                 del self.dependencies['add'][row[1]]
 
@@ -160,7 +160,6 @@ class Database(object):
         return self.dependencies['abort']
 
     def _sort_extensions(self, inexts):
-        extinfo = coreaux_api.get_addons_info(disabled=False)('Extensions')
         inexts = list(inexts)
         outexts = []
 
@@ -168,18 +167,20 @@ class Database(object):
             # ext comes as unicode from the database
             sext = str(ext)
 
+            info = coreaux_api.import_extension_info(sext)
+
             try:
-                deps = extinfo(sext)['dependencies'].split(" ")
-            except KeyError:
+                deps = list(info.dependencies)
+            except AttributeError:
                 deps = []
 
             try:
-                opts = extinfo(sext)['optional_dependencies'].split(" ")
-            except KeyError:
+                opts = list(info.optional_dependencies)
+            except AttributeError:
                 opts = []
 
             for dep in deps + opts:
-                dsplit = dep.split('.')
+                dsplit = dep[0].split('.')
 
                 if dsplit[0] == 'extensions':
                     if dsplit[1] in inexts:

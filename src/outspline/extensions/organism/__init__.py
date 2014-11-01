@@ -21,6 +21,8 @@ import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
 
+import outspline.info.extensions.organism as info
+
 import queries
 import items
 
@@ -31,8 +33,6 @@ extension = None
 
 class Main(object):
     def __init__(self):
-        self._ADDON_NAME = ('Extensions', 'organism')
-
         self.rules = items.Rules()
         self.databases = {}
 
@@ -58,11 +58,15 @@ class Main(object):
         core_api.give_memory_connection(mem)
 
     def _handle_open_database_dirty(self, kwargs):
-        info = coreaux_api.get_addons_info()
-        dependencies = info(self._ADDON_NAME[0])(self._ADDON_NAME[1]
-                                    )['database_dependency_group_1'].split(' ')
+        dependencies = info.database_dependency_group_1
 
-        if not set(dependencies) - set(kwargs['dependencies']):
+        try:
+            for dep in dependencies:
+                if dep not in kwargs["dependencies"]:
+                    raise UserWarning()
+        except UserWarning:
+            pass
+        else:
             filename = kwargs['filename']
             self.databases[filename] = items.Database(filename)
 

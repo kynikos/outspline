@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import json
 import wx
 from datetime import datetime
 
@@ -151,13 +150,13 @@ class InfoBox(wx.SplitterWindow):
 
         # Do not use the configuration because it could have entries about
         # addons that aren't actually installed
-        info = coreaux_api.get_addons_info()
+        addons = coreaux_api.get_components_info()
 
         for type_ in ('Extensions', 'Interfaces', 'Plugins'):
             typeitem = self.tree.AppendItem(self.tree.GetRootItem(),
                         text=type_,
                         data=wx.TreeItemData({'req': 'lst', 'type_': type_}))
-            for addon in info(type_).get_sections():
+            for addon in addons(type_).get_sections():
                 self.tree.AppendItem(typeitem, text=addon,
                             data=wx.TreeItemData(
                             {'req': 'inf', 'type_': type_, 'addon': addon}))
@@ -200,7 +199,12 @@ class InfoBox(wx.SplitterWindow):
                                     cinfo('Components')(c)['release_date']))
 
     def compose_addon_info(self, type_, addon):
-        info = coreaux_api.get_addons_info()(type_)(addon)
+        info = {
+            "Extensions": coreaux_api.import_extension_info,
+            "Interfaces": coreaux_api.import_interface_info,
+            "Plugins": coreaux_api.import_plugin_info,
+        }[type_](addon)
+
         config = coreaux_api.get_configuration()(type_)(addon)
 
         self.textw.SetDefaultStyle(self.STYLE_HEAD)
@@ -208,7 +212,7 @@ class InfoBox(wx.SplitterWindow):
 
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
 
-        self.textw.AppendText('{}\n'.format(info['description']))
+        self.textw.AppendText('{}\n'.format(info.description))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nEnabled: ')
@@ -218,40 +222,43 @@ class InfoBox(wx.SplitterWindow):
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nVersion: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        self.textw.AppendText(info['version'])
+        self.textw.AppendText(info.version)
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nWebsite: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        self.textw.AppendText(info['website'])
+        self.textw.AppendText(info.website)
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
 
-        authors = json.loads(info['authors'])
-
-        if len(authors) > 1:
+        if len(info.authors) > 1:
             self.textw.AppendText('\nAuthors:')
             self.textw.SetDefaultStyle(self.STYLE_NORMAL)
 
-            for a in authors:
+            for a in info.authors:
                 self.textw.AppendText('\n\t{}'.format(a))
         else:
             self.textw.AppendText('\nAuthor: ')
             self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-            self.textw.AppendText(authors[0])
+            self.textw.AppendText(info.authors[0])
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nContributors:')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
 
-        for c in json.loads(info.get('contributors', fallback="[]")):
-            self.textw.AppendText('\n\t{}'.format(c))
+        try:
+            contributors = info.contributors
+        except AttributeError:
+            pass
+        else:
+            for c in contributors:
+                self.textw.AppendText('\n\t{}'.format(c))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nComponent: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
         cinfo = coreaux_api.get_components_info()
-        component = cinfo(type_)(addon)[info['version']]
+        component = cinfo(type_)(addon)[info.version]
         self.textw.AppendText('{} {} ({})'.format(component,
                             cinfo('Components')(component)['version'],
                             cinfo('Components')(component)['release_date']))
@@ -261,33 +268,35 @@ class InfoBox(wx.SplitterWindow):
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
 
         try:
-            deps = info['dependencies'].split(" ")
-        except KeyError:
+            deps = info.dependencies
+        except AttributeError:
             pass
         else:
             for d in deps:
-                self.textw.AppendText('\n\t{} {}.x'.format(*d.rsplit(".", 1)))
+                self.textw.AppendText('\n\t{} {}.x'.format(*d))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nOptional dependencies:')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
 
         try:
-            opts = info['optional_dependencies'].split(" ")
-        except KeyError:
+            opts = info.optional_dependencies
+        except AttributeError:
             pass
         else:
             for o in opts:
-                self.textw.AppendText('\n\t{} {}.x'.format(*o.rsplit(".", 1)))
+                self.textw.AppendText('\n\t{} {}.x'.format(*o))
 
     def compose_list(self, type_):
         # Do not use the configuration because it could have entries about
         # addons that aren't actually installed
-        info = coreaux_api.get_addons_info()
+        info = coreaux_api.get_components_info()
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('{}:\n'.format(type_))
+
         for addon in info(type_).get_sections():
             config = coreaux_api.get_configuration()(type_)(addon)
+
             if config.get_bool('enabled'):
                 self.textw.SetDefaultStyle(self.STYLE_NORMAL)
                 self.textw.AppendText('\t{}\n'.format(addon))

@@ -21,6 +21,8 @@ import outspline.core_api as core_api
 import outspline.extensions.organism_api as organism_api
 copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
 
+import outspline.info.extensions.organism_timer as info
+
 import queries
 import timer
 
@@ -29,8 +31,6 @@ extension = None
 
 class Main(object):
     def __init__(self):
-        self._ADDON_NAME = ('Extensions', 'organism_timer')
-
         self.rules = timer.Rules()
         self.databases = {}
         self.nextoccsengine = timer.NextOccurrencesEngine(self.databases,
@@ -53,11 +53,15 @@ class Main(object):
                                 self._handle_search_next_occurrences_request)
 
     def _handle_open_database_dirty(self, kwargs):
-        info = coreaux_api.get_addons_info()
-        dependencies = info(self._ADDON_NAME[0])(self._ADDON_NAME[1]
-                                    )['database_dependency_group_1'].split(' ')
+        dependencies = info.database_dependency_group_1
 
-        if not set(dependencies) - set(kwargs['dependencies']):
+        try:
+            for dep in dependencies:
+                if dep not in kwargs["dependencies"]:
+                    raise UserWarning()
+        except UserWarning:
+            pass
+        else:
             filename = kwargs['filename']
             self.databases[filename] = timer.Database(filename)
 

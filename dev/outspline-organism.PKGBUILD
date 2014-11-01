@@ -19,5 +19,12 @@ sha256sums=('4e24179ceab6e825b8ae620f3945002559d497f676a9f1c939a7df99a1e83ca0')
 package() {
     cd "$srcdir/$pkgname-$pkgver"
     python2 setup.py install --root="$pkgdir" --optimize=1
-    rm $pkgdir/usr/lib/python2.7/site-packages/outspline/{,extensions/,plugins/,dbdeps/}__init__.py{,c,o}
+    rm $pkgdir/usr/lib/python2.7/site-packages/outspline/__init__.py{,c,o}
+    rm $pkgdir/usr/lib/python2.7/site-packages/outspline/extensions/__init__.py{,c,o}
+    rm $pkgdir/usr/lib/python2.7/site-packages/outspline/plugins/__init__.py{,c,o}
+    rm $pkgdir/usr/lib/python2.7/site-packages/outspline/info/__init__.py{,c,o}
+    rm $pkgdir/usr/lib/python2.7/site-packages/outspline/info/extensions/__init__.py{,c,o}
+    rm $pkgdir/usr/lib/python2.7/site-packages/outspline/info/interfaces/__init__.py{,c,o}
+    rm $pkgdir/usr/lib/python2.7/site-packages/outspline/info/plugins/__init__.py{,c,o}
+    rm $pkgdir/usr/lib/python2.7/site-packages/outspline/dbdeps/__init__.py{,c,o}
 }

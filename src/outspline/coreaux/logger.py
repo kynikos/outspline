@@ -20,7 +20,7 @@ import os
 import errno
 import logging.config
 
-from configuration import components, info, config, _USER_FOLDER_PERMISSIONS
+from configuration import components, config, _USER_FOLDER_PERMISSIONS
 
 log = None
 

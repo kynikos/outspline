@@ -20,9 +20,17 @@ import sys
 import os.path
 import importlib
 
+import outspline.info as info
+
 import configuration
 import exceptions
 from logger import log
+
+enabled_addons = {
+    "Extensions": set(),
+    "Interfaces": set(),
+    "Plugins": set(),
+}
 
 
 def load_addon(faddon, reqversion, tablenames):
@@ -43,7 +51,7 @@ def load_addon(faddon, reqversion, tablenames):
         # Check core version
 
         # Get only the major version number
-        instversion = int(configuration.info('Core').get_float('version'))
+        instversion = int(info.core.version.split(".", 1)[0])
 
         if reqversion is not False and instversion != reqversion:
             raise exceptions.AddonVersionError(instversion)
@@ -67,7 +75,8 @@ def load_addon(faddon, reqversion, tablenames):
         if not configuration.config(section)(addon).get_bool('enabled'):
             raise exceptions.AddonDisabledError()
 
-        info = configuration.info(section)(addon)
+        ainfo = importlib.import_module(".".join(("outspline", "info", folder,
+                                                                    addon)))
 
         # Get only the major version number
         # This version check must be done before the 'mfaddon not in
@@ -75,7 +84,7 @@ def load_addon(faddon, reqversion, tablenames):
         # two different addons may require the same addon with different
         # versions, and if the first one required the correct version, when
         # checking the second one no exception would be raised
-        instversion = int(info.get_float('version'))
+        instversion = int(ainfo.version.split(".", 1)[0])
 
         if reqversion is not False and instversion != reqversion:
             raise exceptions.AddonVersionError(instversion)
@@ -84,8 +93,8 @@ def load_addon(faddon, reqversion, tablenames):
         # for the reason
         if mfaddon not in sys.modules:
             if section == 'Extensions':
-                ptables = {table: faddon for table in info['provides_tables'
-                                                        ].split(' ') if table}
+                ptables = {table: faddon for table in ainfo.provides_tables
+                                                                    if table}
                 test = [table for table in set(tablenames) & set(ptables)
                                         if tablenames[table] != ptables[table]]
 
@@ -96,13 +105,11 @@ def load_addon(faddon, reqversion, tablenames):
                 tablenames.update(ptables)
 
             try:
-                sdeps = info['dependencies']
-            except KeyError:
+                ainfo.dependencies
+            except AttributeError:
                 pass
             else:
-                for sdep in sdeps.split(' '):
-                    dep, ver = sdep.rsplit(".", 1)
-
+                for dep, ver in ainfo.dependencies:
                     try:
                         load_addon(dep, int(ver), tablenames=tablenames)
                     # If I wanted to silently disable an addon in case one of
@@ -153,13 +160,11 @@ def load_addon(faddon, reqversion, tablenames):
                         raise exceptions.AddonDependencyError()
 
             try:
-                sopts = info['optional_dependencies']
-            except KeyError:
+                ainfo.optional_dependencies
+            except AttributeError:
                 pass
             else:
-                for sopt in sopts.split(' '):
-                    opt, ver = sopt.rsplit(".", 1)
-
+                for opt, ver in ainfo.optional_dependencies:
                     try:
                         load_addon(opt, int(ver), tablenames=tablenames)
                     except exceptions.AddonNotFoundError:
@@ -198,13 +203,14 @@ def load_addon(faddon, reqversion, tablenames):
             if hasattr(mod, 'main') or folder == 'interfaces':
                 mod.main()
 
+            global enabled_addons
+            enabled_addons[section].add(addon)
+
             log.info('Loaded ' + logname + ': ' + addon)
 
 
 def start_addons():
-    info = configuration.info('Core')
-
-    tablenames = {table: 'core' for table in info['provides_tables'].split(' ')
+    tablenames = {table: 'core' for table in info.core.provides_tables
                                                                     if table}
 
     # Use a tuple because a simple dictionary doesn't keep sequence order
@@ -212,11 +218,12 @@ def start_addons():
                             ('Interfaces', 'interfaces'),
                             ('Plugins', 'plugins')):
         # Don't use configuration.config to prevent the following bug: an
-        # optional component is installed, then Outspline is run, then the
-        # optional component is uninstalled; its configuration would still be
-        # read in configuration.config, so this function would try to load an
-        # addon that is not installed anymore; use configuration.info instead
-        for pkg in configuration.info(section).get_sections():
+        # optional component is installed, then Outspline is run once, creating
+        # a configuration file, then the optional component is uninstalled; its
+        # configuration would still be read in configuration.config, so this
+        # function would try to load an addon that is not installed anymore;
+        # use configuration.components instead
+        for pkg in configuration.components(section).get_sections():
             faddon = folder + '.' + pkg
 
             try:

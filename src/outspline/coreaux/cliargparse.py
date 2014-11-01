@@ -20,8 +20,10 @@ import sys
 import os.path
 import argparse
 
+import outspline.info as info
+
 from configuration import (_USER_CONFIG_FILE, _COPYRIGHT_V1, _DISCLAIMER_SHORT,
-                           components, info, config)
+                                                            components, config)
 
 
 class ShowVersion(argparse.Action):
@@ -35,8 +37,7 @@ class ShowVersion(argparse.Action):
 
 def parse_cli_args():
     # Options -h and --help are automatically created
-    cliparser = argparse.ArgumentParser(description=info('Core')[
-                                                                'description'])
+    cliparser = argparse.ArgumentParser(description=info.core.description)
 
     cliparser.add_argument('-c',
                            '--config',

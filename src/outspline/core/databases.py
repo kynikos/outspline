@@ -233,11 +233,11 @@ class Database(object):
 
                 conn.save_and_disconnect()
 
-                extinfo = coreaux_api.get_addons_info(disabled=False)(
-                                                                'Extensions')
-                dbdeps.Database(filename).add(
-                                [ext for ext in extinfo.get_sections() \
-                                if extinfo(ext).get_bool('affects_database')])
+                extensions = coreaux_api.get_enabled_installed_addons()[
+                                                                'Extensions']
+                dbdeps.Database(filename).add([ext for ext in extensions
+                                    if coreaux_api.import_extension_info(ext
+                                    ).affects_database])
 
                 return filename
 

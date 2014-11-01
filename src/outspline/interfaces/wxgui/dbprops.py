@@ -209,13 +209,13 @@ class DatabaseProperties(object):
         self.propgrid.Append(wxpg.PropertyCategory("Extensions support",
                                                             "dependencies"))
 
-        extensions = coreaux_api.get_addons_info(disabled=False)('Extensions')
+        extensions = coreaux_api.get_enabled_installed_addons()['Extensions']
         self.dependencies = core_api.get_database_dependencies(self.filename,
                                                                 ignored=True)
         del self.dependencies[None]
 
-        for ext in extensions.get_sections():
-            if extensions(ext).get_bool('affects_database'):
+        for ext in extensions:
+            if coreaux_api.import_extension_info(ext).affects_database:
                 propname = "dependencies.{}".format(ext)
                 prop = wxpg.EnumProperty(ext, propname, ('Enabled',
                                     'Disabled (remind)', 'Disabled (ignore)'))
@@ -261,8 +261,6 @@ class DatabaseProperties(object):
                 else:
                     currchoice = 0
 
-            extsinfo = coreaux_api.get_addons_info()('Extensions')
-
             # This method shouldn't be triggered if the value is not changed,
             # so there's no need to check that newchoice != currchoice
             if currchoice == 0:
@@ -273,15 +271,13 @@ class DatabaseProperties(object):
                     # Core (None) has been removed from self.dependencies
                     if self.dependencies[dep] is not None:
                         try:
-                            ddeps = extsinfo(dep)['dependencies'].split(" ")
-                        except KeyError:
+                            ddeps = list(coreaux_api.import_extension_info(
+                                                            dep).dependencies)
+                        except AttributeError:
                             ddeps = []
 
                         for ddep in ddeps:
-                            sddep = ddep.split(".")
-
-                            if ".".join(sddep[0:2]) == 'extensions.{}'.format(
-                                                                        ext):
+                            if ddep[0] == 'extensions.{}'.format(ext):
                                 reverse_deps.append(dep)
 
                 if reverse_deps:
@@ -297,21 +293,22 @@ class DatabaseProperties(object):
             else:
                 if newchoice == 0 :
                     try:
-                        deps = extsinfo(ext)['dependencies'].split(" ")
-                    except KeyError:
+                        deps = list(coreaux_api.import_extension_info(
+                                                            ext).dependencies)
+                    except AttributeError:
                         deps = []
 
                     missing_deps = []
 
                     for dep in deps:
-                        sdep = dep.split(".")
+                        sdep = dep[0].split(".")
 
                         if sdep[0] == 'extensions':
                             try:
                                 ver = self.dependencies[sdep[1]]
                             except KeyError:
-                                if extsinfo(sdep[1]).get_bool(
-                                                        'affects_database'):
+                                if coreaux_api.import_extension_info(sdep[1]
+                                                            ).affects_database:
                                     missing_deps.append(sdep[1])
                             else:
                                 if ver is None:
