@@ -34,7 +34,7 @@ class AddonDisabledError(OutsplineError):
 
 
 class ExtensionProvidedTablesError(OutsplineError):
-    def __init__(self, tables, addons):
+    def __init__(self, tables, extensions):
         self.tables = tables
         self.extensions = extensions
         OutsplineError.__init__(self)
