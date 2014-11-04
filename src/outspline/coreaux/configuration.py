@@ -26,6 +26,7 @@ from datetime import datetime
 import importlib
 
 import outspline.info as info
+import outspline.conf as conf_
 import outspline.static.configfile as configfile
 
 import exceptions
@@ -39,7 +40,6 @@ __author__ = "Dario Giovannetti <dev@dariogiovannetti.net>"
 
 MAIN_THREAD_NAME = "MAIN"
 _ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
-_CONFIG_FILE = os.path.join(_ROOT_DIR, 'outspline.conf')
 _USER_CONFIG_FILE = os.path.join(os.path.expanduser('~'), '.config',
                                                 'outspline', 'outspline.conf')
 _USER_FOLDER_PERMISSIONS = 0750
@@ -138,7 +138,7 @@ def load_component_info():
 def load_addon_info_and_default_config():
     global config
 
-    config = configfile.ConfigFile(_CONFIG_FILE, inherit_options=False)
+    config = configfile.ConfigFile(conf_.core.data)
 
     for t in ('Extensions', 'Interfaces', 'Plugins'):
         # Note that an addon needs to be provided by a component in order to be
@@ -146,8 +146,9 @@ def load_addon_info_and_default_config():
         for a in components(t).get_sections():
             config(t).make_subsection(a)
 
-            # Let the normal exception be raised if the .conf file is not found
-            config(t)(a).add(os.path.join(_ROOT_DIR, t.lower(), a + '.conf'))
+            aconf = importlib.import_module(".".join(("outspline", "conf",
+                                                                t.lower(), a)))
+            config(t)(a).add(aconf.data)
 
             info = importlib.import_module(".".join(("outspline", "info",
                                                                 t.lower(), a)))
