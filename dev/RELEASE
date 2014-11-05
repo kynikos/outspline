@@ -46,6 +46,8 @@
 * Check the observance of all STYLE rules
 * Run release.py (inside ./dev)
   Note that it depends on the installed version of python-configfile
+  Also note that it copies the static libraries from their folders, so make
+   sure they are checked out on a STABLE branch!
 * Upload the archives to SourceForge
 * Check the PKGBUILDs with namcap
 * Test PKGBUILD installation
