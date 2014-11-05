@@ -119,7 +119,8 @@ def make_component_package(cfile, cname):
         for file_ in ('core_api.py', 'coreaux_api.py'):
             shutil.copy2(os.path.join(BASE_DIR, file_), maindir)
 
-        shutil.copytree(SCRIPTS_DIR, os.path.join(pkgdir, 'scripts'))
+        shutil.copytree(SCRIPTS_DIR, os.path.join(pkgdir, 'scripts'),
+                            ignore=shutil.ignore_patterns('*.pyc', '*.pyo'))
         make_data_files("core", datadir, rdatadir)
 
     addons = find_addons(component)
@@ -201,13 +202,13 @@ def find_addons(component):
 def make_data_files(rpath, datadir, rdatadir):
     try:
         shutil.copytree(os.path.join(DATA_DIR, rpath), os.path.join(datadir,
-                                                                        rpath))
+                    rpath), ignore=shutil.ignore_patterns('*.pyc', '*.pyo'))
     except FileNotFoundError:
         pass
 
     try:
         shutil.copytree(os.path.join(RDATA_DIR, rpath), os.path.join(rdatadir,
-                                                                        rpath))
+                    rpath), ignore=shutil.ignore_patterns('*.pyc', '*.pyo'))
     except FileNotFoundError:
         pass
 
