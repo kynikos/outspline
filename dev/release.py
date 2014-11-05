@@ -54,8 +54,7 @@ def main():
 
 
 def make_component_package(cfile, cname):
-    component = configfile.ConfigFile(os.path.join(BASE_DIR, cfile),
-                                                        inherit_options=False)
+    component = configfile.ConfigFile(os.path.join(BASE_DIR, cfile))
     pkgname = PACKAGES[cname]
     pkgver = component['version']
     pkgdirname = pkgname + '-' + pkgver

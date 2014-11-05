@@ -81,7 +81,7 @@ update_only = False
 def load_component_info():
     global components
 
-    components = configfile.ConfigFile(None, inherit_options=False)
+    components = configfile.ConfigFile(None)
     components.make_subsection('Components')
     components.make_subsection('Core')
     components.make_subsection('Extensions')
