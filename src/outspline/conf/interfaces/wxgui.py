@@ -35,6 +35,23 @@ data = (
         ("extended_shortcuts", "off"),
     )),
     OD((
+        ("History", (
+            OD((
+                ("debug", "no"),
+                ("color_done", "#FF7E00"),
+                ("color_undone", "none"),
+                ("color_saved", "#0F52BA"),
+            )),
+            OD()
+        )),
+        ("TreeIcons", (
+            OD((
+                ("symbol", "+"),
+                ("color", "#0F52BA"),
+            )),
+            OD()
+        )),
+        ("SessionFiles", (OD(), OD())),
         ("Shortcuts", (
             # Shortcuts that can't/shouldn't be overridden in menus (list not
             #  exhaustive):
@@ -290,23 +307,6 @@ data = (
                 )),
             ))
         )),
-        ("History", (
-            OD((
-                ("debug", "no"),
-                ("color_done", "#FF7E00"),
-                ("color_undone", "none"),
-                ("color_saved", "#0F52BA"),
-            )),
-            OD()
-        )),
-        ("TreeIcons", (
-            OD((
-                ("symbol", "+"),
-                ("color", "#0F52BA"),
-            )),
-            OD()
-        )),
-        ("SessionFiles", (OD(), OD())),
     ))
 )
 

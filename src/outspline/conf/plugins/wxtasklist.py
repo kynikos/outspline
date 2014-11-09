@@ -68,6 +68,16 @@ data = (
             )),
             OD()
         )),
+        ("DefaultFilter", (
+            OD((
+                ("mode", "relative"),
+                ("low", "-5"),
+                ("high", "1439"),
+                ("type", "to"),
+                ("unit", "minutes"),
+            )),
+            OD()
+        )),
         ("Shortcuts", (
             OD((
                 ("scroll_to_ongoing", "Ctrl+;"),
@@ -124,16 +134,6 @@ data = (
                 ("toggle_navigator", "n"),
                 ("toggle_gaps", "g"),
                 ("toggle_overlappings", "o"),
-            )),
-            OD()
-        )),
-        ("DefaultFilter", (
-            OD((
-                ("mode", "relative"),
-                ("low", "-5"),
-                ("high", "1439"),
-                ("type", "to"),
-                ("unit", "minutes"),
             )),
             OD()
         )),
