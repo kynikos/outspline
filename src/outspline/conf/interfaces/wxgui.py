@@ -23,6 +23,8 @@ data = (
         ("enabled", "on"),
         ("initial_geometry", "900x700"),
         ("maximized", "no"),
+        ("tree_sash_position", "3.0"),
+        ("tree_auto_sash_gravity", "yes"),
         ("remember_geometry", "yes"),
         ("autohide_menubar", "no"),
         ("remember_session", "yes"),
