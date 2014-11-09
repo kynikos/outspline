@@ -204,7 +204,6 @@ def load_addon(faddon, reqversion, tablenames):
             if hasattr(mod, 'main') or folder == 'interfaces':
                 mod.main()
 
-            global enabled_addons
             enabled_addons[section].add(addon)
 
             log.info('Loaded {}: {}'.format(logname, addon))
