@@ -20,18 +20,19 @@ import sys
 import os.path
 import argparse
 
+import outspline.components.main
 import outspline.info as info
 
 from configuration import (_USER_CONFIG_FILE, _COPYRIGHT_V1, _DISCLAIMER_SHORT,
-                                                            components, config)
+                                                                        config)
 
 
 class ShowVersion(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         print("Outspline {} ({})\n\n{}\n{}".format(
-                components('Components')(components['core'])['version'],
-                components('Components')(components['core'])['release_date'],
-                _COPYRIGHT_V1, _DISCLAIMER_SHORT))
+                                        outspline.components.main.version,
+                                        outspline.components.main.release_date,
+                                        _COPYRIGHT_V1, _DISCLAIMER_SHORT))
         sys.exit()
 
 

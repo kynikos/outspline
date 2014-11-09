@@ -28,7 +28,7 @@
   Make sure that none of them was modified in this project and not in its
   main repository
 * Update files:
-  - *.component
+  - component *.py files
   - info/*.py
     Remember that the major versions of add-ons must be increased for both
     database *and* API changes

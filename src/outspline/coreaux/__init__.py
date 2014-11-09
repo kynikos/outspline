@@ -105,8 +105,8 @@ def install_thread_excepthook():
 
 
 def main():
-    configuration.load_component_info()
-    configuration.load_addon_info_and_default_config()
+    configuration.load_components_info()
+    configuration.load_default_config()
 
     import cliargparse
     cliargs = cliargparse.parse_cli_args()

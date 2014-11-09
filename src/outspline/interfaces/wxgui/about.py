@@ -150,13 +150,13 @@ class InfoBox(wx.SplitterWindow):
 
         # Do not use the configuration because it could have entries about
         # addons that aren't actually installed
-        addons = coreaux_api.get_components_info()
+        addons = coreaux_api.get_components_info()["addons"]
 
         for type_ in ('Extensions', 'Interfaces', 'Plugins'):
             typeitem = self.tree.AppendItem(self.tree.GetRootItem(),
                         text=type_,
                         data=wx.TreeItemData({'req': 'lst', 'type_': type_}))
-            for addon in addons(type_).get_sections():
+            for addon in addons[type_]:
                 self.tree.AppendItem(typeitem, text=addon,
                             data=wx.TreeItemData(
                             {'req': 'inf', 'type_': type_, 'addon': addon}))
@@ -192,11 +192,10 @@ class InfoBox(wx.SplitterWindow):
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\n\nInstalled components:')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        cinfo = coreaux_api.get_components_info()
-        for c in cinfo('Components').get_sections():
-            self.textw.AppendText('\n\t{} {} ({})'.format(c,
-                                    cinfo('Components')(c)['version'],
-                                    cinfo('Components')(c)['release_date']))
+        cinfo = coreaux_api.get_components_info()["info"]
+        for cname in cinfo:
+            self.textw.AppendText('\n\t{} {} ({})'.format(cname,
+                            cinfo[cname].version, cinfo[cname].release_date))
 
     def compose_addon_info(self, type_, addon):
         info = {
@@ -258,10 +257,10 @@ class InfoBox(wx.SplitterWindow):
         self.textw.AppendText('\nComponent: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
         cinfo = coreaux_api.get_components_info()
-        component = cinfo(type_)(addon)[info.version]
-        self.textw.AppendText('{} {} ({})'.format(component,
-                            cinfo('Components')(component)['version'],
-                            cinfo('Components')(component)['release_date']))
+        cname = cinfo["addons"][type_][addon]
+        component = cinfo["info"][cname]
+        self.textw.AppendText('{} {} ({})'.format(cname, component.version,
+                                                    component.release_date))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nDependencies:')
@@ -290,11 +289,11 @@ class InfoBox(wx.SplitterWindow):
     def compose_list(self, type_):
         # Do not use the configuration because it could have entries about
         # addons that aren't actually installed
-        info = coreaux_api.get_components_info()
+        info = coreaux_api.get_components_info()["addons"]
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('{}:\n'.format(type_))
 
-        for addon in info(type_).get_sections():
+        for addon in info[type_]:
             config = coreaux_api.get_configuration()(type_)(addon)
 
             if config.get_bool('enabled'):

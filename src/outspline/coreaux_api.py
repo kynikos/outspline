@@ -21,6 +21,7 @@ import os.path
 import importlib
 import threading
 
+import outspline.components.main
 import outspline.info as info
 from coreaux.configuration import components, config
 import coreaux.configuration
@@ -36,11 +37,11 @@ import coreaux.addons
 
 
 def get_main_component_version():
-    return components('Components')(components['core'])['version']
+    return outspline.components.main.version
 
 
 def get_main_component_release_date():
-    return components('Components')(components['core'])['release_date']
+    return outspline.components.main.release_date
 
 
 def get_core_version():

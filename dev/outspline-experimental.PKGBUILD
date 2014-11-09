@@ -17,6 +17,7 @@ package() {
     rm $pkgdir/usr/lib/python2.7/site-packages/outspline/__init__.py{,c,o}
     rm $pkgdir/usr/lib/python2.7/site-packages/outspline/extensions/__init__.py{,c,o}
     rm $pkgdir/usr/lib/python2.7/site-packages/outspline/plugins/__init__.py{,c,o}
+    rm $pkgdir/usr/lib/python2.7/site-packages/outspline/components/__init__.py{,c,o}
     rm $pkgdir/usr/lib/python2.7/site-packages/outspline/info/__init__.py{,c,o}
     rm $pkgdir/usr/lib/python2.7/site-packages/outspline/info/extensions/__init__.py{,c,o}
     rm $pkgdir/usr/lib/python2.7/site-packages/outspline/info/interfaces/__init__.py{,c,o}

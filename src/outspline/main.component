@@ -1,9 +1,0 @@
-version = 0.7.1
-release_date = 2014-10-22
-provides_core = true
-extension_1 = copypaste 2.0
-interface_1 = wxgui 2.1
-plugin_1 = wxcopypaste 1.1
-plugin_2 = wxtrayicon 1.1
-plugin_3 = wxtexthistory 1.1
-plugin_4 = wxdbsearch 1.1

@@ -19,6 +19,7 @@
 import sys
 import os.path
 import importlib
+import pkgutil
 
 import outspline.info as info
 
@@ -206,40 +207,38 @@ def load_addon(faddon, reqversion, tablenames):
             global enabled_addons
             enabled_addons[section].add(addon)
 
-            log.info('Loaded ' + logname + ': ' + addon)
+            log.info('Loaded {}: {}'.format(logname, addon))
 
 
 def start_addons():
     tablenames = {table: 'core' for table in info.core.provides_tables
                                                                     if table}
 
-    # Use a tuple because a simple dictionary doesn't keep sequence order
-    for section, folder in (('Extensions', 'extensions'),
-                            ('Interfaces', 'interfaces'),
-                            ('Plugins', 'plugins')):
+    for folder in ('extensions', 'interfaces', 'plugins'):
         # Don't use configuration.config to prevent the following bug: an
         # optional component is installed, then Outspline is run once, creating
         # a configuration file, then the optional component is uninstalled; its
         # configuration would still be read in configuration.config, so this
-        # function would try to load an addon that is not installed anymore;
-        # use configuration.components instead
-        for pkg in configuration.components(section).get_sections():
-            faddon = folder + '.' + pkg
+        # function would try to load an addon that is not installed anymore
+        for module_loader, name, ispkg in pkgutil.iter_modules((os.path.join(
+                                        configuration._ROOT_DIR, folder), )):
+            if ispkg:
+                faddon = ".".join((folder, name))
 
-            try:
-                load_addon(faddon, False, tablenames)
-            except exceptions.AddonDisabledError:
-                log.debug(faddon + ' is disabled')
-            except exceptions.ExtensionProvidedTablesError as err:
-                log.error('{} provides tables {} which are already provided '
-                                'by {}'.format(faddon, ', '.join(err.tables),
-                                ', '.join(err.extensions)))
-                raise
-            # If wanting to catch other exceptions here that come only from
-            # base addons (not propagated from dependencies), remember to raise
-            # different exceptions for any exception that is caught in
-            # load_addon() (i.e. don't propagate the same exception, use e.g.
-            # exceptions.AddonDependencyError)
+                try:
+                    load_addon(faddon, False, tablenames)
+                except exceptions.AddonDisabledError:
+                    log.debug('{} is disabled'.format(faddon))
+                except exceptions.ExtensionProvidedTablesError as err:
+                    log.error('{} provides tables {} which are already '
+                            'provided by {}'.format(faddon,
+                            ', '.join(err.tables), ', '.join(err.extensions)))
+                    raise
+                # If wanting to catch other exceptions here that come only from
+                # base addons (not propagated from dependencies), remember to
+                # raise different exceptions for any exception that is caught
+                # in load_addon() (i.e. don't propagate the same exception, use
+                # e.g. exceptions.AddonDependencyError)
 
 
 def start_interface():

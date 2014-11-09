@@ -5,6 +5,8 @@ import os
 import shutil
 import subprocess
 import re
+import pkgutil
+import imp
 
 import configfile
 
@@ -27,41 +29,42 @@ SRC_DIR = os.path.join(ROOT_DIR, 'src')
 BASE_DIR = os.path.join(SRC_DIR, 'outspline')
 SCRIPTS_DIR = os.path.join(SRC_DIR, 'scripts')
 DATA_DIR = os.path.join(SRC_DIR, 'data_files')
-INFO_DIR = os.path.join(BASE_DIR, 'info')
-CONF_DIR = os.path.join(BASE_DIR, 'conf')
-DEPS_DIR = os.path.join(BASE_DIR, 'dbdeps')
-RDATA_DIR = os.path.join(BASE_DIR, "data")
+COMPONENTS_DIR = os.path.join(BASE_DIR, 'components')
 PACKAGES = {
     'main': 'outspline',
     'development': 'outspline-development',
     'organism': 'outspline-organism',
     'experimental': 'outspline-experimental',
 }
+INFO_DIR = os.path.join(BASE_DIR, 'info')
+CONF_DIR = os.path.join(BASE_DIR, 'conf')
+DEPS_DIR = os.path.join(BASE_DIR, 'dbdeps')
+RDATA_DIR = os.path.join(BASE_DIR, "data")
 
 def main():
     if len(COMPONENTS) > 0:
         for cname in COMPONENTS:
-            cfile = cname + '.component'
-            make_component_package(cfile, cname)
+            make_component_package(cname)
             make_pkgbuild_package(cname)
 
     else:
-        for cfile in os.listdir(BASE_DIR):
-            cname, ext = os.path.splitext(cfile)
-
-            if ext == '.component':
-                make_component_package(cfile, cname)
-                make_pkgbuild_package(cname)
+        for module_loader, cname, ispkg in pkgutil.iter_modules((
+                                                            COMPONENTS_DIR, )):
+            make_component_package(cname)
+            make_pkgbuild_package(cname)
 
 
-def make_component_package(cfile, cname):
-    component = configfile.ConfigFile(os.path.join(BASE_DIR, cfile))
+def make_component_package(cname):
+    cfile = os.path.join(COMPONENTS_DIR, cname + ".py")
+    component = imp.load_source(cname, cfile)
+
     pkgname = PACKAGES[cname]
-    pkgver = component['version']
+    pkgver = component.version
     pkgdirname = pkgname + '-' + pkgver
     pkgdir = os.path.join(DEST_DIR, pkgdirname)
     maindir = os.path.join(pkgdir, 'outspline')
     datadir = os.path.join(pkgdir, 'data_files')
+    componentsdir = os.path.join(maindir, 'components')
     infodir = os.path.join(maindir, 'info')
     confdir = os.path.join(maindir, 'conf')
     depsdir = os.path.join(maindir, 'dbdeps')
@@ -72,8 +75,11 @@ def make_component_package(cfile, cname):
     shutil.copy2(os.path.join(SRC_DIR, 'setup.py'), pkgdir)
     shutil.copy2(os.path.join(SRC_DIR, pkgname + '.config.py'),
                                             os.path.join(pkgdir, 'config.py'))
-    shutil.copy2(os.path.join(BASE_DIR, cfile), maindir)
     shutil.copy2(os.path.join(BASE_DIR, '__init__.py'), maindir)
+
+    os.makedirs(componentsdir)
+    shutil.copy2(os.path.join(COMPONENTS_DIR, '__init__.py'), componentsdir)
+    shutil.copy2(cfile, componentsdir)
 
     os.makedirs(datadir)
     os.makedirs(rdatadir)
@@ -87,7 +93,11 @@ def make_component_package(cfile, cname):
     os.makedirs(depsdir)
     shutil.copy2(os.path.join(DEPS_DIR, '__init__.py'), depsdir)
 
-    if component.get_bool('provides_core', fallback='false'):
+    try:
+        assert component.provides_core
+    except (AttributeError, AssertionError):
+        pass
+    else:
         shutil.copytree(os.path.join(BASE_DIR, 'core'), os.path.join(
                             maindir, 'core'),
                             ignore=shutil.ignore_patterns('*.pyc', '*.pyo'))
@@ -123,80 +133,54 @@ def make_component_package(cfile, cname):
                             ignore=shutil.ignore_patterns('*.pyc', '*.pyo'))
         make_data_files("core", datadir, rdatadir)
 
-    addons = find_addons(component)
+    for type_ in ("extensions", "interfaces", "plugins"):
+        try:
+            addons = getattr(component, type_)
+        except AttributeError:
+            pass
+        except:
+            typedir = os.path.join(maindir, type_)
+            os.mkdir(typedir)
+            shutil.copy2(os.path.join(BASE_DIR, type_, '__init__.py'), typedir)
 
-    for type_ in addons:
-        typedir = os.path.join(maindir, type_)
-        os.mkdir(typedir)
-        shutil.copy2(os.path.join(BASE_DIR, type_, '__init__.py'), typedir)
-
-        typeinfodir = os.path.join(infodir, type_)
-        os.mkdir(typeinfodir)
-        shutil.copy2(os.path.join(INFO_DIR, type_, '__init__.py'), typeinfodir)
-
-        typeconfdir = os.path.join(confdir, type_)
-        os.mkdir(typeconfdir)
-        shutil.copy2(os.path.join(CONF_DIR, type_, '__init__.py'), typeconfdir)
-
-        for caddon in addons[type_]:
-            addon, version = caddon
-
-            shutil.copy2(os.path.join(INFO_DIR, type_, addon + '.py'),
+            typeinfodir = os.path.join(infodir, type_)
+            os.mkdir(typeinfodir)
+            shutil.copy2(os.path.join(INFO_DIR, type_, '__init__.py'),
                                                                 typeinfodir)
 
-            shutil.copy2(os.path.join(CONF_DIR, type_, addon + '.py'),
+            typeconfdir = os.path.join(confdir, type_)
+            os.mkdir(typeconfdir)
+            shutil.copy2(os.path.join(CONF_DIR, type_, '__init__.py'),
                                                                 typeconfdir)
 
-            try:
-                shutil.copy2(os.path.join(BASE_DIR, type_, addon + '_api.py'),
-                                                                    typedir)
-            except FileNotFoundError:
-                pass
+            for addon in addons:
+                shutil.copy2(os.path.join(INFO_DIR, type_, addon + '.py'),
+                                                                typeinfodir)
 
-            make_data_files(os.path.join(type_, addon), datadir, rdatadir)
+                shutil.copy2(os.path.join(CONF_DIR, type_, addon + '.py'),
+                                                                typeconfdir)
 
-            if type_ == 'extensions':
                 try:
-                    shutil.copy2(os.path.join(DEPS_DIR, addon + '.py'),
-                                                                    depsdir)
+                    shutil.copy2(os.path.join(BASE_DIR, type_, addon +
+                                                        '_api.py'), typedir)
                 except FileNotFoundError:
                     pass
 
-            shutil.copytree(os.path.join(BASE_DIR, type_, addon),
+                make_data_files(os.path.join(type_, addon), datadir, rdatadir)
+
+                if type_ == 'extensions':
+                    try:
+                        shutil.copy2(os.path.join(DEPS_DIR, addon + '.py'),
+                                                                    depsdir)
+                    except FileNotFoundError:
+                        pass
+
+                shutil.copytree(os.path.join(BASE_DIR, type_, addon),
                             os.path.join(typedir, addon),
                             ignore=shutil.ignore_patterns('*.pyc', '*.pyo'))
 
     shutil.make_archive(pkgdir, 'bztar', base_dir=pkgdirname)
     shutil.rmtree(pkgdir)
-
-
-def find_addons(component):
-    addons = {}
-
-    for o in component:
-        if o[:9] == 'extension':
-            try:
-                addons['extensions']
-            except KeyError:
-                addons['extensions'] = [component[o].split(' '), ]
-            else:
-                addons['extensions'].append(component[o].split(' '))
-        elif o[:9] == 'interface':
-            try:
-                addons['interfaces']
-            except KeyError:
-                addons['interfaces'] = [component[o].split(' '), ]
-            else:
-                addons['interfaces'].append(component[o].split(' '))
-        elif o[:6] == 'plugin':
-            try:
-                addons['plugins']
-            except KeyError:
-                addons['plugins'] = [component[o].split(' '), ]
-            else:
-                addons['plugins'].append(component[o].split(' '))
-
-    return addons
 
 
 def make_data_files(rpath, datadir, rdatadir):

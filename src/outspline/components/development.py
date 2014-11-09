@@ -16,39 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-
-class OutsplineError(Exception):
-    pass
-
-
-class AddonDisabledError(OutsplineError):
-    pass
-
-
-class ExtensionProvidedTablesError(OutsplineError):
-    def __init__(self, tables, extensions):
-        self.tables = tables
-        self.extensions = extensions
-        OutsplineError.__init__(self)
-
-
-class AddonVersionError(OutsplineError):
-    def __init__(self, version):
-        self.version = version
-        OutsplineError.__init__(self)
-
-
-class AddonNotFoundError(OutsplineError):
-    pass
-
-
-class AddonDependencyError(OutsplineError):
-    pass
-
-
-class MultipleInterfacesError(OutsplineError):
-    pass
-
-
-class InterfaceNotFoundError(OutsplineError):
-    pass
+version = "0.7.0"
+release_date = "2014-10-20"
+extensions = ("development", )
+plugins = ("wxdevelopment", )

@@ -20,7 +20,9 @@ import os
 import errno
 import logging.config
 
-from configuration import components, config, _USER_FOLDER_PERMISSIONS
+import outspline.components.main
+
+from configuration import config, _USER_FOLDER_PERMISSIONS
 
 log = None
 
@@ -194,5 +196,5 @@ def set_logger(cliargs):
     log.info('Start logging (level {}{}, file {})'.format(
                         str(level['console']), str(level['file']), logfile))
     log.info('{} version {} ({})'.format('Outspline',
-                components('Components')(components['core'])['version'],
-                components('Components')(components['core'])['release_date']))
+                                    outspline.components.main.version,
+                                    outspline.components.main.release_date))
