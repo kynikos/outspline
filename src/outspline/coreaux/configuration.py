@@ -44,6 +44,7 @@ _USER_CONFIG_FILE = os.path.join(os.path.expanduser('~'), '.config',
                                                 'outspline', 'outspline.conf')
 _USER_FOLDER_PERMISSIONS = 0750
 _COMPONENTS_DIR = os.path.join(_ROOT_DIR, "components")
+_CONFIG_DIR = os.path.join(_ROOT_DIR, "conf")
 # Use the icons in $XDG_DATA_DIRS/icons only when there's no alternative, e.g.
 #  for the .desktop file and the notifications
 BUNDLED_DATA_DIR = os.path.join(_ROOT_DIR, "data")
@@ -117,7 +118,7 @@ def load_default_config():
 
     for type_ in ('Extensions', 'Interfaces', 'Plugins'):
         for module_loader, addon_name, ispkg in pkgutil.iter_modules((
-                                                            type_.lower(), )):
+                                    os.path.join(_CONFIG_DIR, type_.lower()), )):
             config(type_).make_subsection(addon_name)
 
             aconf = importlib.import_module(".".join(("outspline", "conf",
