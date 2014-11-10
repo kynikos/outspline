@@ -19,6 +19,7 @@
   - database upgrade mechanism
   - database properties
   - database search
+  Test on 32-bit systems
   Test interfaces with various GTK themes
 * Check code with the pep8 tool
 * Update and release any library that is maintained in external repos
@@ -27,8 +28,8 @@
   Make sure that none of them was modified in this project and not in its
   main repository
 * Update files:
-  - *.component
-  - *.info
+  - component *.py files
+  - info/*.py
     Remember that the major versions of add-ons must be increased for both
     database *and* API changes
   - interfaces.wxgui.about
@@ -44,7 +45,8 @@
   update the user's file
 * Check the observance of all STYLE rules
 * Run release.py (inside ./dev)
-  Note that it depends on the installed version of python-configfile
+  Note that it copies the static libraries from their folders, so make sure
+  they are checked out on a STABLE branch!
 * Upload the archives to SourceForge
 * Check the PKGBUILDs with namcap
 * Test PKGBUILD installation

@@ -32,22 +32,20 @@ import outspline.extensions.organism_api as organism_api
 import outspline.extensions.organism_timer_api as organism_timer_api
 import outspline.interfaces.wxgui_api as wxgui_api
 
-from exceptions import OutOfRangeError
+from exceptions import SearchOutOfRangeError
 
 
 class Navigator(object):
-    def __init__(self, tasklist):
+    def __init__(self, tasklist, limits):
         # tasklist.list_ hasn't been instantiated yet here
         self.tasklist = tasklist
+        self.limits = limits
         self.parent = tasklist.panel
         self.panel = wx.Panel(self.parent)
         self.fbox = wx.WrapSizer(orient=wx.HORIZONTAL)
         self.panel.SetSizer(self.fbox)
 
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
-
-        self.limits = (self.config.get_int('minimum_year'),
-                                        self.config.get_int('maximum_year'))
 
         self.configuration = FilterConfiguration(self.limits)
 
@@ -171,8 +169,8 @@ class Navigator(object):
     def _apply_filter(self, config):
         try:
             self.tasklist.list_.set_filter(config)
-        except OutOfRangeError:
-            self.tasklist.list_.warn_out_of_range()
+        except SearchOutOfRangeError:
+            self.tasklist.list_.warn_search_out_of_range()
         else:
             # Update the configuration stored in the interface, otherwise when
             # changing some parameters and then coming back to the current ones
@@ -190,8 +188,8 @@ class Navigator(object):
         try:
             nconfig = self.configuration.compute_previous_configuration(
                                                                     cconfig)
-        except OutOfRangeError:
-            self.tasklist.list_.warn_out_of_range()
+        except SearchOutOfRangeError:
+            self.tasklist.list_.warn_search_out_of_range()
         else:
             self._reset_filter(nconfig)
             self._show_filter(self.choice.GetSelection(), nconfig)
@@ -205,8 +203,8 @@ class Navigator(object):
 
         try:
             nconfig = self.configuration.compute_next_configuration(cconfig)
-        except OutOfRangeError:
-            self.tasklist.list_.warn_out_of_range()
+        except SearchOutOfRangeError:
+            self.tasklist.list_.warn_search_out_of_range()
         else:
             self._reset_filter(nconfig)
             self._show_filter(self.choice.GetSelection(), nconfig)
@@ -230,8 +228,8 @@ class Navigator(object):
 
         try:
             config = self.configuration.set_current_from_interface(intvalues)
-        except OutOfRangeError:
-            self.tasklist.list_.warn_out_of_range()
+        except SearchOutOfRangeError:
+            self.tasklist.list_.warn_search_out_of_range()
         else:
             self._apply_filter(config)
 
@@ -247,8 +245,8 @@ class Navigator(object):
 
         try:
             config = self.configuration.set_current_from_interface(intvalues)
-        except OutOfRangeError:
-            self.tasklist.list_.warn_out_of_range()
+        except SearchOutOfRangeError:
+            self.tasklist.list_.warn_search_out_of_range()
         else:
             self._apply_filter(config)
 
@@ -301,7 +299,7 @@ class FilterConfiguration(object):
 
         try:
             self.saved = self.filterconf.compute_from_file(options)
-        except OutOfRangeError:
+        except SearchOutOfRangeError:
             self.saved = self.filterconf.get_defaults()
 
         self.current = copy_.deepcopy(self.saved)
@@ -502,7 +500,7 @@ class FilterConfigurationDate(object):
             return self._compute(lowdate, highdate, fileconfig['type'],
                                                             fileconfig['unit'])
         else:
-            raise OutOfRangeError()
+            raise SearchOutOfRangeError()
 
     def compute_from_interface(self, intvalues):
         # The values are already sanitized by the date widgets
@@ -531,7 +529,13 @@ class FilterConfigurationDate(object):
                 # the range
                 highdate = lowdate + spand - _datetime.timedelta(days=1)
             except OverflowError:
-                raise OutOfRangeError()
+                raise SearchOutOfRangeError()
+            else:
+                # In 32-bit systems, OverflowError isn't raised here, but later
+                #  in FilterDate by time.mktime, so be consistent and validate
+                #  the values already here
+                if highdate.year > self.limits[1]:
+                    raise SearchOutOfRangeError()
 
             return {
                 'mode': 'date',
@@ -572,7 +576,7 @@ class FilterConfigurationDate(object):
                 lowdate -= delta
                 highdate -= delta
         except OverflowError:
-            raise OutOfRangeError()
+            raise SearchOutOfRangeError()
 
         if lowdate.year >= self.limits[0] and highdate.year <= self.limits[1]:
             nconfig.update({
@@ -582,7 +586,7 @@ class FilterConfigurationDate(object):
 
             return nconfig
         else:
-            raise OutOfRangeError()
+            raise SearchOutOfRangeError()
 
     def compose_for_file(self, config):
         # It's important to store only the significant values for the limits:
@@ -660,10 +664,10 @@ class FilterConfigurationMonth(object):
             return self._compute(lowyear, lowmonth0, highyear, highmonth0,
                                         fileconfig['type'], fileconfig['unit'])
         else:
-            raise OutOfRangeError()
+            raise SearchOutOfRangeError()
 
     def compute_from_interface(self, intvalues):
-        # The values are already sanitized by the date widgets
+        # The values are already sanitized by the spin widgets
         lowyear = intvalues['lowyear']
         lowmonth0 = intvalues['lowmonth0']
         type_ = intvalues['type']
@@ -695,6 +699,10 @@ class FilterConfigurationMonth(object):
                 tempmonth0 = lowmonth0 - 1 + span
                 yspan, highmonth0 = divmod(tempmonth0, 12)
                 highyear = lowyear + yspan
+
+            # This is especially important for 32-bit systems
+            if highyear > self.limits[1]:
+                raise SearchOutOfRangeError()
 
             return {
                 'mode': 'month',
@@ -742,7 +750,7 @@ class FilterConfigurationMonth(object):
                                         nconfig['highyear'] <= self.limits[1]:
             return nconfig
         else:
-            raise OutOfRangeError()
+            raise SearchOutOfRangeError()
 
     def compose_for_file(self, config):
         # It's important to store only the significant values for the limits:
@@ -1204,7 +1212,7 @@ class FilterRelativeDays(object):
             # reference time, so it must be protected
             self.nowoffset = self.utcoffset.compute(now)
         except ValueError:
-            raise OutOfRangeError()
+            raise SearchOutOfRangeError()
         else:
             # It's necessary to first subtract self.nowoffset to get the
             # correct date, otherwise for positive UTC values the next day will
@@ -1243,8 +1251,10 @@ class FilterRelativeWeeks(object):
             relweekdaystart = (7 - self.firstweekday + weekday) % 7 * 86400
             self.weekstart = int(_time.mktime(dnow.timetuple())
                                                             ) - relweekdaystart
-        except ValueError:
-            raise OutOfRangeError()
+        # OverflowError can be raised by time.mktime, especially on 32-bit
+        #  systems
+        except (ValueError, OverflowError):
+            raise SearchOutOfRangeError()
         else:
             mint = self.weekstart + self.low
             # Subtract 1 second because if setting 'to 0'/'for 1' it's expected
@@ -1281,8 +1291,10 @@ class FilterRelativeMonths(object):
             # to only show the current month, and not occurrences starting at
             # the next month
             maxt = int(_time.mktime(dmax.timetuple())) - 1
-        except ValueError:
-            raise OutOfRangeError()
+        # OverflowError can be raised by time.mktime, especially on 32-bit
+        #  systems
+        except (ValueError, OverflowError):
+            raise SearchOutOfRangeError()
         else:
             return (mint, maxt)
 
@@ -1318,8 +1330,10 @@ class FilterRelativeYears(object):
             # to only show the current year, and not occurrences starting at
             # the next year
             maxt = int(_time.mktime(dmax.timetuple())) - 1
-        except ValueError:
-            raise OutOfRangeError()
+        # OverflowError can be raised by time.mktime, especially on 32-bit
+        #  systems
+        except (ValueError, OverflowError):
+            raise SearchOutOfRangeError()
         else:
             return (mint, maxt)
 

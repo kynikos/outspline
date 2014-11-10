@@ -23,8 +23,11 @@ import os
 import errno
 import locale
 from datetime import datetime
+import importlib
+import pkgutil
 
-import configfile
+import outspline.conf as conf_
+import outspline.static.configfile as configfile
 
 import exceptions
 
@@ -37,11 +40,11 @@ __author__ = "Dario Giovannetti <dev@dariogiovannetti.net>"
 
 MAIN_THREAD_NAME = "MAIN"
 _ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
-_CORE_INFO = os.path.join(_ROOT_DIR, 'coreaux', 'core.info')
-_CONFIG_FILE = os.path.join(_ROOT_DIR, 'outspline.conf')
 _USER_CONFIG_FILE = os.path.join(os.path.expanduser('~'), '.config',
                                                 'outspline', 'outspline.conf')
 _USER_FOLDER_PERMISSIONS = 0750
+_COMPONENTS_DIR = os.path.join(_ROOT_DIR, "components")
+_CONFIG_DIR = os.path.join(_ROOT_DIR, "conf")
 # Use the icons in $XDG_DATA_DIRS/icons only when there's no alternative, e.g.
 #  for the .desktop file and the notifications
 BUNDLED_DATA_DIR = os.path.join(_ROOT_DIR, "data")
@@ -72,95 +75,55 @@ You should have received a copy of the GNU General Public License
 along with Outspline.  If not, see <http://www.gnu.org/licenses/>.'''
 
 user_config_file = _USER_CONFIG_FILE
-components = None
-info = None
+components = {
+    "info": {},
+    "addons": {
+        "core": None,
+        "Extensions": {},
+        "Interfaces": {},
+        "Plugins": {},
+    },
+}
 config = None
 update_only = False
 
 
-def load_component_info():
-    global components
+def load_components_info():
+    for module_loader, comp_name, ispkg in pkgutil.iter_modules((
+                                                        _COMPONENTS_DIR, )):
+        module = importlib.import_module(".".join(("outspline", "components",
+                                                                comp_name)))
+        components["info"][comp_name] = module
 
-    components = configfile.ConfigFile({}, inherit_options=False)
-    components.make_subsection('Components')
-    components.make_subsection('Core')
-    components.make_subsection('Extensions')
-    components.make_subsection('Interfaces')
-    components.make_subsection('Plugins')
+        try:
+            assert module.provides_core
+        except (AttributeError, AssertionError):
+            pass
+        else:
+            components["addons"]["core"] = comp_name
 
-    for c in os.listdir(_ROOT_DIR):
-        split = os.path.splitext(c)
-
-        if split[1] == '.component':
-            components('Components').make_subsection(split[0])
-            components('Components')(split[0]).add(os.path.join(_ROOT_DIR, c))
-
-            if components('Components')(split[0]).get_bool('provides_core',
-                                                            fallback='false'):
-                if 'core' not in components:
-                    components['core'] = split[0]
-                else:
-                    raise exceptions.ComponentConflictError()
-
-            for a in components('Components')(split[0]):
-                if a[:9] == 'extension':
-                    extension, version = components('Components')(split[0])[a
-                                                                ].split(' ')
-                    components('Extensions').make_subsection(extension)
-
-                    if version not in components('Extensions')(extension):
-                        components('Extensions')(extension)[version] = split[0]
-                    else:
-                        raise exceptions.ComponentConflictError()
-                elif a[:9] == 'interface':
-                    interface, version = components('Components')(split[0])[a
-                                                                ].split(' ')
-                    components('Interfaces').make_subsection(interface)
-
-                    if version not in components('Interfaces')(interface):
-                        components('Interfaces')(interface)[version] = split[0]
-                    else:
-                        raise exceptions.ComponentConflictError()
-                elif a[:6] == 'plugin':
-                    plugin, version = components('Components')(split[0])[a
-                                                                ].split(' ')
-                    components('Plugins').make_subsection(plugin)
-
-                    if version not in components('Plugins')(plugin):
-                        components('Plugins')(plugin)[version] = split[0]
-                    else:
-                        raise exceptions.ComponentConflictError()
-
-    if 'core' not in components:
-        raise exceptions.CoreComponentNotFoundError()
+        for type_ in ("Extensions", "Interfaces", "Plugins"):
+            try:
+                addons = getattr(module, type_.lower())
+            except AttributeError:
+                pass
+            else:
+                for addon in addons:
+                    components["addons"][type_][addon] = comp_name
 
 
-def load_addon_info_and_default_config():
-    global info
+def load_default_config():
     global config
+    config = configfile.ConfigFile(conf_.core.data)
 
-    info = configfile.ConfigFile({}, inherit_options=False)
-    info.make_subsection('Core')
-    info('Core').add(_CORE_INFO)
+    for type_ in ('Extensions', 'Interfaces', 'Plugins'):
+        for module_loader, addon_name, ispkg in pkgutil.iter_modules((
+                                    os.path.join(_CONFIG_DIR, type_.lower()), )):
+            config(type_).make_subsection(addon_name)
 
-    config = configfile.ConfigFile(_CONFIG_FILE, inherit_options=False)
-
-    for t in ('Extensions', 'Interfaces', 'Plugins'):
-        info.make_subsection(t)
-
-        # Note that an addon needs to be provided by a component in order to be
-        # loaded (the mere existence of its folder and files is not enough)
-        for a in components(t).get_sections():
-            info(t).make_subsection(a)
-            config(t).make_subsection(a)
-
-            # Let the normal exception be raised if the .info or .conf files
-            # are not found
-            info(t)(a).add(os.path.join(_ROOT_DIR, t.lower(), a, a + '.info'))
-            config(t)(a).add(os.path.join(_ROOT_DIR, t.lower(), a + '.conf'))
-
-            if info(t)(a)['version'] not in components(t)(a).get_options():
-                raise exceptions.AddonNotFoundError()
+            aconf = importlib.import_module(".".join(("outspline", "conf",
+                                                type_.lower(), addon_name)))
+            config(type_)(addon_name).add(aconf.data)
 
 
 def set_configuration_file(cliargs):

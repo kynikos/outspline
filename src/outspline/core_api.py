@@ -18,8 +18,9 @@
 
 from core import databases, items, history, queries
 from core.exceptions import (AccessDeniedError, DatabaseAlreadyOpenError,
-                            DatabaseNotAccessibleError, DatabaseLockedError,
-                            CannotMoveItemError, NonExistingItemError)
+                            DatabaseNotAccessibleError, DatabaseNotValidError,
+                            DatabaseLockedError, CannotMoveItemError,
+                            NonExistingItemError)
 
 
 def get_memory_connection():
@@ -385,10 +386,6 @@ def bind_to_save_permission_check(handler, bind=True):
 
 def bind_to_save_database(handler, bind=True):
     return databases.save_database_event.bind(handler, bind)
-
-
-def bind_to_save_database_copy(handler, bind=True):
-    return databases.save_database_copy_event.bind(handler, bind)
 
 
 def bind_to_delete_subtree(handler, bind=True):

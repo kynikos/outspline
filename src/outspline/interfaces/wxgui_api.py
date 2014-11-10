@@ -398,7 +398,7 @@ def select_editor_tab_index(index):
 
 def get_selected_editor_tab_index():
     # Returns -1 if there's no tab
-    return wx.GetApp().nb_right.get_selected_tab_index()
+    return wx.GetApp().nb_right.get_apparent_selected_tab_index()
 
 
 def get_selected_editor_identification():
@@ -412,7 +412,7 @@ def get_selected_editor_identification():
 
 
 def get_selected_right_nb_tab():
-    return wx.GetApp().nb_right.get_selected_tab()
+    return wx.GetApp().nb_right.get_apparent_selected_tab()
 
 
 def get_selected_editor():
@@ -457,10 +457,6 @@ def set_right_nb_page_title(window, title):
 
 def set_right_nb_page_image(page, index):
     return wx.GetApp().nb_right.set_page_image(page, index)
-
-
-def bind_to_plugin_close_event(handler, bind=True):
-    return notebooks.plugin_close_event.bind(handler, bind)
 
 
 ### ROOTW ###

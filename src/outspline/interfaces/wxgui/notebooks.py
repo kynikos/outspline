@@ -28,7 +28,6 @@ import editor
 import databases
 
 last_database_closed_event = Event()
-plugin_close_event = Event()
 
 
 class Notebook(FlatNotebook):
@@ -105,16 +104,6 @@ class Notebook(FlatNotebook):
     def select_last_page(self):
         self.select_page(self.GetPageCount() - 1)
 
-    def get_selected_tab_index(self):
-        # Returns -1 if there's no tab
-        return self.GetSelection()
-
-    def get_selected_tab(self):
-        return self.GetCurrentPage()
-
-    def get_page_count(self):
-        return self.GetPageCount()
-
 
 class LeftNotebook(Notebook):
     def __init__(self, parent, frame, menu):
@@ -155,6 +144,13 @@ class LeftNotebook(Notebook):
 
             # Note that this event is bound directly by the menubar module
             last_database_closed_event.signal()
+
+    def get_selected_tab_index(self):
+        # Returns -1 if there's no tab
+        return self.GetSelection()
+
+    def get_selected_tab(self):
+        return self.GetCurrentPage()
 
     def select_page(self, index):
         # FlatNotebook's SetSelection method doesn't send page change events,
@@ -218,22 +214,31 @@ class RightNotebook(Notebook):
         event.Veto()
 
         if core_api.block_databases():
-            page = self.GetCurrentPage()
-
-            # This also prevents closing a plugin window
-            for item in tuple(editor.tabs.keys()):
-                if editor.tabs[item].panel is page:
-                    editor.tabs[item].close()
-                    break
-            else:
-                # Note that this event is also bound directly by the dbprops
-                # module
-                plugin_close_event.signal(page=page)
-
+            self.GetCurrentPage().close_tab()
             core_api.release_databases()
 
     def _handle_page_closed(self, event):
         self._unsplit()
+
+    def get_apparent_selected_tab_index(self):
+        # If all open databases are closed, the main SplitterWindow is unsplit,
+        #  but e.g. the schedule tab remains open in the notebook, thus making
+        #  GetSelection still return e.g. 0
+        if self.IsShown():
+            # Returns -1 if there's no tab
+            return self.GetSelection()
+        else:
+            return -1
+
+    def get_apparent_selected_tab(self):
+        # If all open databases are closed, the main SplitterWindow is unsplit,
+        #  but e.g. the schedule tab remains open in the notebook, thus making
+        #  GetCurrentPage still return the schedule object
+        if self.IsShown():
+            # Returns None if there's no tab
+            return self.GetCurrentPage()
+        else:
+            return None
 
     def _split(self):
         if self.parent.nb_left.GetPageCount() > 0:
@@ -289,8 +294,20 @@ class RightNotebook(Notebook):
     def set_page_title(self, window, title):
         self.SetPageText(self.GetPageIndex(window), text=title)
 
+    def get_real_page_count(self):
+        return self.GetPageCount()
+
+    def get_apparent_page_count(self):
+        # If all open databases are closed, the main SplitterWindow is unsplit,
+        #  but e.g. the schedule tab remains open in the notebook, thus making
+        #  GetPageCount still return 1
+        if self.IsShown():
+            return self.GetPageCount()
+        else:
+            return 0
+
     def get_selected_editor(self):
-        tab = self.get_selected_tab()
+        tab = self.GetCurrentPage()
 
         for item in editor.tabs:
             if editor.tabs[item].panel is tab:

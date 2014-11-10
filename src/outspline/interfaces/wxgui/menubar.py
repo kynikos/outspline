@@ -286,25 +286,21 @@ class MenuFile(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, wx.GetApp().exit_app, self.exit_)
 
     def update_items(self):
-        self.save.Enable(False)
-        self.saveas.Enable(False)
-        self.backup.Enable(False)
-        self.saveall.Enable(False)
-        self.properties.Enable(False)
-        self.close_.Enable(False)
-        self.closeall.Enable(False)
-
         if tree.dbs:
             for dbname in tuple(tree.dbs.keys()):
                 if core_api.check_pending_changes(dbname):
                     self.saveall.Enable()
                     break
+            else:
+                self.saveall.Enable(False)
 
             tab = wx.GetApp().nb_left.get_selected_tab()
             filename = tab.get_filename()
 
             if core_api.check_pending_changes(filename):
                 self.save.Enable()
+            else:
+                self.save.Enable(False)
 
             self.saveas.Enable()
             self.backup.Enable()
@@ -313,6 +309,15 @@ class MenuFile(wx.Menu):
 
             self.close_.Enable()
             self.closeall.Enable()
+
+        else:
+            self.save.Enable(False)
+            self.saveas.Enable(False)
+            self.backup.Enable(False)
+            self.saveall.Enable(False)
+            self.properties.Enable(False)
+            self.close_.Enable(False)
+            self.closeall.Enable(False)
 
     def reset_items(self):
         # Re-enable all the actions so they are available for their
@@ -485,18 +490,6 @@ class MenuDatabase(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self.delete_items, self.delete)
 
     def update_items(self):
-        self.undo.Enable(False)
-        self.redo.Enable(False)
-        self.sibling.Enable(False)
-        self.child.Enable(False)
-        self.moveup.Enable(False)
-        self.movedn.Enable(False)
-        self.movept.Enable(False)
-        self.edit.Enable(False)
-        self.delete.Enable(False)
-        self.sibling.SetItemLabel(self.sibling_label_1)
-        self.sibling.SetHelp(self.sibling_help_1)
-
         tab = wx.GetApp().nb_left.get_selected_tab()
 
         if tab:
@@ -505,9 +498,13 @@ class MenuDatabase(wx.Menu):
 
             if core_api.preview_undo_tree(filename):
                 self.undo.Enable()
+            else:
+                self.undo.Enable(False)
 
             if core_api.preview_redo_tree(filename):
                 self.redo.Enable()
+            else:
+                self.redo.Enable(False)
 
             if len(sel) == 1:
                 self.sibling.Enable()
@@ -519,25 +516,58 @@ class MenuDatabase(wx.Menu):
 
                 if core_api.get_item_previous(filename, id_):
                     self.moveup.Enable()
+                else:
+                    self.moveup.Enable(False)
 
                 if core_api.get_item_next(filename, id_):
                     self.movedn.Enable()
+                else:
+                    self.movedn.Enable(False)
 
                 if not core_api.is_item_root(filename, id_):
                     self.movept.Enable()
+                else:
+                    self.movept.Enable(False)
 
                 self.edit.Enable()
                 self.delete.Enable()
 
             elif len(sel) > 1:
+                self.sibling.Enable(False)
+                self.sibling.SetItemLabel(self.sibling_label_1)
+                self.sibling.SetHelp(self.sibling_help_1)
+                self.child.Enable(False)
+                self.moveup.Enable(False)
+                self.movedn.Enable(False)
+                self.movept.Enable(False)
                 self.edit.Enable()
                 self.delete.Enable()
 
             else:
                 self.sibling.Enable()
+                self.sibling.SetItemLabel(self.sibling_label_1)
+                self.sibling.SetHelp(self.sibling_help_1)
+                self.child.Enable(False)
+                self.moveup.Enable(False)
+                self.movedn.Enable(False)
+                self.movept.Enable(False)
+                self.edit.Enable(False)
+                self.delete.Enable(False)
 
             menu_database_update_event.signal(filename=filename)
         else:
+            self.undo.Enable(False)
+            self.redo.Enable(False)
+            self.sibling.Enable(False)
+            self.child.Enable(False)
+            self.moveup.Enable(False)
+            self.movedn.Enable(False)
+            self.movept.Enable(False)
+            self.edit.Enable(False)
+            self.delete.Enable(False)
+            self.sibling.SetItemLabel(self.sibling_label_1)
+            self.sibling.SetHelp(self.sibling_help_1)
+
             # Signal the event even if there are no databases (tabs) open
             menu_database_update_event.signal(filename=None)
 
@@ -675,19 +705,13 @@ class MenuEdit(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self.apply_all_tabs, self.applyall)
 
     def update_items(self):
-        self.select.Enable(False)
-        self.cut.Enable(False)
-        self.copy.Enable(False)
-        self.paste.Enable(False)
-        self.find.Enable(False)
-        self.apply.Enable(False)
-        self.applyall.Enable(False)
-
         if editor.tabs:
             for i in tuple(editor.tabs.keys()):
                 if editor.tabs[i].is_modified():
                     self.applyall.Enable()
                     break
+            else:
+                self.applyall.Enable(False)
 
             item = wx.GetApp().nb_right.get_selected_editor()
 
@@ -699,25 +723,48 @@ class MenuEdit(wx.Menu):
 
                 if editor.tabs[item].area.can_cut():
                     self.cut.Enable()
+                else:
+                    self.cut.Enable(False)
 
                 if editor.tabs[item].area.can_copy():
                     self.copy.Enable()
+                else:
+                    self.copy.Enable(False)
 
                 if editor.tabs[item].area.can_paste():
                     self.paste.Enable()
+                else:
+                    self.paste.Enable(False)
 
                 self.find.Enable()
 
                 if editor.tabs[item].is_modified():
                     self.apply.Enable()
+                else:
+                    self.apply.Enable(False)
 
                 menu_edit_update_event.signal(filename=filename, id_=id_,
                                                                     item=item)
             else:
+                self.select.Enable(False)
+                self.cut.Enable(False)
+                self.copy.Enable(False)
+                self.paste.Enable(False)
+                self.find.Enable(False)
+                self.apply.Enable(False)
+
                 # Signal the event even if there are no editor tabs open
                 menu_edit_update_event.signal(filename=None, id_=None,
                                                                     item=None)
         else:
+            self.select.Enable(False)
+            self.cut.Enable(False)
+            self.copy.Enable(False)
+            self.paste.Enable(False)
+            self.find.Enable(False)
+            self.apply.Enable(False)
+            self.applyall.Enable(False)
+
             # Signal the event even if there are no tabs open
             menu_edit_update_event.signal(filename=None, id_=None, item=None)
 
@@ -1230,7 +1277,7 @@ class MenuViewRightNB(wx.Menu):
         wx.GetApp().Bind(wx.EVT_MENU, self._focus_last, self.focus_last)
 
     def update_items(self):
-        ntabs = wx.GetApp().nb_right.get_page_count()
+        ntabs = wx.GetApp().nb_right.get_apparent_page_count()
 
         if ntabs < 1:
             self.cycle.Enable(False)
@@ -1263,13 +1310,13 @@ class MenuViewRightNB(wx.Menu):
         wx.GetApp().nb_right.AdvanceSelection(False)
 
     def _focus(self, event):
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wx.GetApp().nb_right.get_apparent_selected_tab()
 
         if tab:
             tab.SetFocus()
 
     def _close(self, event):
-        tab = wx.GetApp().nb_right.get_selected_tab()
+        tab = wx.GetApp().nb_right.get_apparent_selected_tab()
 
         if tab:
             wx.GetApp().nb_right.close_tab(tab)

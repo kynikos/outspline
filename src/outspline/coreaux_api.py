@@ -19,11 +19,11 @@
 import sys
 import os.path
 import importlib
-import copy
-import json
 import threading
 
-from coreaux.configuration import components, info, config
+import outspline.components.main
+import outspline.info as info
+from coreaux.configuration import components, config
 import coreaux.configuration
 # Import the base Exception so that it can be imported by interfaces and
 # plugins
@@ -37,23 +37,26 @@ import coreaux.addons
 
 
 def get_main_component_version():
-    return components('Components')(components['core'])['version']
+    return outspline.components.main.version
 
 
 def get_main_component_release_date():
-    return components('Components')(components['core'])['release_date']
+    return outspline.components.main.release_date
 
 
 def get_core_version():
-    return info('Core')['version']
+    return info.core.version
 
 
 def get_website():
-    return info('Core')['website']
+    return info.core.website
 
 
 def get_core_contributors():
-    return json.loads(info('Core').get('contibutors', fallback="[]"))
+    try:
+        return info.core.contributors
+    except AttributeError:
+        return ()
 
 
 def get_standard_extension():
@@ -74,7 +77,7 @@ def get_disclaimer():
 
 
 def get_description():
-    return info('Core')['description']
+    return info.core.description
 
 
 def get_long_description():
@@ -89,18 +92,8 @@ def get_components_info():
     return components
 
 
-def get_addons_info(disabled=True):
-    if not disabled:
-        cinfo = copy.deepcopy(info)
-
-        for t in ('Extensions', 'Interfaces', 'Plugins'):
-            for a in cinfo(t).get_sections():
-                if not config(t)(a).get_bool('enabled'):
-                    cinfo(t)(a).delete()
-
-        return cinfo
-    else:
-        return info
+def get_enabled_installed_addons():
+    return coreaux.addons.enabled_addons
 
 
 def get_configuration():
@@ -138,6 +131,21 @@ def get_bundled_data(relpath):
 def is_main_thread():
     return threading.current_thread().name == \
                                         coreaux.configuration.MAIN_THREAD_NAME
+
+
+def import_extension_info(extension):
+    return importlib.import_module(".".join(("outspline", "info", "extensions",
+                                                                extension)))
+
+
+def import_interface_info(interface):
+    return importlib.import_module(".".join(("outspline", "info", "interfaces",
+                                                                interface)))
+
+
+def import_plugin_info(plugin):
+    return importlib.import_module(".".join(("outspline", "info", "plugins",
+                                                                    plugin)))
 
 
 def import_optional_extension_api(extension):

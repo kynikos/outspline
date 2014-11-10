@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import sqlite3
-
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 import outspline.extensions.organism_api as organism_api
 copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
+
+import outspline.info.extensions.organism_timer as info
 
 import queries
 import timer
@@ -31,8 +31,6 @@ extension = None
 
 class Main(object):
     def __init__(self):
-        self._ADDON_NAME = ('Extensions', 'organism_timer')
-
         self.rules = timer.Rules()
         self.databases = {}
         self.nextoccsengine = timer.NextOccurrencesEngine(self.databases,
@@ -40,7 +38,6 @@ class Main(object):
 
         core_api.bind_to_open_database_dirty(self._handle_open_database_dirty)
         core_api.bind_to_close_database(self._handle_close_database)
-        core_api.bind_to_save_database_copy(self._handle_save_database_copy)
         core_api.bind_to_delete_subtree(
                                 self._handle_search_next_occurrences_request)
         core_api.bind_to_history(self._handle_search_next_occurrences_request)
@@ -56,11 +53,15 @@ class Main(object):
                                 self._handle_search_next_occurrences_request)
 
     def _handle_open_database_dirty(self, kwargs):
-        info = coreaux_api.get_addons_info()
-        dependencies = info(self._ADDON_NAME[0])(self._ADDON_NAME[1]
-                                    )['database_dependency_group_1'].split(' ')
+        dependencies = info.database_dependency_group_1
 
-        if not set(dependencies) - set(kwargs['dependencies']):
+        try:
+            for dep in dependencies:
+                if dep not in kwargs["dependencies"]:
+                    raise UserWarning()
+        except UserWarning:
+            pass
+        else:
             filename = kwargs['filename']
             self.databases[filename] = timer.Database(filename)
 
@@ -73,24 +74,6 @@ class Main(object):
             pass
         else:
             self.nextoccsengine.restart()
-
-    def _handle_save_database_copy(self, kwargs):
-        origin = kwargs['origin']
-
-        if origin in self.databases:
-            qconn = core_api.get_connection(origin)
-            qconnd = sqlite3.connect(kwargs['destination'])
-            cur = qconn.cursor()
-            curd = qconnd.cursor()
-
-            cur.execute(queries.timerproperties_select)
-            for row in cur:
-                curd.execute(queries.timerproperties_update_copy, tuple(row))
-
-            core_api.give_connection(origin, qconn)
-
-            qconnd.commit()
-            qconnd.close()
 
     def _handle_search_next_occurrences_request(self, kwargs):
         self.nextoccsengine.restart()

@@ -240,10 +240,17 @@ class MainFrame(wx.Frame):
                                                             self.GetSize()])
             self.config['maximized'] = 'no'
 
+        self.mainpanes.save_sash_position()
+
 
 class MainPanes(wx.SplitterWindow):
     def __init__(self, parent, menu):
         wx.SplitterWindow.__init__(self, parent, style=wx.SP_LIVE_UPDATE)
+
+        self.config = coreaux_api.get_interface_configuration('wxgui')
+        self.sash_position = self.config.get_float("tree_sash_position")
+        self.sash_gravity = 1.0 / self.sash_position if \
+                        self.config.get_bool("tree_auto_sash_gravity") else 0
 
         # Prevent the window from unsplitting when dragging the sash to the
         # border
@@ -269,23 +276,34 @@ class MainPanes(wx.SplitterWindow):
         # Make sure the left notebook is shown in any case
         self.nb_left.Show(True)
 
-        if not self.IsSplit() and self.nb_right.get_page_count() > 0:
+        if not self.IsSplit() and self.nb_right.get_real_page_count() > 0:
             # Make sure the right notebook is shown although
             # self.SplitVertically should do it implicitly
             self.nb_right.Show(True)
 
-            width = self.GetSize().GetWidth()
-
             self.SplitVertically(self.nb_left, self.nb_right)
-            self.SetSashGravity(0.33)
-            self.SetSashPosition(width // 3)
+
+            width = self.GetSize().GetWidth()
+            self.SetSashGravity(self.sash_gravity)
+            self.SetSashPosition(width // self.sash_position)
 
     def unsplit_window(self):
         if self.IsSplit():
+            width = self.GetSize().GetWidth()
+            # Make sure that a float is returned
+            self.sash_position = float(width) / self.GetSashPosition()
             self.Unsplit(self.nb_right)
 
         # Explicitly reset the focus, which in some cases would be lost
         self.parent.SetFocus()
+
+    def save_sash_position(self):
+        if self.IsSplit():
+            width = self.GetSize().GetWidth()
+            # Make sure that a float is returned
+            self.sash_position = float(width) / self.GetSashPosition()
+
+        self.config["tree_sash_position"] = str(self.sash_position)
 
 
 class AcceleratorsManagers(object):

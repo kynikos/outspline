@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import sqlite3 as sql
 import importlib
 
 import outspline.coreaux_api as coreaux_api
@@ -54,21 +53,24 @@ class Core(object):
         # the normal queries
         pass
 
+    @staticmethod
+    def upgrade_2_to_3(cursor):
+        # These queries must stay here because they must not be updated with
+        # the normal queries
+        pass
+
 
 class Database(object):
     def __init__(self, filename):
+        # I have to import here, or a circular import will happen
+        from outspline.core.databases import FileDB
+        self.FileDB = FileDB
+
         self.filename = filename
 
-        try:
-            connection = sql.connect(filename)
-            cursor = connection.cursor()
-
-            # I have to import here, or a circular import will happen
-            import outspline.core_api as core_api
-            cursor.execute(queries.compatibility_select)
-        except sql.DatabaseError:
-            connection.close()
-            raise DatabaseNotValidError()
+        connection = FileDB(filename)
+        cursor = connection.cursor()
+        cursor.execute(queries.compatibility_select)
 
         # ABORT - If a dependency is not installed
         # ABORT - If a dependency is installed with a lesser version number
@@ -78,7 +80,7 @@ class Database(object):
         # UPDATE - If a dependency is installed with a greater version number
         # ADD - If an extension is not present in the dependencies
 
-        info = coreaux_api.get_addons_info(disabled=False)
+        extensions = coreaux_api.get_enabled_installed_addons()['Extensions']
 
         self.dependencies = {
             'ignore': {},
@@ -95,17 +97,17 @@ class Database(object):
         self.dependencies['add'][None] = [int(float(
                                         coreaux_api.get_core_version())), None]
 
-        extensions = info('Extensions')
+        for ext in extensions:
+            info = coreaux_api.import_extension_info(ext)
 
-        for ext in extensions.get_sections():
-            if extensions(ext).get_bool('affects_database'):
+            if info.affects_database:
                 # Core will never end up staying in the 'add' key, however
                 # initialize it here so that it can be moved like the
                 # extensions
                 # Only compare major versions, as they are supposed to keep
                 # backward compatibility
-                self.dependencies['add'][ext] = [int(extensions(ext).get_float(
-                                                            'version')), None]
+                self.dependencies['add'][ext] = [int(info.version.split(
+                                                            ".", 1)[0]), None]
 
         for row in cursor:
             # 'row[2] == None' means that the addon is not a dependency, but if
@@ -129,17 +131,17 @@ class Database(object):
                     elif row[2] < dep[0]:
                         self.dependencies['update'][row[1]] = dep[:]
                     else:
-                        version = str(row[2])
+                        version = row[2]
 
                         if row[1] is None:
-                            self.fdeps.append('.'.join(('core', version)))
+                            self.fdeps.append(('core', version))
                         else:
-                            self.fdeps.append('.'.join(('extensions', row[1],
-                                                                    version)))
+                            self.fdeps.append(('.'.join(('extensions',
+                                                            row[1])), version))
 
                 del self.dependencies['add'][row[1]]
 
-        connection.close()
+        connection.disconnect()
 
     def is_compatible(self, check_new_extensions):
         if len(self.dependencies['abort']) > 0:
@@ -164,7 +166,6 @@ class Database(object):
         return self.dependencies['abort']
 
     def _sort_extensions(self, inexts):
-        extinfo = coreaux_api.get_addons_info(disabled=False)('Extensions')
         inexts = list(inexts)
         outexts = []
 
@@ -172,18 +173,20 @@ class Database(object):
             # ext comes as unicode from the database
             sext = str(ext)
 
+            info = coreaux_api.import_extension_info(sext)
+
             try:
-                deps = extinfo(sext)['dependencies'].split(" ")
-            except KeyError:
+                deps = list(info.dependencies)
+            except AttributeError:
                 deps = []
 
             try:
-                opts = extinfo(sext)['optional_dependencies'].split(" ")
-            except KeyError:
+                opts = list(info.optional_dependencies)
+            except AttributeError:
                 opts = []
 
             for dep in deps + opts:
-                dsplit = dep.split('.')
+                dsplit = dep[0].split('.')
 
                 if dsplit[0] == 'extensions':
                     if dsplit[1] in inexts:
@@ -208,8 +211,7 @@ class Database(object):
         return outexts
 
     def _execute(self, extensions, action, **kwargs):
-        connection = sql.connect(self.filename)
-        connection.row_factory = sql.Row
+        connection = self.FileDB(self.filename, name_based=True)
         cursor = connection.cursor()
 
         for ext in self._sort_extensions(extensions):
@@ -231,8 +233,7 @@ class Database(object):
         # too dangerous
         cursor.execute(queries.history_delete_purge)
 
-        connection.commit()
-        connection.close()
+        connection.save_and_disconnect()
 
     def add(self, extensions):
         self._execute(extensions, self._add)
@@ -278,10 +279,6 @@ class Database(object):
             cursor.execute(queries.compatibility_delete, (ext, ))
 
         module.remove(cursor)
-
-
-class DatabaseNotValidError(OutsplineError):
-    pass
 
 
 class DatabaseIncompatibleError(OutsplineError):

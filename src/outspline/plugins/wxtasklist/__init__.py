@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 import wx
 
 import outspline.coreaux_api as coreaux_api
@@ -50,6 +51,8 @@ class TaskListPanel(wx.Panel):
 
 class TaskList(object):
     def __init__(self, parent):
+        self.YEAR_LIMITS = self._set_search_limits()
+
         wxgui_api.install_bundled_icon("wxtasklist", '@activealarms',
                                                     ("activealarms16.png", ))
         wxgui_api.install_bundled_icon("wxtasklist", '@dismiss',
@@ -117,9 +120,9 @@ class TaskList(object):
         # latter; note that inverting the order would work anyway because of a
         # usually favorable race condition (the list is refreshed after an
         # asynchronous delay), but of course that shouldn't be relied on
-        self.navigator = filters.Navigator(self)
+        self.navigator = filters.Navigator(self, self.YEAR_LIMITS)
         self.warningsbar = WarningsBar(self.panel)
-        self.list_ = list_.OccurrencesView(self, self.navigator)
+        self.list_ = list_.OccurrencesView(self, self.navigator, self.YEAR_LIMITS)
 
         self.mainmenu = menus.MainMenu(self)
         self.viewmenu = menus.ViewMenu(self)
@@ -129,15 +132,24 @@ class TaskList(object):
         self.pbox.Add(self.warningsbar.get_panel(), flag=wx.EXPAND)
         self.pbox.Add(self.list_.listview, 1, flag=wx.EXPAND)
 
-        wxgui_api.bind_to_plugin_close_event(self._handle_tab_hide)
+        self._show()
+
         wxgui_api.bind_to_show_main_window(self._handle_show_main_window)
         wxgui_api.bind_to_hide_main_window(self._handle_hide_main_window)
-        wxgui_api.bind_to_open_database(self._handle_open_database)
         core_api.bind_to_exit_app_1(self._handle_exit_application)
 
-    def _handle_tab_hide(self, kwargs):
-        if kwargs['page'] is self.panel:
-            self._hide()
+    def _set_search_limits(self):
+        if sys.maxsize > 2**32:
+            # 64bit
+            # According to https://docs.python.org/2/library/time.html
+            #  "Values 100-1899 are always illegal"
+            #  This wouldn't apply to Python 3, if I could use it...
+            #  The maximum would be 9999, but keep it reasonable
+            return (1900, 2200)
+        else:
+            # 32bit
+            # Here the limits are of course given by the integer size
+            return (1902, 2037)
 
     def _handle_show_main_window(self, kwargs):
         if self.is_shown():
@@ -147,21 +159,18 @@ class TaskList(object):
         if self.is_shown():
             self._disable()
 
-    def _handle_open_database(self, kwargs):
-        # Do not add the plugin if there's no database open, otherwise strange
-        # bugs will happen, like the keyboard menu shortcuts not working until
-        # a database is opened. Add the plugin only when the first database is
-        # opened.
-        self._show()
-        wxgui_api.bind_to_open_database(self._handle_open_database, False)
-
     def is_shown(self):
         return wxgui_api.is_page_in_right_nb(self.panel)
 
     def toggle_shown(self, event):
+        # Showing/hiding is the correct behaviour: allowing multiple instances
+        # of tasklist notebook tabs would need finding a way to refresh only
+        # one at a time, probably only the selected one, thus requiring to
+        # update it every time it gets selected, which would in turn make
+        # everything more sluggish
         if self.is_shown():
             self._hide()
-        elif wxgui_api.get_databases_count():
+        else:
             self._show()
 
     def _show(self):
@@ -170,11 +179,6 @@ class TaskList(object):
         self._enable()
 
     def _hide(self):
-        # Showing/hiding is the correct behaviour: allowing multiple instances
-        # of tasklist notebook tabs would need finding a way to refresh only
-        # one at a time, probably only the selected one, thus requiring to
-        # update it every time it gets selected, which would in turn make
-        # everything more sluggish
         wxgui_api.hide_right_nb_page(self.panel)
         self._disable()
 
@@ -190,7 +194,7 @@ class TaskList(object):
     def _disable(self):
         self.list_.disable_refresh()
 
-        organism_alarms_api.bind_to_alarm(self._update_tab_label, False)
+        organism_alarms_api.bind_to_alarm(self._update_tab_label_after, False)
         organism_alarms_api.bind_to_alarm_off(self._update_tab_label, False)
         wxgui_api.bind_to_close_database(self._update_tab_label, False)
 

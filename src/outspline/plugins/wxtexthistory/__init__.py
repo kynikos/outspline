@@ -18,7 +18,7 @@
 
 import wx
 
-import texthistory
+import outspline.static.texthistory as texthistory
 
 import outspline.coreaux_api as coreaux_api
 import outspline.interfaces.wxgui_api as wxgui_api
@@ -96,18 +96,23 @@ class Menu(object):
     def _update(self, kwargs):
         item = kwargs['item']
 
-        self.mundo.Enable(False)
-        self.mredo.Enable(False)
-
         # item is None is no editor is open
         if item:
             area = self.plugin.get_area(item)
 
             if area.can_undo():
                 self.mundo.Enable()
+            else:
+                self.mundo.Enable(False)
 
             if area.can_redo():
                 self.mredo.Enable()
+            else:
+                self.mredo.Enable(False)
+
+        else:
+            self.mundo.Enable(False)
+            self.mredo.Enable(False)
 
 
 def main():

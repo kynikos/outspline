@@ -22,7 +22,7 @@ import time as time_
 import wx
 import traceback
 
-import plural
+import outspline.static.plural as plural
 
 import outspline.coreaux_api as coreaux_api
 import outspline.dbdeps as dbdeps

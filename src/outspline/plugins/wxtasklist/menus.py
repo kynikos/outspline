@@ -143,16 +143,6 @@ class MainMenu(wx.Menu):
 
     def _update_items(self, kwargs):
         if kwargs['menu'] is self:
-            self.navigator.Enable(False)
-            self.scroll.Enable(False)
-            self.find.Enable(False)
-            self.edit.Enable(False)
-            self.snooze.Enable(False)
-            self.snooze_all.Enable(False)
-            self.dismiss.Enable(False)
-            self.dismiss_all.Enable(False)
-            self.export.Enable(False)
-
             self.navigator_submenu.update_items()
 
             tab = wxgui_api.get_selected_right_nb_tab()
@@ -161,6 +151,11 @@ class MainMenu(wx.Menu):
                 self.scroll.Enable()
 
                 sel = self.occview.listview.GetFirstSelected()
+
+                self.find.Enable(False)
+                self.edit.Enable(False)
+                self.snooze.Enable(False)
+                self.dismiss.Enable(False)
 
                 while sel > -1:
                     item = self.occview.occs[
@@ -190,13 +185,25 @@ class MainMenu(wx.Menu):
                 if len(self.occview.get_active_alarms()) > 0:
                     self.snooze_all.Enable()
                     self.dismiss_all.Enable()
+                else:
+                    self.snooze_all.Enable(False)
+                    self.dismiss_all.Enable(False)
 
+                self.navigator.Enable()
                 self.navigator_submenu.update_items_selected()
 
-            if self.tasklist.is_shown():
-                # Already appropriately checked above
-                self.navigator.Enable()
                 self.export.Enable()
+
+            else:
+                self.navigator.Enable(False)
+                self.scroll.Enable(False)
+                self.find.Enable(False)
+                self.edit.Enable(False)
+                self.snooze.Enable(False)
+                self.snooze_all.Enable(False)
+                self.dismiss.Enable(False)
+                self.dismiss_all.Enable(False)
+                self.export.Enable(False)
 
     def _reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
@@ -465,27 +472,34 @@ class ViewMenu(object):
         wxgui_api.bind_to_menu_view_update(self._update_items)
 
     def _update_items(self, kwargs):
-        self.show.Check(check=self.tasklist.is_shown())
-        self.focus.Enable(False)
-        self.alarms.Enable(False)
-        self.navigator.Enable(False)
         self.navigator.Check(check=self.tasklist.navigator.is_shown())
-        self.gaps.Enable(False)
         self.gaps.Check(check=self.occview.show_gaps)
-        self.overlaps.Enable(False)
         self.overlaps.Check(check=self.occview.show_overlappings)
-        self.autoscroll.Enable(False)
         self.autoscroll.Check(check=self.occview.autoscroll.is_enabled())
 
         self.alarms_submenu.update_items()
 
         if self.tasklist.is_shown():
-            self.focus.Enable()
+            self.show.Check(check=True)
+
+            if wxgui_api.get_databases_count() > 0:
+                self.focus.Enable()
+            else:
+                self.focus.Enable(False)
+
             self.alarms.Enable()
             self.navigator.Enable()
             self.gaps.Enable()
             self.overlaps.Enable()
             self.autoscroll.Enable()
+        else:
+            self.show.Check(check=False)
+            self.focus.Enable(False)
+            self.alarms.Enable(False)
+            self.navigator.Enable(False)
+            self.gaps.Enable(False)
+            self.overlaps.Enable(False)
+            self.autoscroll.Enable(False)
 
     def _reset_items(self, kwargs):
         # Re-enable all the actions so they are available for their
@@ -772,12 +786,12 @@ class ListContextMenu(wx.Menu):
         self.AppendItem(self.dismiss)
 
     def update(self):
+        sel = self.occview.listview.GetFirstSelected()
+
         self.find.Enable(False)
         self.edit.Enable(False)
         self.snooze.Enable(False)
         self.dismiss.Enable(False)
-
-        sel = self.occview.listview.GetFirstSelected()
 
         while sel > -1:
             item = self.occview.occs[self.occview.listview.GetItemData(sel)]

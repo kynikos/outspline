@@ -19,24 +19,60 @@
 import sys
 import os.path
 import argparse
+import importlib
+
+import outspline.components.main
+import outspline.info as info
 
 from configuration import (_USER_CONFIG_FILE, _COPYRIGHT_V1, _DISCLAIMER_SHORT,
-                           components, info, config)
+                                                            components, config)
 
 
 class ShowVersion(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
         print("Outspline {} ({})\n\n{}\n{}".format(
-                components('Components')(components['core'])['version'],
-                components('Components')(components['core'])['release_date'],
-                _COPYRIGHT_V1, _DISCLAIMER_SHORT))
+                                        outspline.components.main.version,
+                                        outspline.components.main.release_date,
+                                        _COPYRIGHT_V1, _DISCLAIMER_SHORT))
+        sys.exit()
+
+
+class ShowAbout(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        print("Installed components:")
+        for cname in components["info"]:
+            component = components["info"][cname]
+
+            print("{}{} {} ({})".format("\t", cname, component.version,
+                                                    component.release_date))
+
+            try:
+                assert component.provides_core
+            except (AttributeError, AssertionError):
+                pass
+            else:
+                print("{}Core {}".format("\t" * 2, info.core.version))
+
+            for type_ in ("extensions", "interfaces", "plugins"):
+                try:
+                    addons = getattr(component, type_)
+                except AttributeError:
+                    pass
+                else:
+                    print("{}{}:".format("\t" * 2, type_.capitalize()))
+
+                    for aname in addons:
+                        addon = importlib.import_module(".".join(("outspline",
+                                                        "info", type_, aname)))
+                        print ("{}{} {}".format("\t" * 3, aname,
+                                                                addon.version))
+
         sys.exit()
 
 
 def parse_cli_args():
     # Options -h and --help are automatically created
-    cliparser = argparse.ArgumentParser(description=info('Core')[
-                                                                'description'])
+    cliparser = argparse.ArgumentParser(description=info.core.description)
 
     cliparser.add_argument('-c',
                            '--config',
@@ -48,6 +84,17 @@ def parse_cli_args():
                                 ''.format(_USER_CONFIG_FILE))
 
     cliparser.add_argument('-l',
+                           '--logfile',
+                           default=None,
+                           metavar='FILE',
+                           dest='logfile',
+                           help='set the log file name: a relative or full '
+                                'path can be specified (default: {}, see also '
+                                '--loglevel option)'
+                                ''.format(os.path.expanduser(config('Log'
+                                                            )['log_file'])))
+
+    cliparser.add_argument('-L',
                            '--loglevel',
                            default=None,
                            metavar='NN',
@@ -63,17 +110,6 @@ def parse_cli_args():
                                 ''.format(config('Log')['log_level_stdout'],
                                 config('Log')['log_level_file']))
 
-    cliparser.add_argument('-f',
-                           '--logfile',
-                           default=None,
-                           metavar='FILE',
-                           dest='logfile',
-                           help='set the log file name: a relative or full '
-                                'path can be specified (default: {}, see also '
-                                '--loglevel option)'
-                                ''.format(os.path.expanduser(config('Log'
-                                                            )['log_file'])))
-
     cliparser.add_argument('-u',
                            '--config-update',
                            action='store_true',
@@ -83,11 +119,17 @@ def parse_cli_args():
 
     cliparser.add_argument('-v',
                            '--version',
-                           '--about',
                            action=ShowVersion,
                            nargs=0,
                            dest='version',
                            help='show program\'s version number, copyright '
                                 'and license information, then exit')
+
+    cliparser.add_argument('--about',
+                           action=ShowAbout,
+                           nargs=0,
+                           dest='about',
+                           help='show information on the installed components '
+                                                    'and addons, then exit')
 
     return cliparser.parse_args()

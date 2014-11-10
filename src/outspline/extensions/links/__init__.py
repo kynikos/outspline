@@ -16,16 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import sqlite3
-
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 copypaste_api = coreaux_api.import_optional_extension_api('copypaste')
 
+import outspline.info.extensions.links as info
+
 import links
 import queries
-
-_ADDON_NAME = ('Extensions', 'links')
 
 
 def create_copy_table():
@@ -36,11 +34,15 @@ def create_copy_table():
 
 
 def handle_open_database_dirty(kwargs):
-    info = coreaux_api.get_addons_info()
-    dependencies = info(_ADDON_NAME[0])(_ADDON_NAME[1]
-                                    )['database_dependency_group_1'].split(' ')
+    dependencies = info.database_dependency_group_1
 
-    if not set(dependencies) - set(kwargs['dependencies']):
+    try:
+        for dep in dependencies:
+            if dep not in kwargs["dependencies"]:
+                raise UserWarning()
+    except UserWarning:
+        pass
+    else:
         links.cdbs.add(kwargs['filename'])
 
 
@@ -64,25 +66,6 @@ def handle_open_database(kwargs):
                     links.handle_history_update, links.handle_history_update)
         core_api.register_history_action_handlers(filename, 'link_delete',
                     links.handle_history_delete, links.handle_history_insert)
-
-
-def handle_save_database_copy(kwargs):
-    if kwargs['origin'] in links.cdbs:
-        qconn = core_api.get_connection(kwargs['origin'])
-        qconnd = sqlite3.connect(kwargs['destination'])
-        cur = qconn.cursor()
-        curd = qconnd.cursor()
-
-        cur.execute(queries.links_select)
-        for row in cur:
-            # Don't use links.do_insert_link here, as the destination database
-            # is not really open
-            curd.execute(queries.links_insert, tuple(row))
-
-        core_api.give_connection(kwargs['origin'], qconn)
-
-        qconnd.commit()
-        qconnd.close()
 
 
 def handle_close_database(kwargs):
@@ -150,7 +133,6 @@ def main():
 
     core_api.bind_to_open_database_dirty(handle_open_database_dirty)
     core_api.bind_to_open_database(handle_open_database)
-    core_api.bind_to_save_database_copy(handle_save_database_copy)
     core_api.bind_to_close_database(handle_close_database)
     core_api.bind_to_deleting_item(handle_delete_item)
     core_api.bind_to_history(handle_history)

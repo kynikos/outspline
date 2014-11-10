@@ -27,7 +27,6 @@ import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import Event
 import outspline.core_api as core_api
 
-import notebooks
 import databases
 import msgboxes
 
@@ -143,8 +142,6 @@ class DatabaseProperties(object):
         self.propgrid.Bind(wx.EVT_KEY_DOWN, self._handle_tab_down)
         self.propgrid.Bind(wxpg.EVT_PG_CHANGED, self._handle_property_changed)
 
-        notebooks.plugin_close_event.bind(self._handle_close_tab)
-
     def _handle_esc_down(self, event):
         # Temporary fix for bug #331
         if event.GetKeyCode() == wx.WXK_ESCAPE:
@@ -169,10 +166,6 @@ class DatabaseProperties(object):
         property_ = event.GetProperty()
         self.onchange_actions[property_.GetName()](property_.GetClientData(),
                                                         property_.GetValue())
-
-    def _handle_close_tab(self, kwargs):
-        if kwargs['page'] is self.panel:
-            self.manager.close(self.filename)
 
     def configure(self):
         self._init_file_props()
@@ -216,13 +209,13 @@ class DatabaseProperties(object):
         self.propgrid.Append(wxpg.PropertyCategory("Extensions support",
                                                             "dependencies"))
 
-        extensions = coreaux_api.get_addons_info(disabled=False)('Extensions')
+        extensions = coreaux_api.get_enabled_installed_addons()['Extensions']
         self.dependencies = core_api.get_database_dependencies(self.filename,
                                                                 ignored=True)
         del self.dependencies[None]
 
-        for ext in extensions.get_sections():
-            if extensions(ext).get_bool('affects_database'):
+        for ext in extensions:
+            if coreaux_api.import_extension_info(ext).affects_database:
                 propname = "dependencies.{}".format(ext)
                 prop = wxpg.EnumProperty(ext, propname, ('Enabled',
                                     'Disabled (remind)', 'Disabled (ignore)'))
@@ -268,8 +261,6 @@ class DatabaseProperties(object):
                 else:
                     currchoice = 0
 
-            extsinfo = coreaux_api.get_addons_info()('Extensions')
-
             # This method shouldn't be triggered if the value is not changed,
             # so there's no need to check that newchoice != currchoice
             if currchoice == 0:
@@ -280,15 +271,13 @@ class DatabaseProperties(object):
                     # Core (None) has been removed from self.dependencies
                     if self.dependencies[dep] is not None:
                         try:
-                            ddeps = extsinfo(dep)['dependencies'].split(" ")
-                        except KeyError:
+                            ddeps = list(coreaux_api.import_extension_info(
+                                                            dep).dependencies)
+                        except AttributeError:
                             ddeps = []
 
                         for ddep in ddeps:
-                            sddep = ddep.split(".")
-
-                            if ".".join(sddep[0:2]) == 'extensions.{}'.format(
-                                                                        ext):
+                            if ddep[0] == 'extensions.{}'.format(ext):
                                 reverse_deps.append(dep)
 
                 if reverse_deps:
@@ -304,21 +293,22 @@ class DatabaseProperties(object):
             else:
                 if newchoice == 0 :
                     try:
-                        deps = extsinfo(ext)['dependencies'].split(" ")
-                    except KeyError:
+                        deps = list(coreaux_api.import_extension_info(
+                                                            ext).dependencies)
+                    except AttributeError:
                         deps = []
 
                     missing_deps = []
 
                     for dep in deps:
-                        sdep = dep.split(".")
+                        sdep = dep[0].split(".")
 
                         if sdep[0] == 'extensions':
                             try:
                                 ver = self.dependencies[sdep[1]]
                             except KeyError:
-                                if extsinfo(sdep[1]).get_bool(
-                                                        'affects_database'):
+                                if coreaux_api.import_extension_info(sdep[1]
+                                                            ).affects_database:
                                     missing_deps.append(sdep[1])
                             else:
                                 if ver is None:

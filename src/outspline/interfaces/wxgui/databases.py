@@ -87,7 +87,7 @@ def open_database(filename=None, check_new_extensions=True,
         except core_api.DatabaseNotAccessibleError:
             msgboxes.open_db_access(filename).ShowModal()
             return False
-        except dbdeps.DatabaseNotValidError:
+        except core_api.DatabaseNotValidError:
             msgboxes.open_db_invalid(filename).ShowModal()
             return False
         except dbdeps.DatabaseIncompatibleAddError as err:

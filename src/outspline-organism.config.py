@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 meta = {'name': 'outspline-organism',
-        'version': '0.7.1',
+        'version': '0.8.0',
         'description': 'Organizer component for Outspline.',
         'author': 'Dario Giovannetti',
         'author_email': 'dev@dariogiovannetti.net',

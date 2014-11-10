@@ -1,6 +1,0 @@
-authors = ["Dario Giovannetti <dev@dariogiovannetti.net>"]
-version = 2.1
-description = Outspline, a highly modular and extensible outliner.
-website = https://github.com/kynikos/outspline/
-affects_database = yes
-provides_tables = Properties CoMpatibility Items History

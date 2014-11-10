@@ -19,5 +19,11 @@
 from outspline.coreaux_api import OutsplineError
 
 
-class OutOfRangeError(OutsplineError):
+class SearchOutOfRangeError(OutsplineError):
+    pass
+
+
+class ResultsOutOfRangeError(OutsplineError):
+    # This exception is used in a catch-all way, and shouldn't be
+    #  excepted during development
     pass

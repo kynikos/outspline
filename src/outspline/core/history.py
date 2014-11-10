@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import sqlite3 as _sql
 import json
 
 from outspline.coreaux_api import Event
 
 import queries
+import databases
 import items
 import exceptions
 
@@ -303,17 +303,15 @@ class DBHistory(object):
                                             hid=hid, parent=parent, text=text)
 
     def clean_history(self):
-        # history_clean_event handlers will need a proper connection
-        history_clean_event.signal(filename=self.filename)
-
         # This operation must be performed on a different connection than
         # the main one (which at this point has been closed already anyway)
-        qconn = _sql.connect(self.filename)
+        qconn = databases.FileDB(self.filename)
         cursor = qconn.cursor()
 
         cursor.execute(queries.history_delete_select,
                                                     (self.historylimits[0], ))
         cursor.execute(queries.history_update_group)
 
-        qconn.commit()
-        qconn.close()
+        history_clean_event.signal(filename=self.filename, dbcursor=cursor)
+
+        qconn.save_and_disconnect()

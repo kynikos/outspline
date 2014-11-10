@@ -19,7 +19,7 @@
 import os
 import errno
 import Queue as queue
-import sqlite3 as _sql
+import sqlite3
 
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import Event, log
@@ -40,7 +40,6 @@ closing_database_event = Event()
 close_database_event = Event()
 save_permission_check_event = Event()
 save_database_event = Event()
-save_database_copy_event = Event()
 delete_subtree_event = Event()
 exit_app_event_1 = Event()
 exit_app_event_2 = Event()
@@ -107,10 +106,10 @@ class MemoryDB(DBQueue):
         DBQueue.__init__(self)
 
         # Enable multi-threading, as the database is protected with a queue
-        self.put(_sql.connect(':memory:', check_same_thread=False))
+        self.put(sqlite3.connect(':memory:', check_same_thread=False))
 
         qmemory = self.get()
-        qmemory.row_factory = _sql.Row
+        qmemory.row_factory = sqlite3.Row
         self.give(qmemory)
 
     def exit_(self):
@@ -124,6 +123,50 @@ class MemoryDB(DBQueue):
         exit_app_event_2.signal()
 
 
+class FileDB(object):
+    def __init__(self, filename, check_same_thread=False, name_based=False):
+        self.connection = sqlite3.connect(filename,
+                                        check_same_thread=check_same_thread)
+
+        if name_based:
+            self.connection.row_factory = sqlite3.Row
+
+        cursor = self.connection.cursor()
+
+        # No exception will be raised by sqlite3.connect if the file isn't a
+        #  database, a query must be attempted
+        try:
+            cursor.execute(queries.pragma_valid_test)
+        except sqlite3.DatabaseError:
+            self.disconnect()
+            raise exceptions.DatabaseNotValidError()
+
+        # If == 0 it means the database is new (just been created)
+        if cursor.fetchone()[0] > 0:
+            try:
+                # In order to test if the database is locked (open by another
+                # instance of Outspline), a SELECT query is not enough
+                cursor.execute(queries.properties_insert_dummy)
+            except sqlite3.OperationalError:
+                self.disconnect()
+                raise exceptions.DatabaseLockedError()
+            else:
+                cursor.execute(queries.properties_delete_dummy)
+
+    def cursor(self):
+        return self.connection.cursor()
+
+    def save(self):
+        self.connection.commit()
+
+    def disconnect(self):
+        self.connection.close()
+
+    def save_and_disconnect(self):
+        self.save()
+        self.disconnect()
+
+
 class Database(object):
     def __init__(self, filename):
         self.connection = DBQueue()
@@ -132,21 +175,11 @@ class Database(object):
         self.dbhistory = history.DBHistory(self.connection, self.items,
                                                                 self.filename)
 
-        conn = self.connection
         # Enable multi-threading, as the database is protected with a queue
-        conn.put(_sql.connect(filename, check_same_thread=False))
-        qconn = conn.get()
-        qconn.row_factory = _sql.Row
+        self.connection.put(FileDB(filename, check_same_thread=False,
+                                                            name_based=True))
+        qconn = self.connection.get()
         cursor = qconn.cursor()
-
-        try:
-            # In order to test if the database is locked (open by another
-            # instance of Outspline), a SELECT query is not enough
-            cursor.execute(queries.properties_insert_dummy)
-        except _sql.OperationalError:
-            raise exceptions.DatabaseLockedError()
-        else:
-            cursor.execute(queries.properties_delete_dummy)
 
         cursor.execute(queries.properties_select_history)
         softlimit = cursor.fetchone()[0]
@@ -156,7 +189,7 @@ class Database(object):
         self.dbhistory.set_limits(softlimit, timelimit, hardlimit)
 
         dbitems = cursor.execute(queries.items_select_tree)
-        conn.give(qconn)
+        self.connection.give(qconn)
 
         for item in dbitems:
             self.items[item['I_id']] = items.Item(self.connection,
@@ -178,7 +211,7 @@ class Database(object):
             else:
                 db.close()
 
-                conn = _sql.connect(filename)
+                conn = FileDB(filename)
                 cursor = conn.cursor()
 
                 cursor.execute(queries.properties_create)
@@ -198,14 +231,13 @@ class Database(object):
                 cursor.execute(queries.items_create)
                 cursor.execute(queries.history_create)
 
-                conn.commit()
-                conn.close()
+                conn.save_and_disconnect()
 
-                extinfo = coreaux_api.get_addons_info(disabled=False)(
-                                                                'Extensions')
-                dbdeps.Database(filename).add(
-                                [ext for ext in extinfo.get_sections() \
-                                if extinfo(ext).get_bool('affects_database')])
+                extensions = coreaux_api.get_enabled_installed_addons()[
+                                                                'Extensions']
+                dbdeps.Database(filename).add([ext for ext in extensions
+                                    if coreaux_api.import_extension_info(ext
+                                    ).affects_database])
 
                 return filename
 
@@ -242,7 +274,7 @@ class Database(object):
         cursor = qconn.cursor()
         cursor.execute(queries.history_update_status_new)
         cursor.execute(queries.history_update_status_old)
-        qconn.commit()
+        qconn.save()
         self.connection.give(qconn)
 
         self.dbhistory.reset_modified_state()
@@ -258,38 +290,32 @@ class Database(object):
         # case it should be saved first, and that's not what is expected
 
         qconn = self.connection.get()
-        qconnd = _sql.connect(destination)
+        qconnd = FileDB(destination)
         cursor = qconn.cursor()
         cursord = qconnd.cursor()
 
-        cursord.execute(queries.properties_delete)
-        cursor.execute(queries.properties_select)
-        for row in cursor:
-            cursord.execute(queries.properties_insert_copy, tuple(row))
+        cursor.execute(queries.master_select_tables)
 
-        cursord.execute(queries.compatibility_delete_all)
-        cursor.execute(queries.compatibility_select)
         for row in cursor:
-            cursord.execute(queries.compatibility_insert_copy, tuple(row))
+            tname = row["name"]
 
-        cursor.execute(queries.items_select)
-        for row in cursor:
-            cursord.execute(queries.items_insert, tuple(row))
+            # Some tables are initialized by self.create
+            cursord.execute(queries.master_delete.format(tname))
 
-        cursor.execute(queries.history_select)
-        for row in cursor:
-            cursord.execute(queries.history_insert_copy, tuple(row))
+            tcursor = qconn.cursor()
+            tcursor.execute(queries.master_select_table.format(tname))
+
+            for trow in tcursor:
+                cursord.execute(queries.master_insert.format(tname,
+                                    ", ".join(trow.keys()),
+                                    ", ".join(["?", ] * len(trow))), (trow))
 
         cursord.execute(queries.history_update_status_new)
         cursord.execute(queries.history_update_status_old)
 
         self.connection.give(qconn)
 
-        qconnd.commit()
-        qconnd.close()
-
-        save_database_copy_event.signal(origin=self.filename,
-                                        destination=destination)
+        qconnd.save_and_disconnect()
 
     def close(self):
         closing_database_event.signal(filename=self.filename)
@@ -298,7 +324,7 @@ class Database(object):
         del dbs[self.filename]
 
         qconn = self.connection.get()
-        qconn.close()
+        qconn.disconnect()
         self.connection.task_done()
         self.connection.join()
 

@@ -25,6 +25,7 @@ import os
 import string as string_
 import threading
 
+from outspline.static.pyaux.timeaux import TimeSpanFormatters
 from outspline.static.wxclasses.misc import NarrowSpinCtrl
 
 import outspline.coreaux_api as coreaux_api
@@ -37,7 +38,7 @@ import outspline.interfaces.wxgui_api as wxgui_api
 
 import filters
 import menus
-from exceptions import OutOfRangeError
+from exceptions import SearchOutOfRangeError, ResultsOutOfRangeError
 
 
 class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
@@ -64,7 +65,7 @@ class ListView(wx.ListView, ListCtrlAutoWidthMixin, ColumnSorterMixin):
 
 
 class OccurrencesView(object):
-    def __init__(self, tasklist, navigator):
+    def __init__(self, tasklist, navigator, limits):
         self.tasklist = tasklist
         self.navigator = navigator
 
@@ -75,7 +76,8 @@ class OccurrencesView(object):
         self._init_list()
 
         formatter = Formatter(self.config, self.listview)
-        self.refengine = RefreshEngine(self.config, self, formatter, self.occs)
+        self.refengine = RefreshEngine(self.config, self, formatter, self.occs,
+                                                                        limits)
 
         self._init_autoscroll()
         self._init_filters()
@@ -142,7 +144,7 @@ class OccurrencesView(object):
     def _init_filters(self):
         try:
             self.set_filter(self.navigator.get_current_configuration())
-        except OutOfRangeError:
+        except SearchOutOfRangeError:
             self.set_filter(self.navigator.get_default_configuration())
 
     def _init_show_options(self):
@@ -318,8 +320,12 @@ class OccurrencesView(object):
         self.tasklist.show_warning("Search results limit exceeded")
         self.tasklist.set_tab_icon_stopped()
 
-    def warn_out_of_range(self):
+    def warn_search_out_of_range(self):
         self.tasklist.show_warning("The search parameters are out of the "
+                                                            "supported range")
+
+    def warn_results_out_of_range(self):
+        self.tasklist.show_warning("The search results are out of the "
                                                             "supported range")
 
     def reset_warnings(self):
@@ -520,7 +526,7 @@ class RefreshEngineLimit(UserWarning):
 
 
 class RefreshEngine(object):
-    def __init__(self, config, occview, formatter, occs):
+    def __init__(self, config, occview, formatter, occs, limits):
         self.occview = occview
         self.formatter = formatter
         self.occs = occs
@@ -528,6 +534,7 @@ class RefreshEngine(object):
         self.TIMER_NAME = "wxtasklist_engine"
         self.DELAY = config.get_int('refresh_delay')
         self.LIMIT = config.get_int('maximum_items')
+        self.DEBUG_MODE = config.get_bool("debug_mode")
         self.pastN = 0
 
         self.filterclasses = {
@@ -537,10 +544,9 @@ class RefreshEngine(object):
         }
 
         self.filterlimits = (
-            int(_time.mktime(_datetime.datetime(
-                    config.get_int('minimum_year'), 1, 1).timetuple())),
-            int(_time.mktime(_datetime.datetime(
-                    config.get_int('maximum_year') + 1, 1, 1).timetuple())) - 1
+            int(_time.mktime(_datetime.datetime(limits[0], 1, 1).timetuple())),
+            int(_time.mktime(_datetime.datetime(limits[1], 12, 31, 23, 59, 59,
+                                                                ).timetuple()))
         )
 
     def pre_enable(self):
@@ -673,12 +679,12 @@ class RefreshEngine(object):
         try:
             self.min_time, self.max_time = self.filter_.compute_limits(
                                                                 self.now)
-        except OutOfRangeError:
-            wx.CallAfter(self.occview.warn_out_of_range)
+        except SearchOutOfRangeError:
+            wx.CallAfter(self.occview.warn_search_out_of_range)
         else:
             if self.min_time < self.filterlimits[0] or \
                                     self.max_time > self.filterlimits[1]:
-                wx.CallAfter(self.occview.warn_out_of_range)
+                wx.CallAfter(self.occview.warn_search_out_of_range)
             else:
                 wx.CallAfter(self.occview.reset_warnings)
                 try:
@@ -687,6 +693,8 @@ class RefreshEngine(object):
                     wx.CallAfter(self.occview.set_tab_icon_stopped)
                 except RefreshEngineLimit:
                     wx.CallAfter(self.occview.warn_limit_exceeded)
+                except ResultsOutOfRangeError:
+                    wx.CallAfter(self.occview.warn_results_out_of_range)
                 except core_api.NonExistingItemError:
                     self._delay_restart(kwargs=None)
                 else:
@@ -699,7 +707,22 @@ class RefreshEngine(object):
         self.search = organism_api.get_occurrences_range(mint=self.min_time,
                         maxt=self.max_time,
                         filenames=organism_api.get_supported_open_databases())
-        self.search.start()
+
+        try:
+            self.search.start()
+        except:
+            # If an item has a long duration or a very far alarm, the
+            #  calculated occurrence secondary times (end and alarm) may fall
+            #  in the search range, but their start time may be out of the
+            #  range supported by the time and datetime module functions, thus
+            #  raising exceptions that would be too hard to predict one by one;
+            #  for this reason use this catch-all exception in production mode,
+            #  remembering to activate DEBUG_MODE when developing
+            # See also further below for a related problem
+            if self.DEBUG_MODE:
+                raise
+            else:
+                raise ResultsOutOfRangeError()
 
         if self.cancel_request:
             raise RefreshEngineStop()
@@ -725,8 +748,23 @@ class RefreshEngine(object):
         self.timealloc = TimeAllocation(self.min_time, self.max_time,
                                                             self.occview, self)
 
-        for occurrence in occurrences:
-            self._insert_occurrence(occurrence)
+        try:
+            for occurrence in occurrences:
+                self._insert_occurrence(occurrence)
+        except:
+            # If an item has a long duration or a very far alarm, the
+            #  calculated occurrence secondary times (end and alarm) may go out
+            #  of the range supported by the time and datetime module
+            #  functions, even if the start time is correct, thus raising
+            #  exceptions when formatting their timestamps; for this reason use
+            #  this catch-all exception in production mode, remembering to
+            #  activate DEBUG_MODE when developing; don't try to catch the
+            #  specific exceptions for consistency with the other similar
+            #  problem further above
+            if self.DEBUG_MODE:
+                raise
+            else:
+                raise ResultsOutOfRangeError()
 
         self.timealloc.insert_gaps_and_overlappings()
 
@@ -901,9 +939,9 @@ class Formatter(object):
             self.format_database = self._format_database_short
 
         if config('Formats')['duration'] == 'compact':
-            self.format_duration = self._format_duration_compact
+            self.format_duration = TimeSpanFormatters.format_compact
         else:
-            self.format_duration = self._format_duration_expanded
+            self.format_duration = TimeSpanFormatters.format_expanded
 
         self._init_colors()
 
@@ -983,37 +1021,6 @@ class Formatter(object):
     def format_duration(self, duration):
         # This method is assigned dynamically
         pass
-
-    def _format_duration_compact(self, duration):
-        if duration % 604800 == 0:
-            return '{} weeks'.format(str(duration // 604800))
-        elif duration % 86400 == 0:
-            return '{} days'.format(str(duration // 86400))
-        elif duration % 3600 == 0:
-            return '{} hours'.format(str(duration // 3600))
-        elif duration % 60 == 0:
-            return '{} minutes'.format(str(duration // 60))
-
-    def _format_duration_expanded(self, duration):
-        strings = []
-        w, r = divmod(duration, 604800)
-        d, r = divmod(r, 86400)
-        h, r = divmod(r, 3600)
-        m = r // 60
-
-        if w > 0:
-            strings.append('{}w'.format(str(w)))
-
-        if d > 0:
-            strings.append('{}d'.format(str(d)))
-
-        if h > 0:
-            strings.append('{}h'.format(str(h)))
-
-        if m > 0:
-            strings.append('{}m'.format(str(m)))
-
-        return ' '.join(strings)
 
 
 class Autoscroll(object):

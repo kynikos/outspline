@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-import sqlite3
 import threading
 
 from outspline.coreaux_api import Event
@@ -351,33 +350,6 @@ class Database(object):
         else:
             core_api.give_connection(self.filename, qconn)
 
-    def save_copy(self, destination):
-        qconn = core_api.get_connection(self.filename)
-        qconnd = sqlite3.connect(destination)
-        cur = qconn.cursor()
-        curd = qconnd.cursor()
-
-        curd.execute(queries.alarmsproperties_delete)
-        cur.execute(queries.alarmsproperties_select)
-
-        for row in cur:
-            curd.execute(queries.alarmsproperties_insert_copy, tuple(row))
-
-        cur.execute(queries.alarms_select)
-
-        for row in cur:
-            curd.execute(queries.alarms_insert_copy, tuple(row))
-
-        cur.execute(queries.alarmsofflog_select)
-
-        for row in cur:
-            curd.execute(queries.alarmsofflog_insert_copy, tuple(row))
-
-        core_api.give_connection(self.filename, qconn)
-
-        qconnd.commit()
-        qconnd.close()
-
     def _insert_alarm_log(self, id_, reason, text):
         qconn = core_api.get_connection(self.filename)
         cursor = qconn.cursor()
@@ -405,15 +377,9 @@ class Database(object):
 
         return cursor
 
-    def clean_alarms_log(self):
-        # The normal database connection has already been closed here
-        qconn = sqlite3.connect(self.filename)
-        cursor = qconn.cursor()
-
-        cursor.execute(queries.alarmsofflog_delete_clean_close,
+    def clean_alarms_log(self, dbcursor):
+        dbcursor.execute(queries.alarmsofflog_delete_clean_close,
                                                         (self.log_limits[0], ))
-        qconn.commit()
-        qconn.close()
 
     def check_pending_changes(self):
         conn = core_api.get_connection(self.filename)
