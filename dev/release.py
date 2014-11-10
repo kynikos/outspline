@@ -8,8 +8,6 @@ import re
 import pkgutil
 import imp
 
-import configfile
-
 # This script is supposed to be run in the ./dev directory as ./release.py
 # If the -l option is passed, the external libraries won't be bundled and will
 #  have to be installed on the system separately
