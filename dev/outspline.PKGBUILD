@@ -16,7 +16,7 @@ conflicts=('organism')
 replaces=('organism')
 install=outspline.install
 source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
-sha256sums=('20a4465bbba554652c1e3c8483802b3e626607dc0253b7883dbcb5e4621c3a5e')
+sha256sums=('bba2cdeaef007e0ca63f0b1f4244114d65b7f74f67f1ebaf051e8ae5f0bbde12')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"
