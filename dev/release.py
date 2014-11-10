@@ -136,7 +136,7 @@ def make_component_package(cname):
             addons = getattr(component, type_)
         except AttributeError:
             pass
-        except:
+        else:
             typedir = os.path.join(maindir, type_)
             os.mkdir(typedir)
             shutil.copy2(os.path.join(BASE_DIR, type_, '__init__.py'), typedir)
