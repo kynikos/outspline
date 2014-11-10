@@ -25,6 +25,8 @@ data = (
         ("maximized", "no"),
         ("tree_sash_position", "3.0"),
         ("tree_auto_sash_gravity", "yes"),
+        ("logs_sash_position", "6.0"),
+        ("logs_auto_sash_gravity", "no"),
         ("remember_geometry", "yes"),
         ("autohide_menubar", "no"),
         ("remember_session", "yes"),

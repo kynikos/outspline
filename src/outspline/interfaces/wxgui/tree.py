@@ -185,6 +185,11 @@ class Database(wx.SplitterWindow):
         super(Database, self).__init__(wx.GetApp().nb_left,
                                                     style=wx.SP_LIVE_UPDATE)
 
+        self.config = coreaux_api.get_interface_configuration('wxgui')
+        self.sash_position = self.config.get_float("logs_sash_position")
+        self.sash_gravity = 1.0 - 1.0 / self.sash_position if \
+                        self.config.get_bool("logs_auto_sash_gravity") else 1
+
         # Prevent the window from unsplitting when dragging the sash to the
         # border
         self.SetMinimumPaneSize(20)
@@ -676,8 +681,9 @@ class Database(wx.SplitterWindow):
 
     def show_logs(self):
         self.SplitHorizontally(self.treec, self.logspanel.get_panel())
-        self.SetSashGravity(1.0)
-        self.SetSashPosition(-80)
+        height = self.GetSize().GetHeight()
+        self.SetSashGravity(self.sash_gravity)
+        self.SetSashPosition(height // self.sash_position * -1)
 
     def hide_logs(self):
         self.Unsplit(self.logspanel.get_panel())
