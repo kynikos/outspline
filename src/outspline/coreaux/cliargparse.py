@@ -19,12 +19,13 @@
 import sys
 import os.path
 import argparse
+import importlib
 
 import outspline.components.main
 import outspline.info as info
 
 from configuration import (_USER_CONFIG_FILE, _COPYRIGHT_V1, _DISCLAIMER_SHORT,
-                                                                        config)
+                                                            components, config)
 
 
 class ShowVersion(argparse.Action):
@@ -33,6 +34,39 @@ class ShowVersion(argparse.Action):
                                         outspline.components.main.version,
                                         outspline.components.main.release_date,
                                         _COPYRIGHT_V1, _DISCLAIMER_SHORT))
+        sys.exit()
+
+
+class ShowAbout(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        print("Installed components:")
+        for cname in components["info"]:
+            component = components["info"][cname]
+
+            print("{}{} {} ({})".format("\t", cname, component.version,
+                                                    component.release_date))
+
+            try:
+                assert component.provides_core
+            except (AttributeError, AssertionError):
+                pass
+            else:
+                print("{}Core {}".format("\t" * 2, info.core.version))
+
+            for type_ in ("extensions", "interfaces", "plugins"):
+                try:
+                    addons = getattr(component, type_)
+                except AttributeError:
+                    pass
+                else:
+                    print("{}{}:".format("\t" * 2, type_.capitalize()))
+
+                    for aname in addons:
+                        addon = importlib.import_module(".".join(("outspline",
+                                                        "info", type_, aname)))
+                        print ("{}{} {}".format("\t" * 3, aname,
+                                                                addon.version))
+
         sys.exit()
 
 
@@ -90,5 +124,12 @@ def parse_cli_args():
                            dest='version',
                            help='show program\'s version number, copyright '
                                 'and license information, then exit')
+
+    cliparser.add_argument('--about',
+                           action=ShowAbout,
+                           nargs=0,
+                           dest='about',
+                           help='show information on the installed components '
+                                                    'and addons, then exit')
 
     return cliparser.parse_args()
