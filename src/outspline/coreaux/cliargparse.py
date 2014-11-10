@@ -50,6 +50,17 @@ def parse_cli_args():
                                 ''.format(_USER_CONFIG_FILE))
 
     cliparser.add_argument('-l',
+                           '--logfile',
+                           default=None,
+                           metavar='FILE',
+                           dest='logfile',
+                           help='set the log file name: a relative or full '
+                                'path can be specified (default: {}, see also '
+                                '--loglevel option)'
+                                ''.format(os.path.expanduser(config('Log'
+                                                            )['log_file'])))
+
+    cliparser.add_argument('-L',
                            '--loglevel',
                            default=None,
                            metavar='NN',
@@ -65,17 +76,6 @@ def parse_cli_args():
                                 ''.format(config('Log')['log_level_stdout'],
                                 config('Log')['log_level_file']))
 
-    cliparser.add_argument('-f',
-                           '--logfile',
-                           default=None,
-                           metavar='FILE',
-                           dest='logfile',
-                           help='set the log file name: a relative or full '
-                                'path can be specified (default: {}, see also '
-                                '--loglevel option)'
-                                ''.format(os.path.expanduser(config('Log'
-                                                            )['log_file'])))
-
     cliparser.add_argument('-u',
                            '--config-update',
                            action='store_true',
@@ -85,7 +85,6 @@ def parse_cli_args():
 
     cliparser.add_argument('-v',
                            '--version',
-                           '--about',
                            action=ShowVersion,
                            nargs=0,
                            dest='version',
