@@ -17,9 +17,9 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "1.1"
+version = "1.2"
 description = "Development tools backend."
 website = "https://github.com/kynikos/outspline/"
 affects_database = False
 provides_tables = ()
-dependencies = (("core", 2), )
+dependencies = (("core", 3), )

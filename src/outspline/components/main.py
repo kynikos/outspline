@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-version = "0.7.1"
-release_date = "2014-10-22"
+version = "0.8.0"
+release_date = "2014-11-10"
 provides_core = True
 extensions = ("copypaste", )
 interfaces = ("wxgui", )

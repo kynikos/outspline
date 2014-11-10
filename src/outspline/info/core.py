@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "2.1"
+version = "3.0"
 description = "Outspline, a highly modular and extensible outliner."
 website = "https://github.com/kynikos/outspline/"
 affects_database = True

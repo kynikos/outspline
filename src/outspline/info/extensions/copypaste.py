@@ -17,10 +17,10 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "2.0"
+version = "2.1"
 description = ("Adds the backend for cutting, copying and pasting database "
                                                                     "items.")
 website = "https://github.com/kynikos/outspline/"
 affects_database = False
 provides_tables = ("Copy", )
-dependencies = (("core", 2), )
+dependencies = (("core", 3), )

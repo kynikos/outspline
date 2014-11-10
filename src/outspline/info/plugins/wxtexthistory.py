@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "1.1"
+version = "1.2"
 description = "Lets undo and redo the changes to items text."
 website = "https://github.com/kynikos/outspline/"
-dependencies = (("core", 2), ("interfaces.wxgui", 2))
+dependencies = (("core", 3), ("interfaces.wxgui", 3))

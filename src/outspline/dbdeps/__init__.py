@@ -53,6 +53,12 @@ class Core(object):
         # the normal queries
         pass
 
+    @staticmethod
+    def upgrade_2_to_3(cursor):
+        # These queries must stay here because they must not be updated with
+        # the normal queries
+        pass
+
 
 class Database(object):
     def __init__(self, filename):

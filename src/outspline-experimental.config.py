@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 meta = {'name': 'outspline-experimental',
-        'version': '0.7.0',
+        'version': '0.8.0',
         'description': 'Experimental component for Outspline.',
         'author': 'Dario Giovannetti',
         'author_email': 'dev@dariogiovannetti.net',
