@@ -40,10 +40,6 @@ def get_standard_extension():
     return config('Save')['default_extension']
 
 
-def get_root_directory():
-    return coreaux.configuration._ROOT_DIR
-
-
 def get_copyright_unicode():
     return coreaux.configuration._COPYRIGHT_UNICODE
 
