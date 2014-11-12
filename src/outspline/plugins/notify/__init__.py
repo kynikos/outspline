@@ -73,7 +73,7 @@ class Notifications():
                 body = "Now"
             else:
                 body = "{} ago".format(TimeSpanFormatters.format_compact(
-                                                                    rstart))
+                                                                rstart * -1))
 
             if end:
                 body += ", for {}".format(TimeSpanFormatters.format_compact(
