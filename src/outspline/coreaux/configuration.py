@@ -36,8 +36,6 @@ import exceptions
 # http://docs.python.org/2/library/locale.html#background-details-hints-tips-and-caveats
 locale.setlocale(locale.LC_ALL, '')
 
-__author__ = "Dario Giovannetti <dev@dariogiovannetti.net>"
-
 MAIN_THREAD_NAME = "MAIN"
 _ROOT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), '..'))
 _USER_CONFIG_FILE = os.path.join(os.path.expanduser('~'), '.config',
