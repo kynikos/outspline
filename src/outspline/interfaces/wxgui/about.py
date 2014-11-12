@@ -54,8 +54,10 @@ class AboutWindow(wx.Frame):
                                        wx.FONTSTYLE_NORMAL,
                                        wx.FONTWEIGHT_NORMAL))
 
-        self.website = wx.HyperlinkCtrl(self, label=coreaux_api.get_website(),
-                                                url=coreaux_api.get_website())
+        coreinfo = coreaux_api.get_core_info()
+
+        self.website = wx.HyperlinkCtrl(self,
+            label=coreinfo.website, url=coreinfo.website)
 
         description = wx.StaticText(self,
                                     label=coreaux_api.get_long_description())
@@ -168,15 +170,17 @@ class InfoBox(wx.SplitterWindow):
                                               coreaux_api.get_disclaimer()))
 
     def compose_main_info(self):
+        coreinfo = coreaux_api.get_core_info()
+
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('Core version: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        self.textw.AppendText(coreaux_api.get_core_version())
+        self.textw.AppendText(coreinfo.version)
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nWebsite: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        self.textw.AppendText(coreaux_api.get_website())
+        self.textw.AppendText(coreinfo.website)
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nAuthor: ')
@@ -186,8 +190,14 @@ class InfoBox(wx.SplitterWindow):
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nContributors: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        for c in coreaux_api.get_core_contributors():
-            self.textw.AppendText('\n\t{}'.format(c))
+
+        try:
+            contributors = coreinfo.contributors
+        except AttributeError:
+            pass
+        else:
+            for c in contributors:
+                self.textw.AppendText('\n\t{}'.format(c))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\n\nInstalled components:')

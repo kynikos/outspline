@@ -44,21 +44,6 @@ def get_main_component_release_date():
     return outspline.components.main.release_date
 
 
-def get_core_version():
-    return info.core.version
-
-
-def get_website():
-    return info.core.website
-
-
-def get_core_contributors():
-    try:
-        return info.core.contributors
-    except AttributeError:
-        return ()
-
-
 def get_standard_extension():
     return config('Save')['default_extension']
 
@@ -131,6 +116,10 @@ def get_bundled_data(relpath):
 def is_main_thread():
     return threading.current_thread().name == \
                                         coreaux.configuration.MAIN_THREAD_NAME
+
+
+def get_core_info():
+    return info.core
 
 
 def import_extension_info(extension):
