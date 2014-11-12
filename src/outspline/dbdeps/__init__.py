@@ -18,6 +18,7 @@
 
 import importlib
 
+import outspline.info
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import OutsplineError
 from outspline.core import queries
@@ -95,7 +96,7 @@ class Database(object):
         # Core must be stored as None in the database to avoid clashes with a
         # possible extension called 'core'
         self.dependencies['add'][None] = [int(float(
-                                        coreaux_api.get_core_version())), None]
+                                        outspline.info.core.version)), None]
 
         for ext in extensions:
             info = coreaux_api.import_extension_info(ext)
