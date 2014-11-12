@@ -1,9 +1,10 @@
 [Desktop Entry]
 Name=Outspline
-GenericName=Outliner
-Comment=Highly modular and extensible outliner
+GenericName=Personal Organizer
+Comment=Manage personal tasks and remind upcoming events
+Keywords=Organizer;Tasks;Time;Calendar;Todo;Schedule;Events;Agenda;Outliner;
 Exec=outspline
 Icon=outspline
 Terminal=false
 Type=Application
-Categories=Utility;Office;TextTools;Calendar;
+Categories=Calendar;Utility;Office;TextTools;
