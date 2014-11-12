@@ -19,6 +19,9 @@
 version = "0.8.0"
 release_date = "2014-11-10"
 provides_core = True
-extensions = ("copypaste", )
+extensions = ("copypaste", "organism", "organism_timer", "organism_basicrules",
+                                                            "organism_alarms")
 interfaces = ("wxgui", )
-plugins = ("wxcopypaste", "wxtrayicon", "wxtexthistory", "wxdbsearch")
+plugins = ("wxcopypaste", "wxtrayicon", "wxtexthistory", "wxdbsearch",
+                        "wxscheduler", "wxscheduler_basicrules", "wxtasklist",
+                        "wxalarmslog", "notify", "wxoldalarms")

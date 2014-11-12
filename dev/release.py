@@ -30,8 +30,8 @@ DATA_DIR = os.path.join(SRC_DIR, 'data_files')
 COMPONENTS_DIR = os.path.join(BASE_DIR, 'components')
 PACKAGES = {
     'main': 'outspline',
+    'extra': 'outspline-extra',
     'development': 'outspline-development',
-    'organism': 'outspline-organism',
     'experimental': 'outspline-experimental',
 }
 INFO_DIR = os.path.join(BASE_DIR, 'info')

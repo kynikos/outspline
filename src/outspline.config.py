@@ -18,7 +18,7 @@
 
 meta = {'name': 'outspline',
         'version': '0.8.0',
-        'description': 'Highly modular and extensible outliner.',
+        'description': 'Extensible outliner and personal organizer.',
         'author': 'Dario Giovannetti',
         'author_email': 'dev@dariogiovannetti.net',
         'url': 'https://github.com/kynikos/outspline',

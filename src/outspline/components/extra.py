@@ -16,10 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-meta = {'name': 'outspline-organism',
-        'version': '0.8.0',
-        'description': 'Organizer component for Outspline.',
-        'author': 'Dario Giovannetti',
-        'author_email': 'dev@dariogiovannetti.net',
-        'url': 'https://github.com/kynikos/outspline',
-        'license': 'GPLv3'}
+version = "0.8.0"
+release_date = "2014-11-10"
+plugins = ("wxalarms", )

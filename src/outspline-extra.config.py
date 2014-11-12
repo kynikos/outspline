@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-version = "0.8.0"
-release_date = "2014-11-10"
-extensions = ("organism", "organism_timer", "organism_basicrules",
-                                                            "organism_alarms")
-plugins = ("wxscheduler", "wxscheduler_basicrules", "wxtasklist", "wxalarms",
-                                        "wxalarmslog", "notify", "wxoldalarms")
+meta = {'name': 'outspline-extra',
+        'version': '0.8.0',
+        'description': 'Extra component for Outspline.',
+        'author': 'Dario Giovannetti',
+        'author_email': 'dev@dariogiovannetti.net',
+        'url': 'https://github.com/kynikos/outspline',
+        'license': 'GPLv3'}
