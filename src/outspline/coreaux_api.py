@@ -36,14 +36,6 @@ import coreaux.events
 import coreaux.addons
 
 
-def get_main_component_version():
-    return outspline.components.main.version
-
-
-def get_main_component_release_date():
-    return outspline.components.main.release_date
-
-
 def get_standard_extension():
     return config('Save')['default_extension']
 
@@ -71,6 +63,10 @@ def get_long_description():
 
 def get_user_config_file():
     return coreaux.configuration.user_config_file
+
+
+def get_main_component_info():
+    return outspline.components.main
 
 
 def get_components_info():

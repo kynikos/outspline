@@ -44,9 +44,10 @@ class AboutWindow(wx.Frame):
         name.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC,
                              wx.FONTWEIGHT_BOLD))
 
+        cinfo = coreaux_api.get_main_component_info()
+
         version = wx.StaticText(self, label='version: {} ({})'.format(
-                                coreaux_api.get_main_component_version(),
-                                coreaux_api.get_main_component_release_date()))
+                                            cinfo.version, cinfo.release_date))
 
         self.copyright = wx.StaticText(self, label=coreaux_api.get_copyright(
                                                                     alt=True))
