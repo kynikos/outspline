@@ -24,8 +24,8 @@ import importlib
 import outspline.components.main
 import outspline.info as info
 
-from configuration import (_USER_CONFIG_FILE, _COPYRIGHT_V1, _DISCLAIMER_SHORT,
-                                                            components, config)
+from configuration import (_USER_CONFIG_FILE, _COPYRIGHT, _DESCRIPTION,
+                                        _DISCLAIMER_SHORT, components, config)
 
 
 class ShowVersion(argparse.Action):
@@ -33,7 +33,7 @@ class ShowVersion(argparse.Action):
         print("Outspline {} ({})\n\n{}\n{}".format(
                                         outspline.components.main.version,
                                         outspline.components.main.release_date,
-                                        _COPYRIGHT_V1, _DISCLAIMER_SHORT))
+                                        _COPYRIGHT, _DISCLAIMER_SHORT))
         sys.exit()
 
 
@@ -72,7 +72,7 @@ class ShowAbout(argparse.Action):
 
 def parse_cli_args():
     # Options -h and --help are automatically created
-    cliparser = argparse.ArgumentParser(description=info.core.description)
+    cliparser = argparse.ArgumentParser(description=_DESCRIPTION)
 
     cliparser.add_argument('-c',
                            '--config',

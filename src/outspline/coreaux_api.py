@@ -44,21 +44,16 @@ def get_root_directory():
     return coreaux.configuration._ROOT_DIR
 
 
-def get_copyright(alt=False):
-    return coreaux.configuration._COPYRIGHT_V2 if alt else \
-                                            coreaux.configuration._COPYRIGHT_V1
-
-
-def get_disclaimer():
-    return coreaux.configuration._DISCLAIMER
+def get_copyright_unicode():
+    return coreaux.configuration._COPYRIGHT_UNICODE
 
 
 def get_description():
-    return info.core.description
+    return coreaux.configuration._DESCRIPTION_2
 
 
-def get_long_description():
-    return coreaux.configuration._DESCRIPTION_LONG
+def get_license():
+    return coreaux.configuration._DISCLAIMER
 
 
 def get_user_config_file():

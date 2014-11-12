@@ -49,8 +49,8 @@ class AboutWindow(wx.Frame):
         version = wx.StaticText(self, label='version: {} ({})'.format(
                                             cinfo.version, cinfo.release_date))
 
-        self.copyright = wx.StaticText(self, label=coreaux_api.get_copyright(
-                                                                    alt=True))
+        self.copyright = wx.StaticText(self,
+                                    label=coreaux_api.get_copyright_unicode())
         self.copyright.SetFont(wx.Font(8, wx.FONTFAMILY_DEFAULT,
                                        wx.FONTSTYLE_NORMAL,
                                        wx.FONTWEIGHT_NORMAL))
@@ -61,7 +61,7 @@ class AboutWindow(wx.Frame):
             label=coreinfo.website, url=coreinfo.website)
 
         description = wx.StaticText(self,
-                                    label=coreaux_api.get_long_description())
+                                    label=coreaux_api.get_description())
         description.Wrap(_SIZE - 8)
 
         info = InfoBox(self)
@@ -165,10 +165,7 @@ class InfoBox(wx.SplitterWindow):
                             {'req': 'inf', 'type_': type_, 'addon': addon}))
 
     def compose_license(self):
-        self.textw.AppendText('{}\n{}\n\n{}'.format(
-                                              coreaux_api.get_description(),
-                                              coreaux_api.get_copyright(),
-                                              coreaux_api.get_disclaimer()))
+        self.textw.AppendText(coreaux_api.get_license())
 
     def compose_main_info(self):
         coreinfo = coreaux_api.get_core_info()

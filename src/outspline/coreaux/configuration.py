@@ -46,20 +46,24 @@ _CONFIG_DIR = os.path.join(_ROOT_DIR, "conf")
 # Use the icons in $XDG_DATA_DIRS/icons only when there's no alternative, e.g.
 #  for the .desktop file and the notifications
 BUNDLED_DATA_DIR = os.path.join(_ROOT_DIR, "data")
-_DESCRIPTION_LONG = 'Outspline is a highly modular outliner whose '\
-                    'functionality can be widely extended through the '\
-                    'installation of addons.'
-_COPYRIGHT_V1 = 'Copyright (C) 2011-{} Dario Giovannetti '\
-                '<dev@dariogiovannetti.net>'.format(datetime.now().year)
-_COPYRIGHT_V2 = 'Copyright © 2011-{} Dario Giovannetti'.format(datetime.now(
-                                                                        ).year)
+_DESCRIPTION = ("Outspline - An outliner with optional advanced time "
+                                                    "management features.")
+_DESCRIPTION_2 = ("Outspline is an extensible outliner with optional "
+                                        "advanced time management features.")
+_COPYRIGHT = ('Copyright (C) 2011-{} Dario Giovannetti '
+                '<dev@dariogiovannetti.net>'.format(datetime.now().year))
+_COPYRIGHT_UNICODE = 'Copyright © 2011-{} Dario Giovannetti'.format(
+                                                        datetime.now().year)
 _DISCLAIMER_SHORT = \
 '''This program comes with ABSOLUTELY NO WARRANTY.
 This is free software, you are welcome to redistribute it under the
 conditions of the GNU General Public License version 3 or later.
 See <http://gnu.org/licenses/gpl.html> for details.'''
 _DISCLAIMER = \
-'''Outspline is free software: you can redistribute it and/or modify
+'''Outspline - A highly modular and extensible outliner.
+Copyright (C) 2011-{} Dario Giovannetti <dev@dariogiovannetti.net>
+
+Outspline is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -70,7 +74,8 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with Outspline.  If not, see <http://www.gnu.org/licenses/>.'''
+along with Outspline.  If not, see <http://www.gnu.org/licenses/>.'''.format(
+                                                        datetime.now().year)
 
 user_config_file = _USER_CONFIG_FILE
 components = {
