@@ -68,7 +68,9 @@ def set_logger(cliargs):
             os.makedirs(os.path.dirname(logfile),
                                                 mode=_USER_FOLDER_PERMISSIONS)
         except OSError as e:
-            if e.errno != errno.EEXIST:
+            # ENOENT can happen if logfile is a string without "/", i.e. it
+            # represents a file in the current folder
+            if e.errno not in (errno.EEXIST, errno.ENOENT):
                 raise
 
     console_level = ('CRITICAL', 'ERROR', 'INFO', 'DEBUG')[level['console']]

@@ -149,7 +149,9 @@ def load_configuration():
         os.makedirs(os.path.dirname(user_config_file),
                                                 mode=_USER_FOLDER_PERMISSIONS)
     except OSError as e:
-        if e.errno != errno.EEXIST:
+        # ENOENT can happen if user_config_file is a string without "/", i.e.
+        # it represents a file in the current folder
+        if e.errno not in (errno.EEXIST, errno.ENOENT):
             raise
 
     try:
