@@ -25,7 +25,7 @@ data = (
         ("min_update_interval", "3"),
     )),
     OD((
-        ("Shortcuts", (
+        ("GlobalShortcuts", (
             OD((
                 ("undo", "Ctrl+z"),
                 ("redo", "Ctrl+y"),

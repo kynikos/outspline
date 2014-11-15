@@ -36,7 +36,7 @@ data = (
         ("text_min_upd_time", "2"),
         ("max_exceptions", "1"),
         ("plugin_focus_color", "system"),
-        ("extended_shortcuts", "off"),
+        ("contextual_shortcuts", "off"),
     )),
     OD((
         ("History", (
@@ -56,7 +56,7 @@ data = (
             OD()
         )),
         ("SessionFiles", (OD(), OD())),
-        ("Shortcuts", (
+        ("GlobalShortcuts", (
             # Shortcuts that can't/shouldn't be overridden in menus (list not
             #  exhaustive):
             # F1      help
@@ -231,7 +231,7 @@ data = (
                 )),
             ))
         )),
-        ("ExtendedShortcuts", (
+        ("ContextualShortcuts", (
             OD((
                 ("up", "k"),
                 ("down", "j"),

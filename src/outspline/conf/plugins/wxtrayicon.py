@@ -23,7 +23,7 @@ data = (
         ("enabled", "on"),
     )),
     OD((
-        ("Shortcuts", (
+        ("GlobalShortcuts", (
             OD((
                 ("minimize", "Ctrl+Shift+q"),
             )),

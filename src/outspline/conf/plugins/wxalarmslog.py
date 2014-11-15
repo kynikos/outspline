@@ -23,14 +23,14 @@ data = (
         ("enabled", "on"),
     )),
     OD((
-        ("Shortcuts", (
+        ("GlobalShortcuts", (
             OD((
                 ("select", ""),
                 ("find", ""),
             )),
             (),
         )),
-        ("ExtendedShortcuts", (
+        ("ContextualShortcuts", (
             OD((
                 ("find", "f"),
             )),

@@ -100,7 +100,7 @@ class RootMenu(wx.MenuBar):
         '''self.uisim = wx.UIActionSimulator()
         config = coreaux_api.get_interface_configuration('wxgui')
 
-        if config('Shortcuts').get_bool('preserve_alt_menu_shortcuts'):
+        if config('GlobalShortcuts').get_bool('preserve_alt_menu_shortcuts'):
             for menu, label in self.GetMenus():
                 try:
                     amp = label.index('&')
@@ -217,8 +217,8 @@ class MenuFile(wx.Menu):
         self.ID_CLOSE_DB = wx.NewId()
         self.ID_CLOSE_DB_ALL = wx.NewId()
 
-        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
-                                                                        'File')
+        config = coreaux_api.get_interface_configuration('wxgui')(
+                                                    'GlobalShortcuts')('File')
 
         self.new_ = wx.MenuItem(self, wx.ID_NEW,
                                 "&New...\t{}".format(config['new_database']),
@@ -419,8 +419,8 @@ class MenuDatabase(wx.Menu):
         self.ID_EDIT = wx.NewId()
         self.ID_DELETE = wx.NewId()
 
-        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
-                                                                    'Database')
+        config = coreaux_api.get_interface_configuration('wxgui')(
+                                                'GlobalShortcuts')('Database')
 
         self.sibling_label_1 = "Create &item\t{}".format(config['create_item'])
         self.sibling_help_1 = "Create a root item"
@@ -651,8 +651,8 @@ class MenuEdit(wx.Menu):
         self.ID_APPLY = wx.NewId()
         self.ID_APPLY_ALL = wx.NewId()
 
-        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
-                                                                        'Edit')
+        config = coreaux_api.get_interface_configuration('wxgui')(
+                                                'GlobalShortcuts')('Edit')
 
         self.select = wx.MenuItem(self, self.ID_SELECT_ALL,
                                 "&Select all\t{}".format(config['select_all']),
@@ -907,8 +907,8 @@ class MenuViewDatabases(wx.Menu):
         self.ID_FOCUS_9 = wx.NewId()
         self.ID_FOCUS_LAST = wx.NewId()
 
-        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
-                                                    'View')('Databases')
+        config = coreaux_api.get_interface_configuration('wxgui')(
+                                        'GlobalShortcuts')('View')('Databases')
 
         self.cycle = wx.MenuItem(self, self.ID_CYCLE,
                         "&Cycle forward\t{}".format(config['cycle']),
@@ -1062,8 +1062,8 @@ class MenuViewLogs(wx.Menu):
 
         self.items_submenu = MenuViewLogItems()
 
-        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
-                                                        'View')('Logs')
+        config = coreaux_api.get_interface_configuration('wxgui')(
+                                            'GlobalShortcuts')('View')('Logs')
 
         self.show = wx.MenuItem(self, self.ID_SHOW,
                         "Show &panel\t{}".format(config['show']),
@@ -1158,8 +1158,8 @@ class MenuViewLogItems(wx.Menu):
 
         self.ID_SELECT = wx.NewId()
 
-        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
-                                                'View')('Logs')('Items')
+        config = coreaux_api.get_interface_configuration('wxgui')(
+                                    'GlobalShortcuts')('View')('Logs')('Items')
 
         self.select = wx.MenuItem(self, self.ID_SELECT,
                         "&Select\t{}".format(config['select']),
@@ -1197,8 +1197,8 @@ class MenuViewRightNB(wx.Menu):
         self.ID_FOCUS_9 = wx.NewId()
         self.ID_FOCUS_LAST = wx.NewId()
 
-        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
-                                                'View')('RightNotebook')
+        config = coreaux_api.get_interface_configuration('wxgui')(
+                                    'GlobalShortcuts')('View')('RightNotebook')
 
         self.cycle = wx.MenuItem(self, self.ID_CYCLE,
                         "&Cycle forward\t{}".format(config['cycle']),
@@ -1360,8 +1360,8 @@ class MenuViewEditors(wx.Menu):
 
         self.ID_FOCUS_TEXT = wx.NewId()
 
-        config = coreaux_api.get_interface_configuration('wxgui')('Shortcuts')(
-                                                            'View')('Editors')
+        config = coreaux_api.get_interface_configuration('wxgui')(
+                                        'GlobalShortcuts')('View')('Editors')
 
         self.text = wx.MenuItem(self, self.ID_FOCUS_TEXT,
                     "Focus &text area\t{}".format(config['focus_text_area']),

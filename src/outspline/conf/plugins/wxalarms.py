@@ -25,7 +25,7 @@ data = (
         ("limit", "100"),
     )),
     OD((
-        ("Shortcuts", (
+        ("GlobalShortcuts", (
             OD((
                 ("show", "Ctrl+^"),
             )),

@@ -61,7 +61,7 @@ class SearchViewPanel(wx.Panel):
 class SearchView(object):
     def __init__(self, parent):
         config = coreaux_api.get_plugin_configuration('wxdbsearch')(
-                                                        'ExtendedShortcuts')
+                                                        'ContextualShortcuts')
         accelerators = {
             config["search"]: lambda event: self.search(),
             config["find"]: lambda event: self.results.find_in_tree(),
@@ -564,7 +564,7 @@ class MainMenu(wx.Menu):
         self.ID_EDIT = wx.NewId()
 
         config = coreaux_api.get_plugin_configuration('wxdbsearch')(
-                                                                'Shortcuts')
+                                                            'GlobalShortcuts')
 
         self.search = wx.MenuItem(self, self.ID_NEW_SEARCH,
                             "&New search...\t{}".format(config['new_search']),

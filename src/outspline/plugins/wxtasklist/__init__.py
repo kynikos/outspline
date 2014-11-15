@@ -70,7 +70,7 @@ class TaskList(object):
 
         self.config = coreaux_api.get_plugin_configuration('wxtasklist')
 
-        aconfig = self.config("ExtendedShortcuts")
+        aconfig = self.config("ContextualShortcuts")
         accelerators = {
             aconfig["prev_page"]:
                             lambda event: self.navigator.show_previous_page(),

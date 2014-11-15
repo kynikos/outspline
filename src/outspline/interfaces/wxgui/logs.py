@@ -57,7 +57,7 @@ class LogsPanel(object):
         self.logviews = []
 
         config = coreaux_api.get_interface_configuration('wxgui')(
-                                "ExtendedShortcuts")("LeftNotebook")("Logs")
+                                "ContextualShortcuts")("LeftNotebook")("Logs")
         wx.GetApp().root.accmanager.create_manager(self.panel, {
             config["cycle"]: lambda event: self.advance_selection(),
             config["cycle_reverse"]: lambda event: self.reverse_selection(),
@@ -202,7 +202,7 @@ class DatabaseHistory(object):
 
         self._make_icons(bgcolor)
 
-        aconfig = self.config("ExtendedShortcuts")("LeftNotebook")("Logs")(
+        aconfig = self.config("ContextualShortcuts")("LeftNotebook")("Logs")(
                                                                     "History")
         wx.GetApp().root.accmanager.create_manager(self.view, {
             aconfig["undo"]: lambda event: self.tree.undo(),

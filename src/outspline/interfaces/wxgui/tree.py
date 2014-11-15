@@ -295,7 +295,7 @@ class Database(wx.SplitterWindow):
 
     def _init_accelerators(self):
         config = coreaux_api.get_interface_configuration("wxgui")(
-                            "ExtendedShortcuts")("LeftNotebook")("Database")
+                            "ContextualShortcuts")("LeftNotebook")("Database")
         self.accelerators.update({
             config["expand"]: lambda event: self.expand_focused_item(),
             config["collapse"]: lambda event: self.collapse_focused_item(),

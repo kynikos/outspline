@@ -131,7 +131,7 @@ class AlarmsLog(object):
         self.view.AppendTextColumn('Item', 2)
 
         config = coreaux_api.get_plugin_configuration('wxalarmslog')(
-                                                        'ExtendedShortcuts')
+                                                        'ContextualShortcuts')
         wxgui_api.install_accelerators(self.view, {
             config["find"]: lambda event: self.find_in_tree(),
         })
@@ -229,7 +229,7 @@ class LogsMenu(object):
         submenu = wx.Menu()
 
         config = coreaux_api.get_plugin_configuration('wxalarmslog')(
-                                                                'Shortcuts')
+                                                            'GlobalShortcuts')
 
         self.alarms = wx.MenuItem(wxgui_api.get_menu_logs(), self.ID_ALARMS,
                             '&Alarms', 'Alarms log commands', subMenu=submenu)

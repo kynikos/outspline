@@ -153,7 +153,7 @@ class MainFrame(wx.Frame):
         self.Show(True)
 
     def _init_accelerators(self):
-        aconfig = self.config("ExtendedShortcuts")
+        aconfig = self.config("ContextualShortcuts")
         self.accmanager = AcceleratorsManagers()
         altmovkeys = AlternativeMovementKeys()
         self.accmanager.create_manager(self, {
@@ -313,7 +313,7 @@ class AcceleratorsManagers(object):
         # destroyed
         config = coreaux_api.get_interface_configuration('wxgui')
 
-        if config.get_bool('extended_shortcuts'):
+        if config.get_bool('contextual_shortcuts'):
             self.generate_table = self._generate_table
             self.accelclass = _WindowAccelerators
         else:

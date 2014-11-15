@@ -110,7 +110,7 @@ class LeftNotebook(Notebook):
         Notebook.__init__(self, parent)
 
         config = coreaux_api.get_interface_configuration('wxgui')(
-                                        "ExtendedShortcuts")("LeftNotebook")
+                                        "ContextualShortcuts")("LeftNotebook")
         frame.accmanager.create_manager(self, {
             config["cycle"]: menu.view.databases_submenu.ID_CYCLE,
             config["cycle_reverse"]: menu.view.databases_submenu.ID_RCYCLE,
@@ -187,7 +187,7 @@ class RightNotebook(Notebook):
         self.editors = editor.Editors(self)
 
         config = coreaux_api.get_interface_configuration('wxgui')(
-                                        "ExtendedShortcuts")("RightNotebook")
+                                        "ContextualShortcuts")("RightNotebook")
         self.genaccels = {
             config["cycle"]: menu.view.rightnb_submenu.ID_CYCLE,
             config["cycle_reverse"]: menu.view.rightnb_submenu.ID_RCYCLE,

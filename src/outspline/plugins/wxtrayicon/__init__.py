@@ -47,7 +47,7 @@ class TrayIcon(wx.TaskBarIcon):
         self.ID_EXIT = wx.NewId()
 
         config = coreaux_api.get_plugin_configuration('wxtrayicon')(
-                                                                'Shortcuts')
+                                                            'GlobalShortcuts')
 
         wxgui_api.install_bundled_icon("wxtrayicon", '@tray',
                                                     ("Tango", "tray16.png"))
