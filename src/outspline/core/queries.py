@@ -156,6 +156,7 @@ history_update_status_old = ('UPDATE History SET H_status=2 '
 
 history_update_id = 'UPDATE History SET H_status=? WHERE H_id=?'
 
+# This won't be needed anymore when bug #13 will be implemented
 history_update_group = ('UPDATE History '
                         'SET H_group = H_group - (SELECT MIN(H_group) '
                         'FROM History) + 1')
