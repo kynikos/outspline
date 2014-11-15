@@ -299,9 +299,9 @@ class DatabaseHistory(object):
         for row in descriptions:
             tstamp = time_.strftime('%Y-%m-%d %H:%M', time_.localtime(
                                                             row['H_tstamp']))
-            self.data.append((self.icons[row['H_status']],
+            self.data.append((self.icons[row['H_status']],  # **************************
                                     "".join(("[", str(row['H_status']), "]")),
-                                    tstamp, row['H_description']))
+                                    tstamp, row['H_description']))  # **************************
 
         self.dvmodel.Reset(len(self.data))
 

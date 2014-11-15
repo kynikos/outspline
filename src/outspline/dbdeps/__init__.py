@@ -232,6 +232,7 @@ class Database(object):
         # when adding dependencies some old entries should be accompanied by
         # queries to the new tables, and trying to predict all this would be
         # too dangerous
+        # *********************************************************************************
         cursor.execute(queries.history_delete_purge)
 
         connection.save_and_disconnect()

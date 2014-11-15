@@ -93,6 +93,7 @@ class DBHistory(object):
                                                                 query_undo):
         qconn = self.connection.get()
         cur = qconn.cursor()
+        # *********************************************************************************
         cur.execute(queries.history_insert, (group, id_, type_, description,
                                                     query_redo, query_undo))
         cur.execute(queries.history_delete_union, self.historylimits)
@@ -101,20 +102,19 @@ class DBHistory(object):
     def get_next_history_group(self):
         qconn = self.connection.get()
         cursor = qconn.cursor()
+        # *******************************************************************************
         cursor.execute(queries.history_delete_status)
-        cursor.execute(queries.history_select_status_next)
+        cursor.execute(queries.historygroups_select_status_next)
         self.connection.give(qconn)
 
         row = cursor.fetchone()
-        if row['H_group']:
-            group = row['H_group'] + 1
-        else:
-            group = 1
-        return group
+        # *******************************************************************************
+        return row['HG_id'] + 1 if row['HG_id'] else 1
 
     def get_history_descriptions(self):
         qconn = self.connection.get()
         cursor = qconn.cursor()
+        # *******************************************************************************
         cursor.execute(queries.history_select_description)
         self.connection.give(qconn)
 
@@ -126,6 +126,7 @@ class DBHistory(object):
         newstatus = self.status_updates[status]
         qconn = self.connection.get()
         cursor = qconn.cursor()
+        # *******************************************************************************
         cursor.execute(queries.history_update_id, (newstatus, id_))
         self.connection.give(qconn)
 
@@ -134,7 +135,8 @@ class DBHistory(object):
 
         qconn = self.connection.get()
         cursor = qconn.cursor()
-        cursor.execute(queries.history_select_status)
+        # *******************************************************************************
+        cursor.execute(queries.historygroups_select_status)
         self.connection.give(qconn)
 
         row = cursor.fetchone()
@@ -213,10 +215,10 @@ class DBHistory(object):
             cursorm = qconn.cursor()
             # Create a list, because it has to be looped twice
             history = tuple(cursorm.execute(history_select_group_query,
-                                                    (lastgroup['H_group'], )))
+                                                    (lastgroup['HG_id'], )))
             self.connection.give(qconn)
             return {'history': history,
-                    'status': lastgroup['H_status']}
+                    'status': lastgroup['HG_status']}
         else:
             return False
 
@@ -308,6 +310,7 @@ class DBHistory(object):
         qconn = databases.FileDB(self.filename)
         cursor = qconn.cursor()
 
+        # *******************************************************************************
         cursor.execute(queries.history_delete_select,
                                                     (self.historylimits[0], ))
         # This won't be necessary anymore when bug #13 will be implemented

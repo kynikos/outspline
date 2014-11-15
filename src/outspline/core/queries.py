@@ -110,11 +110,11 @@ items_delete_id = 'DELETE FROM Items WHERE I_id=?'
 
 history_create = ("CREATE TABLE History (H_id INTEGER PRIMARY KEY, "
                                         "H_group INTEGER, "
-                                        "H_status INTEGER, "
+                                        #"H_status INTEGER, "  # ***************************
                                         "H_item INTEGER, "
                                         "H_type TEXT, "
                                         "H_tstamp INTEGER, "
-                                        "H_description TEXT, "
+                                        #"H_description TEXT, "  # **************************
                                         "H_redo TEXT, "
                                         "H_undo TEXT)")
 
@@ -126,49 +126,35 @@ history_select_group_undo = ('SELECT H_id, H_item, H_type, H_undo '
 history_select_group_redo = ('SELECT H_id, H_item, H_type, H_redo '
                              'FROM History WHERE H_group=? ORDER BY H_id ASC')
 
-history_select_status = ('SELECT H_status FROM History '
-                         'WHERE H_status IN (0, 1, 3, 4) LIMIT 1')
-
-history_select_status_next = ('SELECT MAX(H_group) AS H_group '
-                              'FROM History WHERE H_status IN (1, 3, 5)')
-
-history_select_status_undo = ('SELECT H_group, H_status '
-                              'FROM History WHERE H_status IN (1, 3, 5) '
-                              'ORDER BY H_group DESC LIMIT 1')
-
-history_select_status_redo = ('SELECT H_group, H_status '
-                              'FROM History WHERE H_status IN (0, 2, 4) '
-                              'ORDER BY H_group ASC LIMIT 1')
-
-history_select_description = ('SELECT DISTINCT H_group, H_status, H_tstamp, '
+history_select_description = ('SELECT DISTINCT H_group, H_status, H_tstamp, '  # ******************************
                               'H_description FROM History '
                               'ORDER BY H_group DESC, H_tstamp DESC')
 
-history_insert = ('INSERT INTO History (H_id, H_group, H_status, '
+history_insert = ('INSERT INTO History (H_id, H_group, H_status, '  # ******************************
                   'H_item, H_type, H_tstamp, H_description, H_redo, H_undo) '
                   'VALUES (NULL, ?, 1, ?, ?, strftime("%s", "now"), ?, ?, ?)')
 
-history_update_status_new = ('UPDATE History SET H_status=5 '
+history_update_status_new = ('UPDATE History SET H_status=5 '  # ******************************
                              'WHERE H_status IN (1, 3)')
 
-history_update_status_old = ('UPDATE History SET H_status=2 '
+history_update_status_old = ('UPDATE History SET H_status=2 '  # ******************************
                              'WHERE H_status IN (0, 4)')
 
-history_update_id = 'UPDATE History SET H_status=? WHERE H_id=?'
+history_update_id = 'UPDATE History SET H_status=? WHERE H_id=?'  # ******************************
 
 # This won't be needed anymore when bug #13 will be implemented
 history_update_group = ('UPDATE History '
                         'SET H_group = H_group - (SELECT MIN(H_group) '
                         'FROM History) + 1')
 
-history_delete_status = 'DELETE FROM History WHERE H_status IN (0, 2, 4)'
+history_delete_status = 'DELETE FROM History WHERE H_status IN (0, 2, 4)'  # ******************************
 
 # Don't delete statuses 0, 2, 4 this way, because those actions are ahead of
 # the current database status, and at most they should be deleted in ascending
 # order; however, they'll be deleted anyway the next time an action is done, so
 # they can just be left alone here
 # Don't just use ORDER BY and OFFSET directly in the main DELETE query, because
-# groups have to be kept intact
+# groups have to be kept intact  # ****************************************************
 history_delete_select = ('''
 DELETE FROM History WHERE H_group < (
     SELECT MIN(H_group) FROM (
@@ -198,3 +184,24 @@ DELETE FROM History WHERE H_group < (
 )''')
 
 history_delete_purge = 'DELETE FROM History'
+
+historygroups_create = ("CREATE TABLE HistoryGroups ("
+                                        "HG_id INTEGER PRIMARY KEY, "
+                                        "HG_status INTEGER, "
+                                        "HG_description TEXT)")
+
+# ...and see if the other queries must be copied and adapted here too ********************************
+
+historygroups_select_status = ('SELECT HG_status FROM HistoryGroups '
+                                    'WHERE HG_status IN (0, 1, 3, 4) LIMIT 1')
+
+historygroups_select_status_next = ('SELECT MAX(HG_id) AS HG_id '
+                            'FROM HistoryGroups WHERE HG_status IN (1, 3, 5)')
+
+historygroups_select_status_undo = ('SELECT HG_id, HG_status '
+                          'FROM HistoryGroups WHERE HG_status IN (1, 3, 5) '
+                          'ORDER BY HG_id DESC LIMIT 1')
+
+historygroups_select_status_redo = ('SELECT HG_id, HG_status '
+                          'FROM HistoryGroups WHERE HG_status IN (0, 2, 4) '
+                          'ORDER BY HG_id ASC LIMIT 1')

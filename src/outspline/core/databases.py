@@ -231,6 +231,7 @@ class Database(object):
 
                 cursor.execute(queries.items_create)
                 cursor.execute(queries.history_create)
+                cursor.execute(queries.historygroups_create)
 
                 conn.save_and_disconnect()
 
@@ -273,6 +274,7 @@ class Database(object):
 
         qconn = self.connection.get()
         cursor = qconn.cursor()
+        # *********************************************************************************
         cursor.execute(queries.history_update_status_new)
         cursor.execute(queries.history_update_status_old)
         qconn.save()
@@ -311,6 +313,7 @@ class Database(object):
                                     ", ".join(trow.keys()),
                                     ", ".join(["?", ] * len(trow))), (trow))
 
+        # *********************************************************************************
         cursord.execute(queries.history_update_status_new)
         cursord.execute(queries.history_update_status_old)
 
