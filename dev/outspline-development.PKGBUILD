@@ -10,7 +10,7 @@ license=('GPL3')
 depends=('outspline')
 conflicts=('organism-development')
 replaces=('organism-development')
-source=("http://downloads.sourceforge.net/project/kynikos/arch/$pkgname-$pkgver.tar.bz2")
+source=("http://downloads.sourceforge.net/project/kynikos/outspline/$pkgname-$pkgver.tar.bz2")
 sha256sums=('3277e25fe3a8e7112df953482949086fed184416e4c30c9223893ef2fb0b5137')
 
 package() {
