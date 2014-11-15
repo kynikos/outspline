@@ -18,6 +18,7 @@ Addon relations:
   For example do not use wx.GetApp() in the plugins to make calls to the
   interface
 - Import optional dependency APIs with the appropriate function
+- Circular addon dependencies are not supported
 
 User databases:
 - All addons should be able to ignore databases that were created without their
