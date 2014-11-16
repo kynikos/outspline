@@ -3,6 +3,11 @@ body {
     margin: 0 auto;
 }
 
+footer {
+    margin-top: 12px;
+    font-size: small;
+}
+
 footer > p {
     float: left;
     margin: 0;
