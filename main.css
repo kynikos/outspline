@@ -1,0 +1,13 @@
+body {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+footer {
+    position: relative;
+}
+
+footer > iframe {
+    position: absolute;
+    right: 0;
+}
