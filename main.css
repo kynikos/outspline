@@ -3,11 +3,12 @@ body {
     margin: 0 auto;
 }
 
-footer {
-    position: relative;
+footer > p {
+    float: left;
+    margin: 0;
 }
 
 footer > iframe {
-    position: absolute;
-    right: 0;
+    float: right;
+    margin: 0;
 }
