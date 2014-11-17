@@ -1,10 +1,44 @@
 body {
+    margin: 0;
+    background-color: #ccc;
+    color: #333;
+}
+
+body > div {
     max-width: 800px;
     margin: 0 auto;
 }
 
-footer {
+header {
+    height: 200px;
     margin-top: 12px;
+    background: transparent
+                url("https://github.com/kynikos/outspline/wiki/logo.png")
+                no-repeat
+                top
+                center;
+}
+
+header > h1 {
+    display: none;
+}
+
+nav,
+section {
+    float: left;
+}
+
+nav {
+    width: 25%;
+}
+
+section {
+    width: 75%;
+}
+
+footer {
+    clear: both;;
+    padding-top: 12px;
     font-size: small;
 }
 
