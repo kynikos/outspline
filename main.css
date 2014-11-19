@@ -1,7 +1,19 @@
 body {
+    margin: 0;
+    padding: 0;
     background-color: #ccc;
     font-family: sans;
     color: #333;
+}
+
+nav {
+    position: fixed;
+    top: 203px; /* body.padding + header.h1.img.height +
+                   header.margin-bottom */
+    left: 50%;
+    margin-left: -612px; /* this.width - main.width -
+                            margin_between_nav_and_the_main_content */
+    width: 200px;
 }
 
 header,
@@ -19,16 +31,6 @@ h1 {
 h1 > img {
     width: 100%;
     max-width: 600px;
-}
-
-nav {
-    position: fixed;
-    top: 203px; /* body.padding + header.h1.img.height +
-                   header.margin-bottom */
-    left: 50%;
-    margin-left: -612px; /* this.width - main.width -
-                            margin_between_nav_and_the_main_content */
-    width: 200px;
 }
 
 #unslider {
