@@ -66,7 +66,7 @@ h1 > img {
     height: 10px;
     margin: 0 4px;
     text-indent: -999em;
-    border: 2px solid green;
+    border: 2px solid orangered;
     border-radius: 6px;
     cursor: pointer;
     opacity: 0.5;
@@ -76,7 +76,7 @@ h1 > img {
 }
 
 #unslider ol.dots li.active {
-    background: green;
+    background: orangered;
     opacity: 0.8;
 }
 
