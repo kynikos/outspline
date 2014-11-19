@@ -1,8 +1,8 @@
-nav {
-    width: 100px;
-}
-
 main {
     margin-left: 124px; /* nav.left (1272.css) + nav.width(700.css) +
                            margin_between_nav_and_the_main_content */
+}
+
+nav {
+    width: 100px;
 }

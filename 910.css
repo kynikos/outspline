@@ -3,10 +3,6 @@
  * body.margin-left + safe_scrollbar_width(24px) in 1060.css
  */
 
-nav {
-    top: 174px; /* nav.top - height_change_of_h1>img */
-}
-
 h1 > img {
     width: 100%;
     max-width: 500px;
@@ -14,4 +10,8 @@ h1 > img {
 
 #unslider ul li {
     background-position: left top;
+}
+
+nav {
+    top: 174px; /* nav.top - height_change_of_h1>img */
 }
