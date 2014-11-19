@@ -37,6 +37,7 @@ h1 > img {
 
 #unslider ul {
     margin: 0;
+    padding: 0;
 }
 
 #unslider li {
@@ -45,8 +46,25 @@ h1 > img {
 }
 
 #unslider ul li {
+    height: 200px; /* The height of the images; this will also correctly
+                      initialize the height of the slider */
+    background-repeat: no-repeat;
+    background-position: center top;
+
     /* Needed by Unslider */
     float: left;
+}
+
+#unslider ul li:nth-of-type(1) {
+    background-image: url("images/unslider/1-0.8.1.png");
+}
+
+#unslider ul li:nth-of-type(2) {
+    background-image: url("images/unslider/2-0.8.1.png");
+}
+
+#unslider ul li:nth-of-type(3) {
+    background-image: url("images/unslider/3-0.8.1.png");
 }
 
 #unslider ol.dots {
@@ -55,7 +73,7 @@ h1 > img {
     left: 50%;
     bottom: 12px;
     padding: 0;
-    margin: 0 0 0 -33px;
+    margin: 0 0 0 -33px; /* The computed width of the three dots is 66px */
     z-index: 10;
 }
 
