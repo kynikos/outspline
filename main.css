@@ -80,6 +80,10 @@ h1 > img {
     opacity: 0.8;
 }
 
+section > p {
+    text-align: justify;
+}
+
 footer {
     padding-top: 12px; /* Use padding and not margin because of the floated
                           children */
