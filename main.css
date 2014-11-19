@@ -11,7 +11,8 @@ nav {
 }
 
 main {
-    margin: 12px auto;
+    margin: 0 auto;
+    padding: 12px;
     max-width: 800px;
 }
 
