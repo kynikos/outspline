@@ -23,4 +23,5 @@ footer {
 footer > p,
 footer > iframe {
     float: none;
+    margin-top: 6px;
 }
