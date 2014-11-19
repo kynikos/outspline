@@ -20,6 +20,11 @@ nav > h2 {
     display: block;
 }
 
+nav > ul {
+    padding-left: 20px;
+    list-style-type: disc;
+}
+
 footer {
     height: auto;
 }
