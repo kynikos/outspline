@@ -29,12 +29,16 @@ ul {
 header,
 main,
 footer {
-    margin: 12px auto;
     max-width: 800px;
+    margin: 0 auto;
+}
+
+header {
+    margin-top: 12px;
 }
 
 h1 {
-    margin: 0 0 12px 0;
+    margin: 0;
     text-align: center;
 }
 
