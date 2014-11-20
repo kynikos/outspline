@@ -8,12 +8,13 @@ header {
 }
 
 main {
-    margin: 12px;
+    margin-left: 0;
 }
 
 nav {
     position: static;
     width: auto;
+    max-width: none;
 }
 
 nav > h2 {
@@ -21,7 +22,8 @@ nav > h2 {
 }
 
 nav > ul {
-    padding-left: 20px;
+    padding-left: 20px; /* This is the same padding defined in main.css for
+                           ul */
     list-style-type: disc;
 }
 

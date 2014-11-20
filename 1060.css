@@ -5,19 +5,6 @@
 
 header,
 footer {
-    margin: 12px auto;
-    max-width: 800px;
-    padding: 0 12px;
-}
-
-
-main {
-    width: auto;
-    max-width: 800px; /* Close to 1060px the body would be wider than this */
-    margin-left: 174px; /* nav.left (1272.css) + nav.width(1060.css) +
-                           margin_between_nav_and_the_main_content */
-}
-
-nav {
-    width: 150px;
+    margin-left: auto;
+    max-width: none;
 }

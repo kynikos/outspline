@@ -9,12 +9,11 @@
 header,
 main,
 footer {
-    margin-left: 224px; /* body.margin-left + nav.width +
-                           margin_between_nav_and_the_main_content */
-    margin-right: 12px;
+    margin-left: 20%;
 }
 
 nav {
     left: 12px;
     margin-left: 0;
+    width: 18%;
 }

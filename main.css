@@ -30,6 +30,7 @@ header,
 main,
 footer {
     max-width: 800px;
+    padding: 0 12px;
     margin: 0 auto;
 }
 
@@ -118,12 +119,11 @@ h1 > img {
 
 nav {
     position: fixed;
-    top: 203px; /* body.padding + header.h1.img.height +
-                   header.margin-bottom */
     left: 50%;
-    margin-left: -612px; /* this.width - main.width -
+    margin-left: -612px; /* this.max-width - main.width -
                             margin_between_nav_and_the_main_content */
-    width: 200px;
+    width: 20%;
+    max-width: 200px;
 }
 
 nav > h2 {
