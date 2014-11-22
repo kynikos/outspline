@@ -1,0 +1,37 @@
+#slideshow {
+    position: relative;
+    overflow: hidden;
+    height: 200px;
+}
+
+#slideshow > div {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 300%; /* 100 * number_of_images */
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    animation-name: slide;
+    animation-duration: 18s;
+    animation-timing-function: ease;
+    animation-iteration-count: infinite;
+}
+
+#slideshow > div > div {
+    float: left;
+    width: 33.333%; /* 100 / number_of_images (needs to be very accurate) */
+    padding: 0;
+    margin: 0;
+    text-align: center;
+}
+
+@keyframes slide {
+    0%   {left: 0;}
+    32%  {left: 0;}
+    34%  {left: -100%;}
+    65%  {left: -100%;}
+    67%  {left: -200%;}
+    98%  {left: -200%;}
+    100% {left: 0;}
+}
