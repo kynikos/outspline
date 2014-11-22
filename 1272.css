@@ -18,5 +18,5 @@ footer {
 nav {
     left: 0;
     margin-left: 0;
-    width: 15%;
+    width: 16%; /* Equal to main.margin-left */
 }

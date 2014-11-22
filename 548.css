@@ -6,6 +6,7 @@ nav {
     position: static;
     width: auto;
     max-width: none;
+    word-wrap: normal;
     transform: none;
 }
 

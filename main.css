@@ -55,6 +55,8 @@ nav {
     width: 20%;
     max-width: 200px;
 
+    word-wrap: break-word;
+
     /* Center vertically */
     top: 50%;
     transform: translateY(-50%);
