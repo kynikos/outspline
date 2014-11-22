@@ -13,19 +13,6 @@ ul {
     padding-left: 20px;
 }
 
-#menujump {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    margin: 0;
-    padding: 12px 0;
-    width: 100%;
-    background-color: #bbb;
-    z-index: 20;
-    text-align: center;
-}
-
 header,
 main,
 footer {
@@ -86,4 +73,8 @@ footer > p {
 footer > iframe {
     float: right;
     margin: 0;
+}
+
+#menujump {
+    display: none;
 }
