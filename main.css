@@ -73,7 +73,7 @@ section > p {
 footer {
     padding-top: 12px; /* Use padding and not margin because of the floated
                           children */
-    height: 24px; /* Use an explicit height because of the floated children */
+    height: 32px; /* Use an explicit height because of the floated children */
     font-size: small;
 }
 
