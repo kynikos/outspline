@@ -9,8 +9,8 @@
 header,
 main,
 footer {
-    margin-left: 20%;
-    /* Don't set width: 80%; here, let the content expand as needed, because
+    margin-left: 16%;
+    /* Don't set width: 84%; here, let the content expand as needed, because
      * also the various margins and paddings have to be taken into account
      */
 }
@@ -18,5 +18,5 @@ footer {
 nav {
     left: 0;
     margin-left: 0;
-    width: 18%;
+    width: 15%;
 }
