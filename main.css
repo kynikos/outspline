@@ -7,9 +7,6 @@ body {
 }
 
 ul {
-    /* I have to define my padding for ul here because I have to change it for
-     * the menu, but then restore it for narrow screens
-     */
     padding-left: 20px;
 }
 
@@ -37,21 +34,20 @@ h1 > img {
 
 nav {
     position: fixed;
+
     left: 50%;
     margin-left: -612px; /* this.max-width - main.width -
                             margin_between_nav_and_the_main_content */
     width: 20%;
     max-width: 200px;
+
+    /* Center vertically */
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 nav > h2 {
     display: none;
-}
-
-nav > ul {
-    margin: 0;
-    padding-left: 0;
-    list-style-type: none;
 }
 
 section > p {
