@@ -1,9 +1,0 @@
-header,
-footer {
-    margin-left: auto;
-    max-width: none;
-}
-
-h1 > img {
-    max-width: 500px;
-}

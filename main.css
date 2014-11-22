@@ -46,47 +46,38 @@ h1 > img {
     max-width: 600px;
 }
 
-nav {
-    position: fixed;
-
-    left: 50%;
-    margin-left: -612px; /* this.max-width - main.width -
-                            margin_between_nav_and_the_main_content */
-    width: 20%;
-    max-width: 200px;
-
-    word-wrap: break-word;
-
-    /* Center vertically */
-    top: 50%;
-    transform: translateY(-50%);
+@media screen and (max-width: 900px) {
+    h1 > img {
+        max-width: 500px;
+    }
 }
 
-nav > h2 {
-    display: none;
-}
-
-section > p {
+header > p {
     text-align: justify;
 }
 
+section {
+    float: left;
+    width: 50%;
+}
+
+@media screen and (max-width: 600px) {
+    section {
+        float: none;
+        width: auto;
+    }
+}
+
+section li {
+    margin: 6px 0;
+}
+
 footer {
-    padding-top: 12px; /* Use padding and not margin because of the floated
-                          children */
-    height: 32px; /* Use an explicit height because of the floated children */
+    clear: both;
+    text-align: center;
     font-size: small;
 }
 
 footer > p {
-    float: left;
-    margin: 0;
-}
-
-footer > iframe {
-    float: right;
-    margin: 0;
-}
-
-#menujump {
-    display: none;
+    margin: 6px 0;
 }
