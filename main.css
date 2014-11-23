@@ -81,6 +81,10 @@ section li {
     margin: 6px 0;
 }
 
+#paypal {
+    display: inline-block;
+}
+
 footer {
     clear: both;
     text-align: center;
