@@ -19,7 +19,7 @@
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
 version = "1.3"
 description = "Adds a schedule that displays the items events/tasks."
-website = "https://github.com/kynikos/outspline/"
+website = "https://kynikos.github.io/outspline/"
 dependencies = (("core", 3), ("extensions.organism", 2),
                 ("extensions.organism_timer", 1),
                 ("extensions.organism_alarms", 1), ("interfaces.wxgui", 3))

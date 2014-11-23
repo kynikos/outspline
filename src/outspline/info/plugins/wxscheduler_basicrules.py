@@ -19,7 +19,7 @@
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
 version = "1.2"
 description = "Adds the interface for creating some basic item schedule rules."
-website = "https://github.com/kynikos/outspline/"
+website = "https://kynikos.github.io/outspline/"
 dependencies = (("core", 3), ("extensions.organism", 2),
                 ("extensions.organism_basicrules", 1), ("interfaces.wxgui", 3),
                 ("plugins.wxscheduler", 2))

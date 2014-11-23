@@ -19,5 +19,5 @@
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
 version = "1.2"
 description = "Lets search for some item content in the databases."
-website = "https://github.com/kynikos/outspline/"
+website = "https://kynikos.github.io/outspline/"
 dependencies = (("core", 3), ("interfaces.wxgui", 3))

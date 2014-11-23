@@ -19,6 +19,6 @@
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
 version = "1.2"
 description = "Lets manage link items."
-website = "https://github.com/kynikos/outspline/"
+website = "https://kynikos.github.io/outspline/"
 dependencies = (("core", 3), ("extensions.links", 1), ("interfaces.wxgui", 3))
 optional_dependencies = (("plugins.wxcopypaste", 1), )

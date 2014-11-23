@@ -20,7 +20,7 @@ authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
 version = "2.1"
 description = ("Adds the backend for cutting, copying and pasting database "
                                                                     "items.")
-website = "https://github.com/kynikos/outspline/"
+website = "https://kynikos.github.io/outspline/"
 affects_database = False
 provides_tables = ("Copy", )
 dependencies = (("core", 3), )

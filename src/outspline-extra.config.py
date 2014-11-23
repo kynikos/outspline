@@ -21,5 +21,5 @@ meta = {'name': 'outspline-extra',
         'description': 'Extra component for Outspline.',
         'author': 'Dario Giovannetti',
         'author_email': 'dev@dariogiovannetti.net',
-        'url': 'https://github.com/kynikos/outspline',
+        'url': 'https://kynikos.github.io/outspline/',
         'license': 'GPLv3'}

@@ -19,7 +19,7 @@
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
 version = "1.2"
 description = "Development tools."
-website = "https://github.com/kynikos/outspline/"
+website = "https://kynikos.github.io/outspline/"
 dependencies = (("core", 3), ("extensions.development", 1),
                 ("interfaces.wxgui", 3))
 optional_dependencies = (("extensions.organism", 2),

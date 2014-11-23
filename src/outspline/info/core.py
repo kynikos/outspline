@@ -19,6 +19,6 @@
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
 version = "3.0"
 description = "The base modules and the back-end for managing databases."
-website = "https://github.com/kynikos/outspline/"
+website = "https://kynikos.github.io/outspline/"
 affects_database = True
 provides_tables = ("Properties", "CoMpatibility", "Items", "History")

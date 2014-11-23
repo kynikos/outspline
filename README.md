@@ -8,7 +8,7 @@ the application into a personal organizer.
 Read the [Wiki](https://www.github.com/kynikos/outspline/wiki) in order to get
 started.
 
-See also the [website](http://kynikos.github.io/outspline/) and the project
+See also the [website](https://kynikos.github.io/outspline/) and the project
 page on [SourceForge](https://sourceforge.net/projects/outspline/).
 
 Outspline is distributed under the terms of the

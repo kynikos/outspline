@@ -19,7 +19,7 @@
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
 version = "2.1"
 description = "Adds the backend for storing schedule information for items."
-website = "https://github.com/kynikos/outspline/"
+website = "https://kynikos.github.io/outspline/"
 affects_database = True
 provides_tables = ("Rules", "CopyRules")
 dependencies = (("core", 3), )

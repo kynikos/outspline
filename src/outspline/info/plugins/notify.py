@@ -20,6 +20,6 @@ authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
 version = "1.2"
 description = ("Shows a desktop notification whenever an item event/task "
                                                         "alarm is activated.")
-website = "https://github.com/kynikos/outspline/"
+website = "https://kynikos.github.io/outspline/"
 dependencies = (("core", 3), ("extensions.organism_alarms", 1))
 optional_dependencies = (("interfaces.wxgui", 3), ("plugins.wxtrayicon", 1))

@@ -20,6 +20,6 @@ authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
 version = "1.2"
 description = ("Allows controlling the search for old alarms when opening a "
                                                                 "database.")
-website = "https://github.com/kynikos/outspline/"
+website = "https://kynikos.github.io/outspline/"
 dependencies = (("core", 3), ("extensions.organism_timer", 1),
                 ("extensions.organism_alarms", 1), ("interfaces.wxgui", 3))

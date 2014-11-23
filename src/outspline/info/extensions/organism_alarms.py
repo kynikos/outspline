@@ -19,7 +19,7 @@
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
 version = "1.2"
 description = "Adds the backend for managing alarm events."
-website = "https://github.com/kynikos/outspline/"
+website = "https://kynikos.github.io/outspline/"
 affects_database = True
 provides_tables = ("AlarmsProperties", "Alarms", "CopyAlarms", "AlarmsOffLog")
 dependencies = (("core", 3), ("extensions.organism", 2),
