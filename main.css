@@ -24,6 +24,10 @@ ul {
     padding-left: 20px;
 }
 
+h1.hidden {
+    display: none;
+}
+
 header,
 main,
 footer {
@@ -34,26 +38,18 @@ footer {
 
 header {
     margin-top: 12px;
-}
-
-h1 {
-    margin: 0;
     text-align: center;
 }
 
-h1 > img {
+header img {
     width: 100%;
     max-width: 600px;
 }
 
 @media screen and (max-width: 900px) {
-    h1 > img {
+    header img {
         max-width: 500px;
     }
-}
-
-header > p {
-    text-align: justify;
 }
 
 section {
@@ -66,6 +62,15 @@ section {
         float: none;
         width: auto;
     }
+}
+
+main > section:first-of-type {
+    float: none;
+    width: auto;
+}
+
+section > p {
+    text-align: justify;
 }
 
 section li {
