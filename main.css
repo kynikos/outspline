@@ -77,8 +77,14 @@ section > p {
     text-align: justify;
 }
 
-section li {
+section li,
+footer > p {
     margin: 6px 0;
+}
+
+#version {
+    margin: 6px 0;
+    font-size: small;
 }
 
 #paypal {
@@ -89,8 +95,4 @@ footer {
     clear: both;
     text-align: center;
     font-size: small;
-}
-
-footer > p {
-    margin: 6px 0;
 }
