@@ -18,7 +18,7 @@ optdepends=('outspline-extra: extra addons'
 conflicts=('organism' 'organism-organizer')
 replaces=('organism' 'organism-organizer')
 install=outspline.install
-source=("http://downloads.sourceforge.net/project/kynikos/outspline/$pkgname-$pkgver.tar.bz2")
+source=("http://downloads.sourceforge.net/project/outspline/main/$pkgname-$pkgver.tar.bz2")
 sha256sums=('bba2cdeaef007e0ca63f0b1f4244114d65b7f74f67f1ebaf051e8ae5f0bbde12')
 
 package() {
