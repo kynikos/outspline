@@ -1,0 +1,37 @@
+h1 {
+    display: none;
+}
+
+section {
+    float: left;
+    width: 50%;
+}
+
+@media screen and (max-width: 600px) {
+    section {
+        float: none;
+        width: auto;
+    }
+}
+
+main > section:first-of-type {
+    float: none;
+    width: auto;
+}
+
+section > p {
+    text-align: justify;
+}
+
+section li {
+    margin: 6px 0;
+}
+
+#version {
+    margin: 6px 0;
+    font-size: small;
+}
+
+#paypal {
+    display: inline-block;
+}

@@ -28,10 +28,6 @@ ul {
     padding-left: 20px;
 }
 
-h1.hidden {
-    display: none;
-}
-
 header,
 main,
 footer {
@@ -56,51 +52,12 @@ header img {
     }
 }
 
-section {
-    float: left;
-    width: 50%;
-}
-
-@media screen and (max-width: 600px) {
-    section {
-        float: none;
-        width: auto;
-    }
-}
-
-main > section:first-of-type {
-    float: none;
-    width: auto;
-}
-
-section > p {
-    text-align: justify;
-}
-
-section li,
-footer > p {
-    margin: 6px 0;
-}
-
-figure {
-    float: left;
-    width: 50%;
-    margin: 12px 0;
-    text-align: center;
-    font-size: small;
-}
-
-#version {
-    margin: 6px 0;
-    font-size: small;
-}
-
-#paypal {
-    display: inline-block;
-}
-
 footer {
     clear: both;
     text-align: center;
     font-size: small;
+}
+
+footer > p {
+    margin: 6px 0;
 }

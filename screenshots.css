@@ -1,0 +1,31 @@
+main > div {
+    clear: both;
+}
+
+figure {
+    max-width: 337px; /* The width of a thumbnail */
+    margin: 12px 0;
+    font-size: small;
+    text-align: center;
+}
+
+figure:first-of-type {
+    float: left;
+}
+
+figure:last-of-type {
+    float: right;
+}
+
+figure img {
+    width: 100%;
+}
+
+@media screen and (max-width: 800px) { /* Two thumbnails next to each other
+                                          (include a safe margin) */
+    figure:first-of-type,
+    figure:last-of-type {
+        float: none;
+        margin: 12px auto;
+    }
+}
