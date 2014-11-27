@@ -14,7 +14,7 @@ section {
     }
 }
 
-main > section:first-of-type {
+#main > section:first-of-type {
     float: none;
     width: auto;
 }
