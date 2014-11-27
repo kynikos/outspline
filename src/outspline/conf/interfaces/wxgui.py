@@ -75,6 +75,7 @@ data = (
             # Ctrl+Right
             # Enter
             # Esc
+            # Delete  stolen at least by TextCtrl
             # +       stolen by DataViewCtrl
             # -       stolen by DataViewCtrl
             # /       stolen by DataViewCtrl
@@ -87,7 +88,6 @@ data = (
 
             # Shortcuts that should be still available (but double check):
             # Ctrl+b
-            # Ctrl+d
             # Ctrl+Shift+e
             # Ctrl+g
             # Ctrl+Shift+g
@@ -149,7 +149,7 @@ data = (
                         ("move_down", "Ctrl+Shift+d"),
                         ("move_to_parent", "Ctrl+Shift+p"),
                         ("edit", "Ctrl+e"),
-                        ("delete", "Ctrl+Delete"),
+                        ("delete", "Ctrl+d"),
                     )),
                     OD()
                 )),
