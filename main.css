@@ -2,14 +2,20 @@ body {
     margin: 0;
     padding: 0;
     background-color: #ccc;
-    font-family: sans;
+    font-family: sans-serif; /* "sans" and other values don't seem to work in
+                                Opera 12 (using the quote marks would break
+                                it too!) */
     color: #333;
+}
+
+a {
+    /* Putting these instructions in a:link doesn't work in Opera 12 */
+    font-weight: bold;
+    text-decoration: none;
 }
 
 a:link {
     color: #4779B0;
-    font-weight: bold;
-    text-decoration: none;
 }
 
 a:visited {
