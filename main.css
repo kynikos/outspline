@@ -82,6 +82,14 @@ footer > p {
     margin: 6px 0;
 }
 
+figure {
+    float: left;
+    width: 50%;
+    margin: 12px 0;
+    text-align: center;
+    font-size: small;
+}
+
 #version {
     margin: 6px 0;
     font-size: small;
