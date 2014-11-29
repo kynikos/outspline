@@ -9,7 +9,7 @@ url="https://kynikos.github.io/outspline/"
 license=('GPL3')
 depends=('outspline')
 source=("http://downloads.sourceforge.net/project/outspline/extra/$pkgname-$pkgver.tar.bz2")
-sha256sums=('be723416107540a448ca0de1958dce3dded4bdf4ad43d2f105d0f5fc1252e8ff')
+sha256sums=('164fa3d80087855e177e366697d48393605f986cfbb96f8036146b19f8f02759')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"
