@@ -8,13 +8,13 @@ arch=('any')
 url="https://kynikos.github.io/outspline/"
 license=('GPL3')
 depends=('wxpython<3.1')
-optdepends=('outspline-extra: extra addons'
-            'outspline-experimental: experimental addons'
-            'outspline-development: development tools for beta testers'
-            'python2-dbus: prevent opening multiple instances with the same configuration file'
+optdepends=('python2-dbus: prevent opening multiple instances with the same configuration file'
             'dbus-glib: prevent opening multiple instances with the same configuration file'
             'libnotify: for desktop notifications (notify plugin)'
-            'python2-gobject: for desktop notifications (notify plugin)')
+            'python2-gobject: for desktop notifications (notify plugin)'
+            'outspline-extra: extra addons'
+            'outspline-experimental: experimental addons'
+            'outspline-development: development tools for beta testers')
 conflicts=('organism' 'organism-organizer')
 replaces=('organism' 'organism-organizer')
 install=outspline.install
