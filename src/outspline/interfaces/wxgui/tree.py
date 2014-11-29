@@ -20,7 +20,7 @@ import os
 import wx
 import wx.dataview as dv
 
-from outspline.coreaux_api import Event
+from outspline.coreaux_api import Event, OutsplineError
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 
