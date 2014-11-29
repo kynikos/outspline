@@ -62,6 +62,12 @@ class GUI(wx.App):
             coreaux_api.bind_to_uncaught_exception(
                                             self._handle_uncaught_exception)
 
+        # Window managers like i3 and awesome need MainFrame to be shown here,
+        # not at the end of its constructor, or EVT_WINDOW_CREATE will be sent
+        # too early (bug #366)
+        self.root.Centre()
+        self.root.Show(True)
+
     def exit_app(self, event):
         self._export_options()
 
@@ -149,8 +155,11 @@ class MainFrame(wx.Frame):
         self.bind_to_close_event(wx.GetApp().exit_app)
         coreaux_api.bind_to_external_nudge(self._handle_external_nudge)
 
-        self.Centre()
-        self.Show(True)
+        # Window managers like i3 and awesome need MainFrame to be shown after
+        # the instantiation of this class, or EVT_WINDOW_CREATE will be sent
+        # too early (bug #366)
+        #self.Centre()
+        #self.Show(True)
 
     def _init_accelerators(self):
         aconfig = self.config("ContextualShortcuts")
