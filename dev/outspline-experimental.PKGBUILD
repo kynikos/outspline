@@ -1,7 +1,7 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='outspline-experimental'
-pkgver='0.8.0'
+pkgver='0.8.1'
 pkgrel=1
 pkgdesc="Experimental addons for Outspline"
 arch=('any')

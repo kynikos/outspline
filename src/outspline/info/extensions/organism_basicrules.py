@@ -17,11 +17,11 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "1.2"
+version = "1.3"
 description = ("Adds the backend for calculating item events/tasks with basic "
                                                             "schedule rules.")
 website = "https://kynikos.github.io/outspline/"
 affects_database = True
 provides_tables = ()
-dependencies = (("core", 3), ("extensions.organism", 2),
+dependencies = (("core", 4), ("extensions.organism", 2),
                 ("extensions.organism_timer", 1))

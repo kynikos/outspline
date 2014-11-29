@@ -1,7 +1,7 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='outspline'
-pkgver='0.8.0'
+pkgver='0.8.1'
 pkgrel=1
 pkgdesc="Outliner and personal time organizer to manage todo lists, schedule tasks, remind events."
 arch=('any')

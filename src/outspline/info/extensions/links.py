@@ -17,12 +17,12 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "1.2"
+version = "1.3"
 description = "Adds the backend for managing links to database items."
 website = "https://kynikos.github.io/outspline/"
 affects_database = True
 provides_tables = ("Links", "CopyLinks")
-dependencies = (("core", 3), )
+dependencies = (("core", 4), )
 optional_dependencies = (("extensions.copypaste", 2),
                         ("extensions.organism", 2))
-database_dependency_group_1 = (("core", 3), ("extensions.links", 1))
+database_dependency_group_1 = (("core", 4), ("extensions.links", 1))

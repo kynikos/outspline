@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "3.0"
+version = "4.0"
 description = "The base modules and the back-end for managing databases."
 website = "https://kynikos.github.io/outspline/"
 affects_database = True

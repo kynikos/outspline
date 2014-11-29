@@ -1,7 +1,7 @@
 # Maintainer: Dario Giovannetti <dev at dariogiovannetti dot net>
 
 pkgname='outspline-extra'
-pkgver='0.8.0'
+pkgver='0.8.1'
 pkgrel=1
 pkgdesc="Extra addons for Outspline"
 arch=('any')

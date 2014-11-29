@@ -17,11 +17,11 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "2.1"
+version = "2.2"
 description = "Adds the backend for storing schedule information for items."
 website = "https://kynikos.github.io/outspline/"
 affects_database = True
 provides_tables = ("Rules", "CopyRules")
-dependencies = (("core", 3), )
+dependencies = (("core", 4), )
 optional_dependencies = (("extensions.copypaste", 2), )
-database_dependency_group_1 = (("core", 3), ("extensions.organism", 2))
+database_dependency_group_1 = (("core", 4), ("extensions.organism", 2))

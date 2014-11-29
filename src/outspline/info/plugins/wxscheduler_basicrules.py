@@ -17,9 +17,9 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "1.2"
+version = "1.3"
 description = "Adds the interface for creating some basic item schedule rules."
 website = "https://kynikos.github.io/outspline/"
-dependencies = (("core", 3), ("extensions.organism", 2),
+dependencies = (("core", 4), ("extensions.organism", 2),
                 ("extensions.organism_basicrules", 1), ("interfaces.wxgui", 3),
                 ("plugins.wxscheduler", 2))
