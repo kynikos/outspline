@@ -38,12 +38,12 @@ wxtrayicon_api = coreaux_api.import_optional_plugin_api('wxtrayicon')
 
 
 class Notifications():
-    def __init__(self, trayicon_id):
+    def __init__(self, wxtrayicon_id=None):
         Notify.init("Outspline")
 
         # It should be safe if the icon is not found in the system
         self.ICON = "outspline-alarm"
-        self.trayicon_id = trayicon_id
+        self.wxtrayicon_id = wxtrayicon_id
 
         organism_alarms_api.bind_to_alarm(self._handle_alarm)
 
@@ -94,8 +94,8 @@ class Notifications():
         wxgui_api.show_main_window()
         wxgui_api.open_editor(user_data[0], user_data[1])
 
-        if self.trayicon_id:
-            wxtrayicon_api.stop_blinking(self.trayicon_id)
+        if self.wxtrayicon_id:
+            wxtrayicon_api.stop_blinking(self.wxtrayicon_id)
 
 
 class BlinkingTrayIcon():
@@ -222,9 +222,9 @@ class BlinkingTrayIcon():
 def main():
     if wxtrayicon_api:
         trayicon = BlinkingTrayIcon()
-        trayicon_id = trayicon.ref_id
+        wxtrayicon_id = trayicon.ref_id
     else:
-        trayicon_id = False
+        wxtrayicon_id = None
 
     if Notify:
-        Notifications(trayicon_id)
+        Notifications(wxtrayicon_id)
