@@ -11,7 +11,7 @@ depends=('outspline')
 conflicts=('organism-development')
 replaces=('organism-development')
 source=("http://downloads.sourceforge.net/project/outspline/development/$pkgname-$pkgver.tar.bz2")
-sha256sums=('3277e25fe3a8e7112df953482949086fed184416e4c30c9223893ef2fb0b5137')
+sha256sums=('a48365b49095719535ca88bda0ff6d678334a315897d3e49598bca8ed2e72c53')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"

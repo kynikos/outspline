@@ -19,7 +19,7 @@ conflicts=('organism' 'organism-organizer')
 replaces=('organism' 'organism-organizer')
 install=outspline.install
 source=("http://downloads.sourceforge.net/project/outspline/main/$pkgname-$pkgver.tar.bz2")
-sha256sums=('bba2cdeaef007e0ca63f0b1f4244114d65b7f74f67f1ebaf051e8ae5f0bbde12')
+sha256sums=('8a83d7b8a5188939220ab4c4e4ece1555970da58f2668872390e4ce7493fadbc')
 
 package() {
     cd "$srcdir/$pkgname-$pkgver"
