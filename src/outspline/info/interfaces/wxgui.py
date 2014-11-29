@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "3.1"
+version = "3.2"
 description = "A wxPython user interface for Outspline."
 website = "https://kynikos.github.io/outspline/"
 dependencies = (("core", 4), )

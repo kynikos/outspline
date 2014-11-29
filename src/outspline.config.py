@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 meta = {'name': 'outspline',
-        'version': '0.8.1',
+        'version': '0.8.2',
         'description': 'Extensible outliner and personal organizer.',
         'author': 'Dario Giovannetti',
         'author_email': 'dev@dariogiovannetti.net',
