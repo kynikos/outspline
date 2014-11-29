@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-meta = {'name': 'outspline-organism',
-        'version': '0.8.0',
-        'description': 'Organizer component for Outspline.',
+meta = {'name': 'outspline-extra',
+        'version': '0.8.1',
+        'description': 'Extra component for Outspline.',
         'author': 'Dario Giovannetti',
         'author_email': 'dev@dariogiovannetti.net',
-        'url': 'https://github.com/kynikos/outspline',
+        'url': 'https://kynikos.github.io/outspline/',
         'license': 'GPLv3'}

@@ -158,7 +158,7 @@ class Editor():
         open_editor_event.signal(filename=self.filename, id_=self.id_,
                                                     item=self.item, text=text)
 
-        aconfig = config("ExtendedShortcuts")("RightNotebook")("Editor")
+        aconfig = config("ContextualShortcuts")("RightNotebook")("Editor")
         self.accelerators.update({
             aconfig["apply"]: lambda event: self.apply(),
             aconfig["find"]: lambda event: self.find_in_tree(),

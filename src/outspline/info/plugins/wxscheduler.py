@@ -17,9 +17,9 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "2.1"
+version = "2.2"
 description = "Lets manage the scedule rules for items."
-website = "https://github.com/kynikos/outspline/"
-dependencies = (("core", 3), ("extensions.organism", 2),
+website = "https://kynikos.github.io/outspline/"
+dependencies = (("core", 4), ("extensions.organism", 2),
                 ("interfaces.wxgui", 3))
 optional_dependencies = (("plugins.wxcopypaste", 1), )

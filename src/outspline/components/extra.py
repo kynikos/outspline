@@ -16,9 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-version = "0.8.0"
-release_date = "2014-11-10"
-extensions = ("organism", "organism_timer", "organism_basicrules",
-                                                            "organism_alarms")
-plugins = ("wxscheduler", "wxscheduler_basicrules", "wxtasklist", "wxalarms",
-                                        "wxalarmslog", "notify", "wxoldalarms")
+version = "0.8.1"
+release_date = "2014-11-29"
+plugins = ("wxalarms", )

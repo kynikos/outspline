@@ -53,7 +53,7 @@ class Database(object):
         self.filename = filename
 
         config = coreaux_api.get_plugin_configuration('wxcopypaste')(
-                                                        'ExtendedShortcuts')
+                                                        'ContextualShortcuts')
         wxgui_api.install_database_accelerators(filename, {
             config["cut"]: lambda event: self.cut_items(),
             config["copy"]: lambda event: self.copy_items(),
@@ -172,7 +172,7 @@ class MainMenu(object):
         self.ID_PASTE_SUB = wx.NewId()
 
         config = coreaux_api.get_plugin_configuration('wxcopypaste')(
-                                                                'Shortcuts')
+                                                            'GlobalShortcuts')
 
         self.mpaste_label_1 = '&Paste items\t{}'.format(config['paste'])
         self.mpaste_help_1 = 'Paste items as root items'

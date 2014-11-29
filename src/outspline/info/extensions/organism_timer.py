@@ -17,13 +17,13 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "1.3"
+version = "1.4"
 description = ("Adds the backend for calculating when item events/tasks "
                                                     "happen and signal them.")
-website = "https://github.com/kynikos/outspline/"
+website = "https://kynikos.github.io/outspline/"
 affects_database = True
 provides_tables = ("TimerProperties", )
-dependencies = (("core", 3), ("extensions.organism", 2))
+dependencies = (("core", 4), ("extensions.organism", 2))
 optional_dependencies = (("extensions.copypaste", 2), )
-database_dependency_group_1 = (("core", 3), ("extensions.organism", 2),
+database_dependency_group_1 = (("core", 4), ("extensions.organism", 2),
                                 ("extensions.organism_timer", 1))

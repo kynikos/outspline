@@ -27,7 +27,6 @@ wxcopypaste_api = coreaux_api.import_optional_plugin_api('wxcopypaste')
 base = None
 
 # See #214 for features left to be implemented
-# https://github.com/kynikos/outspline/issues/214
 
 
 class Main(object):
@@ -92,7 +91,7 @@ class LinkManager(object):
         self.lpanel = wx.Panel(self.fpanel)
 
         config = coreaux_api.get_plugin_configuration('wxlinks')(
-                                                        'ExtendedShortcuts')
+                                                        'ContextualShortcuts')
         accelerators = {
             config["focus"]: lambda event: self.set_focus(),
             config["toggle"]: lambda event: self.toggle_focus(),
@@ -407,7 +406,8 @@ class ViewMenu(object):
 
         submenu = wx.Menu()
 
-        config = coreaux_api.get_plugin_configuration('wxlinks')('Shortcuts')
+        config = coreaux_api.get_plugin_configuration('wxlinks')(
+                                                            'GlobalShortcuts')
 
         self.main = wx.MenuItem(wxgui_api.get_menu_view_editors(),
                         self.ID_MAIN,

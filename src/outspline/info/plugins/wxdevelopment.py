@@ -17,10 +17,10 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "1.2"
+version = "1.3"
 description = "Development tools."
-website = "https://github.com/kynikos/outspline/"
-dependencies = (("core", 3), ("extensions.development", 1),
+website = "https://kynikos.github.io/outspline/"
+dependencies = (("core", 4), ("extensions.development", 1),
                 ("interfaces.wxgui", 3))
 optional_dependencies = (("extensions.organism", 2),
                         ("extensions.organism_alarms", 1),

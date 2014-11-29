@@ -310,6 +310,7 @@ class DBHistory(object):
 
         cursor.execute(queries.history_delete_select,
                                                     (self.historylimits[0], ))
+        # This won't be necessary anymore when bug #13 will be implemented
         cursor.execute(queries.history_update_group)
 
         history_clean_event.signal(filename=self.filename, dbcursor=cursor)

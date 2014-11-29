@@ -36,7 +36,7 @@ data = (
         ("text_min_upd_time", "2"),
         ("max_exceptions", "1"),
         ("plugin_focus_color", "system"),
-        ("extended_shortcuts", "off"),
+        ("contextual_shortcuts", "off"),
     )),
     OD((
         ("History", (
@@ -56,7 +56,7 @@ data = (
             OD()
         )),
         ("SessionFiles", (OD(), OD())),
-        ("Shortcuts", (
+        ("GlobalShortcuts", (
             # Shortcuts that can't/shouldn't be overridden in menus (list not
             #  exhaustive):
             # F1      help
@@ -75,6 +75,7 @@ data = (
             # Ctrl+Right
             # Enter
             # Esc
+            # Delete  stolen at least by TextCtrl
             # +       stolen by DataViewCtrl
             # -       stolen by DataViewCtrl
             # /       stolen by DataViewCtrl
@@ -87,7 +88,6 @@ data = (
 
             # Shortcuts that should be still available (but double check):
             # Ctrl+b
-            # Ctrl+d
             # Ctrl+Shift+e
             # Ctrl+g
             # Ctrl+Shift+g
@@ -149,7 +149,7 @@ data = (
                         ("move_down", "Ctrl+Shift+d"),
                         ("move_to_parent", "Ctrl+Shift+p"),
                         ("edit", "Ctrl+e"),
-                        ("delete", "Ctrl+Delete"),
+                        ("delete", "Ctrl+d"),
                     )),
                     OD()
                 )),
@@ -231,7 +231,7 @@ data = (
                 )),
             ))
         )),
-        ("ExtendedShortcuts", (
+        ("ContextualShortcuts", (
             OD((
                 ("up", "k"),
                 ("down", "j"),

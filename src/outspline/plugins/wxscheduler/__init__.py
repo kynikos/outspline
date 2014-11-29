@@ -114,7 +114,7 @@ class Scheduler():
         box.Add(self.rule_editor.panel, flag=wx.EXPAND | wx.BOTTOM, border=4)
 
         config = coreaux_api.get_plugin_configuration('wxscheduler')(
-                                                        'ExtendedShortcuts')
+                                                        'ContextualShortcuts')
         accelerators = {
             config["focus"]: lambda event: self.set_focus(),
             config["toggle"]: lambda event: self.toggle_focus(),
@@ -574,7 +574,7 @@ class ViewMenu(object):
         submenu = wx.Menu()
 
         config = coreaux_api.get_plugin_configuration('wxscheduler')(
-                                                                'Shortcuts')
+                                                            'GlobalShortcuts')
 
         self.main = wx.MenuItem(wxgui_api.get_menu_view_editors(),
                                 self.ID_MAIN,

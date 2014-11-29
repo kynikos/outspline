@@ -20,7 +20,7 @@ import os
 import wx
 import wx.dataview as dv
 
-from outspline.coreaux_api import Event
+from outspline.coreaux_api import Event, OutsplineError
 import outspline.coreaux_api as coreaux_api
 import outspline.core_api as core_api
 
@@ -295,7 +295,7 @@ class Database(wx.SplitterWindow):
 
     def _init_accelerators(self):
         config = coreaux_api.get_interface_configuration("wxgui")(
-                            "ExtendedShortcuts")("LeftNotebook")("Database")
+                            "ContextualShortcuts")("LeftNotebook")("Database")
         self.accelerators.update({
             config["expand"]: lambda event: self.expand_focused_item(),
             config["collapse"]: lambda event: self.collapse_focused_item(),

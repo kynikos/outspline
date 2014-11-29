@@ -21,6 +21,7 @@ import errno
 import Queue as queue
 import sqlite3
 
+import outspline.info
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import Event, log
 import outspline.dbdeps as dbdeps
@@ -226,7 +227,7 @@ class Database(object):
                 # None must be used for core, because it must be safe in case
                 # an extension is called 'core' for some reason
                 cursor.execute(queries.compatibility_insert, (None,
-                                int(float(coreaux_api.get_core_version())), ))
+                                    int(float(outspline.info.core.version)), ))
 
                 cursor.execute(queries.items_create)
                 cursor.execute(queries.history_create)

@@ -71,7 +71,7 @@ class MainMenu(wx.Menu):
         self.snooze_all_submenu = SnoozeAllConfigMenu(tasklist, self)
         self.export_submenu = ExportMenu(tasklist)
 
-        shconf = config("Shortcuts")
+        shconf = config("GlobalShortcuts")
 
         self.navigator = wx.MenuItem(self, self.ID_NAVIGATOR, 'Na&vigator',
                         'Navigator actions', subMenu=self.navigator_submenu)
@@ -263,7 +263,7 @@ class NavigatorMenu(wx.Menu):
         self.ID_RESET = wx.NewId()
 
         config = coreaux_api.get_plugin_configuration('wxtasklist')(
-                                                    'Shortcuts')('Navigator')
+                                                'GlobalShortcuts')('Navigator')
 
         self.previous = wx.MenuItem(self, self.ID_PREVIOUS,
                             "&Previous page\t{}".format(config['previous']),
@@ -415,7 +415,7 @@ class ViewMenu(object):
         self.alarms_submenu = AlarmsMenu(tasklist)
 
         config = coreaux_api.get_plugin_configuration('wxtasklist')(
-                                                        'Shortcuts')('View')
+                                                    'GlobalShortcuts')('View')
 
 
         self.events = wx.MenuItem(wxgui_api.get_menu_view(), self.ID_EVENTS,
@@ -842,7 +842,7 @@ class SnoozeSelectedConfigMenu(_SnoozeConfigMenu):
                                                 mainmenu.ID_SNOOZE_FOR_SEL, 0)
         self.tasklist = tasklist
         config = coreaux_api.get_plugin_configuration('wxtasklist')(
-                                                        'Shortcuts')('Items')
+                                                    'GlobalShortcuts')('Items')
         accel = "\t{}".format(config['snooze_selected']) if accelerator else ""
         self.snoozefor.SetText(self.snoozefor.GetText() + accel)
 
@@ -867,7 +867,7 @@ class SnoozeAllConfigMenu(_SnoozeConfigMenu):
                                                 mainmenu.ID_SNOOZE_FOR_ALL, 1)
         self.tasklist = tasklist
         config = coreaux_api.get_plugin_configuration('wxtasklist')(
-                                                        'Shortcuts')('Items')
+                                                    'GlobalShortcuts')('Items')
         accel = "\t{}".format(config['snooze_all']) if accelerator else ""
         self.snoozefor.SetText(self.snoozefor.GetText() + accel)
 

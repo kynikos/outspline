@@ -17,9 +17,9 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "1.2"
+version = "1.3"
 description = ("Shows a desktop notification whenever an item event/task "
                                                         "alarm is activated.")
-website = "https://github.com/kynikos/outspline/"
-dependencies = (("core", 3), ("extensions.organism_alarms", 1))
+website = "https://kynikos.github.io/outspline/"
+dependencies = (("core", 4), ("extensions.organism_alarms", 1))
 optional_dependencies = (("interfaces.wxgui", 3), ("plugins.wxtrayicon", 1))

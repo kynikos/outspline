@@ -62,7 +62,7 @@ class Menu(object):
         self.ID_REDO = wx.NewId()
 
         config = coreaux_api.get_plugin_configuration('wxtexthistory')(
-                                                                'Shortcuts')
+                                                            'GlobalShortcuts')
 
         self.mundo = wx.MenuItem(wxgui_api.get_menu_editor(), self.ID_UNDO,
                                             '&Undo\t{}'.format(config['undo']),

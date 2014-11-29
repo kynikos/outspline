@@ -30,14 +30,14 @@ data = (
             )),
             OD()
         )),
-        ("Shortcuts", (
+        ("GlobalShortcuts", (
             OD((
                 ("focus", ""),
                 ("toggle", "Ctrl+@"),
             )),
             OD()
         )),
-        ("ExtendedShortcuts", (
+        ("ContextualShortcuts", (
             OD((
                 ("focus", "r"),
                 ("toggle", "Shift+r"),

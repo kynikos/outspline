@@ -23,7 +23,7 @@ data = (
         ("enabled", "on"),
     )),
     OD((
-        ("Shortcuts", (
+        ("GlobalShortcuts", (
             OD((
                 ("new_search", "Ctrl+f"),
                 ("start_search", ""),
@@ -32,7 +32,7 @@ data = (
             )),
             OD()
         )),
-        ("ExtendedShortcuts", (
+        ("ContextualShortcuts", (
             OD((
                 ("search", "s"),
                 ("find", "f"),

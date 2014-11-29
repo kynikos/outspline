@@ -77,7 +77,7 @@ def compose_addon_data_files(type_):
         if err.errno != errno.ENOENT:
             raise
         else:
-            return {}
+            return []
     else:
         for tail in tails:
             path = os.path.join(head, tail)
@@ -95,7 +95,7 @@ def compose_data_files(head):
             files = [os.path.join(dirpath, filename) for filename in filenames]
             data_files.append((instpath, files))
 
-    return {'data_files': data_files}
+    return data_files
 
 
 def compose_scripts():
@@ -114,10 +114,10 @@ def compose_scripts():
 def compose_metadata(meta):
     meta.update(compose_package_metadata('outspline'))
     meta.update(compose_scripts())
-    meta.update(compose_data_files(os.path.join("data_files", "core")))
+    meta['data_files'] = compose_data_files(os.path.join("data_files", "core"))
 
     for type_ in ("extensions", "interfaces", "plugins"):
-        meta.update(compose_addon_data_files(type_))
+        meta['data_files'].extend(compose_addon_data_files(type_))
 
     return meta
 

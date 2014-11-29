@@ -1,25 +1,16 @@
 #!/usr/bin/env python
 
-import sys
-import os
-import shutil
-import subprocess
-import re
-import pkgutil
-import imp
-
 # This script is supposed to be run in the ./dev directory as ./release.py
 # If the -l option is passed, the external libraries won't be bundled and will
 #  have to be installed on the system separately
 # It's possible to build only some components by specifying them as arguments
 #  for the command
 
-if len(sys.argv) > 1 and sys.argv[1] == "-l":
-    BUNDLE_LIBS = False
-    COMPONENTS = sys.argv[2:]
-else:
-    BUNDLE_LIBS = True
-    COMPONENTS = sys.argv[1:]
+import sys
+import os
+import shutil
+import pkgutil
+import imp
 
 ROOT_DIR = '..'
 DEST_DIR = '.'
@@ -28,35 +19,49 @@ BASE_DIR = os.path.join(SRC_DIR, 'outspline')
 SCRIPTS_DIR = os.path.join(SRC_DIR, 'scripts')
 DATA_DIR = os.path.join(SRC_DIR, 'data_files')
 COMPONENTS_DIR = os.path.join(BASE_DIR, 'components')
-PACKAGES = {
-    'main': 'outspline',
-    'development': 'outspline-development',
-    'organism': 'outspline-organism',
-    'experimental': 'outspline-experimental',
-}
 INFO_DIR = os.path.join(BASE_DIR, 'info')
 CONF_DIR = os.path.join(BASE_DIR, 'conf')
 DEPS_DIR = os.path.join(BASE_DIR, 'dbdeps')
 RDATA_DIR = os.path.join(BASE_DIR, "data")
 
-def main():
+PACKAGES = {
+    'main': 'outspline',
+    'extra': 'outspline-extra',
+    'development': 'outspline-development',
+    'experimental': 'outspline-experimental',
+}
+
+
+def main(cliargs, action=None):
+    if len(cliargs) > 1 and cliargs[1] == "-l":
+        BUNDLE_LIBS = False
+        COMPONENTS = cliargs[2:]
+    else:
+        BUNDLE_LIBS = True
+        COMPONENTS = cliargs[1:]
+
     if len(COMPONENTS) > 0:
         for cname in COMPONENTS:
-            make_component_package(cname)
-            make_pkgbuild_package(cname)
+            _build_component(cname, bundle_libs=BUNDLE_LIBS, action=action)
 
     else:
         for module_loader, cname, ispkg in pkgutil.iter_modules((
                                                             COMPONENTS_DIR, )):
-            make_component_package(cname)
-            make_pkgbuild_package(cname)
+            _build_component(cname, bundle_libs=BUNDLE_LIBS, action=action)
 
 
-def make_component_package(cname):
+def _build_component(cname, bundle_libs, action):
+    pkgname = PACKAGES[cname]
+    _make_component_package(cname, pkgname, bundle_libs)
+
+    if action:
+        action(pkgname)
+
+
+def _make_component_package(cname, pkgname, bundle_libs):
     cfile = os.path.join(COMPONENTS_DIR, cname + ".py")
     component = imp.load_source(cname, cfile)
 
-    pkgname = PACKAGES[cname]
     pkgver = component.version
     pkgdirname = pkgname + '-' + pkgver
     pkgdir = os.path.join(DEST_DIR, pkgdirname)
@@ -112,7 +117,7 @@ def make_component_package(cname):
                             ignore=shutil.ignore_patterns('*.pyc', '*.pyo'))
         except shutil.Error as errs:
             # A symlink to a folder has been found (an external library)
-            if BUNDLE_LIBS:
+            if bundle_libs:
                 for srcname, dstname, exception in errs.args[0]:
                     shutil.copytree(os.path.join(BASE_DIR, 'static',
                             os.readlink(srcname)), dstname,
@@ -129,7 +134,7 @@ def make_component_package(cname):
 
         shutil.copytree(SCRIPTS_DIR, os.path.join(pkgdir, 'scripts'),
                             ignore=shutil.ignore_patterns('*.pyc', '*.pyo'))
-        make_data_files("core", datadir, rdatadir)
+        _copy_data_files("core", datadir, rdatadir)
 
     for type_ in ("extensions", "interfaces", "plugins"):
         try:
@@ -164,7 +169,7 @@ def make_component_package(cname):
                 except FileNotFoundError:
                     pass
 
-                make_data_files(os.path.join(type_, addon), datadir, rdatadir)
+                _copy_data_files(os.path.join(type_, addon), datadir, rdatadir)
 
                 if type_ == 'extensions':
                     try:
@@ -181,7 +186,7 @@ def make_component_package(cname):
     shutil.rmtree(pkgdir)
 
 
-def make_data_files(rpath, datadir, rdatadir):
+def _copy_data_files(rpath, datadir, rdatadir):
     try:
         shutil.copytree(os.path.join(DATA_DIR, rpath), os.path.join(datadir,
                     rpath), ignore=shutil.ignore_patterns('*.pyc', '*.pyo'))
@@ -195,20 +200,5 @@ def make_data_files(rpath, datadir, rdatadir):
         pass
 
 
-def make_pkgbuild_package(cname):
-    pkgname = PACKAGES[cname]
-    pkgbuild = os.path.join(DEST_DIR, pkgname + '.PKGBUILD')
-
-    subprocess.call(["updpkgsums", pkgbuild])
-
-    tmppkgbuild = os.path.join(DEST_DIR, 'PKGBUILD')
-    shutil.copy2(pkgbuild, tmppkgbuild)
-
-    subprocess.call(["mkaurball", ])
-    # Don't call makepkg --clean or errors will happen
-
-    os.remove(tmppkgbuild)
-
-
 if __name__ == '__main__':
-    main()
+    main(sys.argv)

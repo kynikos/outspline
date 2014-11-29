@@ -95,7 +95,7 @@ class AlarmsWindow(object):
         self.menushow = wx.MenuItem(wxgui_api.get_menu_view(),
                                 self.ID_SHOW_MENU,
                                 "Show &alarms window\t{}".format(
-                                            self.config('Shortcuts')['show']),
+                                    self.config('GlobalShortcuts')['show']),
                                 "Show the alarms window", kind=wx.ITEM_CHECK)
         wxgui_api.add_menu_view_item(self.menushow)
 

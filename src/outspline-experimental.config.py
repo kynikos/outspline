@@ -17,9 +17,9 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 meta = {'name': 'outspline-experimental',
-        'version': '0.8.0',
+        'version': '0.8.1',
         'description': 'Experimental component for Outspline.',
         'author': 'Dario Giovannetti',
         'author_email': 'dev@dariogiovannetti.net',
-        'url': 'https://github.com/kynikos/outspline',
+        'url': 'https://kynikos.github.io/outspline/',
         'license': 'GPLv3'}

@@ -17,9 +17,9 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 meta = {'name': 'outspline',
-        'version': '0.8.0',
-        'description': 'Highly modular and extensible outliner.',
+        'version': '0.8.1',
+        'description': 'Extensible outliner and personal organizer.',
         'author': 'Dario Giovannetti',
         'author_email': 'dev@dariogiovannetti.net',
-        'url': 'https://github.com/kynikos/outspline',
+        'url': 'https://kynikos.github.io/outspline/',
         'license': 'GPLv3'}

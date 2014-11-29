@@ -18,6 +18,7 @@
 
 import importlib
 
+import outspline.info
 import outspline.coreaux_api as coreaux_api
 from outspline.coreaux_api import OutsplineError
 from outspline.core import queries
@@ -59,6 +60,12 @@ class Core(object):
         # the normal queries
         pass
 
+    @staticmethod
+    def upgrade_3_to_4(cursor):
+        # These queries must stay here because they must not be updated with
+        # the normal queries
+        pass
+
 
 class Database(object):
     def __init__(self, filename):
@@ -95,7 +102,7 @@ class Database(object):
         # Core must be stored as None in the database to avoid clashes with a
         # possible extension called 'core'
         self.dependencies['add'][None] = [int(float(
-                                        coreaux_api.get_core_version())), None]
+                                        outspline.info.core.version)), None]
 
         for ext in extensions:
             info = coreaux_api.import_extension_info(ext)

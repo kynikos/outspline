@@ -44,21 +44,24 @@ class AboutWindow(wx.Frame):
         name.SetFont(wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_ITALIC,
                              wx.FONTWEIGHT_BOLD))
 
-        version = wx.StaticText(self, label='version: {} ({})'.format(
-                                coreaux_api.get_main_component_version(),
-                                coreaux_api.get_main_component_release_date()))
+        cinfo = coreaux_api.get_main_component_info()
 
-        self.copyright = wx.StaticText(self, label=coreaux_api.get_copyright(
-                                                                    alt=True))
+        version = wx.StaticText(self, label='version: {} ({})'.format(
+                                            cinfo.version, cinfo.release_date))
+
+        self.copyright = wx.StaticText(self,
+                                    label=coreaux_api.get_copyright_unicode())
         self.copyright.SetFont(wx.Font(8, wx.FONTFAMILY_DEFAULT,
                                        wx.FONTSTYLE_NORMAL,
                                        wx.FONTWEIGHT_NORMAL))
 
-        self.website = wx.HyperlinkCtrl(self, label=coreaux_api.get_website(),
-                                                url=coreaux_api.get_website())
+        coreinfo = coreaux_api.get_core_info()
+
+        self.website = wx.HyperlinkCtrl(self,
+            label=coreinfo.website, url=coreinfo.website)
 
         description = wx.StaticText(self,
-                                    label=coreaux_api.get_long_description())
+                                    label=coreaux_api.get_description())
         description.Wrap(_SIZE - 8)
 
         info = InfoBox(self)
@@ -162,21 +165,20 @@ class InfoBox(wx.SplitterWindow):
                             {'req': 'inf', 'type_': type_, 'addon': addon}))
 
     def compose_license(self):
-        self.textw.AppendText('{}\n{}\n\n{}'.format(
-                                              coreaux_api.get_description(),
-                                              coreaux_api.get_copyright(),
-                                              coreaux_api.get_disclaimer()))
+        self.textw.AppendText(coreaux_api.get_license())
 
     def compose_main_info(self):
+        coreinfo = coreaux_api.get_core_info()
+
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('Core version: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        self.textw.AppendText(coreaux_api.get_core_version())
+        self.textw.AppendText(coreinfo.version)
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nWebsite: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        self.textw.AppendText(coreaux_api.get_website())
+        self.textw.AppendText(coreinfo.website)
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nAuthor: ')
@@ -186,8 +188,14 @@ class InfoBox(wx.SplitterWindow):
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\nContributors: ')
         self.textw.SetDefaultStyle(self.STYLE_NORMAL)
-        for c in coreaux_api.get_core_contributors():
-            self.textw.AppendText('\n\t{}'.format(c))
+
+        try:
+            contributors = coreinfo.contributors
+        except AttributeError:
+            pass
+        else:
+            for c in contributors:
+                self.textw.AppendText('\n\t{}'.format(c))
 
         self.textw.SetDefaultStyle(self.STYLE_BOLD)
         self.textw.AppendText('\n\nInstalled components:')

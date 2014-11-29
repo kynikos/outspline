@@ -78,7 +78,7 @@ data = (
             )),
             OD()
         )),
-        ("Shortcuts", (
+        ("GlobalShortcuts", (
             OD((
                 ("scroll_to_ongoing", "Ctrl+;"),
             )),
@@ -116,7 +116,7 @@ data = (
                 )),
             ))
         )),
-        ("ExtendedShortcuts", (
+        ("ContextualShortcuts", (
             OD((
                 ("prev_page", "Shift+h"),
                 ("next_page", "Shift+l"),

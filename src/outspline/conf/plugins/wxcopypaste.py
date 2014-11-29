@@ -23,7 +23,7 @@ data = (
         ("enabled", "on"),
     )),
     OD((
-        ("Shortcuts", (
+        ("GlobalShortcuts", (
             OD((
                 ("cut", "Ctrl+Shift+x"),
                 ("copy", "Ctrl+Shift+c"),
@@ -32,7 +32,7 @@ data = (
             )),
             OD()
         )),
-        ("ExtendedShortcuts", (
+        ("ContextualShortcuts", (
             OD((
                 ("cut", "x"),
                 ("copy", "c"),

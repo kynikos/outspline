@@ -17,10 +17,10 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "1.2"
+version = "1.3"
 description = ("Shows an alarm window whenever an item event/task happens, "
                         "and gives the possibility to snooze or dismiss it.")
-website = "https://github.com/kynikos/outspline/"
-dependencies = (("core", 3), ("extensions.organism_alarms", 1),
+website = "https://kynikos.github.io/outspline/"
+dependencies = (("core", 4), ("extensions.organism_alarms", 1),
                 ("interfaces.wxgui", 3))
 optional_dependencies = (("plugins.wxtrayicon", 1), )

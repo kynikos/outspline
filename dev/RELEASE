@@ -40,11 +40,12 @@
   - *.PKGBUILD (no hashes)
   - *.install
   - release.py
+  - release-*.py
 * If database structure has changed, update upgrade mechanism
 * If some configuration options have been added/removed/changed, make sure to
   update the user's file
 * Check the observance of all STYLE rules
-* Run release.py (inside ./dev)
+* Run release-*.py (inside ./dev) for each supported distribution
   Note that it copies the static libraries from their folders, so make sure
   they are checked out on a STABLE branch!
 * Upload the archives to SourceForge
@@ -61,10 +62,11 @@
   - Changelog
   - New features
   - Links to downloads
-  - Screenshots
+  - Screenshots (at least the About window)
   - Forum thread: https://bbs.archlinux.org/viewtopic.php?id=131458
   - Wiki
-  - GitHub page
+  - GitHub page (also update release version and date)
+  - SourceForge project pages
 * Upload PKGBUILD archives to AUR
 
 NOTES:
