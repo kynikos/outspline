@@ -20,6 +20,7 @@
   - database properties
   - database search
   Test on 32-bit systems
+  Test with various window managers
   Test interfaces with various GTK themes
 * Check code with the pep8 tool
 * Update and release any library that is maintained in external repos
@@ -56,6 +57,7 @@
   Use --no-ff
 * Tag release merge commit
 * Push commits to GitHub
+  Make sure to include tags
 * Checkout the develop branch
 * Check milestone is closed on GitHub
 * Update documentation:
@@ -63,7 +65,7 @@
   - New features
   - Links to downloads
   - Screenshots (at least the About window)
-  - Forum thread: https://bbs.archlinux.org/viewtopic.php?id=131458
+  - Forum thread: https://bbs.archlinux.org/viewtopic.php?id=190459
   - Wiki
   - GitHub page (also update release version and date)
   - SourceForge project pages
