@@ -56,6 +56,7 @@
   Use --no-ff
 * Tag release merge commit
 * Push commits to GitHub
+  Make sure to include tags
 * Checkout the develop branch
 * Check milestone is closed on GitHub
 * Update documentation:
