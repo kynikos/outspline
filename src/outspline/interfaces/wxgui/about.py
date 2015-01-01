@@ -25,14 +25,10 @@ import outspline.coreaux_api as coreaux_api
 _SIZE = 600
 
 
-class AboutWindow(wx.Frame):
+class AboutWindow(wx.Dialog):
     def __init__(self):
-        wx.Frame.__init__(self, wx.GetApp().root, title='About Outspline',
-                          size=(_SIZE, _SIZE * 2 // 3),
-                          style=wx.DEFAULT_FRAME_STYLE ^ (wx.RESIZE_BORDER |
-                                                          wx.MINIMIZE_BOX |
-                                                          wx.MAXIMIZE_BOX) |
-                          wx.FRAME_FLOAT_ON_PARENT)
+        wx.Dialog.__init__(self, wx.GetApp().root, title='About Outspline',
+                          size=(_SIZE, _SIZE * 2 // 3))
 
         sizer1 = wx.GridBagSizer(4, 4)
         self.SetSizer(sizer1)

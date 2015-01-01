@@ -33,7 +33,7 @@ alarmswindow = None
 
 
 class AlarmsWindow(object):
-    def __init__(self, parent):
+    def __init__(self):
         wxgui_api.install_icon_bundle("wxalarms", '&alarmswin',
                                 (("alarmswin16.png", ), ("alarmswin24.png", ),
                                 ("alarmswin32.png", ), ("alarmswin48.png", ),
@@ -44,8 +44,10 @@ class AlarmsWindow(object):
 
         self.config = coreaux_api.get_plugin_configuration('wxalarms')
 
-        self.window = wx.Frame(parent, size=[int(s)
-                          for s in self.config['initial_geometry'].split('x')])
+        self.window = wx.Dialog(None, size=[int(s)
+                        for s in self.config['initial_geometry'].split('x')],
+                        style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER |
+                        wx.DIALOG_NO_PARENT)
 
         self.window.SetIcons(self.ALARMS_ICON_BUNDLE)
 
@@ -563,4 +565,4 @@ class TrayMenu(object):
 
 def main():
     global alarmswindow
-    alarmswindow = AlarmsWindow(wxgui_api.get_main_frame())
+    alarmswindow = AlarmsWindow()
