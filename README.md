@@ -23,4 +23,4 @@ Outspline is distributed under the terms of the
 
 Do not try to run `setup.py` after simply cloning the repo from github. 
 A special release procedure is required to prepare Outspline for installation from this GitHub repository.
-If you are trying to install Outspline: _please_ follow [Getting started](https://github.com/kynikos/outspline/wiki/Getting-started) instead.
+If you are trying to install Outspline: _please follow [Getting started](https://github.com/kynikos/outspline/wiki/Getting-started) instead_.
