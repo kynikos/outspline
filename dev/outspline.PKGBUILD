@@ -10,8 +10,8 @@ license=('GPL3')
 depends=('wxpython<3.1')
 optdepends=('python2-dbus: prevent opening multiple instances with the same configuration file'
             'dbus-glib: prevent opening multiple instances with the same configuration file'
-            'libnotify: for desktop notifications (notify plugin)'
-            'python2-gobject: for desktop notifications (notify plugin)'
+            'libnotify: for desktop notifications (notify plugin; also requires a notification server)'
+            'python2-gobject: for desktop notifications (notify plugin; also requires a notification server)'
             'outspline-extra: extra addons'
             'outspline-experimental: experimental addons'
             'outspline-development: development tools for beta testers')
