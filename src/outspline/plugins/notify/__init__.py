@@ -19,10 +19,23 @@
 import time
 
 try:
-    from gi.repository import Notify, GLib
+    import gi
 except ImportError:
     Notify = None
     GLib = None
+else:
+    # Without this check we get a PyGIWarning printed...
+    try:
+        gi.require_version('Notify', '0.7')
+    except ValueError:
+        Notify = None
+        GLib = None
+    else:
+        try:
+            from gi.repository import Notify, GLib
+        except ImportError:
+            Notify = None
+            GLib = None
 
 try:
     import wx
@@ -37,7 +50,6 @@ import outspline.coreaux_api as coreaux_api
 import outspline.extensions.organism_alarms_api as organism_alarms_api
 wxgui_api = coreaux_api.import_optional_interface_api('wxgui')
 wxtrayicon_api = coreaux_api.import_optional_plugin_api('wxtrayicon')
-
 
 class Notifications():
     def __init__(self, wxtrayicon_id=None):
@@ -235,3 +247,6 @@ def main():
 
     if Notify and GLib:
         Notifications(wxtrayicon_id)
+    else:
+        log.debug('PyGobject\'s Notify module is either not installed or a '
+                'wrong version')
