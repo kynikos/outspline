@@ -44,7 +44,7 @@ class AlarmsWindow(object):
 
         self.config = coreaux_api.get_plugin_configuration('wxalarms')
 
-        self.window = wx.Dialog(None, size=[int(s)
+        self.window = wx.Dialog(wxgui_api.get_main_frame(), size=[int(s)
                         for s in self.config['initial_geometry'].split('x')],
                         style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER |
                         wx.DIALOG_NO_PARENT)
