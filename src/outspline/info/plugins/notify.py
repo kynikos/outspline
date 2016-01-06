@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "1.3"
+version = "1.4"
 description = ("Shows a desktop notification whenever an item event/task "
                                                         "alarm is activated.")
 website = "https://kynikos.github.io/outspline/"

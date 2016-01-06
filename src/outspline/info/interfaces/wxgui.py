@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "3.2"
+version = "3.3"
 description = "A wxPython user interface for Outspline."
 website = "https://kynikos.github.io/outspline/"
 dependencies = (("core", 4), )

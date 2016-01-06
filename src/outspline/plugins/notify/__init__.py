@@ -1,5 +1,5 @@
 # Outspline - A highly modular and extensible outliner.
-# Copyright (C) 2011-2014 Dario Giovannetti <dev@dariogiovannetti.net>
+# Copyright (C) 2011 Dario Giovannetti <dev@dariogiovannetti.net>
 #
 # This file is part of Outspline.
 #
@@ -19,9 +19,23 @@
 import time
 
 try:
-    from gi.repository import Notify
+    import gi
 except ImportError:
     Notify = None
+    GLib = None
+else:
+    # Without this check we get a PyGIWarning printed...
+    try:
+        gi.require_version('Notify', '0.7')
+    except ValueError:
+        Notify = None
+        GLib = None
+    else:
+        try:
+            from gi.repository import Notify, GLib
+        except ImportError:
+            Notify = None
+            GLib = None
 
 try:
     import wx
@@ -30,12 +44,12 @@ except ImportError:
 
 from outspline.static.pyaux.timeaux import TimeSpanFormatters
 
+from outspline.coreaux_api import log
 import outspline.core_api as core_api
 import outspline.coreaux_api as coreaux_api
 import outspline.extensions.organism_alarms_api as organism_alarms_api
 wxgui_api = coreaux_api.import_optional_interface_api('wxgui')
 wxtrayicon_api = coreaux_api.import_optional_plugin_api('wxtrayicon')
-
 
 class Notifications():
     def __init__(self, wxtrayicon_id=None):
@@ -85,7 +99,12 @@ class Notifications():
             if wxgui_api:
                 self.alarm.add_action("open_item", "Open", self._open_item,
                                                                [filename, id_])
-            self.alarm.show()
+            try:
+                self.alarm.show()
+            except GLib.Error:
+                log.warning('Alarm notification could not be displayed: check '
+                        'that you have a notification server installed, '
+                        'properly configured and running')
 
     def _open_item(self, alarm, action, user_data):
         # In order for actions to work, a notification must be a proper object
@@ -226,5 +245,8 @@ def main():
     else:
         wxtrayicon_id = None
 
-    if Notify:
+    if Notify and GLib:
         Notifications(wxtrayicon_id)
+    else:
+        log.debug('PyGobject\'s Notify module is either not installed or a '
+                'wrong version')

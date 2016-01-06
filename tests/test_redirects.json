@@ -1,0 +1,14 @@
+{
+    "target": "kynikos.github.io/outspline",
+    "domains": [
+        "outspline.com",
+        "outspline.net",
+        "outspline.org"
+    ],
+    "tests": [
+        ["http://www.{}/", "http://{}/"],
+        "http://{}/",
+        ["http://www.{}/screenshots.html", "http://{}/screenshots.html"],
+        "http://{}/screenshots.html"
+    ]
+}

@@ -68,7 +68,7 @@
   - Forum thread: https://bbs.archlinux.org/viewtopic.php?id=190459
   - Wiki
   - GitHub page (also update release version and date)
-  - SourceForge project pages
+  - SourceForge project pages (also update default download button)
 * Upload PKGBUILD archives to AUR
 
 NOTES:
