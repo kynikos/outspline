@@ -17,7 +17,7 @@
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
 authors = ("Dario Giovannetti <dev@dariogiovannetti.net>", )
-version = "1.3"
+version = "1.4"
 description = ("Shows an alarm window whenever an item event/task happens, "
                         "and gives the possibility to snooze or dismiss it.")
 website = "https://kynikos.github.io/outspline/"

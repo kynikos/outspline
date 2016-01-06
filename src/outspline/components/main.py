@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Outspline.  If not, see <http://www.gnu.org/licenses/>.
 
-version = "0.8.2"
-release_date = "2014-11-29"
+version = "0.8.3"
+release_date = "2016-01-06"
 provides_core = True
 extensions = ("copypaste", "organism", "organism_timer", "organism_basicrules",
                                                             "organism_alarms")
