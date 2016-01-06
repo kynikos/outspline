@@ -22,7 +22,8 @@ def _make_pkgbuild(pkgname):
     tmppkgbuild = os.path.join(release.DEST_DIR, 'PKGBUILD')
     shutil.copy2(pkgbuild, tmppkgbuild)
 
-    subprocess.call(["makepkg", "--source", "--clean"])
+    subprocess.call(["mksrcinfo"])
+    os.rename(".SRCINFO", pkgname + ".SRCINFO")
 
     os.remove(tmppkgbuild)
 
