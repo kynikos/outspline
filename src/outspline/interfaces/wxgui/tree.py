@@ -136,7 +136,7 @@ class Renderer(dv.PyDataViewCustomRenderer):
         self.iconfont.SetWeight(wx.FONTWEIGHT_BOLD)
 
         dc = wx.MemoryDC()
-        dc.SelectObject(wx.NullBitmap)
+        dc.SelectObject(wx.EmptyBitmap(1, 1))
         dc.SetFont(self.deffont)
         # It shouldn't matter whether characters with descent are used or not,
         # but use "pb" for safety anyway
